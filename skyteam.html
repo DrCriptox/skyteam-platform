@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sky Team</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#C9A84C;--gold-l:#E8C96A;--gold-d:rgba(201,168,76,0.15);--gold-b:rgba(201,168,76,0.3);
+  --bg:#0D0D0D;--bg2:#161616;--bg3:#1F1F1F;--bg4:#252525;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#F0EDE6;--muted:#888580;--muted2:#5a5855;
+  --blue:#378ADD;--blue-d:rgba(55,138,221,0.15);--blue-b:rgba(55,138,221,0.3);
+  --teal:#1D9E75;--teal-d:rgba(29,158,117,0.15);--teal-b:rgba(29,158,117,0.3);
+  --purple:#7F77DD;--purple-d:rgba(127,119,221,0.15);--purple-b:rgba(127,119,221,0.3);
+  --danger:#E24B4A;--success:#1D9E75;
+  --sidebar-w:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:15px;min-height:100vh;}
+input,textarea,select,button{font-family:'Inter',sans-serif;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;}
+#login-screen::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.login-box{width:100%;max-width:380px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:20px;padding:40px 32px;position:relative;z-index:1;}
+.logo-big{font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:var(--gold);letter-spacing:-1px;text-align:center;margin-bottom:6px;}
+.logo-big span{color:var(--text);}
+.login-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:32px;}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;font-weight:500;}
+.login-field input{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:15px;padding:12px 14px;outline:none;transition:border-color 0.2s;}
+.login-field input:focus{border-color:var(--gold-b);}
+.login-field input::placeholder{color:var(--muted2);}
+.btn-login{width:100%;padding:13px;border-radius:10px;background:var(--gold);color:#0D0D0D;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;border:none;cursor:pointer;margin-top:8px;transition:all 0.15s;}
+.btn-login:hover{background:var(--gold-l);}
+.btn-login:active{transform:scale(0.98);}
+#login-error{font-size:13px;color:var(--danger);text-align:center;margin-top:12px;min-height:20px;}
+.login-hint{font-size:12px;color:var(--muted2);text-align:center;margin-top:16px;}
+.demo-hint{margin-top:20px;padding:12px 14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border);}
+.demo-hint p{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;}
+.demo-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:2px 0;}
+.demo-row span{color:var(--text);}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh;}
+.app-layout{display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+#sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.25s;}
+.sidebar-logo{padding:22px 20px 16px;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--gold);letter-spacing:-0.5px;border-bottom:0.5px solid var(--border);}
+.sidebar-logo span{color:var(--text);}
+.sidebar-user-card{padding:14px 16px;border-bottom:0.5px solid var(--border);}
+.su-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.su-ref{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.rank-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
+.sidebar-nav{flex:1;padding:10px 10px;overflow-y:auto;}
+.nav-item{width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:8px;margin-bottom:2px;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--gold-d);color:var(--gold);border:0.5px solid var(--gold-b);}
+.nav-item .nav-icon{font-size:14px;width:18px;text-align:center;}
+.nav-section-label{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;padding:10px 12px 4px;font-weight:500;}
+.sidebar-bottom{padding:12px 10px;border-top:0.5px solid var(--border);}
+.btn-logout{width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;text-align:left;transition:all 0.15s;}
+.btn-logout:hover{color:var(--danger);border-color:rgba(226,75,74,0.3);}
+
+/* ── MAIN CONTENT ── */
+#content{margin-left:var(--sidebar-w);flex:1;min-height:100vh;padding:0;}
+.section{display:none;min-height:100vh;}
+.section.active{display:block;}
+
+/* ── TOP BAR ── */
+.topbar{padding:16px 28px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* ── SECTION CONTENT ── */
+.sc{padding:28px;}
+.sc-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.sc-sub{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.55;}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;}
+.card-gold{border-color:var(--gold-b);background:linear-gradient(135deg,var(--bg2) 0%,rgba(201,168,76,0.04) 100%);}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--gold);}
+.stat-label{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ── PROGRESS BAR ── */
+.prog-wrap{background:var(--bg3);border-radius:20px;height:6px;overflow:hidden;margin:6px 0;}
+.prog-bar{height:100%;border-radius:20px;background:var(--gold);transition:width 0.5s ease;}
+
+/* ── GRID ── */
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;}
+
+/* ── VIDEO CARD ── */
+.vid-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.2s;}
+.vid-card:hover:not(.locked){border-color:var(--border2);}
+.vid-thumb{width:100%;aspect-ratio:16/9;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;}
+.vid-play{width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.vid-lock{width:44px;height:44px;border-radius:50%;background:var(--bg4);border:0.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.vid-info{padding:14px;}
+.vid-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.vid-meta{font-size:12px;color:var(--muted);}
+.vid-card.locked .vid-title{color:var(--muted);}
+.lock-label{position:absolute;top:8px;right:8px;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:500;}
+
+/* ── MATERIAL CARD ── */
+.mat-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color 0.2s;}
+.mat-card:hover:not(.locked){border-color:var(--border2);}
+.mat-icon{width:42px;height:42px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.mat-info{flex:1;}
+.mat-title{font-size:14px;font-weight:500;color:var(--text);}
+.mat-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+.mat-card.locked .mat-title{color:var(--muted);}
+
+/* ── RANKING ── */
+.rank-table{width:100%;border-collapse:collapse;}
+.rank-table th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;padding:8px 12px;text-align:left;border-bottom:0.5px solid var(--border);font-weight:500;}
+.rank-table td{padding:12px;border-bottom:0.5px solid var(--border);font-size:14px;}
+.rank-table tr:last-child td{border-bottom:none;}
+.rank-pos{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--muted);width:32px;}
+.rank-pos.top{color:var(--gold);}
+.rank-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;}
+.rank-name-cell{display:flex;align-items:center;gap:10px;}
+
+/* ── CHAT ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;}
+.chat-msg.own{flex-direction:row-reverse;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;}
+.chat-bubble{max-width:72%;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;}
+.chat-msg.own .chat-bubble{background:var(--gold-d);border-color:var(--gold-b);}
+.chat-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.chat-sender{font-size:12px;font-weight:500;color:var(--text);}
+.chat-time{font-size:11px;color:var(--muted);}
+.chat-text{font-size:14px;color:var(--text);line-height:1.55;}
+.chat-input-bar{padding:14px 16px;border-top:0.5px solid var(--border);display:flex;gap:10px;}
+.chat-input{flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;padding:10px 14px;outline:none;transition:border-color 0.2s;}
+.chat-input:focus{border-color:var(--gold-b);}
+.btn-send{padding:10px 20px;border-radius:10px;background:var(--gold);color:#0D0D0D;font-weight:700;font-size:14px;border:none;cursor:pointer;transition:all 0.15s;}
+.btn-send:hover{background:var(--gold-l);}
+
+/* ── TRIPS ── */
+.trip-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;}
+.trip-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.trip-dest{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);}
+.trip-date{font-size:12px;color:var(--muted);margin-top:3px;}
+.trip-badge{font-size:12px;padding:5px 12px;border-radius:20px;font-weight:500;flex-shrink:0;}
+.trip-desc{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
+.trip-req{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;}
+.trip-req-label{color:var(--muted);}
+.trip-req-val{font-weight:500;}
+.qual-bar-wrap{margin-top:10px;}
+.qual-text{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px;}
+
+/* ── AI AGENT ── */
+.agent-wrap{max-width:600px;}
+.obj-input{width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;padding:14px 16px;resize:none;min-height:100px;outline:none;transition:border-color 0.2s;line-height:1.55;}
+.obj-input:focus{border-color:var(--gold-b);}
+.obj-input::placeholder{color:var(--muted2);}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 18px;}
+.chip{font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid var(--border);color:var(--muted);background:var(--bg3);cursor:pointer;transition:all 0.15s;}
+.chip:hover{border-color:var(--gold-b);color:var(--gold);background:var(--gold-d);}
+.btn-main{padding:13px 24px;border-radius:10px;background:var(--gold);color:#0D0D0D;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;transition:all 0.15s;}
+.btn-main:hover{background:var(--gold-l);}
+.btn-main:disabled{opacity:0.5;cursor:not-allowed;}
+.resp-card{margin-top:18px;background:var(--bg3);border:0.5px solid var(--gold-b);border-radius:14px;overflow:hidden;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.resp-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--border);}
+.resp-tag{font-size:11px;font-weight:500;color:var(--gold);text-transform:uppercase;letter-spacing:0.8px;}
+.btn-copy{font-size:12px;padding:4px 12px;border-radius:6px;background:var(--gold-d);border:0.5px solid var(--gold-b);color:var(--gold);cursor:pointer;font-weight:500;transition:all 0.15s;}
+.btn-copy:hover{background:rgba(201,168,76,0.25);}
+.btn-copy.ok{background:rgba(29,158,117,0.15);border-color:rgba(29,158,117,0.3);color:var(--success);}
+.resp-body{padding:16px;line-height:1.65;font-size:15px;white-space:pre-wrap;color:var(--text);}
+.resp-body.streaming::after{content:'▋';display:inline;animation:blink 0.7s step-end infinite;color:var(--gold);}
+@keyframes blink{50%{opacity:0}}
+.landing-alert{margin-top:14px;padding:14px 16px;background:rgba(201,168,76,0.08);border:0.5px solid var(--gold-b);border-radius:12px;}
+.landing-alert p{font-size:13px;color:var(--gold);margin-bottom:8px;font-weight:500;}
+.link-box{background:var(--bg2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0.5px solid var(--border);}
+.link-text{font-size:13px;color:var(--text);flex:1;word-break:break-all;}
+
+/* ── ADMIN PANEL ── */
+.admin-tab{padding:8px 16px;border-radius:8px;border:0.5px solid var(--border);background:var(--bg2);color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.admin-tab:hover{background:var(--bg3);color:var(--text);}
+.admin-tab.active{background:var(--gold-d);border-color:var(--gold-b);color:var(--gold);}
+.admin-table{width:100%;border-collapse:collapse;}
+.admin-table th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;padding:10px 12px;text-align:left;border-bottom:0.5px solid var(--border);font-weight:500;white-space:nowrap;}
+.admin-table td{padding:12px;border-bottom:0.5px solid var(--border);font-size:13px;vertical-align:middle;}
+.admin-table tr:last-child td{border-bottom:none;}
+.admin-table tr:hover td{background:rgba(255,255,255,0.02);}
+.rank-select{background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:4px 8px;outline:none;cursor:pointer;}
+.rank-select:focus{border-color:var(--gold-b);}
+.sol-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.sol-info{flex:1;min-width:200px;}
+.sol-name{font-size:14px;font-weight:500;color:var(--text);}
+.sol-meta{font-size:12px;color:var(--muted);margin-top:3px;}
+.sol-actions{display:flex;gap:8px;flex-shrink:0;}
+.btn-approve{padding:7px 16px;border-radius:8px;background:var(--teal-d);border:0.5px solid var(--teal-b);color:var(--teal);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.btn-approve:hover{background:rgba(29,158,117,0.25);}
+.btn-reject{padding:7px 16px;border-radius:8px;background:rgba(226,75,74,0.1);border:0.5px solid rgba(226,75,74,0.3);color:var(--danger);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.btn-reject:hover{background:rgba(226,75,74,0.2);}
+.content-row{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.content-row input,.content-row select{background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:6px 10px;outline:none;}
+.content-row input:focus,.content-row select:focus{border-color:var(--gold-b);}
+.content-row .ci-title{flex:2;min-width:160px;}
+.content-row .ci-url{flex:3;min-width:160px;}
+.btn-save-row{padding:6px 14px;border-radius:6px;background:var(--gold-d);border:0.5px solid var(--gold-b);color:var(--gold);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-save-row:hover{background:rgba(201,168,76,0.25);}
+.admin-info-box{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.6;}
+.admin-info-box strong{color:var(--gold);}
+
+/* ── ANUNCIOS ── */border:0.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;}
+.anuncio-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:10px;}
+.anuncio-icon{width:44px;height:44px;border-radius:12px;background:var(--gold-d);border:0.5px solid var(--gold-b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.anuncio-meta{flex:1;}
+.anuncio-title{font-size:16px;font-weight:500;color:var(--text);margin-bottom:3px;}
+.anuncio-date{font-size:12px;color:var(--muted);}
+.anuncio-body{font-size:14px;color:var(--muted);line-height:1.65;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--bg2);border:0.5px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:560px;max-height:80vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;color:var(--text);}
+.modal-close{float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;}
+.yt-embed{width:100%;aspect-ratio:16/9;border-radius:10px;border:none;}
+
+/* ── UTIL ── */
+.btn-sm{padding:7px 14px;border-radius:8px;border:0.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.btn-sm:hover{border-color:var(--gold-b);color:var(--gold);background:var(--gold-d);}
+.btn-sm.gold{background:var(--gold-d);border-color:var(--gold-b);color:var(--gold);}
+.divider{height:0.5px;background:var(--border);margin:20px 0;}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
+.loading-dots{display:inline-flex;gap:4px;align-items:center;}
+.loading-dots span{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:dot 1.2s ease-in-out infinite;}
+.loading-dots span:nth-child(2){animation-delay:0.2s;}
+.loading-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+/* ── HAMBURGER (mobile) ── */
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;}
+
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%);}
+  #sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.show{display:block;}
+  #content{margin-left:0;}
+  .hamburger{display:block;}
+  .sc{padding:16px;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="logo-big">Sky<span>Team</span></div>
+    <p class="login-sub">Plataforma del equipo Innova IA</p>
+    <div class="login-field"><label>Usuario</label><input type="text" id="lu" placeholder="tu_usuario" autocomplete="username"></div>
+    <div class="login-field"><label>Contraseña</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Entrar a Sky Team →</button>
+    <p id="login-error"></p>
+    <p class="login-hint">¿Sin acceso? Contacta a tu patrocinador.</p>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+  <nav id="sidebar">
+    <div class="sidebar-logo">Sky<span>Team</span></div>
+    <div class="sidebar-user-card" id="sidebar-user"></div>
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+      <button class="nav-item active" data-sec="home" onclick="navigate('home')"><span class="nav-icon">🏠</span>Inicio</button>
+      <button class="nav-item" data-sec="agente" onclick="navigate('agente')"><span class="nav-icon">🤖</span>Agente IA</button>
+      <div class="nav-section-label">Formación</div>
+      <button class="nav-item" data-sec="academia" onclick="navigate('academia')"><span class="nav-icon">🎓</span>Academia</button>
+      <button class="nav-item" data-sec="materiales" onclick="navigate('materiales')"><span class="nav-icon">📁</span>Materiales</button>
+      <div class="nav-section-label">Equipo</div>
+      <button class="nav-item" data-sec="ranking" onclick="navigate('ranking')"><span class="nav-icon">🏆</span>Ranking</button>
+      <button class="nav-item" data-sec="viajes" onclick="navigate('viajes')"><span class="nav-icon">✈️</span>Viajes</button>
+      <button class="nav-item" data-sec="comunidad" onclick="navigate('comunidad')"><span class="nav-icon">💬</span>Comunidad</button>
+      <button class="nav-item" data-sec="anuncios" onclick="navigate('anuncios')"><span class="nav-icon">📢</span>Anuncios</button>
+      <div class="nav-section-label" id="nav-admin-label" style="display:none;">Administración</div>
+      <button class="nav-item" data-sec="admin" id="nav-admin-btn" onclick="navigate('admin')" style="display:none;"><span class="nav-icon">⚙️</span>Panel Admin</button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="btn-logout" onclick="doLogout()">← Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main id="content">
+
+    <!-- HOME -->
+    <div class="section active" id="section-home">
+      <div class="topbar"><div class="topbar-title">Inicio</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="home-content"></div>
+    </div>
+
+    <!-- AGENTE IA -->
+    <div class="section" id="section-agente">
+      <div class="topbar"><div class="topbar-title">Agente IA de Ventas</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc">
+        <div class="agent-wrap">
+          <p class="sc-sub">Pega el mensaje del prospecto y recibe la respuesta exacta lista para enviar.</p>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:500;">Mensaje del prospecto</div>
+          <textarea class="obj-input" id="prospect-msg" placeholder='"Eso parece una pirámide" / "No tengo dinero" / "¿Esto funciona?"'></textarea>
+          <div class="chips">
+            <div class="chip" onclick="setChip('¿Eso es una pirámide?')">Es pirámide</div>
+            <div class="chip" onclick="setChip('No tengo dinero para invertir')">Sin dinero</div>
+            <div class="chip" onclick="setChip('No tengo tiempo para eso')">Sin tiempo</div>
+            <div class="chip" onclick="setChip('¿Esto realmente funciona?')">¿Funciona?</div>
+            <div class="chip" onclick="setChip('No sé nada de negocios ni ventas')">Sin experiencia</div>
+            <div class="chip" onclick="setChip('Necesito pensarlo más')">Lo piensa</div>
+            <div class="chip" onclick="setChip('¿Cuánto se puede ganar realmente?')">¿Cuánto se gana?</div>
+            <div class="chip" onclick="setChip('Ya intenté cosas así y no funcionó')">Ya lo intentó</div>
+          </div>
+          <button class="btn-main" id="btn-resp" onclick="responderObjecion()" style="width:100%;">Generar respuesta →</button>
+          <div id="resp-card" style="display:none;" class="resp-card">
+            <div class="resp-header">
+              <span class="resp-tag">Respuesta lista</span>
+              <button class="btn-copy" id="btn-copy" onclick="copiarResp()">Copiar</button>
+            </div>
+            <div class="resp-body" id="resp-text"></div>
+          </div>
+          <div id="land-alert" style="display:none;" class="landing-alert">
+            <p>Momento de enviar la landing — copia este mensaje:</p>
+            <div class="resp-body" id="land-msg" style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:10px;font-size:14px;border:0.5px solid var(--border);"></div>
+            <div class="link-box"><span class="link-text" id="land-link-show"></span><button class="btn-sm gold" onclick="copiarLandLink()" style="white-space:nowrap;flex:0;">Copiar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACADEMIA -->
+    <div class="section" id="section-academia">
+      <div class="topbar"><div class="topbar-title">Academia Sky Team</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="academia-content"></div>
+    </div>
+
+    <!-- MATERIALES -->
+    <div class="section" id="section-materiales">
+      <div class="topbar"><div class="topbar-title">Materiales</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="materiales-content"></div>
+    </div>
+
+    <!-- RANKING -->
+    <div class="section" id="section-ranking">
+      <div class="topbar"><div class="topbar-title">Ranking del Equipo</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="ranking-content"></div>
+    </div>
+
+    <!-- VIAJES -->
+    <div class="section" id="section-viajes">
+      <div class="topbar"><div class="topbar-title">Viajes & Calificaciones</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="viajes-content"></div>
+    </div>
+
+    <!-- COMUNIDAD -->
+    <div class="section" id="section-comunidad">
+      <div class="topbar"><div class="topbar-title">Comunidad Sky Team</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="chat-wrap">
+        <div class="chat-msgs" id="chat-msgs"></div>
+        <div class="chat-input-bar">
+          <input type="text" class="chat-input" id="chat-in" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="btn-send" onclick="sendMsg()">Enviar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANUNCIOS -->
+    <div class="section" id="section-anuncios">
+      <div class="topbar"><div class="topbar-title">Anuncios</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="anuncios-content"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="section" id="section-admin">
+      <div class="topbar">
+        <div class="topbar-title">Panel de Administración</div>
+        <button class="hamburger" onclick="openSidebar()">☰</button>
+      </div>
+      <div class="sc">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+          <button class="admin-tab active" id="atab-solicitudes" onclick="switchAdminTab('solicitudes')">Solicitudes pendientes</button>
+          <button class="admin-tab" id="atab-usuarios" onclick="switchAdminTab('usuarios')">Gestión de usuarios</button>
+          <button class="admin-tab" id="atab-contenido" onclick="switchAdminTab('contenido')">Contenido</button>
+          <button class="admin-tab" id="atab-anuncios" onclick="switchAdminTab('anuncios-admin')">Anuncios</button>
+        </div>
+        <div id="admin-solicitudes"></div>
+        <div id="admin-usuarios" style="display:none;"></div>
+        <div id="admin-contenido" style="display:none;"></div>
+        <div id="admin-anuncios-admin" style="display:none;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- MODAL VIDEO -->
+<div class="modal-overlay" id="vid-modal" style="display:none;" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeVidModal()">✕</button>
+    <div class="modal-title" id="modal-title"></div>
+    <iframe class="yt-embed" id="modal-iframe" src="" allowfullscreen></iframe>
+  </div>
+</div>
+
+<script>
+const LANDING = "innova-ia.com";
+
+const RANKS = {
+  1:{name:'IN 200',    icon:'🌱',color:'#888580',bg:'rgba(136,133,128,0.15)',border:'rgba(136,133,128,0.3)'},
+  2:{name:'IN 500',    icon:'⭐',color:'#378ADD',bg:'rgba(55,138,221,0.15)', border:'rgba(55,138,221,0.3)'},
+  3:{name:'NOVA 1500', icon:'🌟',color:'#1D9E75',bg:'rgba(29,158,117,0.15)',border:'rgba(29,158,117,0.3)'},
+  4:{name:'NOVA 5K',   icon:'💎',color:'#7F77DD',bg:'rgba(127,119,221,0.15)',border:'rgba(127,119,221,0.3)'},
+  5:{name:'NOVA 10K',  icon:'🔥',color:'#D85A30',bg:'rgba(216,90,48,0.15)', border:'rgba(216,90,48,0.3)'},
+  6:{name:'DIAMANTE 20K',icon:'💠',color:'#85B7EB',bg:'rgba(133,183,235,0.15)',border:'rgba(133,183,235,0.3)'},
+  7:{name:'NOVA 50K',  icon:'👑',color:'#C9A84C',bg:'rgba(201,168,76,0.15)',border:'rgba(201,168,76,0.3)'},
+  8:{name:'Admin',     icon:'🔧',color:'#C9A84C',bg:'rgba(201,168,76,0.15)',border:'rgba(201,168,76,0.3)'}
+};
+
+const USERS = {
+  'angel':   {pass:'sky2024',   name:'Angel',   rank:7, ref:'angel2026', ventas:47, equipo:23},
+  'genesis': {pass:'genesis22', name:'Genesis', rank:3, ref:'genesis22', ventas:12, equipo:5},
+  'carlos':  {pass:'demo',      name:'Carlos',  rank:2, ref:'carlos01',  ventas:3,  equipo:0},
+  'maria':   {pass:'demo',      name:'María',   rank:1, ref:'maria01',   ventas:0,  equipo:0},
+  'admin':   {pass:'skyadmin',  name:'Admin',   rank:8, ref:'admin',     ventas:0,  equipo:0, isAdmin:true}
+};
+
+const VIDEOS = [
+  {id:'v1', mod:1,title:'Bienvenida al sistema Sky Team',         dur:'8 min', yt:'dQw4w9WgXcQ',rank:1,desc:'Conoce el sistema completo y tu hoja de ruta.'},
+  {id:'v2', mod:1,title:'Tu primer día: qué hacer exactamente',   dur:'12 min',yt:'dQw4w9WgXcQ',rank:1,desc:'Pasos concretos para arrancar en 24 horas.'},
+  {id:'v3', mod:1,title:'Cómo compartir la landing correctamente',dur:'10 min',yt:'dQw4w9WgXcQ',rank:1,desc:'La estrategia correcta para generar tráfico.'},
+  {id:'v4', mod:2,title:'Sistema de duplicación explicado',        dur:'15 min',yt:'dQw4w9WgXcQ',rank:2,desc:'Cómo el sistema trabaja por ti automáticamente.'},
+  {id:'v5', mod:2,title:'Manejo de objeciones en WhatsApp',        dur:'18 min',yt:'dQw4w9WgXcQ',rank:2,desc:'Los 8 guiones más efectivos para cada objeción.'},
+  {id:'v6', mod:2,title:'Seguimiento efectivo sin presionar',      dur:'14 min',yt:'dQw4w9WgXcQ',rank:2,desc:'El ritmo perfecto de follow-up que convierte.'},
+  {id:'v7', mod:3,title:'Construyendo tu equipo de socios',        dur:'22 min',yt:'dQw4w9WgXcQ',rank:3,desc:'Cómo reclutar, onboardear y activar socios nuevos.'},
+  {id:'v8', mod:3,title:'Liderazgo y mentoría de equipo',          dur:'20 min',yt:'dQw4w9WgXcQ',rank:3,desc:'Estrategias para mantener a tu equipo activo.'},
+  {id:'v9', mod:4,title:'Estrategias de escalado avanzado',        dur:'25 min',yt:'dQw4w9WgXcQ',rank:4,desc:'Cómo pasar de $5K a $10K/mes con equipos.'},
+  {id:'v10',mod:4,title:'Liderazgo multinivel y residualidad',     dur:'30 min',yt:'dQw4w9WgXcQ',rank:4,desc:'El modelo de ingresos pasivos a largo plazo.'},
+  {id:'v11',mod:5,title:'Mentalidad NOVA 10K',                     dur:'35 min',yt:'dQw4w9WgXcQ',rank:5,desc:'El mindset para cruzar los $10,000/mes.'},
+  {id:'v12',mod:5,title:'Masterclass: Construyendo tu red global', dur:'40 min',yt:'dQw4w9WgXcQ',rank:5,desc:'Cómo estructurar equipos en múltiples países.'},
+  {id:'v13',mod:6,title:'Diamante: sistema de ingresos pasivos',   dur:'45 min',yt:'dQw4w9WgXcQ',rank:6,desc:'El blueprint del nivel DIAMANTE 20K.'},
+  {id:'v14',mod:7,title:'NOVA 50K — La cima del sistema',          dur:'50 min',yt:'dQw4w9WgXcQ',rank:7,desc:'Exclusivo para los líderes máximos del equipo.'}
+];
+
+const MODS = {1:'Fundamentos',2:'Ventas y Duplicación',3:'Liderazgo',4:'Escalado',5:'NOVA 10K',6:'Diamante',7:'NOVA 50K'};
+
+const MATS = [
+  {id:'m1',title:'VSL Guión V3 completo',              desc:'El guión del video de ventas principal.',        icon:'📄',rank:1,type:'PDF',   url:'#'},
+  {id:'m2',title:'10 Guiones de Reels',                desc:'Para Instagram y TikTok listos para grabar.',    icon:'🎬',rank:1,type:'PDF',   url:'#'},
+  {id:'m3',title:'Pack de imágenes para historias',    desc:'20 imágenes editadas para Stories.',             icon:'🖼️',rank:1,type:'ZIP',   url:'#'},
+  {id:'m4',title:'8 Guiones virales WhatsApp',         desc:'Mensajes de prospección probados.',              icon:'💬',rank:2,type:'PDF',   url:'#'},
+  {id:'m5',title:'Mini CRM de seguimiento',            desc:'Google Sheets para trackear prospectos.',        icon:'📊',rank:2,type:'Sheets',url:'#'},
+  {id:'m6',title:'Presentación de negocio Sky Team',   desc:'Slides para mostrar el negocio.',                icon:'📑',rank:3,type:'PPT',   url:'#'},
+  {id:'m7',title:'Kit de liderazgo de equipo',         desc:'Plantillas para onboardear socios nuevos.',      icon:'🤝',rank:3,type:'PDF',   url:'#'},
+  {id:'m8',title:'Estrategia de anuncios pagados',     desc:'Guía completa de Meta Ads para el negocio.',     icon:'📣',rank:4,type:'PDF',   url:'#'},
+  {id:'m9',title:'Masterclass NOVA 5K — grabación',   desc:'Sesión privada de escalado de equipo.',          icon:'🎓',rank:4,type:'Video', url:'#'},
+  {id:'m10',title:'Blueprint DIAMANTE 20K',            desc:'Hoja de ruta exclusiva nivel Diamante.',         icon:'💠',rank:6,type:'PDF',   url:'#'}
+];
+
+const RANKING_DATA = [
+  {name:'Angel Méndez',   rank:7, ventas:47, equipo:23, initials:'AM'},
+  {name:'Roberto Silva',  rank:6, ventas:38, equipo:19, initials:'RS'},
+  {name:'Laura Jiménez',  rank:5, ventas:29, equipo:12, initials:'LJ'},
+  {name:'Diego Torres',   rank:4, ventas:24, equipo:9,  initials:'DT'},
+  {name:'Sandra Pérez',   rank:3, ventas:15, equipo:6,  initials:'SP'},
+  {name:'Genesis Rivera', rank:3, ventas:12, equipo:5,  initials:'GR'},
+  {name:'Marcos Ruiz',    rank:2, ventas:5,  equipo:1,  initials:'MR'},
+  {name:'Carlos López',   rank:2, ventas:3,  equipo:0,  initials:'CL'},
+  {name:'María García',   rank:1, ventas:0,  equipo:0,  initials:'MG'}
+];
+
+const TRIPS = [
+  {dest:'Crucero Caribe 🚢', date:'Julio 2025', req:10, reqLabel:'10 ventas en el trimestre', desc:'4 noches en crucero por el Caribe. Todo incluido. Acompañante incluido para los primeros 20 clasificados.', badge:'Próximo', badgeColor:'var(--teal)', metric:'ventas'},
+  {dest:'Retiro Miami 🌴',   date:'Septiembre 2025', req:20, reqLabel:'20 ventas o equipo de 8+', desc:'3 días de bootcamp de liderazgo en Miami + día de playa. Solo para Líderes y superior.', badge:'Abierto', badgeColor:'var(--blue)', metric:'ventas'},
+  {dest:'Yate Cartagena ⛵', date:'Diciembre 2025', req:40, reqLabel:'Rango Élite o 40 ventas', desc:'2 días en yate privado. Cartagena de Indias. Solo para los top 15 del equipo este año.', badge:'Exclusivo', badgeColor:'var(--gold)', metric:'ventas'}
+];
+
+const ANUNCIOS = [
+  {icon:'🔥', title:'¡Nuevo récord del equipo!', date:'Hace 2 días', body:'Esta semana rompimos el récord mensual. 31 ventas en 7 días. El equipo va con todo. Sigan así — el crucero está cerca.'},
+  {icon:'🤖', title:'Agente IA actualizado', date:'Hace 4 días', body:'Actualizamos el agente IA con nuevas respuestas para las objeciones más comunes. Usen la sección "Agente IA" en la plataforma.'},
+  {icon:'📹', title:'VSL V3 disponible para grabar', date:'Hace 1 semana', body:'El guión del nuevo video de ventas ya está en la sección de Materiales. Recuerden: buena luz, fondo limpio, hablar despacio.'},
+  {icon:'✈️', title:'Calificación crucero Caribe', date:'Hace 2 semanas', body:'Ya tenemos 8 personas clasificadas para el crucero de Julio. Faltan 12 cupos. Si llegas a 10 ventas este trimestre, vas.'}
+];
+
+let CU = null;
+
+function doLogin() {
+  const u = document.getElementById('lu').value.trim().toLowerCase();
+  const p = document.getElementById('lp').value;
+  const err = document.getElementById('login-error');
+  if (!USERS[u] || USERS[u].pass !== p) { err.textContent = 'Usuario o contraseña incorrectos'; return; }
+  CU = {...USERS[u], username: u};
+  localStorage.setItem('skyteam_u', JSON.stringify(CU));
+  err.textContent = '';
+  showApp();
+}
+
+function doLogout() {
+  localStorage.removeItem('skyteam_u');
+  CU = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+document.getElementById('lp').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderSidebarUser();
+  renderHome();
+  renderAcademia();
+  renderMateriales();
+  renderRanking();
+  renderViajes();
+  renderAnuncios();
+  loadChat();
+  if(CU.isAdmin || CU.rank===8) {
+    document.getElementById('nav-admin-label').style.display='block';
+    document.getElementById('nav-admin-btn').style.display='flex';
+    renderAdminPanel();
+  }
+}
+
+function rankBadge(r, small) {
+  const rk = RANKS[r]||RANKS[1];
+  const sz = small ? 'font-size:10px;padding:2px 8px;' : 'font-size:11px;padding:3px 10px;';
+  return `<span class="rank-badge" style="${sz}background:${rk.bg};border:0.5px solid ${rk.border};color:${rk.color};">${rk.icon} ${rk.name}</span>`;
+}
+
+function renderSidebarUser() {
+  const rk = RANKS[CU.rank]||RANKS[1];
+  document.getElementById('sidebar-user').innerHTML = `
+    <div class="su-name">${CU.name}</div>
+    <div class="su-ref">ref: ${CU.ref}</div>
+    ${rankBadge(CU.rank)}
+  `;
+}
+
+function navigate(sec) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+sec).classList.add('active');
+  document.querySelector(`.nav-item[data-sec="${sec}"]`)?.classList.add('active');
+  if(sec==='comunidad') scrollChat();
+  closeSidebar();
+}
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sb-overlay').classList.add('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('show');
+}
+
+/* ── HOME ── */
+function renderHome() {
+  const rk = RANKS[CU.rank]||RANKS[1];
+  const nextRk = RANKS[Math.min(CU.rank+1,7)];
+  const prog = CU.rank>=7?100:Math.min(100,Math.round((CU.ventas/(CU.rank===1?1:CU.rank===2?5:CU.rank===3?15:CU.rank===4?25:CU.rank===5?40:80))*100));
+  const landLink = `https://${LANDING}?ref=${CU.ref}`;
+  document.getElementById('home-content').innerHTML = `
+    <div class="card card-gold" style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+      <div style="width:52px;height:52px;border-radius:50%;background:${rk.bg};border:0.5px solid ${rk.border};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${rk.icon}</div>
+      <div style="flex:1;">
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Hola, ${CU.name} 👋</div>
+        <div style="margin-top:4px;">${rankBadge(CU.rank)}</div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${CU.ventas}</div><div class="stat-label">Ventas totales</div></div>
+      <div class="stat-card"><div class="stat-num">${CU.equipo}</div><div class="stat-label">Equipo activo</div></div>
+      <div class="stat-card"><div class="stat-num">$${CU.ventas*100}</div><div class="stat-label">Comisiones aprox.</div></div>
+      <div class="stat-card"><div class="stat-num">${CU.rank<7?prog+'%':'MAX'}</div><div class="stat-label">Prog. siguiente rango</div></div>
+    </div>
+    ${CU.rank<7?`<div class="card" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span style="color:var(--muted);">Progreso a ${nextRk.name} ${nextRk.icon}</span><span style="color:var(--gold);font-weight:500;">${prog}%</span></div>
+      <div class="prog-wrap"><div class="prog-bar" style="width:${prog}%;"></div></div>
+    </div>`:''}
+    <div class="card" style="margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;">Tu link de ventas</div>
+      <div class="link-box"><span class="link-text">${landLink}</span><button class="btn-sm gold" onclick="copyText('${landLink}')" style="flex:0;white-space:nowrap;">Copiar</button></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-main" onclick="navigate('agente')">🤖 Agente IA</button>
+      <button class="btn-sm" onclick="navigate('academia')">🎓 Academia</button>
+      <button class="btn-sm" onclick="navigate('materiales')">📁 Materiales</button>
+      <button class="btn-sm" onclick="navigate('viajes')">✈️ Viajes</button>
+    </div>
+  `;
+}
+
+/* ── ACADEMIA ── */
+function renderAcademia() {
+  let html = `<p class="sc-sub">Videos de entrenamiento. Tu acceso se desbloquea automáticamente según tu rango.</p>`;
+  for(let m=1;m<=7;m++) {
+    const vids = VIDEOS.filter(v=>v.mod===m);
+    const modReq = Math.min(...vids.map(v=>v.rank));
+    const locked = CU.rank < modReq;
+    html += `<div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:${locked?'var(--muted)':'var(--text)'};">Módulo ${m} — ${MODS[m]}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Requiere rango: ${RANKS[modReq].icon} ${RANKS[modReq].name}</div>
+        </div>
+        ${locked?`<span class="tag" style="background:var(--bg3);border:0.5px solid var(--border);color:var(--muted);">🔒 Bloqueado</span>`:rankBadge(modReq,true)}
+      </div>
+      <div class="grid-2">
+        ${vids.map(v=>{
+          const lk = CU.rank < v.rank;
+          return `<div class="vid-card${lk?' locked':''}" onclick="${lk?`showLocked(${v.rank})`:`openVid('${v.yt}','${v.title.replace(/'/g,"\\'")}')` }">
+            <div class="vid-thumb">
+              ${lk?`<div class="vid-lock">🔒</div><span class="lock-label" style="background:var(--bg4);color:var(--muted);border:0.5px solid var(--border);">Rango ${RANKS[v.rank].icon}</span>`:`<div class="vid-play">▶</div>`}
+            </div>
+            <div class="vid-info">
+              <div class="vid-title">${v.title}</div>
+              <div class="vid-meta">${v.dur} · ${v.desc}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('academia-content').innerHTML = html;
+}
+
+/* ── MATERIALES ── */
+function renderMateriales() {
+  let html = `<p class="sc-sub">Guiones, plantillas y recursos listos para usar. Se desbloquean por rango.</p><div style="display:flex;flex-direction:column;gap:10px;">`;
+  MATS.forEach(m => {
+    const lk = CU.rank < m.rank;
+    html += `<div class="mat-card${lk?' locked':''}" onclick="${lk?`showLocked(${m.rank})`:`downloadMat('${m.id}')`}">
+      <div class="mat-icon">${m.icon}</div>
+      <div class="mat-info"><div class="mat-title">${m.title}</div><div class="mat-desc">${m.desc} · ${m.type}</div></div>
+      ${lk?`<span class="tag" style="background:var(--bg3);color:var(--muted);border:0.5px solid var(--border);font-size:11px;">🔒 ${RANKS[m.rank].icon}</span>`:`<span class="tag" style="background:var(--teal-d);color:var(--teal);border:0.5px solid var(--teal-b);font-size:11px;">↓ Descargar</span>`}
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('materiales-content').innerHTML = html;
+}
+
+/* ── RANKING ── */
+function renderRanking() {
+  let rows = '';
+  RANKING_DATA.forEach((m,i)=>{
+    const rk = RANKS[m.rank]||RANKS[1];
+    const isMe = m.name.includes(CU.name);
+    rows += `<tr style="${isMe?'background:var(--gold-d);':i%2===0?'':'background:rgba(255,255,255,0.01);'}">
+      <td class="rank-pos${i<3?' top':''}"><b>${i+1}</b></td>
+      <td><div class="rank-name-cell">
+        <div class="rank-avatar" style="background:${rk.bg};color:${rk.color};">${m.initials}</div>
+        <div><div style="font-size:14px;font-weight:${isMe?'500':'400'};color:var(--text);">${m.name}${isMe?' (tú)':''}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${rankBadge(m.rank,true)}</div></div>
+      </div></td>
+      <td style="font-family:'Syne',sans-serif;font-weight:600;color:var(--gold);">${m.ventas}</td>
+      <td style="color:var(--muted);">${m.equipo}</td>
+    </tr>`;
+  });
+  document.getElementById('ranking-content').innerHTML = `
+    <p class="sc-sub">Posiciones actuales del equipo. Se actualiza mensualmente.</p>
+    <div class="card" style="overflow-x:auto;">
+      <table class="rank-table" style="min-width:400px;">
+        <thead><tr><th>#</th><th>Socio</th><th>Ventas</th><th>Equipo</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ── VIAJES ── */
+function renderViajes() {
+  let html = `<p class="sc-sub">Eventos exclusivos del equipo. Califica cumpliendo las metas.</p>`;
+  TRIPS.forEach(t=>{
+    const prog = Math.min(100, Math.round((CU.ventas/t.req)*100));
+    const califica = CU.ventas >= t.req;
+    html += `<div class="trip-card">
+      <div class="trip-header">
+        <div><div class="trip-dest">${t.dest}</div><div class="trip-date">${t.date}</div></div>
+        <span class="trip-badge tag" style="background:rgba(0,0,0,0.3);color:${t.badgeColor};border:0.5px solid ${t.badgeColor}40;">${t.badge}</span>
+      </div>
+      <div class="trip-desc">${t.desc}</div>
+      <div class="trip-req"><span class="trip-req-label">Requisito:</span><span class="trip-req-val" style="color:var(--text);">${t.reqLabel}</span></div>
+      <div class="qual-bar-wrap">
+        <div class="qual-text"><span>Tu progreso</span><span style="color:${califica?'var(--success)':'var(--gold)'};">${califica?'✓ Clasificado':''+CU.ventas+' / '+t.req+' ventas'}</span></div>
+        <div class="prog-wrap"><div class="prog-bar" style="width:${prog}%;background:${califica?'var(--success)':'var(--gold)'};"></div></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('viajes-content').innerHTML = html;
+}
+
+/* ── ANUNCIOS ── */
+function renderAnuncios() {
+  document.getElementById('anuncios-content').innerHTML = `<p class="sc-sub">Novedades y comunicados del equipo Sky Team.</p>`+
+    ANUNCIOS.map(a=>`<div class="anuncio-card">
+      <div class="anuncio-header">
+        <div class="anuncio-icon">${a.icon}</div>
+        <div class="anuncio-meta"><div class="anuncio-title">${a.title}</div><div class="anuncio-date">${a.date}</div></div>
+      </div>
+      <div class="anuncio-body">${a.body}</div>
+    </div>`).join('');
+}
+
+/* ── CHAT ── */
+const CHAT_KEY = 'skyteam_chat_v1';
+function getMessages() { try { return JSON.parse(localStorage.getItem(CHAT_KEY)||'[]'); } catch{return [];} }
+function saveMessages(m) { localStorage.setItem(CHAT_KEY, JSON.stringify(m.slice(-100))); }
+
+const DEMO_MSGS = [
+  {user:'Angel',rank:5,text:'Buenos días equipo! Semana de fuego, vamos con todo 🔥',time:'Lun 08:14'},
+  {user:'Genesis',rank:3,text:'Aquí firme! Ayer cerré 2. El agente IA salvó la situación jajaja',time:'Lun 08:22'},
+  {user:'Carlos',rank:2,text:'Recién entré, mi primera venta va marchando. Cualquier consejo?',time:'Lun 09:01'},
+  {user:'Angel',rank:5,text:'Carlos comparte la landing primero, deja que el video haga el trabajo. Menos explicar, más enviar el link 👌',time:'Lun 09:05'},
+];
+
+function loadChat() {
+  let msgs = getMessages();
+  if(msgs.length===0) { saveMessages(DEMO_MSGS); msgs = DEMO_MSGS; }
+  renderChat(msgs);
+}
+
+function renderChat(msgs) {
+  const rk = RANKS[CU.rank]||RANKS[1];
+  const container = document.getElementById('chat-msgs');
+  container.innerHTML = msgs.map(m=>{
+    const mRk = RANKS[m.rank]||RANKS[1];
+    const own = m.user===CU.name;
+    return `<div class="chat-msg${own?' own':''}">
+      <div class="chat-avatar" style="background:${mRk.bg};color:${mRk.color};border:0.5px solid ${mRk.border};">${m.user.substring(0,2).toUpperCase()}</div>
+      <div class="chat-bubble">
+        <div class="chat-meta">
+          <span class="chat-sender">${m.user}</span>
+          <span style="font-size:10px;padding:2px 6px;border-radius:10px;background:${mRk.bg};color:${mRk.color};">${mRk.icon}</span>
+          <span class="chat-time">${m.time}</span>
+        </div>
+        <div class="chat-text">${m.text}</div>
+      </div>
+    </div>`;
+  }).join('');
+  scrollChat();
+}
+
+function scrollChat() { const c=document.getElementById('chat-msgs'); if(c) c.scrollTop=c.scrollHeight; }
+
+function sendMsg() {
+  const inp = document.getElementById('chat-in');
+  const text = inp.value.trim();
+  if(!text) return;
+  const msgs = getMessages();
+  const now = new Date();
+  msgs.push({user:CU.name,rank:CU.rank,text,time:now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})});
+  saveMessages(msgs);
+  renderChat(msgs);
+  inp.value='';
+}
+
+/* ── AI AGENT ── */
+const SYS = `Eres el Agente de Ventas de Innova IA / Sky System. Ayudas a socios a responder objeciones de prospectos por WhatsApp/Instagram. Responde en español natural latinoamericano, máximo 3-4 líneas como WhatsApp, sin bullets. Si el prospecto parece listo para más info, incluye exactamente: [MOSTRAR_LANDING]. Negocio: membresía $999, comisión $100/venta, bono $500 por 3 ventas = $800 primer mes. Hay financiamiento disponible. Plataforma: Trading IA, Marketing digital, Idiomas, eCommerce, Club de turismo. No es pirámide. No se necesita experiencia ni seguidores.`;
+
+async function responderObjecion() {
+  const msg = document.getElementById('prospect-msg').value.trim();
+  if(!msg) return;
+  const btn = document.getElementById('btn-resp');
+  const card = document.getElementById('resp-card');
+  const textEl = document.getElementById('resp-text');
+  btn.disabled=true; btn.innerHTML='<span class="loading-dots"><span></span><span></span><span></span></span>';
+  card.style.display='block'; textEl.textContent=''; textEl.classList.add('streaming');
+  document.getElementById('land-alert').style.display='none';
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,system:SYS,messages:[{role:"user",content:`El prospecto dijo: "${msg}"\n\nDame la respuesta para copiar y pegar en WhatsApp.`}]})});
+    const d = await r.json();
+    let full = d.content[0].text||'';
+    const showL = full.includes('[MOSTRAR_LANDING]');
+    full = full.replace('[MOSTRAR_LANDING]','').trim();
+    textEl.textContent=full; textEl.classList.remove('streaming');
+    if(showL) {
+      const link = `https://${LANDING}?ref=${CU.ref}`;
+      document.getElementById('land-msg').textContent = `Mira, en vez de que te lo explique todo yo, hay un video corto que lo muestra mejor.\n\nAhí están los números exactos y los testimonios reales. Te mando el link:\n\n👉 ${link}\n\nDame 10 minutos y me dices qué piensas 😊`;
+      document.getElementById('land-link-show').textContent = link;
+      document.getElementById('land-alert').style.display='block';
+    }
+  } catch(e){ textEl.textContent='Error de conexión. Intenta de nuevo.'; textEl.classList.remove('streaming'); }
+  btn.disabled=false; btn.innerHTML='Generar respuesta →';
+}
+
+function copiarResp() {
+  const t = document.getElementById('resp-text').textContent;
+  navigator.clipboard.writeText(t).then(()=>{ const b=document.getElementById('btn-copy'); b.textContent='¡Copiado!'; b.className='btn-copy ok'; setTimeout(()=>{b.textContent='Copiar';b.className='btn-copy';},2000); });
+}
+
+function copiarLandLink() {
+  const t = document.getElementById('land-link-show').textContent;
+  navigator.clipboard.writeText(t);
+}
+
+function setChip(t) { document.getElementById('prospect-msg').value=t; }
+
+/* ── UTILS ── */
+function copyText(t) { navigator.clipboard.writeText(t); }
+
+function openVid(yt, title) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-iframe').src = `https://www.youtube.com/embed/${yt}?autoplay=1`;
+  document.getElementById('vid-modal').style.display='flex';
+}
+
+function closeVidModal() {
+  document.getElementById('vid-modal').style.display='none';
+  document.getElementById('modal-iframe').src='';
+}
+
+function closeModal(e) { if(e.target===document.getElementById('vid-modal')) closeVidModal(); }
+
+function showLocked(req) {
+  const rk = RANKS[req]||RANKS[1];
+  alert(`Este contenido requiere rango ${rk.icon} ${rk.name}.\n\nSigue acumulando ventas para desbloquear.`);
+}
+
+function downloadMat(id) {
+  const m = MATS.find(x=>x.id===id);
+  if(m) alert(`Descargando: ${m.title}\n\n(Conecta este botón a tu enlace de Drive o Dropbox en el archivo)`);
+}
+
+/* ── ADMIN PANEL ── */
+let ADMIN_USERS = [
+  {id:1, name:'Angel Méndez',   user:'angel',   rank:7, ref:'angel2026', ventas:47, wa:'+573112657801', email:'angel@innovaia.com',  status:'activo',   fecha:'2024-01-15'},
+  {id:2, name:'Genesis Rivera', user:'genesis', rank:3, ref:'genesis22', ventas:12, wa:'+573203966980', email:'zaymara.89@gmail.com', status:'activo',   fecha:'2024-02-20'},
+  {id:3, name:'Carlos López',   user:'carlos',  rank:2, ref:'carlos01',  ventas:3,  wa:'+571234567890', email:'carlos@email.com',     status:'activo',   fecha:'2024-03-01'},
+  {id:4, name:'María García',   user:'maria',   rank:1, ref:'maria01',   ventas:0,  wa:'+571234567891', email:'maria@email.com',      status:'activo',   fecha:'2024-03-10'},
+];
+
+let PENDING = [
+  {id:101, name:'Diego Torres',   wa:'+573001234567', email:'diego@gmail.com',   ref:'', patrocinador:'Genesis Rivera', fecha:'Hoy 09:14',    membresia:'$999'},
+  {id:102, name:'Paola Ramírez',  wa:'+573117654321', email:'paola@gmail.com',   ref:'', patrocinador:'Angel Méndez',  fecha:'Hoy 07:32',    membresia:'$549'},
+  {id:103, name:'Jorge Castillo', wa:'+573205559876', email:'jorge@hotmail.com', ref:'', patrocinador:'Carlos López',  fecha:'Ayer 18:45',   membresia:'$229'},
+];
+
+let ADMIN_VIDS = JSON.parse(JSON.stringify(VIDEOS));
+let ADMIN_MATS = JSON.parse(JSON.stringify(MATS));
+
+function renderAdminPanel() {
+  renderSolicitudes();
+  renderAdminUsuarios();
+  renderAdminContenido();
+  renderAdminAnuncios();
+}
+
+function switchAdminTab(tab) {
+  ['solicitudes','usuarios','contenido','anuncios-admin'].forEach(t=>{
+    document.getElementById('admin-'+t).style.display = t===tab?'block':'none';
+    document.getElementById('atab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+function renderSolicitudes() {
+  const el = document.getElementById('admin-solicitudes');
+  if(!PENDING.length) { el.innerHTML=`<div class="admin-info-box">No hay solicitudes pendientes en este momento.</div>`; return; }
+  el.innerHTML = `
+    <div class="admin-info-box"><strong>${PENDING.length} solicitud(es) esperando aprobación.</strong> Verifica que la persona sea un socio que ya pagó antes de aprobar.</div>
+    ${PENDING.map(s=>`
+    <div class="sol-card" id="sol-${s.id}">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--purple-d);border:0.5px solid var(--purple-b);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--purple);flex-shrink:0;">${s.name.substring(0,2).toUpperCase()}</div>
+      <div class="sol-info">
+        <div class="sol-name">${s.name}</div>
+        <div class="sol-meta">📱 ${s.wa} &nbsp;·&nbsp; ✉️ ${s.email}</div>
+        <div class="sol-meta" style="margin-top:4px;">Patrocinador: <strong style="color:var(--text);">${s.patrocinador}</strong> &nbsp;·&nbsp; Membresía: <strong style="color:var(--gold);">${s.membresia}</strong> &nbsp;·&nbsp; ${s.fecha}</div>
+      </div>
+      <div class="sol-actions">
+        <button class="btn-approve" onclick="aprobarSolicitud(${s.id})">✓ Aprobar</button>
+        <button class="btn-reject" onclick="rechazarSolicitud(${s.id})">✕ Rechazar</button>
+      </div>
+    </div>`).join('')}`;
+}
+
+function aprobarSolicitud(id) {
+  const s = PENDING.find(x=>x.id===id);
+  if(!s) return;
+  const user = prompt(`Crear acceso para ${s.name}\n\nEscribe el nombre de usuario (sin espacios, minúsculas):`, s.name.split(' ')[0].toLowerCase());
+  if(!user) return;
+  const pass = prompt(`Contraseña para ${user}:`,'sky2024');
+  if(!pass) return;
+  const ref = prompt(`Código de referido para ${user}:`, user+'01');
+  if(!ref) return;
+  ADMIN_USERS.push({id:Date.now(),name:s.name,user,rank:1,ref,ventas:0,wa:s.wa,email:s.email,status:'activo',fecha:new Date().toLocaleDateString()});
+  PENDING = PENDING.filter(x=>x.id!==id);
+  document.getElementById('sol-'+id).style.opacity='0.5';
+  setTimeout(()=>{ renderSolicitudes(); renderAdminUsuarios(); }, 400);
+  alert(`✅ Acceso creado:\nUsuario: ${user}\nContraseña: ${pass}\nRef: ${ref}\n\nComparte estos datos con ${s.name} por WhatsApp.`);
+}
+
+function rechazarSolicitud(id) {
+  if(!confirm('¿Rechazar esta solicitud?')) return;
+  PENDING = PENDING.filter(x=>x.id!==id);
+  renderSolicitudes();
+}
+
+function renderAdminUsuarios() {
+  const el = document.getElementById('admin-usuarios');
+  el.innerHTML = `
+    <div class="admin-info-box">Cambia el rango con el selector. <strong>Los cambios son locales en esta demo</strong> — con Supabase se guardan automáticamente en la base de datos.</div>
+    <div style="overflow-x:auto;">
+    <table class="admin-table">
+      <thead><tr><th>Usuario</th><th>Nombre</th><th>WhatsApp</th><th>Ref</th><th>Ventas</th><th>Rango</th><th>Estado</th><th>Acción</th></tr></thead>
+      <tbody>
+      ${ADMIN_USERS.map(u=>{
+        const rk=RANKS[u.rank]||RANKS[1];
+        const isMe = u.user===CU.username;
+        const opts = Object.entries(RANKS).filter(([k])=>+k<=7).map(([k,v])=>`<option value="${k}" ${+k===u.rank?'selected':''}>${v.icon} ${v.name}</option>`).join('');
+        return `<tr${isMe?' style="background:var(--gold-d);"':''}>
+          <td style="font-family:monospace;color:var(--muted);font-size:12px;">${u.user}</td>
+          <td style="font-weight:500;">${u.name}${isMe?' (tú)':''}</td>
+          <td style="font-size:12px;color:var(--muted);">${u.wa}</td>
+          <td style="font-family:monospace;font-size:12px;color:var(--gold);">${u.ref}</td>
+          <td style="font-weight:500;color:var(--gold);">${u.ventas}</td>
+          <td><select class="rank-select" onchange="cambiarRango('${u.user}',this.value)">${opts}</select></td>
+          <td><span style="display:inline-flex;align-items:center;"><span style="width:8px;height:8px;border-radius:50%;background:${u.status==='activo'?'var(--teal)':'var(--danger)'};margin-right:6px;display:inline-block;"></span>${u.status}</span></td>
+          <td><button class="btn-save-row" onclick="toggleStatus('${u.user}')">${u.status==='activo'?'Suspender':'Activar'}</button></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>
+    <div style="margin-top:16px;">
+      <button class="btn-main" style="font-size:13px;padding:10px 20px;" onclick="addUserPrompt()">+ Agregar usuario manualmente</button>
+    </div>`;
+}
+
+function cambiarRango(username, newRank) {
+  const u = ADMIN_USERS.find(x=>x.user===username);
+  if(u) { u.rank=+newRank; renderRanking(); }
+  const rk = RANKS[+newRank]||RANKS[1];
+  const badge = document.querySelector(`[data-rank-user="${username}"]`);
+  showToast(`Rango actualizado: ${rk.icon} ${rk.name}`);
+}
+
+function toggleStatus(username) {
+  const u = ADMIN_USERS.find(x=>x.user===username);
+  if(!u) return;
+  u.status = u.status==='activo'?'suspendido':'activo';
+  renderAdminUsuarios();
+}
+
+function addUserPrompt() {
+  const name = prompt('Nombre completo del nuevo usuario:');
+  if(!name) return;
+  const user = prompt('Nombre de usuario (sin espacios):',name.split(' ')[0].toLowerCase());
+  if(!user) return;
+  const wa = prompt('WhatsApp (con código de país):','+57');
+  const ref = prompt('Código de referido:',user+'01');
+  ADMIN_USERS.push({id:Date.now(),name,user,rank:1,ref:ref||user+'01',ventas:0,wa:wa||'',email:'',status:'activo',fecha:new Date().toLocaleDateString()});
+  renderAdminUsuarios();
+  showToast(`Usuario ${name} creado en rango IN 200`);
+}
+
+function renderAdminContenido() {
+  const el = document.getElementById('admin-contenido');
+  el.innerHTML = `
+    <div class="admin-info-box">Edita el título o el link de YouTube/Drive de cada video o material. <strong>Pega el ID del video de YouTube</strong> (la parte después de youtube.com/watch?v=).</div>
+    <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text);">Videos de la Academia</div>
+    ${ADMIN_VIDS.map((v,i)=>`
+    <div class="content-row">
+      <span style="font-size:12px;color:var(--muted);width:24px;flex-shrink:0;">M${v.mod}</span>
+      <input class="ci-title" value="${v.title}" id="vt-${i}" placeholder="Título del video">
+      <input class="ci-url" value="${v.yt}" id="vy-${i}" placeholder="ID de YouTube" style="font-family:monospace;font-size:12px;">
+      <select style="background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 8px;outline:none;" id="vr-${i}">
+        ${Object.entries(RANKS).filter(([k])=>+k<=7).map(([k,r])=>`<option value="${k}" ${+k===v.rank?'selected':''}>${r.icon} ${r.name}</option>`).join('')}
+      </select>
+      <button class="btn-save-row" onclick="saveVideo(${i})">Guardar</button>
+    </div>`).join('')}
+    <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin:24px 0 12px;color:var(--text);">Materiales descargables</div>
+    ${ADMIN_MATS.map((m,i)=>`
+    <div class="content-row">
+      <span style="font-size:16px;flex-shrink:0;">${m.icon}</span>
+      <input class="ci-title" value="${m.title}" id="mt-${i}" placeholder="Título del material">
+      <input class="ci-url" value="${m.url}" id="mu-${i}" placeholder="Link de Drive o Dropbox" style="font-family:monospace;font-size:12px;">
+      <button class="btn-save-row" onclick="saveMat(${i})">Guardar</button>
+    </div>`).join('')}`;
+}
+
+function saveVideo(i) {
+  ADMIN_VIDS[i].title = document.getElementById('vt-'+i).value;
+  ADMIN_VIDS[i].yt    = document.getElementById('vy-'+i).value;
+  ADMIN_VIDS[i].rank  = +document.getElementById('vr-'+i).value;
+  Object.assign(VIDEOS[i], ADMIN_VIDS[i]);
+  renderAcademia();
+  showToast('Video actualizado');
+}
+
+function saveMat(i) {
+  ADMIN_MATS[i].title = document.getElementById('mt-'+i).value;
+  ADMIN_MATS[i].url   = document.getElementById('mu-'+i).value;
+  Object.assign(MATS[i], ADMIN_MATS[i]);
+  renderMateriales();
+  showToast('Material actualizado');
+}
+
+function renderAdminAnuncios() {
+  const el = document.getElementById('admin-anuncios-admin');
+  el.innerHTML = `
+    <div class="admin-info-box">Publica un nuevo anuncio para todo el equipo. Aparecerá en la sección <strong>Anuncios</strong>.</div>
+    <div class="card" style="margin-bottom:20px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;">Ícono (emoji)</div>
+      <input id="an-icon" value="📢" style="width:80px;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;padding:8px 12px;outline:none;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;">Título</div>
+      <input id="an-title" placeholder="Ej: ¡Nuevo récord del equipo!" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 14px;outline:none;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;">Mensaje</div>
+      <textarea id="an-body" placeholder="Escribe el mensaje para el equipo..." style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 14px;outline:none;resize:none;min-height:90px;line-height:1.55;margin-bottom:16px;"></textarea>
+      <button class="btn-main" style="font-size:13px;padding:10px 20px;" onclick="publishAnuncio()">Publicar anuncio →</button>
+    </div>
+    <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px;color:var(--muted);">Anuncios publicados</div>
+    ${ANUNCIOS.map((a,i)=>`
+    <div class="anuncio-card" style="display:flex;gap:12px;align-items:flex-start;">
+      <div class="anuncio-icon">${a.icon}</div>
+      <div style="flex:1;">
+        <div class="anuncio-title">${a.title}</div>
+        <div class="anuncio-date">${a.date}</div>
+        <div class="anuncio-body" style="margin-top:6px;">${a.body.substring(0,80)}...</div>
+      </div>
+      <button class="btn-reject" style="font-size:12px;padding:5px 10px;flex-shrink:0;" onclick="deleteAnuncio(${i})">Eliminar</button>
+    </div>`).join('')}`;
+}
+
+function publishAnuncio() {
+  const icon  = document.getElementById('an-icon').value||'📢';
+  const title = document.getElementById('an-title').value.trim();
+  const body  = document.getElementById('an-body').value.trim();
+  if(!title||!body) { showToast('Completa el título y el mensaje','err'); return; }
+  ANUNCIOS.unshift({icon,title,date:'Ahora mismo',body});
+  renderAnuncios();
+  renderAdminAnuncios();
+  document.getElementById('an-title').value='';
+  document.getElementById('an-body').value='';
+  showToast('Anuncio publicado para todo el equipo');
+}
+
+function deleteAnuncio(i) {
+  if(!confirm('¿Eliminar este anuncio?')) return;
+  ANUNCIOS.splice(i,1);
+  renderAnuncios();
+  renderAdminAnuncios();
+}
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:999;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;animation:fadeUp 0.3s ease;background:${type==='err'?'rgba(226,75,74,0.15)':'rgba(29,158,117,0.15)'};border:0.5px solid ${type==='err'?'rgba(226,75,74,0.4)':'rgba(29,158,117,0.4)'};color:${type==='err'?'#E24B4A':'#1D9E75'};`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2800);
+}
+
+/* ── ADMIN PANEL ── */
+
+/* ── INIT ── */
+const saved = localStorage.getItem('skyteam_u');
+if(saved) { CU = JSON.parse(saved); showApp(); }
+
+document.getElementById('prospect-msg').addEventListener('keydown', e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) responderObjecion(); });
+</script>
+</body>
+</html>
