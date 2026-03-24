@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sky Team</title>
+<title>SKY TEAM</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -266,13 +266,26 @@ input,textarea,select,button{font-family:'Inter',sans-serif;}
 <!-- ══════════════ LOGIN ══════════════ -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="logo-big">Sky<span>Team</span></div>
-    <p class="login-sub">Plataforma del equipo Innova IA</p>
+    <div class="logo-big">SKY<span>TEAM</span></div>
+    <p class="login-sub">PLATAFORMA DEL EQUIPO SKY TEAM</p>
     <div class="login-field"><label>Usuario</label><input type="text" id="lu" placeholder="tu_usuario" autocomplete="username"></div>
     <div class="login-field"><label>Contraseña</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
-    <button class="btn-login" onclick="doLogin()">Entrar a Sky Team →</button>
+    <button class="btn-login" onclick="doLogin()">Entrar a SkySystem →</button>
     <p id="login-error"></p>
-    <p class="login-hint">¿Sin acceso? Contacta a tu patrocinador.</p>
+    <p class="login-hint">¿Sin acceso? <a href="#" onclick="showSolicitud();return false;" style="color:var(--gold);text-decoration:none;font-weight:500;">Solicitar acceso</a></p>
+    <p class="login-hint" style="margin-top:8px;"><a href="#" onclick="showForgot();return false;" style="color:var(--muted2);text-decoration:none;font-size:12px;">¿Olvidaste tu contraseña?</a></p>
+    <div id="forgot-box" style="display:none;margin-top:16px;padding:14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border);">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Escribe tu correo y te enviamos instrucciones:</p>
+      <input type="email" id="forgot-email" placeholder="tucorreo@email.com" style="width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;margin-bottom:10px;">
+      <button onclick="sendForgot()" style="width:100%;padding:10px;border-radius:8px;background:var(--bg3);border:0.5px solid var(--border2);color:var(--gold);font-size:13px;font-weight:500;cursor:pointer;">Enviar instrucciones →</button>
+    </div>
+    <div id="solicitud-box" style="display:none;margin-top:16px;padding:14px;background:var(--bg3);border-radius:10px;border:0.5px solid var(--border);">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Completa tus datos y un líder te contactará:</p>
+      <input type="text" id="sol-name" placeholder="Tu nombre completo" style="width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px;">
+      <input type="tel" id="sol-wa" placeholder="WhatsApp (ej: +57 300...)" style="width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px;">
+      <input type="email" id="sol-email" placeholder="Correo electrónico" style="width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;margin-bottom:10px;">
+      <button onclick="sendSolicitud()" style="width:100%;padding:10px;border-radius:8px;background:var(--gold-d);border:0.5px solid var(--gold-b);color:var(--gold);font-size:13px;font-weight:500;cursor:pointer;">Solicitar acceso →</button>
+    </div>
   </div>
 </div>
 
@@ -283,7 +296,7 @@ input,textarea,select,button{font-family:'Inter',sans-serif;}
   <!-- Sidebar -->
   <div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
   <nav id="sidebar">
-    <div class="sidebar-logo">Sky<span>Team</span></div>
+    <div class="sidebar-logo">SKY<span>TEAM</span></div>
     <div class="sidebar-user-card" id="sidebar-user"></div>
     <div class="sidebar-nav">
       <div class="nav-section-label">Principal</div>
@@ -1070,6 +1083,32 @@ function showToast(msg, type) {
 
 /* ── ADMIN PANEL ── */
 
+/* ── LOGIN EXTRAS ── */
+function showForgot() {
+  const fb = document.getElementById('forgot-box');
+  const sb = document.getElementById('solicitud-box');
+  if(sb) sb.style.display='none';
+  if(fb) fb.style.display = fb.style.display==='none'?'block':'none';
+}
+function showSolicitud() {
+  const fb = document.getElementById('forgot-box');
+  const sb = document.getElementById('solicitud-box');
+  if(fb) fb.style.display='none';
+  if(sb) sb.style.display = sb.style.display==='none'?'block':'none';
+}
+function sendForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if(!email) return;
+  alert('Si tu correo está registrado, recibirás instrucciones en ' + email + '\n\nContacta también a soporte@skyteam.global');
+  document.getElementById('forgot-box').style.display='none';
+}
+function sendSolicitud() {
+  const name = document.getElementById('sol-name').value.trim();
+  const wa = document.getElementById('sol-wa').value.trim();
+  if(!name||!wa) { alert('Por favor completa tu nombre y WhatsApp'); return; }
+  alert('Solicitud enviada.\n\nUn líder te contactará por WhatsApp pronto.\n\nWhatsApp Sky Team: +573112657801');
+  document.getElementById('solicitud-box').style.display='none';
+}
 /* ── INIT ── */
 const saved = localStorage.getItem('skyteam_u');
 if(saved) { CU = JSON.parse(saved); showApp(); }
