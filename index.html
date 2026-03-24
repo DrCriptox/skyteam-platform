@@ -23,8 +23,8 @@ input,textarea,select,button{font-family:'Nunito',sans-serif;}
 .login-sub{text-align:center;color:rgba(255,255,255,0.35);font-size:11px;margin-bottom:28px;letter-spacing:1px;font-weight:600;}
 .login-field{margin-bottom:14px;}
 .login-field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;font-weight:500;}
-.login-field input{width:100%;background:var(--bg3);border:0.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:15px;padding:12px 14px;outline:none;transition:border-color 0.2s;}
-.login-field input:focus{border-color:var(--gold-b);}
+.login-field input{width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:10px;color:var(--text);font-size:14px;padding:12px 14px;outline:none;font-family:'Nunito',sans-serif;}
+.login-field input:focus{border-color:rgba(28,232,255,0.35);}
 .login-field input::placeholder{color:var(--muted2);}
 .btn-login{width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;border:none;cursor:pointer;margin-top:4px;box-shadow:0 4px 20px rgba(28,232,255,0.2);}
 .btn-login:hover{opacity:0.9;}
@@ -45,8 +45,8 @@ input,textarea,select,button{font-family:'Nunito',sans-serif;}
 .sidebar-logo{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#fff;padding:20px 18px 14px;letter-spacing:-0.3px;border-bottom:0.5px solid rgba(255,255,255,0.05);}
 .sidebar-logo span{color:var(--text);}
 .sidebar-user-card{padding:14px 16px;border-bottom:0.5px solid var(--border);}
-.su-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;}
-.su-ref{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.su-name{font-size:13px;font-weight:800;color:#fff;cursor:pointer;}
+.su-ref{font-size:10px;color:rgba(255,255,255,0.2);font-family:monospace;}
 .rank-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
 .sidebar-nav{flex:1;padding:10px 10px;overflow-y:auto;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:2px 8px;border-radius:10px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.4);cursor:pointer;border:none;background:transparent;width:calc(100% - 16px);text-align:left;font-family:'Nunito',sans-serif;}
@@ -249,6 +249,22 @@ input,textarea,select,button{font-family:'Nunito',sans-serif;}
   .sc{padding:16px;}
   .stats-grid{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ── PERFIL ── */
+.perfil-wrap{max-width:480px;margin:0 auto;}
+.perfil-avatar-card{display:flex;flex-direction:column;align-items:center;padding:28px 20px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:18px;margin-bottom:16px;backdrop-filter:blur(16px);}
+.perfil-avatar{width:86px;height:86px;border-radius:50%;background:rgba(28,232,255,0.1);border:2px solid rgba(28,232,255,0.4);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:30px;font-weight:900;color:#1CE8FF;cursor:pointer;position:relative;overflow:hidden;margin-bottom:12px;}
+.perfil-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.perfil-avatar-overlay{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);font-size:10px;color:#fff;text-align:center;padding:5px 0;font-weight:600;}
+.perfil-name{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:3px;}
+.perfil-username{font-size:11px;color:rgba(255,255,255,0.3);font-family:monospace;margin-bottom:8px;}
+.perfil-photo-input{display:none;}
+.perfil-data-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;margin-bottom:16px;backdrop-filter:blur(16px);}
+.perfil-data-row{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:0.5px solid rgba(255,255,255,0.05);}
+.perfil-data-row:last-child{border-bottom:none;}
+.perfil-data-label{font-size:11px;color:rgba(255,255,255,0.35);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.perfil-data-value{font-size:13px;color:#fff;font-weight:700;text-align:right;}
+.perfil-data-value.cyan{color:#1CE8FF;}.perfil-data-value.gold{color:#FFD700;}.perfil-data-value.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,0.5);}
 </style>
 </head>
 <body>
@@ -416,6 +432,11 @@ input,textarea,select,button{font-family:'Nunito',sans-serif;}
       </div>
     </div>
 
+
+    <div class="section" id="section-perfil">
+      <div class="topbar"><div class="topbar-title">Mi Perfil</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="perfil-content"></div>
+    </div>
   </main>
 </div>
 </div>
@@ -555,12 +576,18 @@ function rankBadge(r, small) {
 }
 
 function renderSidebarUser() {
-  const rk = RANKS[CU.rank]||RANKS[1];
-  document.getElementById('sidebar-user').innerHTML = `
-    <div class="su-name">${CU.name}</div>
-    <div class="su-ref">ref: ${CU.ref}</div>
-    ${rankBadge(CU.rank)}
-  `;
+  if(!CU) return;
+  var savedPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
+  var initials = CU.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var av = savedPhoto
+    ? '<img src="' + savedPhoto + '" class="su-perfil-btn" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(28,232,255,0.5);margin-bottom:5px;cursor:pointer;">'
+    : '<div class="su-perfil-btn" style="width:38px;height:38px;border-radius:50%;background:rgba(28,232,255,0.1);border:2px solid rgba(28,232,255,0.4);display:flex;align-items:center;justify-content:center;font-family:Nunito,sans-serif;font-size:14px;font-weight:900;color:#1CE8FF;margin-bottom:5px;cursor:pointer;">' + initials + '</div>';
+  document.getElementById('sidebar-user').innerHTML = av
+    + '<div class="su-name">' + CU.name + '</div>'
+    + '<div class="su-ref">ref: ' + CU.ref + '</div>'
+    + rankBadge(CU.rank)
+    + '<button class="su-perfil-btn" style="margin-top:7px;font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(28,232,255,0.1);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">👤 Ver perfil</button>';
+  document.querySelectorAll('.su-perfil-btn').forEach(function(el){ el.addEventListener('click', function(){ navigate('perfil'); }); });
 }
 
 function navigate(sec) {
@@ -1106,6 +1133,83 @@ function sendSolicitud() {
   document.querySelector('.login-box').appendChild(msgBox);
   setTimeout(() => { msgBox.remove(); }, 8000);
 }
+
+/* ── LOGIN EXTRAS ── */
+function toggleBox(id) {
+  ['solicitud-box','forgot-box','solicitud-success'].forEach(function(b){
+    var el=document.getElementById(b); if(el) el.style.display='none';
+  });
+  var t=document.getElementById(id); if(t) t.style.display='block';
+}
+function sendForgot() {
+  var email=document.getElementById('forgot-email').value.trim();
+  if(!email){alert('Ingresa tu correo');return;}
+  document.getElementById('forgot-box').style.display='none';
+  alert('Si tu correo está registrado recibirás instrucciones.\nContacta: soporte@skyteam.global');
+}
+function sendSolicitud() {
+  var name=document.getElementById('sol-name').value.trim();
+  var wa=document.getElementById('sol-wa').value.trim();
+  var iu=document.getElementById('sol-innova-user').value.trim();
+  var email=document.getElementById('sol-email').value.trim();
+  var sponsor=document.getElementById('sol-sponsor').value.trim();
+  if(!name||!wa||!iu){alert('Completa nombre, usuario en Innova y WhatsApp');return;}
+  var pending=JSON.parse(localStorage.getItem('skyteam_pending')||'[]');
+  pending.unshift({id:Date.now(),name:name,wa:wa,email:email,sponsor:sponsor,innovaUser:iu,patrocinador:sponsor||'Sin especificar',membresia:'Por confirmar',fecha:'Ahora mismo',ref:''});
+  localStorage.setItem('skyteam_pending',JSON.stringify(pending));
+  document.getElementById('solicitud-box').style.display='none';
+  document.getElementById('solicitud-success').style.display='block';
+}
+
+/* ── PERFIL JS ── */
+function renderPerfil() {
+  if(!CU) return;
+  var rk = RANKS[CU.rank]||RANKS[1];
+  var initials = CU.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var savedPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
+  var userTz = localStorage.getItem('skyteam_tz') || 'America/Bogota';
+  var tzList = [['America/Bogota','Colombia, Ecuador, Perú (-5)'],['America/Mexico_City','México, Costa Rica (-6)'],['America/Caracas','Venezuela, Bolivia (-4)'],['America/Argentina/Buenos_Aires','Argentina, Chile, Uruguay (-3)'],['America/Santo_Domingo','Rep. Dominicana, Puerto Rico (-4)'],['America/Panama','Panamá (-5)'],['America/Guatemala','Guatemala, Honduras (-6)'],['America/Sao_Paulo','Brasil (-3)'],['America/New_York','EEUU Este (-5)'],['America/Los_Angeles','EEUU Oeste (-8)'],['Europe/Madrid','España, Europa (+1)']];
+  var tzOpts = tzList.map(function(t){return '<option value="'+t[0]+'"'+(userTz===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('');
+  var avContent = savedPhoto ? '<img src="'+savedPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '<span>'+initials+'</span>';
+  var html = '<div class="perfil-wrap">'
+    +'<div class="perfil-avatar-card">'
+    +'<div class="perfil-avatar" onclick="triggerPhotoUpload()">'+avContent+'<div class="perfil-avatar-overlay">📷 Cambiar foto</div></div>'
+    +'<input type="file" class="perfil-photo-input" id="perfil-photo-input" accept="image/*" onchange="handlePhotoUpload(event)">'
+    +'<div class="perfil-name">'+CU.name+'</div>'
+    +'<div class="perfil-username">@'+CU.username+'</div>'
+    +'<div style="margin-top:6px;">'+rankBadge(CU.rank)+'</div>'
+    +'</div>'
+    +'<div class="perfil-data-card">'
+    +'<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);"><span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.4);text-transform:uppercase;">Datos de registro</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+'</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">Usuario</span><span class="perfil-data-value mono">'+CU.username+'</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">Correo</span><span class="perfil-data-value mono">'+(CU.email||'—')+'</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">WhatsApp</span><span class="perfil-data-value">'+(CU.wa||'—')+'</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">Referido</span><span class="perfil-data-value cyan">'+CU.ref+'</span></div>'
+    +'<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
+    +'</div>'
+    +'<div class="perfil-data-card">'
+    +'<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);"><span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.4);text-transform:uppercase;">🌍 Zona horaria</span></div>'
+    +'<div style="padding:14px 18px;"><p style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:10px;">El calendario se adapta a tu país.</p>'
+    +'<select onchange="saveTZ(this.value)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.2);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Nunito,sans-serif;">'+tzOpts+'</select></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button class="btn-main" style="flex:1;font-size:13px;" onclick="copiarLink()">📋 Copiar mi link</button>'
+    +'<button style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;" onclick="navigate('home')">← Volver</button>'
+    +'</div>'
+    +'</div>';
+  document.getElementById('perfil-content').innerHTML = html;
+}
+function triggerPhotoUpload(){ document.getElementById('perfil-photo-input').click(); }
+function handlePhotoUpload(e){
+  var file=e.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev){ localStorage.setItem('skyteam_photo_'+CU.username,ev.target.result); renderPerfil(); renderSidebarUser(); showToast('Foto actualizada ✓'); };
+  reader.readAsDataURL(file);
+}
+function copiarLink(){ if(CU) copyText('https://innova-ia.com?ref='+CU.ref); showToast('Link copiado ✓'); }
+function saveTZ(tz){ localStorage.setItem('skyteam_tz',tz); if(CU){CU.timezone=tz;localStorage.setItem('skyteam_u',JSON.stringify(CU));} showToast('Zona horaria guardada ✓'); }
 /* ── INIT ── */
 const saved = localStorage.getItem('skyteam_u');
 if(saved) { CU = JSON.parse(saved); showApp(); }
