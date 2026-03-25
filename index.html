@@ -796,14 +796,38 @@ function renderSkySales() {
   html += '</div>';
   html += '</div>';
 
-  html += '<button onclick="generarLinkVentas()" style="width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;margin-bottom:12px;letter-spacing:0.3px;">⚡ Generar mi link de ventas</button>';
+  // Check 7-day lock
+  var lockKey = 'skyteam_link_generated_' + (CU.ref||CU.user||'');
+  var lastGen = localStorage.getItem(lockKey);
+  var isLocked = false;
+  var diasRestantes = 0;
+  if(lastGen) {
+    var diff = Date.now() - parseInt(lastGen);
+    var dias = Math.ceil((7*24*60*60*1000 - diff) / (24*60*60*1000));
+    if(diff < 7*24*60*60*1000) { isLocked = true; diasRestantes = dias; }
+  }
+  if(isLocked) {
+    html += '<div style="width:100%;padding:13px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.35);font-size:13px;font-weight:700;font-family:Nunito,sans-serif;margin-bottom:12px;text-align:center;cursor:not-allowed;">🔒 Link generado — disponible en ' + diasRestantes + ' día' + (diasRestantes===1?'':'s') + '</div>';
+    // Show existing link if saved
+    var savedLink = localStorage.getItem('skyteam_ref_link_' + (CU.ref||CU.user||''));
+    if(savedLink) {
+      html += '<div style="background:rgba(28,232,255,0.05);border:1px solid rgba(28,232,255,0.2);border-radius:12px;padding:16px;margin-bottom:10px;">';
+      html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">🔗 Tu link activo</p>';
+      html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
+      html += '<span style="font-family:monospace;font-size:12px;color:#1CE8FF;flex:1;word-break:break-all;">' + savedLink + '</span>';
+      html += '<button id="ss-locked-copy-btn" data-link="' + savedLink + '" onclick="var l=this.getAttribute(\'data-link\');navigator.clipboard.writeText(l).then(function(){showToast(\'🔗 Link copiado ✓\');}).catch(function(){var t=document.createElement(\'textarea\');t.value=l;document.body.appendChild(t);t.select();document.execCommand(\'copy\');document.body.removeChild(t);showToast(\'🔗 Link copiado ✓\');});" style="background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
+      html += '</div></div>';
+    }
+  } else {
+    html += '<button id="ss-generar-btn" onclick="generarLinkVentas()" style="width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;margin-bottom:12px;letter-spacing:0.3px;">⚡ Generar mi link de ventas</button>';
+  }
 
   html += '<div id="ss-link-result" style="display:none;margin-bottom:4px;">';
   html += '<div style="background:rgba(28,232,255,0.05);border:1px solid rgba(28,232,255,0.2);border-radius:12px;padding:16px;margin-bottom:10px;">';
   html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">✅ Tu link personalizado</p>';
   html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
   html += '<span id="ss-link-text" style="font-family:monospace;font-size:12px;color:#1CE8FF;flex:1;word-break:break-all;"></span>';
-  html += '<button id="ss-copy-btn" onclick="copiarLinkVentas()" style="background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;flex-shrink:0;">Copiar</button>';
+  html += '<button onclick="copiarLinkVentas()" style="background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
   html += '</div>';
   html += '<a id="ss-wa-btn" href="#" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:900;font-family:Nunito,sans-serif;">💬 Compartir por WhatsApp</a>';
   html += '</div>';
@@ -865,21 +889,60 @@ function generarLinkVentas() {
   if(CU) { CU.whatsapp = wa; CU.ref = codigo; }
 
   // Store in localStorage for persistence
-  localStorage.setItem('skyteam_ref_link', link);
+  // Save with user-specific keys
+  var lockKey = 'skyteam_link_generated_' + codigo;
+  localStorage.setItem(lockKey, String(Date.now()));
+  localStorage.setItem('skyteam_ref_link_' + codigo, link);
   localStorage.setItem('skyteam_ref_wa', wa);
   localStorage.setItem('skyteam_ref_code', codigo);
 
-  showToast('✅ Link generado — ¡listo para compartir!');
+  // Auto-copy to clipboard
+  if(navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(link).then(function(){
+      showToast('📋 Link generado y copiado automáticamente ✓');
+    }).catch(function(){ copiarFallback(link); });
+  } else {
+    copiarFallback(link);
+  }
+
+  // Lock the button immediately
+  var btn = document.getElementById('ss-generar-btn');
+  if(btn) {
+    btn.disabled = true;
+    btn.style.background = 'rgba(255,255,255,0.04)';
+    btn.style.color = 'rgba(255,255,255,0.3)';
+    btn.style.cursor = 'not-allowed';
+    btn.style.border = '0.5px solid rgba(255,255,255,0.1)';
+    btn.textContent = '🔒 Link generado — disponible en 7 días';
+    btn.onclick = null;
+  }
 }
 
 function copiarLinkVentas() {
   var el = document.getElementById('ss-link-text');
-  if(!el) return;
-  navigator.clipboard.writeText(el.textContent).then(function(){
-    showToast('🔗 Link copiado al portapapeles');
-    var btn = document.getElementById('ss-copy-btn');
-    if(btn) { btn.textContent = '✓ Copiado'; setTimeout(function(){ btn.textContent = 'Copiar'; }, 2000); }
-  });
+  if(!el || !el.textContent.trim()) { showToast('Genera el link primero ⚠️'); return; }
+  var texto = el.textContent.trim();
+  // Try modern clipboard API first, fallback to execCommand for mobile
+  if(navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(texto).then(function(){
+      showToast('📋 Link copiado ✓');
+    }).catch(function(){ copiarFallback(texto); });
+  } else {
+    copiarFallback(texto);
+  }
+}
+
+function copiarFallback(texto) {
+  var ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); showToast('📋 Link copiado ✓'); }
+  catch(e) { showToast('Mantén el link para copiarlo manualmente'); }
+  document.body.removeChild(ta);
 }
 
 function goSkySales(){ navigate("skysales"); }
