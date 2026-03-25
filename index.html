@@ -291,6 +291,14 @@ select option{background:#040f28;color:#F0EDE6;}
 .video-player-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none;}
 .progress-locked{opacity:0.45;pointer-events:none;}
 
+
+/* ── CONTENT LOCK ── */
+.module-card.blocked{opacity:0.5;cursor:not-allowed;border-color:rgba(226,75,74,0.3);background:rgba(226,75,74,0.05);}
+.module-card.blocked:hover{transform:none;border-color:rgba(226,75,74,0.3);}
+.video-row.blocked{opacity:0.45;cursor:not-allowed;}
+.lock-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(226,75,74,0.15);border:0.5px solid rgba(226,75,74,0.3);color:#E24B4A;}
+.unlock-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;}
+
 </style>
   <script src="https://www.youtube.com/iframe_api"></script>
 </head>
@@ -539,7 +547,8 @@ const USERS = {
   'carlos':  {pass:'demo',      name:'Carlos',  rank:2, ref:'carlos01',  ventas:3,  equipo:0},
   'maria':   {pass:'demo',      name:'María',   rank:1, ref:'maria01',   ventas:0,  equipo:0},
   'admin':   {pass:'skyadmin',  name:'Admin',   rank:8, ref:'admin',     ventas:0,  equipo:0, isAdmin:true},
-  'cliente':  {pass:'demo',      name:'Cliente Demo', rank:0, ref:'cliente01', ventas:0,  equipo:0}
+  'cliente':  {pass:'demo',      name:'Cliente Demo', rank:0, ref:'cliente01', ventas:0,  equipo:0},
+  'demo2025':  {pass:'skyteam2025', name:'Líder Demo',   rank:3, ref:'demo2025',   ventas:5,  equipo:2, expiry:1774419460370}
 };
 
 const VIDEOS = [
@@ -608,6 +617,7 @@ function doLogin() {
     const err = document.getElementById('login-error');
     if(!u || !p) { err.textContent = 'Ingresa usuario y contraseña'; return; }
     if(!USERS[u] || USERS[u].pass !== p) { err.textContent = 'Usuario o contraseña incorrectos'; return; }
+    if(USERS[u].expiry && Date.now() > USERS[u].expiry) { err.textContent = '⏰ Este usuario demo ha expirado'; return; }
     CU = Object.assign({}, USERS[u], {username: u});
     try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
     err.textContent = '';
@@ -1400,13 +1410,17 @@ function renderAcademyList(academyId, contentId, mainTitle, titleId, backBtnId) 
     var pct = getModulePercent(academyId, mod.id);
     var completed = mod.videos.filter(function(v){ return getVideoPercent(academyId, mod.id, v.id) >= 80; }).length;
     var isBoarding = (mod.id === 'boarding' || mod.id === 'habilidades-basicas' || mod.id === 'plan-72');
-    html += '<div class="module-card" onclick="openModule(\'' + academyId + '\',\'' + mod.id + '\',\'' + contentId + '\',\'' + titleId + '\',\'' + backBtnId + '\')" style="' + (isBoarding ? 'border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.06);' : '') + '">';
+    var modLock2 = isLocked(lockKey(academyId, mod.id));
+    var cardOnclick = modLock2 ? 'showToast("🔒 Este módulo está bloqueado")' : 'openModule(\'' + academyId + '\',\'' + mod.id + '\',\'' + contentId + '\',\'' + titleId + '\',\'' + backBtnId + '\')';
+    html += '<div class="module-card' + (modLock2 ? ' blocked' : '') + '" onclick="' + cardOnclick + '" style="' + (isBoarding && !modLock2 ? 'border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.06);' : '') + '">';
     html += '<div style="display:flex;align-items:center;gap:12px;">';
     html += '<div style="width:44px;height:44px;border-radius:12px;background:' + mod.color + ';border:0.5px solid ' + mod.border + ';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">' + mod.icon + '</div>';
+    var modLocked = isLocked(lockKey(academyId, mod.id));
     html += '<div style="flex:1;min-width:0;">';
     html += '<div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:3px;">' + mod.title + '</div>';
     html += '<div style="font-size:11px;color:rgba(255,255,255,0.35);">' + mod.videos.length + ' videos · ' + completed + ' completados</div>';
     html += '</div>';
+    if(modLocked) html += '<span class="lock-badge">🔒 Bloqueado</span>';
     html += '<div style="text-align:right;flex-shrink:0;">';
     html += '<div style="font-size:18px;font-weight:900;color:' + (pct >= 100 ? '#1D9E75' : '#1CE8FF') + ';">' + pct + '%</div>';
     if(pct >= 100) html += '<div style="font-size:10px;color:#1D9E75;">✓ Completo</div>';
@@ -1452,7 +1466,9 @@ function openModule(academyId, moduleId, contentId, titleId, backBtnId) {
     var secs = v.duration % 60;
     var durStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
     html += '<div class="video-card">';
-    html += '<div class="video-row" onclick="openVideo(\'' + academyId + '\',\'' + moduleId + '\',\'' + v.id + '\',\'' + contentId + '\',\'' + titleId + '\',\'' + backBtnId + '\')">';
+    var vidLocked = isLocked(lockKey(academyId, moduleId, v.id));
+    var vidOnclick = vidLocked ? 'showToast("🔒 Este video está bloqueado")' : 'openVideo(\'' + academyId + '\',\'' + moduleId + '\',\'' + v.id + '\',\'' + contentId + '\',\'' + titleId + '\',\'' + backBtnId + '\')';
+    html += '<div class="video-row' + (vidLocked ? ' blocked' : '') + '" onclick="' + vidOnclick + '">';
     html += '<div class="video-thumb-icon" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);">';
     if(isComplete) {
       html += '<span style="font-size:18px;">✅</span>';
@@ -1465,7 +1481,7 @@ function openModule(academyId, moduleId, contentId, titleId, backBtnId) {
     html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + durStr + ' min</div>';
     html += '<div class="video-progress-mini"><div class="video-progress-mini-fill" style="width:' + vpct + '%;"></div></div>';
     html += '</div>';
-    html += '<div style="flex-shrink:0;font-size:12px;font-weight:800;color:' + (isComplete?'#1D9E75':'rgba(255,255,255,0.3)') + ';">' + vpct + '%</div>';
+    html += '<div style="flex-shrink:0;font-size:12px;font-weight:800;color:' + (vidLocked?'#E24B4A':isComplete?'#1D9E75':'rgba(255,255,255,0.3)') + ';">' + (vidLocked?'🔒':vpct+'%') + '</div>';
     html += '</div>';
     html += '</div>';
   });
@@ -1622,6 +1638,29 @@ function stopVideoTracking() {
   stopPolling();
   ytPlayer = null;
   ytMaxReached = 0;
+}
+
+
+/* ── CONTENT LOCK SYSTEM ── */
+function getContentLocks() {
+  return JSON.parse(localStorage.getItem('skyteam_locks') || '{}');
+}
+function saveContentLocks(locks) {
+  localStorage.setItem('skyteam_locks', JSON.stringify(locks));
+}
+function isLocked(key) {
+  return getContentLocks()[key] === true;
+}
+function toggleLock(key) {
+  var locks = getContentLocks();
+  locks[key] = !locks[key];
+  saveContentLocks(locks);
+  return locks[key];
+}
+function lockKey(academyId, moduleId, videoId) {
+  if(videoId) return 'v_' + academyId + '_' + moduleId + '_' + videoId;
+  if(moduleId) return 'm_' + academyId + '_' + moduleId;
+  return 'a_' + academyId;
 }
 
 function navigate(sec) {
@@ -1935,24 +1974,55 @@ function switchAdminTab(tab) {
 }
 
 function renderSolicitudes() {
-  const el = document.getElementById('admin-solicitudes');
-  if(!PENDING.length) { el.innerHTML=`<div class="admin-info-box">No hay solicitudes pendientes en este momento.</div>`; return; }
-  el.innerHTML = `
-    <div class="admin-info-box"><strong>${PENDING.length} solicitud(es) esperando aprobación.</strong> Verifica que la persona sea un socio que ya pagó antes de aprobar.</div>
-    ${PENDING.map(s=>`
-    <div class="sol-card" id="sol-${s.id}">
-      <div style="width:44px;height:44px;border-radius:50%;background:var(--purple-d);border:0.5px solid var(--purple-b);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;color:var(--purple);flex-shrink:0;">${s.name.substring(0,2).toUpperCase()}</div>
-      <div class="sol-info">
-        <div class="sol-name">${s.name}</div>
-        <div class="sol-meta">📱 ${s.wa} &nbsp;·&nbsp; ✉️ ${s.email}</div>
-        <div class="sol-meta" style="margin-top:4px;">Patrocinador: <strong style="color:var(--text);">${s.patrocinador}</strong> &nbsp;·&nbsp; Membresía: <strong style="color:var(--gold);">${s.membresia}</strong> &nbsp;·&nbsp; ${s.fecha}</div>
-      </div>
-      <div class="sol-actions">
-        <button class="btn-approve" onclick="aprobarSolicitud(${s.id})">✓ Aprobar</button>
-        <button class="btn-reject" onclick="rechazarSolicitud(${s.id})">✕ Rechazar</button>
-      </div>
-    </div>`).join('')}`;
+  var el = document.getElementById('admin-solicitudes');
+  if(!el) return;
+  // Read from localStorage (real submissions from login form)
+  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+  // Also merge hardcoded PENDING demo data if localStorage is empty
+  if(pending.length === 0 && typeof PENDING !== 'undefined') pending = PENDING;
+
+  if(!pending.length) {
+    el.innerHTML = '<div class="admin-info-box">No hay solicitudes pendientes en este momento. Las solicitudes aparecen aquí cuando alguien llena el formulario de "Solicitar acceso" en el login.</div>';
+    return;
+  }
+  var html = '<div class="admin-info-box"><strong>' + pending.length + ' solicitud(es) esperando aprobación.</strong> Verifica que la persona sea un socio que ya pagó antes de aprobar.</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+  pending.forEach(function(s) {
+    html += '<div class="sol-card">';
+    html += '<div class="sol-header"><span class="sol-name">' + s.name + '</span><span class="sol-date">' + (s.fecha||'—') + '</span></div>';
+    html += '<div class="sol-detail">📱 WA: <b>' + (s.wa||'—') + '</b></div>';
+    html += '<div class="sol-detail">✉️ Email: ' + (s.email||'—') + '</div>';
+    html += '<div class="sol-detail">👤 Usuario Innova: <b>' + (s.innovaUser||s.user||'—') + '</b></div>';
+    html += '<div class="sol-detail">🤝 Patrocinador: <b>' + (s.patrocinador||s.sponsor||'—') + '</b></div>';
+    html += '<div class="sol-detail">💰 Membresía: ' + (s.membresia||'Por confirmar') + '</div>';
+    if(s.landingLink || s.ref) {
+      html += '<div class="sol-detail">🔗 Link: <span style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + (s.landingLink || ('https://innovaia.app?ref='+(s.ref||''))) + '</span></div>';
+    }
+    html += '<div class="sol-actions">';
+    html += '<button class="btn-approve" onclick="aprobarSolicitud(' + s.id + ')">✓ Aprobar</button>';
+    html += '<button class="btn-reject" onclick="rechazarSolicitud(' + s.id + ')">✕ Rechazar</button>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
 }
+
+function aprobarSolicitud(id) {
+  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+  pending = pending.filter(function(s){ return s.id !== id; });
+  localStorage.setItem('skyteam_pending', JSON.stringify(pending));
+  showToast('✅ Solicitud aprobada');
+  renderSolicitudes();
+}
+
+function rechazarSolicitud(id) {
+  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+  pending = pending.filter(function(s){ return s.id !== id; });
+  localStorage.setItem('skyteam_pending', JSON.stringify(pending));
+  showToast('❌ Solicitud rechazada');
+  renderSolicitudes();
+}
+
 
 function aprobarSolicitud(id) {
   const s = PENDING.find(x=>x.id===id);
@@ -1977,34 +2047,65 @@ function rechazarSolicitud(id) {
 }
 
 function renderAdminUsuarios() {
-  const el = document.getElementById('admin-usuarios');
-  el.innerHTML = `
-    <div class="admin-info-box">Cambia el rango con el selector. <strong>Los cambios son locales en esta demo</strong> — con Supabase se guardan automáticamente en la base de datos.</div>
-    <div style="overflow-x:auto;">
-    <table class="admin-table">
-      <thead><tr><th>Usuario</th><th>Nombre</th><th>WhatsApp</th><th>Ref</th><th>Ventas</th><th>Rango</th><th>Estado</th><th>Acción</th></tr></thead>
-      <tbody>
-      ${ADMIN_USERS.map(u=>{
-        const rk=RANKS[u.rank]||RANKS[1];
-        const isMe = u.user===CU.username;
-        const opts = Object.entries(RANKS).filter(([k])=>+k<=7).map(([k,v])=>`<option value="${k}" ${+k===u.rank?'selected':''}>${v.icon} ${v.name}</option>`).join('');
-        return `<tr${isMe?' style="background:var(--gold-d);"':''}>
-          <td style="font-family:monospace;color:var(--muted);font-size:12px;">${u.user}</td>
-          <td style="font-weight:500;">${u.name}${isMe?' (tú)':''}</td>
-          <td style="font-size:12px;color:var(--muted);">${u.wa}</td>
-          <td style="font-family:monospace;font-size:12px;color:var(--gold);">${u.ref}</td>
-          <td style="font-weight:500;color:var(--gold);">${u.ventas}</td>
-          <td><select class="rank-select" onchange="cambiarRango('${u.user}',this.value)">${opts}</select></td>
-          <td><span style="display:inline-flex;align-items:center;"><span style="width:8px;height:8px;border-radius:50%;background:${u.status==='activo'?'var(--teal)':'var(--danger)'};margin-right:6px;display:inline-block;"></span>${u.status}</span></td>
-          <td><button class="btn-save-row" onclick="toggleStatus('${u.user}')">${u.status==='activo'?'Suspender':'Activar'}</button></td>
-        </tr>`;
-      }).join('')}
-      </tbody>
-    </table></div>
-    <div style="margin-top:16px;">
-      <button class="btn-main" style="font-size:13px;padding:10px 20px;" onclick="addUserPrompt()">+ Agregar usuario manualmente</button>
-    </div>`;
+  var el = document.getElementById('admin-usuarios');
+  if(!el) return;
+  // Build user list from real USERS object
+  var userList = Object.keys(USERS).map(function(username) {
+    var u = USERS[username];
+    return {
+      user: username,
+      name: u.name,
+      rank: u.rank,
+      ref: u.ref,
+      ventas: u.ventas || 0,
+      wa: u.wa || '—',
+      email: u.email || '—',
+      isAdmin: u.isAdmin || false,
+      expiry: u.expiry || null
+    };
+  });
+
+  var html = '<div class="admin-info-box">Cambia el rango con el selector. Los cambios se guardan en la sesión actual.</div>';
+  html += '<div style="overflow-x:auto;"><table class="admin-table">';
+  html += '<thead><tr><th>Usuario</th><th>Nombre</th><th>WhatsApp</th><th>Ref</th><th>Ventas</th><th>Rango</th><th>Estado</th></tr></thead><tbody>';
+
+  userList.forEach(function(u) {
+    if(u.isAdmin) return; // Skip admin from list
+    var rk = RANKS[u.rank] || RANKS[0];
+    var isMe = u.user === CU.username;
+    var opts = Object.entries(RANKS).filter(function(e){ return +e[0] <= 7; })
+      .map(function(e){ return '<option value="' + e[0] + '"' + (+e[0]===u.rank?' selected':'') + '>' + e[1].icon + ' ' + e[1].name + '</option>'; }).join('');
+    var expired = u.expiry && Date.now() > u.expiry;
+    var statusColor = expired ? '#E24B4A' : '#1D9E75';
+    var statusLabel = expired ? '⏰ Expirado' : '● Activo';
+
+    html += '<tr' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
+    html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + u.user + (isMe?' (tú)':'') + '</td>';
+    html += '<td style="font-weight:600;">' + u.name + '</td>';
+    html += '<td style="font-size:12px;color:rgba(255,255,255,0.5);">' + u.wa + '</td>';
+    html += '<td style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + u.ref + '</td>';
+    html += '<td style="text-align:center;">' + u.ventas + '</td>';
+    html += '<td><select class="rank-select" data-uname="' + u.user + '" onchange="cambiarRango(this.dataset.uname,this.value)">' + opts + '</select></td>';
+    html += '<td><span style="font-size:11px;font-weight:700;color:' + statusColor + ';">' + statusLabel + '</span></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
 }
+
+function cambiarRango(username, newRank) {
+  if(USERS[username]) {
+    USERS[username].rank = +newRank;
+    // If current user, update CU too
+    if(CU && CU.username === username) {
+      CU.rank = +newRank;
+      try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+    }
+    showToast('Rango actualizado → ' + (RANKS[+newRank]||RANKS[0]).name);
+  }
+}
+
 
 function cambiarRango(username, newRank) {
   const u = ADMIN_USERS.find(x=>x.user===username);
@@ -2034,28 +2135,61 @@ function addUserPrompt() {
 }
 
 function renderAdminContenido() {
-  const el = document.getElementById('admin-contenido');
-  el.innerHTML = `
-    <div class="admin-info-box">Edita el título o el link de YouTube/Drive de cada video o material. <strong>Pega el ID del video de YouTube</strong> (la parte después de youtube.com/watch?v=).</div>
-    <div style="font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text);">Videos de la Academia</div>
-    ${ADMIN_VIDS.map((v,i)=>`
-    <div class="content-row">
-      <span style="font-size:12px;color:var(--muted);width:24px;flex-shrink:0;">M${v.mod}</span>
-      <input class="ci-title" value="${v.title}" id="vt-${i}" placeholder="Título del video">
-      <input class="ci-url" value="${v.yt}" id="vy-${i}" placeholder="ID de YouTube" style="font-family:monospace;font-size:12px;">
-      <select style="background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 8px;outline:none;" id="vr-${i}">
-        ${Object.entries(RANKS).filter(([k])=>+k<=7).map(([k,r])=>`<option value="${k}" ${+k===v.rank?'selected':''}>${r.icon} ${r.name}</option>`).join('')}
-      </select>
-      <button class="btn-save-row" onclick="saveVideo(${i})">Guardar</button>
-    </div>`).join('')}
-    <div style="font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;margin:24px 0 12px;color:var(--text);">Materiales descargables</div>
-    ${ADMIN_MATS.map((m,i)=>`
-    <div class="content-row">
-      <span style="font-size:16px;flex-shrink:0;">${m.icon}</span>
-      <input class="ci-title" value="${m.title}" id="mt-${i}" placeholder="Título del material">
-      <input class="ci-url" value="${m.url}" id="mu-${i}" placeholder="Link de Drive o Dropbox" style="font-family:monospace;font-size:12px;">
-      <button class="btn-save-row" onclick="saveMat(${i})">Guardar</button>
-    </div>`).join('')}`;
+  var el = document.getElementById('admin-contenido');
+  if(!el) return;
+  var locks = getContentLocks();
+
+  function lockRow(label, key, indent) {
+    var locked = locks[key] === true;
+    var pad = indent || 12;
+    var div = '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px 9px ' + pad + 'px;border-bottom:0.5px solid rgba(255,255,255,0.04);">';
+    div += '<span style="font-size:13px;color:rgba(255,255,255,' + (locked?'0.3':'0.8') + ');">' + (indent>12?'<span style="color:rgba(255,255,255,0.2);margin-right:6px;">└</span>':'') + label + '</span>';
+    div += '<button data-lkey="' + key + '" onclick="adminToggleLock(this.dataset.lkey)" style="font-size:10px;font-weight:800;padding:4px 14px;border-radius:20px;border:0.5px solid;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;';
+    if(locked) {
+      div += 'background:rgba(29,158,117,0.1);border-color:rgba(29,158,117,0.3);color:#1D9E75;">🔓 Desbloquear';
+    } else {
+      div += 'background:rgba(226,75,74,0.1);border-color:rgba(226,75,74,0.3);color:#E24B4A;">🔒 Bloquear';
+    }
+    div += '</button></div>';
+    return div;
+  }
+
+  var html = '<div style="max-width:700px;">';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px;padding:12px 14px;background:rgba(28,232,255,0.04);border:0.5px solid rgba(28,232,255,0.1);border-radius:10px;">🔒 Bloquea módulos o videos individuales. Los usuarios verán el candado y no podrán acceder al contenido bloqueado.</div>';
+
+  // Academia de Servicios
+  html += '<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">';
+  html += '<div style="padding:13px 16px;background:rgba(28,232,255,0.06);border-bottom:0.5px solid rgba(28,232,255,0.12);font-size:13px;font-weight:800;color:#1CE8FF;display:flex;align-items:center;gap:8px;">🎓 Academia de Servicios</div>';
+  var servMods = MODULES_DATA['servicios'] || [];
+  servMods.forEach(function(mod) {
+    html += lockRow(mod.icon + ' ' + mod.title, 'm_servicios_' + mod.id, 12);
+    mod.videos.forEach(function(v) {
+      html += lockRow(v.title, 'v_servicios_' + mod.id + '_' + v.id, 32);
+    });
+  });
+  html += '</div>';
+
+  // Academia de Liderazgo
+  html += '<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">';
+  html += '<div style="padding:13px 16px;background:rgba(255,215,0,0.06);border-bottom:0.5px solid rgba(255,215,0,0.12);font-size:13px;font-weight:800;color:#FFD700;display:flex;align-items:center;gap:8px;">👑 Academia de Liderazgo</div>';
+  var lidMods = MODULES_DATA['liderazgo'] || [];
+  lidMods.forEach(function(mod) {
+    html += lockRow(mod.icon + ' ' + mod.title, 'm_liderazgo_' + mod.id, 12);
+    mod.videos.forEach(function(v) {
+      html += lockRow(v.title, 'v_liderazgo_' + mod.id + '_' + v.id, 32);
+    });
+  });
+  html += '</div>';
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+
+function adminToggleLock(key) {
+  var isNowLocked = toggleLock(key);
+  showToast(isNowLocked ? '🔒 Bloqueado' : '🔓 Desbloqueado');
+  renderAdminContenido();
 }
 
 function saveVideo(i) {
