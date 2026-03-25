@@ -2208,8 +2208,13 @@ function enviarRecordatorio() {
 
 function switchAdminTab(tab) {
   ['solicitudes','usuarios','contenido','anuncios-admin'].forEach(t=>{
-    document.getElementById('admin-'+t).style.display = t===tab?'block':'none';
-    document.getElementById('atab-'+t).classList.toggle('active', t===tab);
+    var panel = document.getElementById('admin-'+t);
+    var btn   = document.getElementById('atab-'+t) || document.getElementById('atab-anuncios');
+    if(panel) panel.style.display = t===tab?'block':'none';
+    // map anuncios-admin tab button to 'anuncios'
+    var btnId = t === 'anuncios-admin' ? 'atab-anuncios' : 'atab-'+t;
+    var tabBtn = document.getElementById(btnId);
+    if(tabBtn) tabBtn.classList.toggle('active', t===tab);
   });
 }
 
