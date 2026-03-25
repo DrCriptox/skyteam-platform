@@ -2261,9 +2261,24 @@ function _renderSolicitudesList(el, pending) {
 }
 
 function aprobarSolicitud(id) {
-  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-  var sol = pending.find(function(s){ return s.id === id; });
-  if(!sol) return;
+  // Load from server first, fallback to localStorage
+  fetch('/api/solicitudes')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var server = d.solicitudes || [];
+      var local = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+      var all = server.concat(local.filter(function(l){ return !server.find(function(s){ return s.id === l.id; }); }));
+      var sol = all.find(function(s){ return s.id === id; });
+      if(sol) _doAprobar(sol, id);
+    })
+    .catch(function(){
+      var local = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+      var sol = local.find(function(s){ return s.id === id; });
+      if(sol) _doAprobar(sol, id);
+    });
+}
+
+function _doAprobar(sol, id) {
 
   // Create user with their chosen password and Innova username
   var username = sol.innovaUser ? sol.innovaUser.toLowerCase().replace(/\s+/g,'') : sol.ref;
