@@ -253,6 +253,8 @@ select option{background:#040f28;color:#F0EDE6;}
   .sc{padding:14px;}
   .stats-grid{grid-template-columns:repeat(2,1fr);}
   .sidebar-close-btn{display:flex !important;}
+  .sidebar-bottom{flex-shrink:0;padding:12px 14px 20px;border-top:0.5px solid rgba(255,255,255,0.06);}
+  .sidebar-nav{max-height:calc(100vh - 180px);overflow-y:auto;-webkit-overflow-scrolling:touch;}
 }
 
 /* ── PERFIL ── */
@@ -1719,7 +1721,8 @@ function navigate(sec) {
   if(target) target.classList.add('active');
   var navBtn = document.querySelector('.nav-item[data-sec="'+sec+'"]');
   if(navBtn) navBtn.classList.add('active');
-  if(sec==='comunidad') scrollChat();
+  if(sec==='comunidad') { scrollChat(); startChatPolling(); }
+  else { stopChatPolling(); }
   if(sec==='perfil') renderPerfil();
   if(sec==='academia-liderazgo') renderAcadLid();
   if(sec==='agente') { if(typeof currentAgent!=='undefined'&&currentAgent) initAgentChat(currentAgent); }
@@ -1872,8 +1875,52 @@ function renderAnuncios() {
 
 /* ── CHAT ── */
 const CHAT_KEY = 'skyteam_chat_v1';
-function getMessages() { try { return JSON.parse(localStorage.getItem(CHAT_KEY)||'[]'); } catch{return [];} }
-function saveMessages(m) { localStorage.setItem(CHAT_KEY, JSON.stringify(m.slice(-100))); }
+/* ── CHAT via JSONBin shared storage ── */
+var _chatPollInterval = null;
+var _lastMsgCount = 0;
+
+function getMessages() {
+  try { return JSON.parse(localStorage.getItem(CHAT_KEY)||'[]'); } catch{ return []; }
+}
+function saveMessages(m) {
+  localStorage.setItem(CHAT_KEY, JSON.stringify(m.slice(-100)));
+}
+
+function syncChatFromServer(cb) {
+  fetch('/api/chat-messages')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data && Array.isArray(data.messages)) {
+        saveMessages(data.messages);
+        if(cb) cb(data.messages);
+      }
+    })
+    .catch(function(){});
+}
+
+function saveChatToServer(msgs) {
+  fetch('/api/chat-messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({messages: msgs.slice(-100)})
+  }).catch(function(){});
+}
+
+function startChatPolling() {
+  if(_chatPollInterval) return;
+  _chatPollInterval = setInterval(function(){
+    syncChatFromServer(function(msgs){
+      if(msgs.length !== _lastMsgCount) {
+        _lastMsgCount = msgs.length;
+        renderChat(msgs);
+      }
+    });
+  }, 3000);
+}
+
+function stopChatPolling() {
+  if(_chatPollInterval) { clearInterval(_chatPollInterval); _chatPollInterval = null; }
+}
 
 const DEMO_MSGS = [
   {user:'Angel',rank:5,text:'Buenos días equipo! Semana de fuego, vamos con todo 🔥',time:'Lun 08:14'},
@@ -1883,9 +1930,17 @@ const DEMO_MSGS = [
 ];
 
 function loadChat() {
-  let msgs = getMessages();
-  if(msgs.length===0) { saveMessages(DEMO_MSGS); msgs = DEMO_MSGS; }
+  // First load from localStorage
+  var msgs = getMessages();
+  if(msgs.length === 0) { saveMessages(DEMO_MSGS); msgs = DEMO_MSGS; }
   renderChat(msgs);
+  _lastMsgCount = msgs.length;
+  // Then sync from server and start polling
+  syncChatFromServer(function(serverMsgs){
+    _lastMsgCount = serverMsgs.length;
+    renderChat(serverMsgs);
+  });
+  startChatPolling();
 }
 
 function renderChat(msgs) {
@@ -1914,15 +1969,17 @@ function renderChat(msgs) {
 function scrollChat() { const c=document.getElementById('chat-msgs'); if(c) c.scrollTop=c.scrollHeight; }
 
 function sendMsg() {
-  const inp = document.getElementById('chat-in');
-  const text = inp.value.trim();
+  var inp = document.getElementById('chat-in');
+  var text = inp.value.trim();
   if(!text) return;
-  const msgs = getMessages();
-  const now = new Date();
-  msgs.push({user:CU.name,rank:CU.rank,text,time:now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})});
+  var msgs = getMessages();
+  var now = new Date();
+  msgs.push({user:CU.name,rank:CU.rank,text:text,time:now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})});
   saveMessages(msgs);
+  saveChatToServer(msgs);
   renderChat(msgs);
   inp.value='';
+  _lastMsgCount = msgs.length;
 }
 
 /* ── AI AGENT ── */
