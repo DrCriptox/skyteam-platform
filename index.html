@@ -6,7 +6,7 @@
 <title>Sky Team</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-html,body{height:100%;overflow:hidden;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding-bottom:calc(28px + env(safe-area-inset-bottom) + 60px);}}
+html,body{height:100%;overflow:hidden;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}
 :root{--gold:#FFD700;--gold2:#C9A84C;--gold-d:rgba(255,215,0,0.08);--gold-b:rgba(255,215,0,0.25);--gold-1:#FFE55A;--bg:#030c1f;--bg2:#040f28;--bg3:#061235;--bg4:#08173e;--border:rgba(255,255,255,0.07);--border2:rgba(28,232,255,0.15);--text:#F0EDE6;--muted:rgba(255,255,255,0.45);--muted2:rgba(255,255,255,0.25);--blue:#1CE8FF;--blue-d:rgba(28,232,255,0.07);--blue-b:rgba(28,232,255,0.18);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);background-image:radial-gradient(ellipse 500px 350px at 0% 0%,rgba(28,232,255,0.05) 0%,transparent 60%),radial-gradient(ellipse 400px 300px at 100% 15%,rgba(255,215,0,0.04) 0%,transparent 60%),radial-gradient(ellipse 350px 280px at 50% 100%,rgba(0,85,204,0.06) 0%,transparent 60%);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;min-height:100vh;}
@@ -653,15 +653,7 @@ const ANUNCIOS = [
 
 let CU = null;
 
-// Check for public agenda page before anything else
-(function() {
-  var params = new URLSearchParams(window.location.search);
-  if(params.get('agenda')) {
-    document.addEventListener('DOMContentLoaded', function(){
-      checkPublicAgenda();
-    });
-  }
-})();
+// Public agenda check runs after all functions load (see bottom of script)
 
 function doLogin() {
   try {
@@ -916,6 +908,31 @@ function renderAgendaConfigUI() {
   html += '<textarea id="agenda-msg" rows="3" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Nunito,sans-serif;resize:none;box-sizing:border-box;">' + (cfg.mensaje||'') + '</textarea>';
   html += '<p style="font-size:10px;color:rgba(255,255,255,0.25);margin:4px 0 0;">Se envía por WhatsApp al confirmar la cita.</p></div>';
 
+  // Photo upload section
+  var fotoActual = agendaConfig && agendaConfig.foto ? agendaConfig.foto : '';
+  html += '<div class="card" style="margin-bottom:12px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px;">🖼️ Tu foto (visible al prospecto)</p>';
+  html += '<div style="display:flex;align-items:center;gap:16px;">';
+  html += '<div id="agenda-foto-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(28,232,255,0.08);border:2px solid rgba(28,232,255,0.3);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">';
+  if(fotoActual) {
+    html += '<img src="' + fotoActual + '" style="width:100%;height:100%;object-fit:cover;">';
+  } else {
+    html += '<span style="font-size:28px;">👤</span>';
+  }
+  html += '</div>';
+  html += '<div style="flex:1;">';
+  html += '<label style="display:block;background:rgba(28,232,255,0.1);border:0.5px solid rgba(28,232,255,0.25);color:#1CE8FF;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;font-family:Nunito,sans-serif;">📷 Seleccionar foto<input type="file" accept="image/*" id="agenda-foto-input" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
+  html += '<p style="font-size:10px;color:rgba(255,255,255,0.25);margin:6px 0 0;">JPG, PNG. Se mostrará en tu página de agenda.</p>';
+  html += '</div></div>';
+  html += '<div id="agenda-crop-container" style="display:none;margin-top:12px;">';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 8px;">Ajusta tu foto:</p>';
+  html += '<div style="position:relative;width:200px;height:200px;margin:0 auto;border-radius:50%;overflow:hidden;border:3px solid rgba(28,232,255,0.4);">';
+  html += '<img id="agenda-crop-img" style="width:100%;height:100%;object-fit:cover;">';
+  html += '</div>';
+  html += '<button onclick="confirmarAgendaFoto()" style="width:100%;margin-top:12px;padding:10px;border-radius:8px;background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:13px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">✅ Usar esta foto</button>';
+  html += '</div>';
+  html += '</div>';
+
   html += '<button onclick="guardarAgendaConfig()" style="width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">💾 Guardar configuración</button>';
   return html;
 }
@@ -1104,6 +1121,30 @@ function guardarAgendaConfig() {
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok){showToast('✅ Agenda guardada');renderAgendaUI(document.getElementById('agenda-content'));}else showToast('❌ Error guardando');})
     .catch(function(){showToast('❌ Error de conexión');});
+}
+
+function previewAgendaFoto(input) {
+  if(!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('agenda-crop-img');
+    var container = document.getElementById('agenda-crop-container');
+    var preview = document.getElementById('agenda-foto-preview');
+    if(img) img.src = e.target.result;
+    if(container) container.style.display = 'block';
+    if(preview) preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+    window._agendaFotoDataUrl = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function confirmarAgendaFoto() {
+  if(!window._agendaFotoDataUrl) return;
+  if(!agendaConfig) agendaConfig = getDefaultAgendaCfg();
+  agendaConfig.foto = window._agendaFotoDataUrl;
+  var container = document.getElementById('agenda-crop-container');
+  if(container) container.style.display = 'none';
+  showToast('📷 Foto lista — guarda los cambios para aplicarla');
 }
 
 function cancelarCitaAgenda(id) {
@@ -3656,6 +3697,15 @@ function saveTZ(tz) {
   }
 })();
 
+
+
+// Run public agenda check after everything loads
+window.addEventListener('DOMContentLoaded', function(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('agenda')) {
+    checkPublicAgenda();
+  }
+});
 </script>
 <script src="/fix-aprobar.js"></script>
 </body>
