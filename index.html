@@ -2146,6 +2146,42 @@ function renderAdminPanel() {
   renderAdminAnuncios();
 }
 
+function enviarRecordatorio() {
+  var tipo = document.getElementById('session-type').value;
+  var tema = (document.getElementById('session-tema').value||'').trim();
+  var fecha = (document.getElementById('session-fecha').value||'').trim();
+  var link = (document.getElementById('session-link').value||'').trim();
+  var statusEl = document.getElementById('session-status');
+  if(!tema||!fecha||!link){ showToast('Completa tema, fecha y link ⚠️'); return; }
+  var fromMap = {lideres:'lideres@skyteam.global', academy:'academy@skyteam.global', soporte:'soporte@skyteam.global'};
+  var labelMap = {lideres:'👑 Sesión de Liderazgo & Ventas', academy:'🎓 Sesión Innova / Academia', soporte:'🛠️ Sesión de Soporte Técnico'};
+  var fromEmail = fromMap[tipo]; var tipoLabel = labelMap[tipo];
+  var html = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#030c1f;color:#F0EDE6;padding:32px;border-radius:16px;">'
+    + '<div style="text-align:center;margin-bottom:20px;"><h1 style="color:#1CE8FF;font-size:26px;margin:0;">SKY<span style="color:#fff"> SYSTEM</span></h1></div>'
+    + '<h2 style="color:#FFD700;font-size:22px;text-align:center;">📡 ' + tipoLabel + '</h2>'
+    + '<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:20px;margin:20px 0;">'
+    + '<p style="margin:8px 0;font-size:15px;">📌 <strong>Tema:</strong> ' + tema + '</p>'
+    + '<p style="margin:8px 0;font-size:15px;">🗓️ <strong>Cuándo:</strong> ' + fecha + '</p>'
+    + '<p style="margin:8px 0;font-size:15px;">🔗 <strong>Link:</strong> <a href="' + link + '" style="color:#1CE8FF;">' + link + '</a></p>'
+    + '</div>'
+    + '<div style="text-align:center;margin:24px 0;"><a href="' + link + '" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#030c1f;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">🚀 Unirme a la sesión →</a></div>'
+    + '<p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;">SKY TEAM · <a href="https://skyteam.global" style="color:#1CE8FF;">skyteam.global</a></p></div>';
+  var emails = Object.values(USERS).filter(function(u){ return u.email && u.rank > 0; }).map(function(u){ return u.email; });
+  if(emails.length === 0){ showToast('No hay socios con email registrado'); return; }
+  statusEl.textContent = 'Enviando a ' + emails.length + ' socios...';
+  var sent = 0; var failed = 0; var total = emails.length;
+  emails.forEach(function(email){
+    fetch('/api/send-email', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({to:email, from:fromEmail, subject:'📡 ' + tipoLabel + ' · ' + fecha, html:html})
+    }).then(function(r){ return r.json(); })
+    .then(function(d){ if(d.ok) sent++; else failed++;
+      if(sent+failed===total){ statusEl.textContent='✅ Enviados: '+sent+' · Fallidos: '+failed; showToast('📡 Recordatorio enviado a '+sent+' socios'); }
+    }).catch(function(){ failed++;
+      if(sent+failed===total){ statusEl.textContent='⚠️ Enviados: '+sent+' · Fallidos: '+failed; }
+    });
+  });
+}
+
 function switchAdminTab(tab) {
   ['solicitudes','usuarios','contenido','anuncios-admin'].forEach(t=>{
     document.getElementById('admin-'+t).style.display = t===tab?'block':'none';
@@ -2216,13 +2252,124 @@ function aprobarSolicitud(id) {
   pending = pending.filter(function(s){ return s.id !== id; });
   localStorage.setItem('skyteam_pending', JSON.stringify(pending));
 
-  showToast('✅ Usuario ' + username + ' activado');
-  // Register ref in innova-ia-socios sheet via Apps Script Web App
   registrarSocioEnInnova(sol.name, sol.wa || '', username);
   renderSolicitudes();
-  // Refresh users tab if open
   if(document.getElementById('admin-usuarios').style.display !== 'none') {
     renderAdminUsuarios();
+  }
+
+  // ── EMAILS AUTOMÁTICOS ─────────────────────────────────────────────────
+  if(sol.email) {
+    var refCode = sol.ref || username;
+    var refLink = 'https://innovaia.app?ref=' + refCode;
+    var primerNombre = sol.name.split(' ')[0];
+
+    // EMAIL 1 — Bienvenida + credenciales + motivación
+    var html1 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#030c1f;color:#F0EDE6;border-radius:20px;overflow:hidden;">'
+
+      // Header con gradiente
+      + '<div style="background:linear-gradient(135deg,#0a1628 0%,#0d2144 50%,#071020 100%);padding:36px 32px 28px;text-align:center;border-bottom:1px solid rgba(28,232,255,0.15);">'
+      + '<img src="https://skyteam.global/logo-skyteam.png" alt="SKY TEAM" style="height:48px;max-width:260px;object-fit:contain;" />'
+      + '<p style="color:rgba(255,255,255,0.35);font-size:12px;margin:6px 0 0;letter-spacing:1px;text-transform:uppercase;">Plataforma del Equipo SKYTEAM</p>'
+      + '</div>'
+
+      // Mensaje de bienvenida
+      + '<div style="padding:32px;">'
+      + '<div style="text-align:center;margin-bottom:24px;">'
+      + '<div style="font-size:48px;margin-bottom:8px;">🚀</div>'
+      + '<h2 style="color:#1CE8FF;font-size:24px;margin:0 0 8px;">¡' + primerNombre + ', ya eres parte del equipo!</h2>'
+      + '<p style="color:rgba(255,255,255,0.6);font-size:14px;margin:0;line-height:1.6;">Tu acceso ha sido <strong style="color:#1CE8FF;">aprobado</strong>. A partir de hoy, tu vida tiene una nueva dirección.</p>'
+      + '</div>'
+
+      // Credenciales
+      + '<div style="background:rgba(28,232,255,0.06);border:1px solid rgba(28,232,255,0.2);border-radius:14px;padding:22px;margin:20px 0;">'
+      + '<p style="font-size:11px;font-weight:700;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 14px;">🔐 Tus datos de acceso</p>'
+      + '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#1CE8FF;text-decoration:none;">skyteam.global</a></p>'
+      + '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">👤 <strong>Usuario:</strong> <span style="background:rgba(255,255,255,0.08);padding:2px 10px;border-radius:6px;font-family:monospace;">' + username + '</span></p>'
+      + '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">🔑 <strong>Contraseña:</strong> <span style="background:rgba(255,255,255,0.08);padding:2px 10px;border-radius:6px;font-family:monospace;">' + (sol.password || 'skyteam2026') + '</span></p>'
+      + (sol.sponsor ? '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">🤝 <strong>Sponsor:</strong> ' + sol.sponsor + '</p>' : '')
+      + '</div>'
+
+      // Botón de ingreso
+      + '<div style="text-align:center;margin:28px 0;">'
+      + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;padding:15px 40px;border-radius:12px;text-decoration:none;font-weight:900;font-size:16px;letter-spacing:0.5px;">Entrar a SKY SYSTEM →</a>'
+      + '</div>'
+
+      // Separador
+      + '<div style="border-top:1px solid rgba(255,255,255,0.07);margin:28px 0;"></div>'
+
+      // Mensaje motivacional
+      + '<div style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,140,0,0.04));border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:22px;">'
+      + '<p style="font-size:11px;font-weight:700;color:rgba(255,215,0,0.7);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 14px;">⚡ Empieza hoy, no mañana</p>'
+      + '<p style="color:rgba(255,255,255,0.85);font-size:14px;line-height:1.8;margin:0 0 16px;">'
+      + 'Las personas que más rápido logran resultados son las que <strong style="color:#FFD700;">entran, exploran y arrancan el primer día</strong>. '
+      + 'No lo dejes para después.'
+      + '</p>'
+      + '<p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.9;margin:0;">'
+      + '🤖 <strong style="color:#1CE8FF;">Activa Sky Sales IA</strong> — tu asistente entrenado para responder objeciones, '
+      + 'cerrar ventas y ayudarte a duplicar tu negocio desde el primer mensaje.<br><br>'
+      + '🎓 <strong style="color:#1CE8FF;">Entra a la Academia</strong> — los videos de capacitación están ahí para llevarte '
+      + 'de cero a resultados reales en el menor tiempo posible.<br><br>'
+      + '🔗 <strong style="color:#FFD700;">Tu link personalizado ya existe</strong> — en tu próximo email te lo enviamos para que '
+      + 'empieces a compartirlo y construir tu red desde hoy.'
+      + '</p>'
+      + '</div>'
+
+      // Cierre
+      + '<p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;margin-top:28px;line-height:1.8;">'
+      + 'Bienvenido a bordo, <strong style="color:rgba(255,255,255,0.5);">' + primerNombre + '</strong>. El equipo te está esperando. 🙌<br>'
+      + 'SKY TEAM Líderes · <a href="https://skyteam.global" style="color:#1CE8FF;text-decoration:none;">skyteam.global</a>'
+      + '</p>'
+      + '</div>'
+      + '</div>';
+
+    // EMAIL 2 — Link de duplicación personalizado
+    var html2 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#030c1f;color:#F0EDE6;padding:32px;border-radius:16px;">'
+      + '<div style="text-align:center;margin-bottom:20px;"><img src="https://skyteam.global/logo-skyteam.png" alt="SKY TEAM" style="height:44px;max-width:240px;object-fit:contain;" />'
+      + '<p style="color:rgba(255,255,255,0.4);font-size:12px;margin:4px 0 0;">Plataforma del Equipo SKYTEAM</p></div>'
+      + '<h2 style="color:#FFD700;font-size:20px;">🚀 Tu link de duplicación está listo</h2>'
+      + '<p style="color:rgba(255,255,255,0.8);line-height:1.7;">Hola <strong>' + primerNombre + '</strong>, este es tu link personalizado para empezar a crecer tu red desde hoy:</p>'
+      + '<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:20px;margin:20px 0;text-align:center;">'
+      + '<p style="font-family:monospace;color:#FFD700;font-size:15px;word-break:break-all;margin:0;">' + refLink + '</p></div>'
+      + '<p style="color:rgba(255,255,255,0.7);font-size:14px;font-weight:700;margin-bottom:8px;">¿Qué hacer ahora?</p>'
+      + '<ol style="color:rgba(255,255,255,0.7);font-size:13px;line-height:2.2;padding-left:18px;">'
+      + '<li>Comparte este link con personas que quieran ingresos extra</li>'
+      + '<li>Quien se registre quedará en tu red automáticamente</li>'
+      + '<li>Usa los <strong style="color:#1CE8FF;">Agentes IA</strong> en Sky Sales para responder objeciones</li>'
+      + '<li>Revisa la <strong style="color:#1CE8FF;">Academia</strong> para ver los videos de duplicación</li>'
+      + '</ol>'
+      + '<div style="text-align:center;margin:24px 0;"><a href="' + refLink + '" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#030c1f;padding:13px 30px;border-radius:10px;text-decoration:none;font-weight:900;font-size:14px;">Ver mi landing de ventas →</a></div>'
+      + '<p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;">SKY TEAM Líderes · <a href="https://skyteam.global" style="color:#1CE8FF;">skyteam.global</a></p></div>';
+
+    // Enviar Email 1 → al completar, enviar Email 2
+    fetch('/api/send-email', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        to: sol.email, from: 'lideres@skyteam.global',
+        subject: '🎉 ¡Bienvenido a SKY SYSTEM, ' + primerNombre + '! Tu acceso está activo',
+        html: html1
+      })
+    }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok) {
+        showToast('📧 Email de bienvenida enviado ✓');
+        setTimeout(function(){
+          fetch('/api/send-email', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              to: sol.email, from: 'lideres@skyteam.global',
+              subject: '🔗 Tu link de duplicación personalizado — SKY TEAM',
+              html: html2
+            })
+          }).then(function(r){ return r.json(); })
+          .then(function(d2){ if(d2.ok) showToast('📧 Link de duplicación enviado ✓'); });
+        }, 2000);
+      } else {
+        showToast('✅ Usuario ' + username + ' activado');
+      }
+    }).catch(function(){ showToast('✅ Usuario ' + username + ' activado'); });
+  } else {
+    showToast('✅ Usuario ' + username + ' activado');
   }
 }
 
@@ -2443,6 +2590,21 @@ function renderAdminAnuncios() {
       <textarea id="an-body" placeholder="Escribe el mensaje para el equipo..." style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 14px;outline:none;resize:none;min-height:90px;line-height:1.55;margin-bottom:16px;"></textarea>
       <button class="btn-main" style="font-size:13px;padding:10px 20px;" onclick="publishAnuncio()">Publicar anuncio →</button>
     </div>
+
+    <div class="card" style="margin-top:20px;">
+      <p style="font-size:11px;font-weight:700;color:rgba(28,232,255,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">📡 Recordatorio de sesión en vivo</p>
+      <select id="session-type" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
+        <option value="lideres">👑 Liderazgo & Ventas — lideres@skyteam.global</option>
+        <option value="academy">🎓 Sesión Innova / Academia — academy@skyteam.global</option>
+        <option value="soporte">🛠️ Soporte Técnico — soporte@skyteam.global</option>
+      </select>
+      <input id="session-tema" placeholder="Tema de la sesión (ej: Cómo cerrar tu primera venta)" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
+      <input id="session-fecha" placeholder="Cuándo (ej: Hoy Miércoles 26 · 8:00 PM Colombia)" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
+      <input id="session-link" placeholder="Link de la sesión (Zoom, Meet, etc.)" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;margin-bottom:12px;font-family:Nunito,sans-serif;box-sizing:border-box;">
+      <button onclick="enviarRecordatorio()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">📡 Enviar recordatorio a todos los socios →</button>
+      <p id="session-status" style="font-size:11px;color:rgba(255,255,255,0.4);text-align:center;margin-top:8px;min-height:16px;"></p>
+    </div>
+
     <div style="font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px;color:var(--muted);">Anuncios publicados</div>
     ${ANUNCIOS.map((a,i)=>`
     <div class="anuncio-card" style="display:flex;gap:12px;align-items:flex-start;">
