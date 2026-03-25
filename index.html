@@ -674,6 +674,7 @@ function showApp() {
     renderSidebarUser();
     renderHome();
     renderSkySales();
+    syncLocksFromServer();
     renderAcademia();
     renderMateriales();
     renderRanking();
@@ -1647,21 +1648,49 @@ function stopVideoTracking() {
 }
 
 
-/* ── CONTENT LOCK SYSTEM ── */
+/* ── CONTENT LOCK SYSTEM (shared via API) ── */
+var _locksCache = null;
+var _locksSynced = false;
+
+function saveContentLocks(locks) {
+  // Save locally immediately
+  localStorage.setItem('skyteam_locks', JSON.stringify(locks));
+  _locksCache = locks;
+  // Save to shared API (async, non-blocking)
+  fetch('/api/locks', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(locks)
+  }).catch(function(e){ console.warn('Locks sync error:', e); });
+}
+
 function getContentLocks() {
+  if(_locksCache) return _locksCache;
   return JSON.parse(localStorage.getItem('skyteam_locks') || '{}');
 }
-function saveContentLocks(locks) {
-  localStorage.setItem('skyteam_locks', JSON.stringify(locks));
+
+function syncLocksFromServer() {
+  fetch('/api/locks')
+    .then(function(r){ return r.json(); })
+    .then(function(locks){
+      if(locks && typeof locks === 'object') {
+        localStorage.setItem('skyteam_locks', JSON.stringify(locks));
+        _locksCache = locks;
+        _locksSynced = true;
+      }
+    })
+    .catch(function(e){ console.warn('Locks fetch error:', e); });
 }
+
 function isLocked(key) {
   return getContentLocks()[key] === true;
 }
 function toggleLock(key) {
   var locks = getContentLocks();
   locks[key] = !locks[key];
+  if(!locks[key]) delete locks[key];
   saveContentLocks(locks);
-  return locks[key];
+  return locks[key] === true;
 }
 function lockKey(academyId, moduleId, videoId) {
   if(videoId) return 'v_' + academyId + '_' + moduleId + '_' + videoId;
@@ -2194,7 +2223,7 @@ function renderAdminContenido() {
 
 function adminToggleLock(key) {
   var isNowLocked = toggleLock(key);
-  showToast(isNowLocked ? '🔒 Bloqueado' : '🔓 Desbloqueado');
+  showToast(isNowLocked ? '🔒 Bloqueado y guardado ✓' : '🔓 Desbloqueado y guardado ✓');
   renderAdminContenido();
 }
 
