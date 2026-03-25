@@ -2238,6 +2238,8 @@ function renderSolicitudes() {
 }
 
 function _renderSolicitudesList(el, pending) {
+  // CRITICAL: Save to localStorage so aprobarSolicitud can find them
+  localStorage.setItem('skyteam_pending', JSON.stringify(pending));
 
   if(!pending.length) {
     el.innerHTML = '<div class="admin-info-box">No hay solicitudes pendientes en este momento. Las solicitudes aparecen aquí cuando alguien llena el formulario de "Solicitar acceso" en el login.</div>';
