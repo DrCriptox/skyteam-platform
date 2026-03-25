@@ -1052,7 +1052,7 @@ async function sendAgentMsg() {
     var messages = agentHistory[currentAgent].map(function(m) {
       return {role: m.role, content: m.content};
     });
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    var resp = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -1888,7 +1888,7 @@ async function responderObjecion() {
   card.style.display='block'; textEl.textContent=''; textEl.classList.add('streaming');
   document.getElementById('land-alert').style.display='none';
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,system:SYS,messages:[{role:"user",content:`El prospecto dijo: "${msg}"\n\nDame la respuesta para copiar y pegar en WhatsApp.`}]})});
+    const r = await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,system:SYS,messages:[{role:"user",content:`El prospecto dijo: "${msg}"\n\nDame la respuesta para copiar y pegar en WhatsApp.`}]})});
     const d = await r.json();
     let full = d.content[0].text||'';
     const showL = full.includes('[MOSTRAR_LANDING]');
