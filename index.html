@@ -351,12 +351,22 @@ select option{background:#040f28;color:#F0EDE6;}
 
     <!-- SOLICITAR ACCESO -->
     <div id="solicitud-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;">
-      <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:14px;">Completa tus datos:</p>
+      <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:6px;">Completa tus datos:</p><p style="font-size:11px;color:rgba(28,232,255,0.6);margin-bottom:12px;">Usa tu mismo usuario y contraseña de Innova para acceder aquí también.</p>
       <input type="text" id="sol-name" placeholder="Tu nombre completo" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <input type="text" id="sol-innova-user" placeholder="Usuario en Innova" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
+      <input type="text" id="sol-innova-user" placeholder="Tu usuario de Innova (será tu usuario aquí)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
       <input type="email" id="sol-email" placeholder="Correo (registrado en Innova)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
       <input type="tel" id="sol-wa" placeholder="WhatsApp (ej: +57 300...)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <input type="text" id="sol-sponsor" placeholder="Sponsor en Innova" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:12px;font-family:Nunito,sans-serif;">
+      <input type="text" id="sol-sponsor" placeholder="Sponsor en Innova (quién te invitó)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
+      <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:6px 0 10px;"></div>
+      <p style="font-size:11px;color:rgba(28,232,255,0.6);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">🔑 Crea tu contraseña de acceso</p>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="password" id="sol-pass" placeholder="Crea una contraseña (mín. 6 caracteres)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <button type="button" onclick="togglePassVis('sol-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
+      </div>
+      <div style="position:relative;margin-bottom:14px;">
+        <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <button type="button" onclick="togglePassVis('sol-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
+      </div>
       <button onclick="sendSolicitud()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">Solicitar acceso →</button>
     </div>
 
@@ -2179,10 +2189,39 @@ function renderSolicitudes() {
 
 function aprobarSolicitud(id) {
   var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+  var sol = pending.find(function(s){ return s.id === id; });
+  if(!sol) return;
+
+  // Create user with their chosen password and Innova username
+  var username = sol.innovaUser ? sol.innovaUser.toLowerCase().replace(/\s+/g,'') : sol.ref;
+  if(USERS[username]) {
+    // Username taken — add suffix
+    username = username + '_' + String(id).slice(-4);
+  }
+  USERS[username] = {
+    name: sol.name,
+    pass: sol.password || 'skyteam2026',
+    rank: 1,
+    ref:  sol.ref || username,
+    ventas: 0,
+    equipo: 0,
+    whatsapp: sol.wa || '',
+    email: sol.email || '',
+    sponsor: sol.sponsor || '',
+    innovaUser: sol.innovaUser || '',
+    expiry: null
+  };
+
+  // Remove from pending
   pending = pending.filter(function(s){ return s.id !== id; });
   localStorage.setItem('skyteam_pending', JSON.stringify(pending));
-  showToast('✅ Solicitud aprobada');
+
+  showToast('✅ Usuario ' + username + ' activado con su contraseña');
   renderSolicitudes();
+  // Refresh users tab if open
+  if(document.getElementById('admin-usuarios').style.display !== 'none') {
+    renderAdminUsuarios();
+  }
 }
 
 function rechazarSolicitud(id) {
@@ -2460,13 +2499,23 @@ function generarRef(name) {
   return base + num;
 }
 
+function togglePassVis(inputId, btn) {
+  var inp = typeof inputId === 'string' ? document.getElementById(inputId) : inputId;
+  if(inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
 function sendSolicitud() {
   var name       = document.getElementById('sol-name').value.trim();
   var wa         = document.getElementById('sol-wa').value.trim();
   var innovaUser = document.getElementById('sol-innova-user').value.trim();
   var email      = document.getElementById('sol-email').value.trim();
   var sponsor    = document.getElementById('sol-sponsor').value.trim();
-  if(!name||!wa||!innovaUser) { alert('Por favor completa nombre, usuario en Innova y WhatsApp'); return; }
+  var pass       = document.getElementById('sol-pass') ? document.getElementById('sol-pass').value : '';
+  var pass2      = document.getElementById('sol-pass2') ? document.getElementById('sol-pass2').value : '';
+  if(!name||!wa||!innovaUser) { showToast('Completa nombre, usuario en Innova y WhatsApp ⚠️'); return; }
+  if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
+  if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
 
   var urlRef = new URLSearchParams(window.location.search).get('ref') || '';
   if(urlRef && !sponsor) sponsor = urlRef;
@@ -2482,7 +2531,8 @@ function sendSolicitud() {
     id:Date.now(), name:name, wa:wa, email:email,
     sponsor:sponsor||'Sin especificar', innovaUser:innovaUser,
     patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
-    fecha:fecha, ref:newRef, landingLink:landingLink, rank:0
+    fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
+    password:pass
   });
   localStorage.setItem('skyteam_pending', JSON.stringify(pending));
   saveReferralRelation(newRef, sponsor);
