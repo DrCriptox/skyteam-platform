@@ -568,7 +568,10 @@ const USERS = {
   'maria':   {pass:'demo',      name:'María',   rank:1, ref:'maria01',   ventas:0,  equipo:0},
   'admin':   {pass:'skyadmin',  name:'Admin',   rank:8, ref:'admin',     ventas:0,  equipo:0, isAdmin:true},
   'cliente':  {pass:'demo',      name:'Cliente Demo', rank:0, ref:'cliente01', ventas:0,  equipo:0},
-  'demo2025':  {pass:'skyteam2025', name:'Líder Demo',   rank:3, ref:'demo2025',   ventas:5,  equipo:2, expiry:1774419460370}
+  'demo2025':  {pass:'skyteam2025', name:'Líder Demo',   rank:3, ref:'demo2025',   ventas:5,  equipo:2, expiry:1742889437000},
+  'prueba3h':  {pass:'sky3h2026',   name:'Usuario Prueba',  rank:1, ref:'prueba01', ventas:0, equipo:0, expiry:1774421630500},
+  'genesis22': {pass:'genesis22',   name:'Genesis Rivera',  rank:3, ref:'genesis22', ventas:0, equipo:0, expiry:null},
+  'yonfer':    {pass:'skyadmin2026',name:'Yonfer Rojas',    rank:7, ref:'angel2026', ventas:47, equipo:15, expiry:null},
 };
 
 const VIDEOS = [
@@ -1992,14 +1995,12 @@ var EMOJIS = {
 function buildEmojiPicker() {
   var picker = document.getElementById('emoji-picker');
   if(!picker || picker.children.length > 0) return;
-  var html = '';
   Object.keys(EMOJIS).forEach(function(cat) {
-    html += '<div class="emoji-category">' + cat + '</div>';
+    var lbl=document.createElement('div');lbl.className='emoji-category';lbl.textContent=cat;picker.appendChild(lbl);
     EMOJIS[cat].forEach(function(em) {
-      html += '<button onclick="insertEmoji('' + em + '')" title="' + em + '">' + em + '</button>';
+      var b=document.createElement('button');b.textContent=em;b.title=em;b.onclick=(function(e){return function(){insertEmoji(e);};})(em);picker.appendChild(b);
     });
   });
-  picker.innerHTML = html;
 }
 
 function toggleEmojiPicker() {
