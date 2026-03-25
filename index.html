@@ -50,7 +50,7 @@ select option{background:#040f28;color:#F0EDE6;}
 .su-name{font-size:13px;font-weight:800;color:#fff;cursor:pointer;}
 .su-ref{font-size:10px;color:rgba(255,255,255,0.2);font-family:monospace;}
 .rank-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
-.sidebar-nav{flex:1;padding:10px 10px;overflow-y:auto;}
+.sidebar-nav{flex:1;padding:10px 0 16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:2px 8px;border-radius:10px;font-size:13px;font-weight:700;color:rgba(255,255,255,0.4);cursor:pointer;border:none;background:transparent;width:calc(100% - 16px);text-align:left;font-family:'Nunito',sans-serif;}
 .nav-item:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.75);}
 .nav-item.active{background:rgba(28,232,255,0.1);color:#1CE8FF;border:0.5px solid rgba(28,232,255,0.18);}
@@ -1450,7 +1450,16 @@ function openModule(academyId, moduleId, contentId, titleId, backBtnId) {
   // Show back button
   var backBtn = document.getElementById(backBtnId);
   var titleEl = document.getElementById(titleId);
-  if(backBtn) backBtn.style.display = 'block';
+  if(backBtn) {
+    backBtn.style.display = 'block';
+    // Reset onclick to go back to module LIST (not video)
+    var _aId = academyId, _cId = contentId, _tId = titleId, _bId = backBtnId;
+    if(academyId === 'servicios') {
+      backBtn.onclick = function(){ stopVideoTracking(); academiaGoBack(); };
+    } else {
+      backBtn.onclick = function(){ stopVideoTracking(); acadLidGoBack(); };
+    }
+  }
   if(titleEl) titleEl.textContent = mod.title;
   var pct = getModulePercent(academyId, moduleId);
   var html = '<div style="max-width:640px;">';
@@ -1677,6 +1686,11 @@ function syncLocksFromServer() {
         localStorage.setItem('skyteam_locks', JSON.stringify(locks));
         _locksCache = locks;
         _locksSynced = true;
+        // Re-render academies so lock badges appear
+        var acadEl = document.getElementById('academia-content');
+        if(acadEl && acadEl.innerHTML) renderAcademia();
+        var acadLidEl = document.getElementById('acad-lid-content');
+        if(acadLidEl && acadLidEl.innerHTML) renderAcadLid();
       }
     })
     .catch(function(e){ console.warn('Locks fetch error:', e); });
