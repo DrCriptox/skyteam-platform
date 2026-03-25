@@ -2268,21 +2268,23 @@ function _renderSolicitudesList(el, pending) {
 }
 
 function aprobarSolicitud(id) {
-  // Load from server first, fallback to localStorage
-  fetch('/api/solicitudes')
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var server = d.solicitudes || [];
-      var local = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-      var all = server.concat(local.filter(function(l){ return !server.find(function(s){ return s.id === l.id; }); }));
-      var sol = all.find(function(s){ return s.id === id; });
-      if(sol) _doAprobar(sol, id);
-    })
-    .catch(function(){
-      var local = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-      var sol = local.find(function(s){ return s.id === id; });
-      if(sol) _doAprobar(sol, id);
-    });
+  showToast('⏳ Aprobando...');
+  fetch('/api/aprobar', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({id: id})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) {
+      showToast('✅ ' + d.nombre + ' aprobado como @' + d.username + (d.emailSent ? ' — emails enviados 📧' : ''));
+      renderSolicitudes();
+      if(document.getElementById('admin-usuarios')) renderAdminUsuarios();
+    } else {
+      showToast('❌ Error: ' + (d.error || 'desconocido'));
+    }
+  })
+  .catch(function(e){ showToast('❌ ' + e.message); });
 }
 
 function _doAprobar(sol, id) {
