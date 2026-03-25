@@ -759,6 +759,9 @@ function openAgent(id) {
 function renderSkySales() {
   if(!CU) return;
   var landingLink = 'https://innovaia.app?ref=' + CU.ref;
+  // Restore saved ref data
+  if(!CU.whatsapp) CU.whatsapp = localStorage.getItem('skyteam_ref_wa') || '';
+  if(!CU.ref && localStorage.getItem('skyteam_ref_code')) CU.ref = localStorage.getItem('skyteam_ref_code');
   var agents = [
     {id:'objeciones',icon:'🛡️',name:'Agente Anti-Objeciones',desc:'Responde objeciones en segundos con argumentos exactos.',color:'rgba(28,232,255,0.1)',border:'rgba(28,232,255,0.25)',badge:'Activo',bc:'#1CE8FF'},
     {id:'contenido',icon:'🎬',name:'Agente de Contenido',desc:'Guiones para reels, historias y posts para atraer prospectos.',color:'rgba(127,119,221,0.1)',border:'rgba(127,119,221,0.25)',badge:'Activo',bc:'#7F77DD'},
@@ -769,12 +772,44 @@ function renderSkySales() {
   ];
   var html = '<div style="max-width:700px;">';
   html += '<div class="card" style="background:rgba(28,232,255,0.05);border-color:rgba(28,232,255,0.2);margin-bottom:20px;">';
-  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.5);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>';
-  html += '<div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.2);border:0.5px solid rgba(28,232,255,0.15);border-radius:10px;padding:12px 14px;margin-bottom:10px;">';
-  html += '<span style="font-family:monospace;font-size:13px;color:#1CE8FF;flex:1;word-break:break-all;">' + landingLink + '</span>';
-  html += '<button id="ss-copy-btn" style="background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;">Copiar</button>';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.5);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
+  html += '<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;line-height:1.6;">Completa tus datos y genera tu link único para compartir. Cada persona que se registre desde tu link llegará directo a tu WhatsApp.</p>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
+
+  html += '<div>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">👤 Nombre completo</p>';
+  html += '<input id="ss-ref-nombre" placeholder="Ej: María Ayala" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.name||'') + '">';
   html += '</div>';
-  html += '<div style="font-size:11px;color:rgba(255,255,255,0.3);">Comparte este link. Todos los que se registren quedarán en tu red.</div>';
+
+  html += '<div>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">📱 Tu WhatsApp (con código de país)</p>';
+  html += '<input id="ss-ref-wa" placeholder="+573001234567" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.whatsapp||'') + '">';
+  html += '</div>';
+
+  html += '<div>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">🔑 Tu código de referido</p>';
+  html += '<div style="width:100%;background:rgba(28,232,255,0.04);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#1CE8FF;font-size:14px;font-weight:700;padding:9px 12px;font-family:monospace;box-sizing:border-box;display:flex;align-items:center;gap:8px;">';
+  html += '<span>🔑</span><span id="ss-ref-code-display">' + (CU.ref||CU.user||'') + '</span>';
+  html += '<input type="hidden" id="ss-ref-code" value="' + (CU.ref||CU.user||'') + '">';
+  html += '</div>';
+  html += '<p style="font-size:10px;color:rgba(255,255,255,0.25);margin:4px 0 0;">Este es tu usuario SKY TEAM — se usa para identificar tus referidos automáticamente.</p>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<button onclick="generarLinkVentas()" style="width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;margin-bottom:12px;letter-spacing:0.3px;">⚡ Generar mi link de ventas</button>';
+
+  html += '<div id="ss-link-result" style="display:none;margin-bottom:4px;">';
+  html += '<div style="background:rgba(28,232,255,0.05);border:1px solid rgba(28,232,255,0.2);border-radius:12px;padding:16px;margin-bottom:10px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">✅ Tu link personalizado</p>';
+  html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
+  html += '<span id="ss-link-text" style="font-family:monospace;font-size:12px;color:#1CE8FF;flex:1;word-break:break-all;"></span>';
+  html += '<button id="ss-copy-btn" onclick="copiarLinkVentas()" style="background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;flex-shrink:0;">Copiar</button>';
+  html += '</div>';
+  html += '<a id="ss-wa-btn" href="#" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:900;font-family:Nunito,sans-serif;">💬 Compartir por WhatsApp</a>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.25);text-align:center;margin:0;">Cuando un prospecto haga clic en tu link → llega a la landing → escribe directo a tu WhatsApp</p>';
   html += '</div>';
   html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-bottom:14px;">Tus agentes de IA</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">';
@@ -797,6 +832,54 @@ function renderSkySales() {
   document.getElementById('skysales-content').innerHTML = html;
   var btn = document.getElementById('ss-copy-btn');
   if(btn) { btn.addEventListener('click', function(){ navigator.clipboard.writeText(landingLink).then(function(){ showToast('Link copiado'); }); }); }
+}
+
+function generarLinkVentas() {
+  var nombre = (document.getElementById('ss-ref-nombre') ? document.getElementById('ss-ref-nombre').value : '').trim();
+  var wa = (document.getElementById('ss-ref-wa').value || '').trim();
+  var codigo = (document.getElementById('ss-ref-code').value || '').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+
+  if(!nombre) { showToast('Ingresa tu nombre completo ⚠️'); return; }
+  if(!wa) { showToast('Ingresa tu WhatsApp ⚠️'); return; }
+  if(!codigo) { showToast('No se encontró tu usuario. Contacta al administrador ⚠️'); return; }
+
+  // Clean WhatsApp — only digits
+  var waClean = wa.replace(/[^0-9]/g, '');
+  if(waClean.length < 10) { showToast('Número de WhatsApp inválido ⚠️'); return; }
+
+  // Build referral link: innovaia.app?ref=CODIGO&wa=NUMERO
+  var link = 'https://innovaia.app?ref=' + codigo + '&wa=' + waClean;
+
+  // WhatsApp share message
+  var msg = '👋 Hola, soy ' + nombre + '! '
+    + 'Te quiero mostrar algo que puede cambiar tus ingresos. '
+    + 'Mira este video y cuéntame qué piensas 👇\n\n' + link;
+  var waShareLink = 'https://wa.me/?text=' + encodeURIComponent(msg);
+
+  // Show result
+  document.getElementById('ss-link-result').style.display = 'block';
+  document.getElementById('ss-link-text').textContent = link;
+  document.getElementById('ss-wa-btn').href = waShareLink;
+
+  // Save to user profile
+  if(CU) { CU.whatsapp = wa; CU.ref = codigo; }
+
+  // Store in localStorage for persistence
+  localStorage.setItem('skyteam_ref_link', link);
+  localStorage.setItem('skyteam_ref_wa', wa);
+  localStorage.setItem('skyteam_ref_code', codigo);
+
+  showToast('✅ Link generado — ¡listo para compartir!');
+}
+
+function copiarLinkVentas() {
+  var el = document.getElementById('ss-link-text');
+  if(!el) return;
+  navigator.clipboard.writeText(el.textContent).then(function(){
+    showToast('🔗 Link copiado al portapapeles');
+    var btn = document.getElementById('ss-copy-btn');
+    if(btn) { btn.textContent = '✓ Copiado'; setTimeout(function(){ btn.textContent = 'Copiar'; }, 2000); }
+  });
 }
 
 function goSkySales(){ navigate("skysales"); }
@@ -1790,11 +1873,8 @@ function renderHome() {
     // My link
     + '<div class="card" style="background:rgba(28,232,255,0.04);border-color:rgba(28,232,255,0.15);margin-bottom:14px;">'
     + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.5);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>'
-    + '<div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.2);border:0.5px solid rgba(28,232,255,0.12);border-radius:10px;padding:10px 14px;margin-bottom:8px;">'
-    + '<span style="font-family:monospace;font-size:12px;color:#1CE8FF;flex:1;word-break:break-all;">' + landingLink + '</span>'
-    + '<button id="home-copy-btn" style="background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.25);color:#1CE8FF;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;">Copiar</button>'
-    + '</div>'
-    + '<button onclick="navigate(\'skysales\')" style="width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;border:none;font-size:13px;font-weight:900;cursor:pointer;font-family:Nunito,sans-serif;">🚀 Ir a Sky Sales IA</button>'
+    + '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px;line-height:1.6;">Genera tu link personalizado con tu usuario y WhatsApp para empezar a duplicar.</p>'
+    + '<button onclick="navigate(\'skysales\')" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">⚡ Generar mi link de ventas →</button>'
     + '</div>'
 
     // Downline tree
