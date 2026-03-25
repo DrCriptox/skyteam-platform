@@ -1707,9 +1707,9 @@ function getContentLocks() {
 
 function syncLocksFromServer() {
   fetch('/api/locks')
-    .then(function(r){ return r.json(); })
+    .then(function(r){ if(!r.ok) throw new Error('locks '+r.status); return r.json(); })
     .then(function(locks){
-      if(locks && typeof locks === 'object') {
+      if(locks && typeof locks === 'object' && !locks.error) {
         localStorage.setItem('skyteam_locks', JSON.stringify(locks));
         _locksCache = locks;
         _locksSynced = true;
@@ -2189,8 +2189,9 @@ function enviarRecordatorio() {
     + (window._flyerDataUrl ? '<div style="text-align:center;margin:16px 0;"><img src="' + window._flyerDataUrl + '" alt="Flyer sesión" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,215,0,0.2);" /></div>' : '')
     + '<div style="text-align:center;margin:24px 0;"><a href="' + link + '" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#030c1f;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">🚀 Unirme a la sesión →</a></div>'
     + '<p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;">SKY TEAM · <a href="https://skyteam.global" style="color:#1CE8FF;">skyteam.global</a></p></div>';
-  var emails = Object.values(USERS).filter(function(u){ return u.email && u.rank > 0; }).map(function(u){ return u.email; });
-  if(emails.length === 0){ showToast('No hay socios con email registrado'); return; }
+  var rankFilter = parseInt(document.getElementById('session-rank-filter').value || '0');
+  var emails = Object.values(USERS).filter(function(u){ return u.email && u.rank >= rankFilter; }).map(function(u){ return u.email; });
+  if(emails.length === 0){ showToast('No hay socios con email registrado para ese rango'); return; }
   statusEl.textContent = 'Enviando a ' + emails.length + ' socios...';
   var sent = 0; var failed = 0; var total = emails.length;
   emails.forEach(function(email){
@@ -2215,10 +2216,23 @@ function switchAdminTab(tab) {
 function renderSolicitudes() {
   var el = document.getElementById('admin-solicitudes');
   if(!el) return;
-  // Read from localStorage (real submissions from login form)
-  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-  // Also merge hardcoded PENDING demo data if localStorage is empty
-  if(pending.length === 0 && typeof PENDING !== 'undefined') pending = PENDING;
+  // Load from server first so admin sees submissions from ALL devices
+  fetch('/api/solicitudes').then(function(r){ return r.json(); })
+  .then(function(d){
+    var server = d.solicitudes || [];
+    var local = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+    // Merge: server first, then any local ones not yet on server
+    var ids = server.map(function(s){ return s.id; });
+    local.forEach(function(ls){ if(ids.indexOf(ls.id) === -1) server.push(ls); });
+    _renderSolicitudesList(el, server);
+  }).catch(function(){
+    var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+    if(pending.length === 0 && typeof PENDING !== 'undefined') pending = PENDING;
+    _renderSolicitudesList(el, pending);
+  });
+}
+
+function _renderSolicitudesList(el, pending) {
 
   if(!pending.length) {
     el.innerHTML = '<div class="admin-info-box">No hay solicitudes pendientes en este momento. Las solicitudes aparecen aquí cuando alguien llena el formulario de "Solicitar acceso" en el login.</div>';
@@ -2271,9 +2285,13 @@ function aprobarSolicitud(id) {
     expiry: null
   };
 
-  // Remove from pending
-  pending = pending.filter(function(s){ return s.id !== id; });
-  localStorage.setItem('skyteam_pending', JSON.stringify(pending));
+  // Remove from server and localStorage
+  fetch('/api/solicitudes', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'remove', id: id})
+  });
+  var localPending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+  localStorage.setItem('skyteam_pending', JSON.stringify(localPending.filter(function(s){ return s.id !== id; })));
 
   registrarSocioEnInnova(sol.name, sol.wa || '', username);
   renderSolicitudes();
@@ -2639,7 +2657,15 @@ function renderAdminAnuncios() {
           <button onclick="clearFlyer()" style="display:block;margin:6px auto 0;background:rgba(255,0,0,0.15);border:0.5px solid rgba(255,0,0,0.3);border-radius:6px;color:rgba(255,100,100,0.8);font-size:11px;padding:4px 12px;cursor:pointer;font-family:Nunito,sans-serif;">✕ Quitar imagen</button>
         </div>
       </div>
-      <button onclick="enviarRecordatorio()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">📡 Enviar recordatorio a todos los socios →</button>
+      <select id="session-rank-filter" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
+        <option value="0">👥 Todos los socios (todos los rangos)</option>
+        <option value="1">📢 INN 200 y superior</option>
+        <option value="2">📢 INN 500 y superior</option>
+        <option value="3">🌟 NOVA 1500 y superior</option>
+        <option value="4">🌟 NOVA 5K y superior</option>
+        <option value="7">👑 Solo NOVA 50K y Admin</option>
+      </select>
+      <button onclick="enviarRecordatorio()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">📡 Enviar recordatorio →</button>
       <p id="session-status" style="font-size:11px;color:rgba(255,255,255,0.4);text-align:center;margin-top:8px;min-height:16px;"></p>
     </div>
 
@@ -2758,15 +2784,25 @@ function sendSolicitud() {
   var fecha = now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})
             + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 
-  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-  pending.unshift({
+  var newSolicitud = {
     id:Date.now(), name:name, wa:wa, email:email,
     sponsor:sponsor||'Sin especificar', innovaUser:innovaUser,
     patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
     fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
     password:pass
+  };
+
+  // Save to server (JSONBin) so admin can see from any device
+  fetch('/api/solicitudes', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'add', solicitud: newSolicitud})
+  }).catch(function(){
+    // Fallback to localStorage if server fails
+    var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+    pending.unshift(newSolicitud);
+    localStorage.setItem('skyteam_pending', JSON.stringify(pending));
   });
-  localStorage.setItem('skyteam_pending', JSON.stringify(pending));
   saveReferralRelation(newRef, sponsor);
 
   document.getElementById('solicitud-box').style.display = 'none';
