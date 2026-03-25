@@ -2422,8 +2422,18 @@ function saveMat(i) {
 
 function renderAdminAnuncios() {
   const el = document.getElementById('admin-anuncios-admin');
+  const savedFrom = localStorage.getItem('skyteam_from_email') || 'lideres@skyteam.global';
   el.innerHTML = `
     <div class="admin-info-box">Publica un nuevo anuncio para todo el equipo. Aparecerá en la sección <strong>Anuncios</strong>.</div>
+    <div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;padding:14px;margin-bottom:20px;">
+      <p style="font-size:11px;font-weight:700;color:rgba(28,232,255,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📧 Correo remitente para notificaciones</p>
+      <select id="from-email-select" onchange="localStorage.setItem('skyteam_from_email',this.value)" style="width:100%;background:rgba(255,255,255,0.06);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;cursor:pointer;">
+        <option value="lideres@skyteam.global" ${savedFrom==='lideres@skyteam.global'?'selected':''}>👑 lideres@skyteam.global — Bienvenidas, liderazgo & ventas</option>
+        <option value="soporte@skyteam.global" ${savedFrom==='soporte@skyteam.global'?'selected':''}>🛠️ soporte@skyteam.global — Soporte técnico y accesos</option>
+        <option value="academy@skyteam.global" ${savedFrom==='academy@skyteam.global'?'selected':''}>📬 academy@skyteam.global — Sesiones Innova, academia & comunicados</option>
+      </select>
+      <p style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:6px;"><span style="opacity:0.6">👑 líderes</span> → bienvenidas, aprobaciones, sesiones de liderazgo y ventas &nbsp;|&nbsp; <span style="opacity:0.6">🛠️ soporte</span> → ayuda técnica y accesos &nbsp;|&nbsp; <span style="opacity:0.6">📬 contacto</span> → sesiones Innova, academia y comunicados</p>
+    </div>
     <div class="card" style="margin-bottom:20px;">
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.6px;">Ícono (emoji)</div>
       <input id="an-icon" value="📢" style="width:80px;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;padding:8px 12px;outline:none;margin-bottom:14px;">
