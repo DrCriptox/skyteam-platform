@@ -579,7 +579,7 @@ const USERS = {
   'admin':   {pass:'skyadmin',  name:'Admin',   rank:8, ref:'admin',     ventas:0,  equipo:0, isAdmin:true},
   'cliente':  {pass:'demo',      name:'Cliente Demo', rank:0, ref:'cliente01', ventas:0,  equipo:0},
   'demo2025':  {pass:'skyteam2025', name:'Líder Demo',   rank:3, ref:'demo2025',   ventas:5,  equipo:2, expiry:1742889437000},
-  'prueba3h':  {pass:'sky3h2026',   name:'Usuario Prueba',  rank:1, ref:'prueba01', ventas:0, equipo:0, expiry:1774421630500},
+  'prueba3h':  {pass:'sky3h2026',   name:'Usuario Prueba',  rank:1, ref:'prueba01', ventas:0, equipo:0, expiry:1774414925020},
   'genesis22': {pass:'genesis22',   name:'Genesis Rivera',  rank:3, ref:'genesis22', ventas:0, equipo:0, expiry:null},
   'yonfer':    {pass:'skyadmin2026',name:'Yonfer Rojas',    rank:7, ref:'angel2026', ventas:47, equipo:15, expiry:null},
 };
@@ -2216,7 +2216,9 @@ function aprobarSolicitud(id) {
   pending = pending.filter(function(s){ return s.id !== id; });
   localStorage.setItem('skyteam_pending', JSON.stringify(pending));
 
-  showToast('✅ Usuario ' + username + ' activado con su contraseña');
+  showToast('✅ Usuario ' + username + ' activado');
+  // Register ref in innova-ia-socios sheet via Apps Script Web App
+  registrarSocioEnInnova(sol.name, sol.wa || '', username);
   renderSolicitudes();
   // Refresh users tab if open
   if(document.getElementById('admin-usuarios').style.display !== 'none') {
@@ -2505,6 +2507,26 @@ function togglePassVis(inputId, btn) {
   else { inp.type = 'password'; btn.textContent = '👁'; }
 }
 
+
+/* ── REGISTRO EN INNOVA-IA LANDING ── */
+function registrarSocioEnInnova(nombre, whatsapp, refCodigo) {
+  // POST to Apps Script Web App to add row in innova-ia-socios sheet
+  var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxPLACEHOLDER/exec';
+  if(!WEB_APP_URL.includes('PLACEHOLDER')) {
+    fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      mode: 'no-cors',
+      body: JSON.stringify({
+        action: 'agregarSocio',
+        ref: refCodigo,
+        whatsapp: whatsapp || '+573112657801',
+        nombre: nombre
+      })
+    }).catch(function(){});
+  }
+}
+
 function sendSolicitud() {
   var name       = document.getElementById('sol-name').value.trim();
   var wa         = document.getElementById('sol-wa').value.trim();
@@ -2540,15 +2562,13 @@ function sendSolicitud() {
   document.getElementById('solicitud-box').style.display = 'none';
   var sb = document.getElementById('solicitud-success');
   sb.innerHTML = '<div style="font-size:28px;margin-bottom:10px;">🎉</div>'
-    + '<p style="font-family:Nunito,sans-serif;font-size:16px;font-weight:900;color:#1CE8FF;margin-bottom:10px;">¡Felicidades, ' + name.split(' ')[0] + '!</p>'
-    + '<p style="font-size:12px;color:#F0EDE6;line-height:1.7;margin-bottom:14px;">Tu solicitud fue enviada. En las próximas horas el equipo activará tu acceso y te notificará.</p>'
-    + '<div style="background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.25);border-radius:12px;padding:14px;margin-bottom:10px;">'
-    + '<p style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:rgba(28,232,255,0.5);text-transform:uppercase;margin-bottom:8px;">Tu link de referido</p>'
-    + '<p style="font-family:monospace;font-size:12px;color:#1CE8FF;word-break:break-all;margin-bottom:10px;">' + landingLink + '</p>'
-        + '<button id="copy-btn-ref" data-link="' + landingLink + '" onclick="var l=this.getAttribute(\'data-link\');navigator.clipboard.writeText(l).then(function(){document.getElementById(\'copy-btn-ref\').textContent=\'✓ Copiado\';}).catch(function(){});" '
-    + 'style="width:100%;padding:9px;border-radius:8px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">📋 Copiar mi link</button>'
-    + '</div>'
-    + '<p style="font-size:10px;color:rgba(255,255,255,0.3);">Código: <strong style="color:#FFD700;">' + newRef + '</strong></p>';
+    + '<p style="font-family:Nunito,sans-serif;font-size:16px;font-weight:900;color:#1CE8FF;margin-bottom:10px;">¡Solicitud enviada, ' + name.split(' ')[0] + '!</p>'
+    + '<p style="font-size:13px;color:#F0EDE6;line-height:1.8;margin-bottom:14px;">En las próximas horas el equipo revisará tu solicitud y activará tu acceso. Te contactaremos por WhatsApp.</p>'
+    + '<div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;padding:14px;">'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Tu usuario SKY TEAM será:</p>'
+    + '<p style="font-size:14px;font-weight:900;color:#1CE8FF;">' + innovaUser + '</p>'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">Una vez activado, entra con tu usuario y contraseña de Innova.</p>'
+    + '</div>';
   sb.style.display = 'block';
 }
 
