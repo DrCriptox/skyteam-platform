@@ -18,9 +18,17 @@ select option{background:#040f28;color:#F0EDE6;}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
 
 /* ── LOGIN ── */
-#login-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow-y:auto;overflow-x:hidden;}
+#login-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:20px;padding-bottom:80px;position:relative;overflow-y:auto;overflow-x:hidden;}
 #login-screen::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.login-box{width:100%;max-width:380px;background:rgba(4,15,40,0.78);border:0.5px solid rgba(28,232,255,0.15);border-radius:20px;padding:40px 32px;position:relative;z-index:1;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);}
+.login-box{width:100%;max-width:380px;background:rgba(4,15,40,0.78);border:0.5px solid rgba(28,232,255,0.15);border-radius:20px;padding:32px 24px;position:relative;z-index:1;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);}
+@media(max-height:700px){
+  #login-screen{align-items:flex-start;padding-top:16px;}
+  .login-box{padding:24px 20px;border-radius:16px;}
+}
+@media(max-width:400px){
+  .login-box{padding:24px 16px;margin:0 4px;}
+}
+.login-box
 .logo-big{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:3px;text-align:center;margin-bottom:4px;}
 .logo-big span{color:#1CE8FF;}
 .login-sub{text-align:center;color:rgba(255,255,255,0.4);font-size:11px;margin-bottom:24px;letter-spacing:0.5px;font-weight:500;}
@@ -1543,42 +1551,62 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
 // ── Slot renderer with IP-based scarcity ──────────────────────────────────
 function renderSlotList(slots, tz, ipHash) {
   var html = '';
-  var periods = {morning:[],afternoon:[],evening:[]};
-  slots.forEach(function(s){
+
+  // Group available slots by time period
+  var periods = { morning:[], afternoon:[], evening:[] };
+  slots.forEach(function(s) {
     if(!s.available) return;
-    try{
-      var h=parseInt(new Intl.DateTimeFormat('en',{hour:'numeric',hour12:false,timeZone:tz}).format(new Date(s.iso)));
-      if(h<12) periods.morning.push(s.iso);
-      else if(h<17) periods.afternoon.push(s.iso);
+    try {
+      var h = parseInt(new Intl.DateTimeFormat('en',{hour:'numeric',hour12:false,timeZone:tz}).format(new Date(s.iso)));
+      if(h < 12) periods.morning.push(s.iso);
+      else if(h < 17) periods.afternoon.push(s.iso);
       else periods.evening.push(s.iso);
-    }catch(e){}
+    } catch(e) {}
   });
-  var fakeOccupied={};
-  ['morning','afternoon','evening'].forEach(function(period){
-    var pSlots=periods[period];
+
+  // For each period: keep at least 1 available, block ~30% of the rest
+  // Use ipHash so each visitor sees different occupied slots but same available ones in each period
+  var fakeOccupied = {};
+  ['morning','afternoon','evening'].forEach(function(period) {
+    var pSlots = periods[period];
     if(!pSlots.length) return;
-    var mustKeep=Math.max(1,Math.ceil(pSlots.length*0.50));
-    var canBlock=pSlots.length-mustKeep;
-    var toBlock=Math.min(Math.floor(pSlots.length*0.30),canBlock);
-    var periodSeed=period==='morning'?7:period==='afternoon'?13:19;
-    var shuffled=pSlots.slice().sort(function(a,b){
-      var ha=0,hb=0,ca=a+String(ipHash*periodSeed),cb=b+String(ipHash*periodSeed);
-      for(var i=0;i<ca.length;i++)ha=(ha*31+ca.charCodeAt(i))&0x7fffffff;
-      for(var i=0;i<cb.length;i++)hb=(hb*31+cb.charCodeAt(i))&0x7fffffff;
+    var toBlock = Math.max(0, Math.floor(pSlots.length * 0.30));
+    var mustKeep = Math.max(1, Math.ceil(pSlots.length * 0.50)); // keep at least 50% of each period
+    var canBlock = pSlots.length - mustKeep;
+    toBlock = Math.min(toBlock, canBlock);
+
+    // Shuffle based on ipHash + period seed
+    var periodSeed = period === 'morning' ? 7 : period === 'afternoon' ? 13 : 19;
+    var shuffled = pSlots.slice().sort(function(a,b) {
+      var ha=0, hb=0;
+      var ca=a+String(ipHash*periodSeed), cb=b+String(ipHash*periodSeed);
+      for(var i=0;i<ca.length;i++) ha=(ha*31+ca.charCodeAt(i))&0x7fffffff;
+      for(var i=0;i<cb.length;i++) hb=(hb*31+cb.charCodeAt(i))&0x7fffffff;
       return ha-hb;
     });
-    for(var i=0;i<toBlock;i++)fakeOccupied[shuffled[i]]=true;
+    for(var i=0;i<toBlock;i++) fakeOccupied[shuffled[i]]=true;
   });
+
+  // Render all slots
   slots.forEach(function(s){
-    var tl,fl;
-    try{tl=new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso));}catch(e){tl=s.iso;}
-    try{fl=new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso));}catch(e){fl=s.iso;}
-    fl=fl.replace(/"/g,'');
-    var occ=!s.available||fakeOccupied[s.iso];
-    if(occ){
-      html+='<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.42;cursor:not-allowed;"><span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.3);text-decoration:line-through;">'+tl+'</span><span style="font-size:11px;color:rgba(255,100,100,0.65);font-weight:700;background:rgba(255,60,60,0.07);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Ocupado</span></div>';
+    var timeLabel;
+    try{ timeLabel=new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso)); }
+    catch(e){ timeLabel=s.iso; }
+    var fullLabel;
+    try{ fullLabel=new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso)); }
+    catch(e){ fullLabel=s.iso; }
+
+    var isOccupied = !s.available || fakeOccupied[s.iso];
+
+    if(isOccupied){
+      html += '<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.42;cursor:not-allowed;">'
+        + '<span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.3);text-decoration:line-through;">'+timeLabel+'</span>'
+        + '<span style="font-size:11px;color:rgba(255,100,100,0.65);font-weight:700;background:rgba(255,60,60,0.07);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Ocupado</span>'
+        + '</div>';
     } else {
-      html+='<div class="slot-row" data-iso="'+s.iso+'" data-label="'+fl+'" onclick="pbSelectSlotNew(this.dataset.iso,this.dataset.label)"><span class="s-time">'+tl+'</span><div class="s-dot"></div></div>';
+      html += '<div class="slot-row" data-iso="'+s.iso+'" data-label="'+fullLabel.replace(/"/g,'')+'" onclick="pbSelectSlotNew(this.dataset.iso,this.dataset.label)">'
+        + '<span class="s-time">'+timeLabel+'</span>'
+        + '<div class="s-dot"></div></div>';
     }
   });
   return html;
