@@ -809,6 +809,25 @@ function renderAgendaUI(el) {
 
   var html = '<div style="max-width:680px;padding:8px 0;">';
 
+  // Foto de perfil — top of page
+  var fotoActual = agendaConfig && agendaConfig.foto ? agendaConfig.foto : '';
+  html += '<div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:14px;">';
+  if(fotoActual) {
+    html += '<img src="' + fotoActual + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(28,232,255,0.4);flex-shrink:0;" />';
+  } else {
+    html += '<div style="width:64px;height:64px;border-radius:50%;background:rgba(28,232,255,0.08);border:2px dashed rgba(28,232,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:22px;">👤</span></div>';
+  }
+  html += '<div style="flex:1;">';
+  html += '<p style="margin:0;font-size:14px;font-weight:800;color:#F0EDE6;">' + (CU ? CU.name : '') + '</p>';
+  html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);color:#1CE8FF;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">📷 ' + (fotoActual ? 'Cambiar foto' : 'Agregar foto') + '<input type="file" accept="image/*" id="agenda-foto-btn" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
+  html += '</div></div>';
+
+  html += '<div id="agenda-crop-container" style="display:none;margin-bottom:14px;">';
+  html += '<div style="position:relative;width:80px;height:80px;margin:0 auto 10px;border-radius:50%;overflow:hidden;border:3px solid rgba(28,232,255,0.4);">';
+  html += '<img id="agenda-crop-img" style="width:100%;height:100%;object-fit:cover;"></div>';
+  html += '<button onclick="confirmarAgendaFoto()" style="width:100%;padding:10px;border-radius:8px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:13px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">✅ Usar esta foto</button>';
+  html += '</div>';
+
   // Header — link de agenda
   html += '<div class="card" style="background:linear-gradient(135deg,rgba(28,232,255,0.08),rgba(0,119,255,0.05));border-color:rgba(28,232,255,0.25);margin-bottom:16px;">';
   html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;">🔗 Tu link público de agenda</p>';
@@ -907,31 +926,6 @@ function renderAgendaConfigUI() {
   html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;">💬 Mensaje de confirmación al prospecto</p>';
   html += '<textarea id="agenda-msg" rows="3" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Nunito,sans-serif;resize:none;box-sizing:border-box;">' + (cfg.mensaje||'') + '</textarea>';
   html += '<p style="font-size:10px;color:rgba(255,255,255,0.25);margin:4px 0 0;">Se envía por WhatsApp al confirmar la cita.</p></div>';
-
-  // Photo upload section
-  var fotoActual = agendaConfig && agendaConfig.foto ? agendaConfig.foto : '';
-  html += '<div class="card" style="margin-bottom:12px;">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px;">🖼️ Tu foto (visible al prospecto)</p>';
-  html += '<div style="display:flex;align-items:center;gap:16px;">';
-  html += '<div id="agenda-foto-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(28,232,255,0.08);border:2px solid rgba(28,232,255,0.3);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">';
-  if(fotoActual) {
-    html += '<img src="' + fotoActual + '" style="width:100%;height:100%;object-fit:cover;">';
-  } else {
-    html += '<span style="font-size:28px;">👤</span>';
-  }
-  html += '</div>';
-  html += '<div style="flex:1;">';
-  html += '<label style="display:block;background:rgba(28,232,255,0.1);border:0.5px solid rgba(28,232,255,0.25);color:#1CE8FF;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;font-family:Nunito,sans-serif;">📷 Seleccionar foto<input type="file" accept="image/*" id="agenda-foto-input" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
-  html += '<p style="font-size:10px;color:rgba(255,255,255,0.25);margin:6px 0 0;">JPG, PNG. Se mostrará en tu página de agenda.</p>';
-  html += '</div></div>';
-  html += '<div id="agenda-crop-container" style="display:none;margin-top:12px;">';
-  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 8px;">Ajusta tu foto:</p>';
-  html += '<div style="position:relative;width:200px;height:200px;margin:0 auto;border-radius:50%;overflow:hidden;border:3px solid rgba(28,232,255,0.4);">';
-  html += '<img id="agenda-crop-img" style="width:100%;height:100%;object-fit:cover;">';
-  html += '</div>';
-  html += '<button onclick="confirmarAgendaFoto()" style="width:100%;margin-top:12px;padding:10px;border-radius:8px;background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:13px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">✅ Usar esta foto</button>';
-  html += '</div>';
-  html += '</div>';
 
   html += '<button onclick="guardarAgendaConfig()" style="width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">💾 Guardar configuración</button>';
   return html;
@@ -1145,7 +1139,8 @@ function confirmarAgendaFoto() {
   agendaConfig.foto = window._agendaFotoDataUrl;
   var container = document.getElementById('agenda-crop-container');
   if(container) container.style.display = 'none';
-  showToast('📷 Foto lista — guarda los cambios para aplicarla');
+  // Auto-save foto immediately so it persists
+  guardarAgendaConfig();
 }
 
 function cancelarCitaAgenda(id) {
@@ -1475,69 +1470,78 @@ function pbVolverSlots() {
 
 
 function generarSlotsAgenda(cfg, bookings) {
-  var slots=[]; var ahora=new Date();
-  var diasOk=cfg.dias||{};
-  var ini=(cfg.horario&&cfg.horario.inicio||'09:00').split(':').map(Number);
-  var fin=(cfg.horario&&cfg.horario.fin||'18:00').split(':').map(Number);
-  var dur=cfg.duracion||60;
-  var occupied=bookings.filter(function(b){return b.status!=='cancelada';}).map(function(b){return b.fechaISO;});
-  var socioTZ = cfg.timezone || 'America/Bogota';
+  var slots = [];
+  var ahora = new Date();
+  var diasOk = cfg.dias || {};
+  var ini = (cfg.horario && cfg.horario.inicio || '09:00').split(':').map(Number);
+  var fin = (cfg.horario && cfg.horario.fin || '18:00').split(':').map(Number);
+  var dur = cfg.duracion || 60;
+  var occupied = bookings.filter(function(b){ return b.status !== 'cancelada'; }).map(function(b){ return b.fechaISO; });
 
-  // Generate slots in socio's timezone using wall-clock time
-  for(var di=0;di<8;di++){
-    var testDate = new Date(ahora);
-    testDate.setDate(testDate.getDate()+di);
+  // Simple reliable approach: iterate days, build slot in socio's LOCAL time
+  // Use Colombia/Bogota offset manually if Intl fails
+  for(var di = 0; di < 8; di++) {
+    var checkDate = new Date(ahora);
+    checkDate.setDate(checkDate.getDate() + di);
 
-    // Get the date in socio's timezone
-    var socioDateStr;
+    // Get year/month/day in America/Bogota timezone
+    var socioTZ = 'America/Bogota';
+    var y, mo, d, dow;
     try {
-      socioDateStr = new Intl.DateTimeFormat('en-CA',{timeZone:socioTZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(testDate);
+      var parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: socioTZ, year:'numeric', month:'2-digit', day:'2-digit', weekday:'short'
+      }).formatToParts(checkDate);
+      var pmap = {};
+      parts.forEach(function(p){ pmap[p.type] = p.value; });
+      y = pmap.year; mo = pmap.month; d = pmap.day;
+      var dowMap = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+      dow = dowMap[pmap.weekday] !== undefined ? dowMap[pmap.weekday] : checkDate.getDay();
     } catch(e) {
-      var y=testDate.getFullYear(),mo=(testDate.getMonth()+1).toString().padStart(2,'0'),d=testDate.getDate().toString().padStart(2,'0');
-      socioDateStr = y+'-'+mo+'-'+d;
+      y = checkDate.getFullYear();
+      mo = (checkDate.getMonth()+1).toString().padStart(2,'0');
+      d = checkDate.getDate().toString().padStart(2,'0');
+      dow = checkDate.getDay();
     }
-
-    // Get day of week in socio's TZ
-    var dow;
-    try {
-      var dowStr = new Intl.DateTimeFormat('en-US',{timeZone:socioTZ,weekday:'short'}).format(testDate);
-      var dowMap={'Sun':0,'Mon':1,'Tue':2,'Wed':3,'Thu':4,'Fri':5,'Sat':6};
-      dow = dowMap[dowStr] !== undefined ? dowMap[dowStr] : testDate.getDay();
-    } catch(e) { dow = testDate.getDay(); }
 
     if(!diasOk[dow]) continue;
 
-    var h=ini[0],m=ini[1];
-    while(h<fin[0]||(h===fin[0]&&m<fin[1])){
-      // Build ISO string for this slot in socio's wall-clock time
-      var hStr=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+':00';
+    var h = ini[0], m = ini[1];
+    while(h < fin[0] || (h === fin[0] && m < fin[1])) {
+      var hStr = h.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0');
+      var localStr = y + '-' + mo + '-' + d + 'T' + hStr + ':00';
+
+      // Convert local Bogota time to UTC
       var slotISO;
       try {
-        // Parse the local datetime in socio's TZ by creating a temp date
-        var tempStr = socioDateStr+'T'+hStr;
-        // Get offset of socio's TZ at this moment
-        var utcStr = new Intl.DateTimeFormat('en-CA',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(tempStr));
-        var socioStr = new Intl.DateTimeFormat('en-CA',{timeZone:socioTZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date(tempStr));
-        // Simpler: use the date-manipulation approach
-        var naive = new Date(socioDateStr+'T'+hStr);
-        // Adjust for timezone offset
-        var tzOffset = (new Date(naive.toLocaleString('en-US',{timeZone:socioTZ})) - new Date(naive.toLocaleString('en-US',{timeZone:'UTC'})));
-        var slotDate = new Date(naive.getTime() - tzOffset);
-        slotISO = slotDate.toISOString();
+        // Create a date from the string as if it's UTC, then adjust by TZ offset
+        var tempUTC = new Date(localStr + 'Z');
+        // Get what Bogota thinks this UTC time is
+        var bogotaOf = new Intl.DateTimeFormat('en-CA', {
+          timeZone: socioTZ, year:'numeric', month:'2-digit', day:'2-digit',
+          hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
+        }).format(tempUTC);
+        // Parse the Bogota formatted time
+        var bgMatch = bogotaOf.match(/(\d{4})-(\d{2})-(\d{2}),?\s*(\d{2}):(\d{2}):(\d{2})/);
+        if(bgMatch) {
+          var bogotaDate = new Date(Date.UTC(+bgMatch[1],+bgMatch[2]-1,+bgMatch[3],+bgMatch[4],+bgMatch[5],+bgMatch[6]));
+          var offset = tempUTC - bogotaDate; // TZ offset in ms
+          slotISO = new Date(new Date(localStr + 'Z').getTime() - offset).toISOString();
+        } else {
+          slotISO = new Date(localStr).toISOString();
+        }
       } catch(e) {
-        var sd = new Date(socioDateStr+'T'+hStr);
-        slotISO = sd.toISOString();
+        slotISO = new Date(localStr).toISOString();
       }
 
-      var slotDate2 = new Date(slotISO);
-      // Only future slots (30min buffer)
-      if(slotDate2 - ahora >= 30*60000 && occupied.indexOf(slotISO)===-1) {
-        slots.push({iso:slotISO});
+      var slotDate = new Date(slotISO);
+      if(slotDate - ahora >= 30 * 60000 && occupied.indexOf(slotISO) === -1) {
+        slots.push({ iso: slotISO });
       }
-      m+=dur; if(m>=60){h+=Math.floor(m/60);m=m%60;}
+      m += dur;
+      if(m >= 60) { h += Math.floor(m/60); m = m % 60; }
     }
   }
-  return slots.slice(0,24);
+  return slots.slice(0, 24);
 }
 
 
