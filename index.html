@@ -856,7 +856,11 @@ function renderAgendaUI(el) {
   html += agendaTab === 'config' ? renderAgendaConfigUI() : renderAgendaCitasUI();
   html += '</div>';
   el.innerHTML = html;
-  setTimeout(function(){if(typeof attachTimeValidation==='function')attachTimeValidation();},60);
+  setTimeout(function(){
+    if(typeof attachTimeValidation==='function')attachTimeValidation();
+    if(typeof attachDayValidation==='function')attachDayValidation();
+    if(typeof validarTodosLosDias==='function')validarTodosLosDias();
+  },60);
 }
 
 function getDefaultSchedule(cfg) {
@@ -901,7 +905,7 @@ function renderAgendaConfigUI() {
 .ag-del-btn{background:none;border:none;color:rgba(255,80,80,0.4);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;transition:all 0.15s;line-height:1;flex-shrink:0;}
 .ag-del-btn:hover{background:rgba(255,60,60,0.1);color:rgba(255,80,80,0.8);}
 .ag-del-btn:disabled{opacity:0.15;cursor:not-allowed;}
-.ag-add-btn{background:none;border:none;color:rgba(28,232,255,0.45);cursor:pointer;font-size:12px;font-weight:700;padding:4px 0;font-family:Nunito,sans-serif;transition:color 0.15s;display:flex;align-items:center;gap:4px;}
+.ag-add-btn{background:none;border:none;color:rgba(28,232,255,0.45);cursor:pointer;font-size:12px;font-weight:700;padding:4px 0;font-family:Nunito,sans-serif;transition:color 0.15s;display:inline-flex;align-items:center;gap:4px;width:fit-content;}
 .ag-add-btn:hover{color:rgba(28,232,255,0.8);}
 .ag-day-row.off .ag-blocks{opacity:0.3;pointer-events:none;}
 
@@ -954,14 +958,14 @@ function renderAgendaConfigUI() {
     if(isOn) {
       dd.bloques.forEach(function(b, bi) {
         html += '<div class="ag-block-row" data-day="' + d + '" data-idx="' + bi + '">';
-        html += '<div style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;position:relative;">';
-        html += '<input type="time" lang="en-US" class="bloque-ini ag-time-input" value="' + (b.ini||'09:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;z-index:2;" oninput="agFmtTime(this);agValidateDayFromInput(this)" onchange="agFmtTime(this);agValidateDayFromInput(this)" onblur="agValidateDayFromInput(this)">';
-        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;gap:4px;pointer-events:none;white-space:nowrap;">' + agFmtTimeStr(b.ini||'09:00') + '<span style=\"color:rgba(28,232,255,0.7);font-size:12px;\">⏱</span></div>';
+        html += '<div class="ag-time-wrap" style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;">';
+        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;width:100%;pointer-events:none;"><span class="ag-time-text">' + agFmtTimeStr(b.ini||'09:00') + '</span><span style="color:rgba(28,232,255,0.7);font-size:12px;">⏱</span></div>';
+        html += '<input type="time" lang="en-US" class="bloque-ini ag-time-input" value="' + (b.ini||'09:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;z-index:10;" oninput="agFmtTime(this);agValidateDayFromInput(this)" onchange="agFmtTime(this);agValidateDayFromInput(this)" onblur="agValidateDayFromInput(this)">';
         html += '</div>';
         html += '<span class="ag-time-sep">–</span>';
-        html += '<div style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;position:relative;position:relative;">';
-        html += '<input type="time" lang="en-US" class="bloque-fin ag-time-input" value="' + (b.fin||'18:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;z-index:2;" oninput="agFmtTime(this);agValidateDayFromInput(this)" onchange="agFmtTime(this);agValidateDayFromInput(this)" onblur="agValidateDayFromInput(this)">';
-        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;gap:4px;pointer-events:none;white-space:nowrap;">' + agFmtTimeStr(b.fin||'18:00') + '<span style=\"color:rgba(28,232,255,0.7);font-size:12px;\">⏱</span></div>';
+        html += '<div class="ag-time-wrap" style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;">';
+        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;width:100%;pointer-events:none;"><span class="ag-time-text">' + agFmtTimeStr(b.fin||'18:00') + '</span><span style="color:rgba(28,232,255,0.7);font-size:12px;">⏱</span></div>';
+        html += '<input type="time" lang="en-US" class="bloque-fin ag-time-input" value="' + (b.fin||'18:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;z-index:10;" oninput="agFmtTime(this);agValidateDayFromInput(this)" onchange="agFmtTime(this);agValidateDayFromInput(this)" onblur="agValidateDayFromInput(this)">';
         html += '</div>';
         html += '<button class="ag-del-btn" onclick="eliminarBloqueDia(' + d + ',' + bi + ')"' + (dd.bloques.length<=1?' disabled':'') + '>✕</button>';
         html += '</div>';
@@ -1014,10 +1018,13 @@ function agFmtTimeStr(val) {
 }
 
 function agFmtTime(inp) {
-  // Update the sibling display div when native picker changes
-  var display = inp.nextElementSibling;
+  // Update the sibling display div when native picker changes — preserve ⏱ icon
+  var display = inp.previousElementSibling;
+  if(!display || !display.classList.contains('ag-time-display')) display = inp.nextElementSibling;
   if(display && display.classList.contains('ag-time-display')) {
-    display.textContent = agFmtTimeStr(inp.value);
+    var textSpan = display.querySelector('.ag-time-text');
+    if(textSpan) { textSpan.textContent = agFmtTimeStr(inp.value); }
+    else { display.innerHTML = '<span class="ag-time-text">' + agFmtTimeStr(inp.value) + '</span><span style="color:rgba(28,232,255,0.7);font-size:12px;">⏱</span>'; }
   }
 }
 
@@ -1073,10 +1080,10 @@ function toggleDiaSchedule(d) {
 function agregarBloqueDia(d) {
   var s = leerScheduleDOM();
   if(!s[d]) return;
-  s[d].bloques.push({ini:'09:00', fin:'18:00'});
+  s[d].bloques.push({ini:'00:00', fin:'00:00'});
   agendaConfig.schedule = s;
   var el = document.getElementById('agenda-content');
-  if(el) { renderAgendaUI(el); setTimeout(function(){ validarDia(d); }, 80); }
+  if(el) { renderAgendaUI(el); setTimeout(function(){ attachDayValidation(); validarTodosLosDias(); }, 80); }
 }
 
 function eliminarBloqueDia(d, idx) {
@@ -1085,25 +1092,33 @@ function eliminarBloqueDia(d, idx) {
   s[d].bloques.splice(idx, 1);
   agendaConfig.schedule = s;
   var el = document.getElementById('agenda-content');
-  if(el) { renderAgendaUI(el); setTimeout(attachDayValidation, 60); }
+  if(el) { renderAgendaUI(el); setTimeout(function(){ attachDayValidation(); validarTodosLosDias(); }, 80); }
 }
 
 function validarDia(d){
   var blDiv=document.getElementById('bloques-day-'+d);
   if(!blDiv||!blDiv.querySelector('.ag-block-row'))return true;
   function toM(v){var p=v.split(':');return parseInt(p[0])*60+parseInt(p[1]||0);}
+  function getWrap(inp){return inp.closest('.ag-time-wrap');}
   var bls=[],ok=true;
   blDiv.querySelectorAll('.ag-block-row').forEach(function(br){
     var ii=br.querySelector('.bloque-ini'),ff=br.querySelector('.bloque-fin');
     if(!ii||!ff||!ii.value||!ff.value){ok=false;return;}
+    var iW=getWrap(ii),fW=getWrap(ff);
     var iM=toM(ii.value),fM=toM(ff.value);
-    if(fM<=iM){ii.style.borderColor='rgba(255,80,80,0.6)';ff.style.borderColor='rgba(255,80,80,0.6)';ok=false;}
-    else{ii.style.borderColor='';ff.style.borderColor='';}
-    bls.push({i:iM,f:fM,ie:ii,fe:ff});
+    if(fM<=iM){
+      if(iW)iW.style.borderColor='rgba(255,80,80,0.6)';
+      if(fW)fW.style.borderColor='rgba(255,80,80,0.6)';
+      ok=false;
+    } else {
+      if(iW)iW.style.borderColor='';
+      if(fW)fW.style.borderColor='';
+    }
+    bls.push({i:iM,f:fM,iw:iW,fw:fW});
   });
   for(var a=0;a<bls.length;a++)for(var b2=a+1;b2<bls.length;b2++)
     if(bls[a].i<bls[b2].f&&bls[b2].i<bls[a].f){
-      [bls[a].ie,bls[a].fe,bls[b2].ie,bls[b2].fe].forEach(function(e){e.style.borderColor='rgba(255,160,0,0.7)';});
+      [bls[a].iw,bls[a].fw,bls[b2].iw,bls[b2].fw].forEach(function(w){if(w)w.style.borderColor='rgba(255,160,0,0.7)';});
       ok=false;
     }
   return ok;
@@ -1113,11 +1128,21 @@ function attachDayValidation() {
   document.querySelectorAll('.ag-time-input').forEach(function(input) {
     if(input._valBound) return;
     input._valBound = true;
-    input.addEventListener('change', function() {
-      var row=this.closest('.ag-block-row');
-      var d=row?parseInt(row.getAttribute('data-day')):null;
-      if(d!==null && !isNaN(d)) validarDia(d);
+    ['change','input'].forEach(function(evt) {
+      input.addEventListener(evt, function() {
+        var row=this.closest('.ag-block-row');
+        var d=row?parseInt(row.getAttribute('data-day')):null;
+        if(d!==null && !isNaN(d)) validarDia(d);
+      });
     });
+  });
+}
+
+function validarTodosLosDias() {
+  document.querySelectorAll('.ag-day-row').forEach(function(row) {
+    if(row.classList.contains('off')) return;
+    var d = parseInt(row.getAttribute('data-day'));
+    if(!isNaN(d)) validarDia(d);
   });
 }
 
