@@ -954,12 +954,12 @@ function renderAgendaConfigUI() {
     if(isOn) {
       dd.bloques.forEach(function(b, bi) {
         html += '<div class="ag-block-row" data-day="' + d + '" data-idx="' + bi + '">';
-        html += '<div style="display:flex;align-items:center;flex:1;gap:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;">';
+        html += '<div style="display:flex;align-items:center;flex:1;gap:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;position:relative;">';
         html += '<input type="time" lang="en-US" class="bloque-ini ag-time-input" value="' + (b.ini||'09:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;" oninput="agFmtTime(this)">';
         html += '<div class="ag-time-display" style="padding:7px 10px;font-size:13px;color:#F0EDE6;cursor:pointer;min-width:95px;user-select:none;font-weight:600;">' + agFmtTimeStr(b.ini||'09:00') + '</div>';
         html += '</div>';
         html += '<span class="ag-time-sep">–</span>';
-        html += '<div style="display:flex;align-items:center;flex:1;gap:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;">';
+        html += '<div style="display:flex;align-items:center;flex:1;gap:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;position:relative;">';
         html += '<input type="time" lang="en-US" class="bloque-fin ag-time-input" value="' + (b.fin||'18:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;" oninput="agFmtTime(this)">';
         html += '<div class="ag-time-display" style="padding:7px 10px;font-size:13px;color:#F0EDE6;cursor:pointer;min-width:95px;user-select:none;font-weight:600;">' + agFmtTimeStr(b.fin||'18:00') + '</div>';
         html += '</div>';
