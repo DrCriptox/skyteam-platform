@@ -1113,6 +1113,7 @@ function guardarAgendaConfig() {
   if(link) agendaConfig.linkReunion=link.value;
   if(msg) agendaConfig.mensaje=msg.value;
   agendaConfig.nombre=CU?CU.name:'';
+  agendaConfig.timezone='America/Bogota';
   // Include photo in config so public page can show it
   var photoKey='skyteam_agenda_photo_'+(CU.ref||CU.user||'');
   var photoData=localStorage.getItem(photoKey);
@@ -1216,86 +1217,330 @@ function showPublicBookingPage(username) {
 }
 
 function renderPublicBookingUI(div, username, cfg, bookings) {
-  var slots=generarSlotsAgenda(cfg, bookings);
-  var css='<style>.slot-btn{width:100%;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 18px;text-align:left;color:#F0EDE6;font-size:14px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;transition:all 0.15s;margin-bottom:8px;}.slot-btn:hover{background:rgba(28,232,255,0.08);border-color:rgba(28,232,255,0.3);}.slot-btn.sel{background:rgba(28,232,255,0.12);border-color:rgba(28,232,255,0.4);color:#1CE8FF;}</style>';
-  var html='<div style="min-height:100dvh;padding:28px 20px;">';
-  html+='<div style="max-width:480px;margin:0 auto;">';
-  // Get stored photo if available (passed via config)
-  var photoUrl = cfg.foto || cfg.photoDataUrl || '';
-  html+='<div style="text-align:center;margin-bottom:28px;">';
-  html+='<img src="/logo-skyteam.png" style="height:32px;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto;" />';
-  if(photoUrl) {
-    html+='<img src="'+photoUrl+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(28,232,255,0.4);margin:0 auto 12px;display:block;" />';
-  } else {
-    html+='<div style="width:80px;height:80px;border-radius:50%;background:rgba(28,232,255,0.1);border:2px dashed rgba(28,232,255,0.25);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 12px;">👤</div>';
+  // Auto-detect prospect's timezone
+  var prospectTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  var socioTZ = cfg.timezone || 'America/Bogota';
+
+  var slots = generarSlotsAgenda(cfg, bookings);
+
+  // Format slot label in prospect's timezone
+  function formatSlotLocal(isoStr, tz) {
+    try {
+      var d = new Date(isoStr);
+      var opts = { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:true, timeZone: tz };
+      return new Intl.DateTimeFormat('es-CO', opts).format(d);
+    } catch(e) {
+      var d2 = new Date(isoStr);
+      var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+      var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      return days[d2.getDay()]+' '+d2.getDate()+' '+months[d2.getMonth()]+' · '+d2.getHours().toString().padStart(2,'0')+':'+d2.getMinutes().toString().padStart(2,'0');
+    }
   }
-  html+='<h1 style="color:#F0EDE6;font-size:20px;margin:0 0 4px;font-weight:900;">Agenda una reunión</h1>';
-  html+='<p style="color:rgba(255,255,255,0.35);font-size:13px;margin:0;">con <strong style="color:#1CE8FF;">'+(cfg.nombre||username)+'</strong> · '+(cfg.duracion||60)+' min</p></div>';
+
+  function formatTimeOnly(isoStr, tz) {
+    try {
+      var d = new Date(isoStr);
+      return new Intl.DateTimeFormat('es-CO', {hour:'2-digit', minute:'2-digit', hour12:true, timeZone: tz}).format(d);
+    } catch(e) {
+      var d2 = new Date(isoStr);
+      return d2.getHours().toString().padStart(2,'0')+':'+d2.getMinutes().toString().padStart(2,'0');
+    }
+  }
+
+  function formatDayLabel(isoStr, tz) {
+    try {
+      var d = new Date(isoStr);
+      var day = new Intl.DateTimeFormat('es-CO', {weekday:'short', timeZone: tz}).format(d);
+      var num = new Intl.DateTimeFormat('es-CO', {day:'numeric', timeZone: tz}).format(d);
+      return {day: day.toUpperCase(), num: num};
+    } catch(e) {
+      var d2 = new Date(isoStr);
+      var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+      return {day: days[d2.getDay()], num: String(d2.getDate())};
+    }
+  }
+
+  // Get timezone display name
+  function getTZLabel(tz) {
+    try {
+      var offset = new Intl.DateTimeFormat('en', {timeZoneName:'short', timeZone: tz}).formatToParts(new Date()).find(p=>p.type==='timeZoneName');
+      return offset ? offset.value : tz;
+    } catch(e) { return tz; }
+  }
+
+  // Group slots by local day
+  function groupByDay(slots, tz) {
+    var groups = {};
+    var order = [];
+    slots.forEach(function(s) {
+      try {
+        var d = new Date(s.iso);
+        var dayKey = new Intl.DateTimeFormat('es-CO', {weekday:'short', day:'numeric', month:'short', timeZone: tz}).format(d);
+        if(!groups[dayKey]) { groups[dayKey] = []; order.push(dayKey); }
+        groups[dayKey].push(s);
+      } catch(e) {
+        var d2 = new Date(s.iso);
+        var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var key = days[d2.getDay()]+' '+d2.getDate()+' '+months[d2.getMonth()];
+        if(!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(s);
+      }
+    });
+    return {groups, order};
+  }
+
+  var isDiffTZ = prospectTZ !== socioTZ;
+  var tzLabel = getTZLabel(prospectTZ);
+  var grouped = groupByDay(slots, prospectTZ);
+  var firstDay = grouped.order[0] || null;
+  window._pbSelectedDay = firstDay;
+  window._pbCfg = cfg;
+  window._pbSlotISO = null;
+  window._pbProspectTZ = prospectTZ;
+  window._pbGrouped = grouped;
+
+  var css = `<style>
+    *{box-sizing:border-box;}
+    body{background:#030c1f;margin:0;font-family:'Segoe UI',sans-serif;}
+    .day-btn{flex-shrink:0;text-align:center;padding:11px 14px;border-radius:12px;cursor:pointer;min-width:62px;transition:all 0.15s;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);}
+    .day-btn.active{background:rgba(28,232,255,0.15);border-color:rgba(28,232,255,0.5);}
+    .day-btn .dname{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);}
+    .day-btn.active .dname{color:#1CE8FF;}
+    .day-btn .dnum{font-size:20px;font-weight:900;color:rgba(255,255,255,0.65);margin-top:3px;}
+    .day-btn.active .dnum{color:#1CE8FF;}
+    .slot-row{width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:8px;transition:all 0.15s;}
+    .slot-row:hover{border-color:rgba(28,232,255,0.3);background:rgba(28,232,255,0.06);}
+    .slot-row.active{background:rgba(28,232,255,0.12);border:1.5px solid rgba(28,232,255,0.5);}
+    .slot-row .s-time{font-size:16px;font-weight:900;color:rgba(255,255,255,0.8);}
+    .slot-row.active .s-time{color:#1CE8FF;}
+    .slot-row .s-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);}
+    .slot-row.active .s-dot{background:#1CE8FF;}
+    .tz-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(28,232,255,0.8);}
+    input[type=text]{width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;}
+    input[type=text]:focus{border-color:rgba(28,232,255,0.5);}
+  </style>`;
+
+  var fotoActual = cfg.foto || '';
+
+  var html = '<div style="min-height:100vh;background:#030c1f;color:#F0EDE6;">';
+
+  // Header
+  html += '<div style="background:linear-gradient(135deg,rgba(28,232,255,0.09),rgba(0,119,255,0.04));border-bottom:0.5px solid rgba(28,232,255,0.18);padding:24px 20px 18px;">';
+  html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
+  if(fotoActual) {
+    html += '<img src="'+fotoActual+'" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2.5px solid rgba(28,232,255,0.45);flex-shrink:0;" />';
+  } else {
+    html += '<div style="width:60px;height:60px;border-radius:50%;background:rgba(28,232,255,0.12);border:2.5px solid rgba(28,232,255,0.4);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">👤</div>';
+  }
+  html += '<div>';
+  html += '<p style="font-size:18px;font-weight:900;margin:0;">'+(cfg.nombre||username)+'</p>';
+  html += '<p style="font-size:12px;color:rgba(28,232,255,0.8);margin:3px 0 0;">SKY TEAM · Franquicia Digital</p>';
+  html += '</div></div>';
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+  html += '<span style="font-size:12px;color:rgba(255,255,255,0.45);display:flex;align-items:center;gap:4px;">⏱ '+(cfg.duracion||60)+' minutos</span>';
+  if(cfg.linkReunion) html += '<span style="font-size:12px;color:rgba(255,255,255,0.45);display:flex;align-items:center;gap:4px;">📹 Video llamada</span>';
+  html += '</div>';
+
+  // Timezone badge
+  html += '<div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+  html += '<span class="tz-badge">🌎 '+tzLabel+'</span>';
+  if(isDiffTZ) html += '<span style="font-size:11px;color:rgba(255,255,255,0.35);">Horarios en tu zona horaria</span>';
+  html += '</div>';
+
+  html += '</div>';
+
+  // Content
+  html += '<div style="padding:20px;">';
 
   if(!slots.length) {
-    html+='<div style="text-align:center;padding:40px;background:rgba(255,255,255,0.03);border-radius:16px;border:0.5px solid rgba(255,255,255,0.08);"><div style="font-size:40px;margin-bottom:12px;">😴</div><p style="color:rgba(255,255,255,0.4);">Sin horarios disponibles esta semana.</p></div>';
+    html += '<div style="text-align:center;padding:48px 20px;background:rgba(255,255,255,0.03);border-radius:16px;border:0.5px solid rgba(255,255,255,0.08);margin-bottom:20px;">';
+    html += '<div style="font-size:44px;margin-bottom:12px;">😴</div>';
+    html += '<p style="color:rgba(255,255,255,0.5);font-size:15px;margin:0;">Sin horarios disponibles esta semana</p>';
+    html += '</div>';
   } else {
-    // Step 1: Slots
-    html+='<div id="pb-s1">';
-    html+='<p style="font-size:11px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 14px;">📅 Elige un horario</p>';
-    slots.forEach(function(s){
-      html+='<button class="slot-btn" data-iso="'+s.iso+'" onclick="pbSelectSlot(\''+s.iso+'\',\''+s.label+'\')"><span style="color:#1CE8FF;">'+s.label+'</span></button>';
+    // Step 1: day + slot picker
+    html += '<div id="pb-s1">';
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Elige un día</p>';
+
+    // Day tabs
+    html += '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px;" id="day-tabs">';
+    grouped.order.forEach(function(dayKey, i) {
+      var firstSlot = grouped.groups[dayKey][0];
+      var dl = formatDayLabel(firstSlot.iso, prospectTZ);
+      html += '<div class="day-btn'+(i===0?' active':'')+'" onclick="pbSelectDay(\''+dayKey+'\')" data-day="'+dayKey+'">';
+      html += '<div class="dname">'+dl.day+'</div>';
+      html += '<div class="dnum">'+dl.num+'</div>';
+      html += '</div>';
     });
-    html+='</div>';
-    // Step 2: Datos
-    html+='<div id="pb-s2" style="display:none;">';
-    html+='<div style="background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.2);border-radius:10px;padding:12px 16px;margin-bottom:16px;">';
-    html+='<p style="margin:0;font-size:14px;font-weight:800;color:#1CE8FF;" id="pb-slot-label"></p>';
-    html+='<button onclick="pbVolverSlots()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;padding:4px 0;font-family:Nunito,sans-serif;">← Cambiar horario</button></div>';
-    html+='<p style="font-size:11px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px;">👤 Tus datos</p>';
-    html+='<input id="pb-nombre" placeholder="Tu nombre completo" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;margin-bottom:10px;">';
-    html+='<input id="pb-wa" placeholder="Tu WhatsApp (+57...)" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;margin-bottom:16px;">';
-    html+='<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;padding:14px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:15px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">✅ Confirmar reunión</button>';
-    html+='</div>';
-    // Step 3: Confirmación
-    html+='<div id="pb-s3" style="display:none;text-align:center;padding:40px 0;">';
-    html+='<div style="font-size:60px;margin-bottom:16px;">🎉</div>';
-    html+='<h2 style="color:#1CE8FF;font-size:24px;margin:0 0 8px;">¡Reunión confirmada!</h2>';
-    html+='<p style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;" id="pb-confirm-msg"></p>';
-    html+='<a id="pb-wa-btn" href="#" target="_blank" style="display:inline-block;margin-top:20px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:900;">💬 Confirmar por WhatsApp</a>';
-    html+='</div>';
+    html += '</div>';
+
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Horario disponible</p>';
+    html += '<div id="slots-container">';
+    // Render first day's slots
+    (grouped.groups[firstDay]||[]).forEach(function(s) {
+      html += '<div class="slot-row" data-iso="'+s.iso+'" onclick="pbSelectSlotNew(\''+s.iso+'\',\''+formatSlotLocal(s.iso, prospectTZ)+'\')">';
+      html += '<span class="s-time">'+formatTimeOnly(s.iso, prospectTZ)+'</span>';
+      html += '<div class="s-dot"></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // Step 2: confirm form
+    html += '<div id="pb-s2" style="display:none;">';
+    html += '<div style="background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.2);border-radius:10px;padding:13px 16px;margin-bottom:18px;">';
+    html += '<p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#1CE8FF;" id="pb-slot-label"></p>';
+
+    html += '<button onclick="pbVolverSlots()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;padding:6px 0 0;font-family:inherit;">← Cambiar horario</button>';
+    html += '</div>';
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
+    html += '<input type="text" id="pb-nombre" placeholder="Tu nombre completo" />';
+    html += '<input type="text" id="pb-wa" placeholder="Tu WhatsApp (ej: +504 9999 9999)" />';
+    html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:15px;font-weight:900;border:none;cursor:pointer;font-family:inherit;">✅ Confirmar reunión</button>';
+    html += '</div>';
+
+    // Step 3: success
+    html += '<div id="pb-s3" style="display:none;text-align:center;padding:40px 0;">';
+    html += '<div style="font-size:60px;margin-bottom:16px;">🎉</div>';
+    html += '<h2 style="color:#1CE8FF;font-size:24px;margin:0 0 10px;">¡Reunión confirmada!</h2>';
+    html += '<p style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;padding:0 10px;" id="pb-confirm-msg"></p>';
+    html += '<a id="pb-wa-btn" href="#" target="_blank" style="display:inline-block;margin-top:20px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:900;">💬 Confirmar por WhatsApp</a>';
+    html += '</div>';
   }
-  html+='</div></div>';
+
+  // Quote
+  if(cfg.mensaje) {
+    html += '<div style="margin-top:20px;background:rgba(255,215,0,0.06);border:0.5px solid rgba(255,215,0,0.18);border-radius:12px;padding:14px 16px;">';
+    html += '<p style="margin:0;font-size:13px;color:rgba(255,215,0,0.85);line-height:1.65;font-style:italic;">"'+cfg.mensaje+'"</p>';
+    html += '</div>';
+  }
+
+  html += '</div></div>';
   div.innerHTML = css + html;
+
+  // Inject timezone helper functions
+  window._pbFormatTimeOnly = function(iso) {
+    try {
+      return new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:window._pbProspectTZ}).format(new Date(iso));
+    } catch(e) { return iso; }
+  };
+  window._pbFormatFull = function(iso, tz) {
+    try {
+      return new Intl.DateTimeFormat('es-CO',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(iso));
+    } catch(e) { return iso; }
+  };
 }
+
+function pbSelectDay(dayKey) {
+  window._pbSelectedDay = dayKey;
+  // Update day button styles
+  document.querySelectorAll('.day-btn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-day') === dayKey);
+  });
+  // Re-render slots
+  var grouped = window._pbGrouped;
+  var slots = grouped.groups[dayKey] || [];
+  var tz = window._pbProspectTZ;
+  var html = '';
+  slots.forEach(function(s) {
+    var timeLabel;
+    try {
+      timeLabel = new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso));
+    } catch(e) { timeLabel = s.iso; }
+    var fullLabel;
+    try {
+      fullLabel = new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso));
+    } catch(e) { fullLabel = s.iso; }
+    html += '<div class="slot-row" data-iso="'+s.iso+'" onclick="pbSelectSlotNew(\''+s.iso+'\',\''+fullLabel+'\')">'
+      + '<span class="s-time">'+timeLabel+'</span>'
+      + '<div class="s-dot"></div></div>';
+  });
+  document.getElementById('slots-container').innerHTML = html;
+}
+
+function pbSelectSlotNew(iso, label) {
+  window._pbSlotISO = iso;
+  document.getElementById('pb-s1').style.display = 'none';
+  document.getElementById('pb-s2').style.display = 'block';
+  document.getElementById('pb-slot-label').textContent = '📅 ' + label;
+
+}
+
+function pbVolverSlots() {
+  document.getElementById('pb-s1').style.display = 'block';
+  document.getElementById('pb-s2').style.display = 'none';
+  window._pbSlotISO = null;
+}
+
 
 function generarSlotsAgenda(cfg, bookings) {
   var slots=[]; var ahora=new Date();
   var diasOk=cfg.dias||{};
+  var ini=(cfg.horario&&cfg.horario.inicio||'09:00').split(':').map(Number);
+  var fin=(cfg.horario&&cfg.horario.fin||'18:00').split(':').map(Number);
   var dur=cfg.duracion||60;
   var occupied=bookings.filter(function(b){return b.status!=='cancelada';}).map(function(b){return b.fechaISO;});
-  var bloques = cfg.bloques && cfg.bloques.length ? cfg.bloques : [{ini:(cfg.horario&&cfg.horario.inicio||'09:00'), fin:(cfg.horario&&cfg.horario.fin||'18:00')}];
+  var socioTZ = cfg.timezone || 'America/Bogota';
+
+  // Generate slots in socio's timezone using wall-clock time
   for(var di=0;di<8;di++){
-    var fecha=new Date(ahora); fecha.setDate(fecha.getDate()+di); fecha.setSeconds(0); fecha.setMilliseconds(0);
-    var dow=fecha.getDay(); if(!diasOk[dow]) continue;
-    bloques.forEach(function(bloque){
-      var ini=(bloque.ini||'09:00').split(':').map(Number);
-      var fin=(bloque.fin||'18:00').split(':').map(Number);
-      var h=ini[0],m=ini[1];
-      while(h<fin[0]||(h===fin[0]&&m<fin[1])){
-        var sd=new Date(fecha); sd.setHours(h,m,0,0);
-        if(sd-ahora>=30*60000){
-          var iso=sd.toISOString();
-          if(occupied.indexOf(iso)===-1){
-            var hStr=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');
-            slots.push({iso:iso, label:DIAS_SHORT[dow]+' '+sd.getDate()+' '+MESES_SHORT[sd.getMonth()]+' · '+hStr});
-          }
-        }
-        m+=dur; if(m>=60){h+=Math.floor(m/60);m=m%60;}
+    var testDate = new Date(ahora);
+    testDate.setDate(testDate.getDate()+di);
+
+    // Get the date in socio's timezone
+    var socioDateStr;
+    try {
+      socioDateStr = new Intl.DateTimeFormat('en-CA',{timeZone:socioTZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(testDate);
+    } catch(e) {
+      var y=testDate.getFullYear(),mo=(testDate.getMonth()+1).toString().padStart(2,'0'),d=testDate.getDate().toString().padStart(2,'0');
+      socioDateStr = y+'-'+mo+'-'+d;
+    }
+
+    // Get day of week in socio's TZ
+    var dow;
+    try {
+      var dowStr = new Intl.DateTimeFormat('en-US',{timeZone:socioTZ,weekday:'short'}).format(testDate);
+      var dowMap={'Sun':0,'Mon':1,'Tue':2,'Wed':3,'Thu':4,'Fri':5,'Sat':6};
+      dow = dowMap[dowStr] !== undefined ? dowMap[dowStr] : testDate.getDay();
+    } catch(e) { dow = testDate.getDay(); }
+
+    if(!diasOk[dow]) continue;
+
+    var h=ini[0],m=ini[1];
+    while(h<fin[0]||(h===fin[0]&&m<fin[1])){
+      // Build ISO string for this slot in socio's wall-clock time
+      var hStr=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+':00';
+      var slotISO;
+      try {
+        // Parse the local datetime in socio's TZ by creating a temp date
+        var tempStr = socioDateStr+'T'+hStr;
+        // Get offset of socio's TZ at this moment
+        var utcStr = new Intl.DateTimeFormat('en-CA',{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(tempStr));
+        var socioStr = new Intl.DateTimeFormat('en-CA',{timeZone:socioTZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date(tempStr));
+        // Simpler: use the date-manipulation approach
+        var naive = new Date(socioDateStr+'T'+hStr);
+        // Adjust for timezone offset
+        var tzOffset = (new Date(naive.toLocaleString('en-US',{timeZone:socioTZ})) - new Date(naive.toLocaleString('en-US',{timeZone:'UTC'})));
+        var slotDate = new Date(naive.getTime() - tzOffset);
+        slotISO = slotDate.toISOString();
+      } catch(e) {
+        var sd = new Date(socioDateStr+'T'+hStr);
+        slotISO = sd.toISOString();
       }
-    });
+
+      var slotDate2 = new Date(slotISO);
+      // Only future slots (30min buffer)
+      if(slotDate2 - ahora >= 30*60000 && occupied.indexOf(slotISO)===-1) {
+        slots.push({iso:slotISO});
+      }
+      m+=dur; if(m>=60){h+=Math.floor(m/60);m=m%60;}
+    }
   }
-  slots.sort(function(a,b){return new Date(a.iso)-new Date(b.iso);});
-  var seen={}; slots=slots.filter(function(s){if(seen[s.iso])return false;seen[s.iso]=1;return true;});
   return slots.slice(0,24);
 }
 
-var _pbSlotISO=null;
+
 function pbSelectSlot(iso,label){
   _pbSlotISO=iso;
   document.getElementById('pb-slot-label').textContent='📅 '+label;
