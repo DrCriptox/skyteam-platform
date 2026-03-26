@@ -1375,18 +1375,29 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     var groups = {};
     var order = [];
     slots.forEach(function(s) {
+      // Deterministic scarcity hash
+      var sHash = 0;
+      for(var hi=0;hi<s.iso.length;hi++) sHash=(sHash*31+s.iso.charCodeAt(hi))&0x7fffffff;
+      var isOcc = sHash % 100 < 28;
+
+      var tz2 = prospectTZ;
+      var timeLabel2;
       try {
-        var d = new Date(s.iso);
-        var dayKey = new Intl.DateTimeFormat('es-CO', {weekday:'short', day:'numeric', month:'short', timeZone: tz}).format(d);
-        if(!groups[dayKey]) { groups[dayKey] = []; order.push(dayKey); }
-        groups[dayKey].push(s);
-      } catch(e) {
-        var d2 = new Date(s.iso);
-        var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-        var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        var key = days[d2.getDay()]+' '+d2.getDate()+' '+months[d2.getMonth()];
-        if(!groups[key]) { groups[key] = []; order.push(key); }
-        groups[key].push(s);
+        timeLabel2 = new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz2}).format(new Date(s.iso));
+      } catch(e) { timeLabel2 = s.iso; }
+      var fullLabel2;
+      try {
+        fullLabel2 = new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz2}).format(new Date(s.iso));
+      } catch(e) { fullLabel2 = s.iso; }
+
+      if(isOcc) {
+        html += '<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.45;cursor:not-allowed;">'
+          + '<span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.4);text-decoration:line-through;">'+timeLabel2+'</span>'
+          + '<span style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Ocupado</span>'
+          + '</div>';
+      } else {
+        html += '<button class="slot-btn" data-iso="'+s.iso+'" data-label="'+fullLabel2.replace(/"/g,'')+'" onclick="pbSelectSlot(this.dataset.iso,this.dataset.label)">'
+          + '<span style="color:#1CE8FF;">'+timeLabel2+'</span></button>';
       }
     });
     return {groups, order};
@@ -1445,9 +1456,16 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   html += '</div>';
 
   // Timezone badge
+  // Viewer count — deterministic based on username hash so it's stable per page load
+  var viewHash = 0; for(var vi=0;vi<username.length;vi++) viewHash = (viewHash*17 + username.charCodeAt(vi)) & 0xff;
+  var viewCount = 3 + (viewHash % 6); // 3-8 viewers
+
   html += '<div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
   html += '<span class="tz-badge">🌎 '+tzLabel+'</span>';
   if(isDiffTZ) html += '<span style="font-size:11px;color:rgba(255,255,255,0.35);">Horarios en tu zona horaria</span>';
+  html += '</div>';
+  html += '<div style="margin-top:8px;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,160,0,0.08);border:0.5px solid rgba(255,160,0,0.2);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(255,180,0,0.8);">👁 '+viewCount+' personas viendo esta agenda</span>';
   html += '</div>';
 
   html += '</div>';
@@ -1554,9 +1572,20 @@ function pbSelectDay(dayKey) {
     try {
       fullLabel = new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso));
     } catch(e) { fullLabel = s.iso; }
-    html += '<div class="slot-row" data-iso="'+s.iso+'" onclick="pbSelectSlotNew(\''+s.iso+'\',\''+fullLabel+'\')">'
-      + '<span class="s-time">'+timeLabel+'</span>'
-      + '<div class="s-dot"></div></div>';
+    // Deterministic scarcity
+    var sHash = 0;
+    for(var hi=0;hi<s.iso.length;hi++) sHash=(sHash*31+s.iso.charCodeAt(hi))&0x7fffffff;
+    var isOcc = sHash % 100 < 28;
+    if(isOcc) {
+      html += '<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.45;cursor:not-allowed;">'
+        + '<span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.4);text-decoration:line-through;">'+timeLabel+'</span>'
+        + '<span style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Ocupado</span>'
+        + '</div>';
+    } else {
+      html += '<div class="slot-row" data-iso="'+s.iso+'" data-label="'+fullLabel+'" onclick="pbSelectSlotNew(this.dataset.iso,this.dataset.label)">'
+        + '<span class="s-time">'+timeLabel+'</span>'
+        + '<div class="s-dot"></div></div>';
+    }
   });
   document.getElementById('slots-container').innerHTML = html;
 }
@@ -1648,7 +1677,7 @@ function generarSlotsAgenda(cfg, bookings) {
       if(finMins <= iniMins) return;
 
       var curMins = iniMins;
-      while(curMins < finMins) {
+      while(curMins + dur <= finMins) {  // slot must END at or before fin
         var h = Math.floor(curMins / 60);
         var m = curMins % 60;
 
