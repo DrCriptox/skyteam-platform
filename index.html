@@ -1094,6 +1094,34 @@ function toggleAgendaActiva() {
   guardarAgendaConfig();
 }
 
+function validarBloques(bloques) {
+  var errores = [];
+  // Convert to minutes for easy comparison
+  function toMins(t) { var p=t.split(':').map(Number); return p[0]*60+(p[1]||0); }
+  
+  bloques.forEach(function(b, i) {
+    var ini = toMins(b.ini), fin = toMins(b.fin);
+    // Check fin > ini
+    if(fin <= ini) {
+      errores.push('Bloque ' + (i+1) + ': la hora de fin (' + b.fin + ') debe ser mayor que la de inicio (' + b.ini + '). ¿Quisiste decir ' + b.fin.replace(/^0/,'') + ' PM?');
+    }
+    // Check against other bloques for overlaps
+    bloques.forEach(function(b2, j) {
+      if(j <= i) return;
+      var ini2 = toMins(b2.ini), fin2 = toMins(b2.fin);
+      if(ini < fin2 && fin > ini2) {
+        errores.push('Bloque ' + (i+1) + ' (' + b.ini + '-' + b.fin + ') y Bloque ' + (j+1) + ' (' + b2.ini + '-' + b2.fin + ') se superponen.');
+      }
+    });
+    // Warn if block seems like it might be AM/PM confusion
+    // e.g. ini < 07:00 but not explicitly overnight
+    if(toMins(b.ini) < 6*60 && toMins(b.fin) < 12*60) {
+      errores.push('Bloque ' + (i+1) + ': el horario ' + b.ini + '-' + b.fin + ' es de madrugada. ¿Quisiste poner una hora PM?');
+    }
+  });
+  return errores;
+}
+
 function guardarAgendaConfig() {
   if(!agendaConfig) agendaConfig=getDefaultAgendaCfg();
   // Read time blocks
@@ -1104,6 +1132,31 @@ function guardarAgendaConfig() {
     var fin = row.querySelector('.bloque-fin');
     if(ini && fin && ini.value && fin.value) bloques.push({ini: ini.value, fin: fin.value});
   });
+  
+  // Validate blocks before saving
+  if(bloques.length > 0) {
+    var errores = validarBloques(bloques);
+    if(errores.length > 0) {
+      // Show validation errors — don't save yet
+      var msgEl = document.getElementById('bloques-error');
+      if(!msgEl) {
+        msgEl = document.createElement('div');
+        msgEl.id = 'bloques-error';
+        msgEl.style.cssText = 'background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:10px;padding:12px 14px;margin-bottom:12px;';
+        var container = document.getElementById('bloques-container');
+        if(container && container.parentElement) {
+          container.parentElement.insertBefore(msgEl, container.nextSibling);
+        }
+      }
+      msgEl.innerHTML = '<p style="font-size:12px;font-weight:800;color:#ff8080;margin:0 0 6px;">⚠️ Revisa los horarios antes de guardar:</p>'
+        + errores.map(function(e){ return '<p style="font-size:12px;color:rgba(255,150,150,0.9);margin:3px 0;">• ' + e + '</p>'; }).join('')
+        + '<button onclick="guardarForzado()" style="margin-top:8px;background:rgba(255,80,80,0.15);border:0.5px solid rgba(255,80,80,0.3);color:#ff8080;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">Guardar de todas formas</button>';
+      return; // Stop here
+    }
+    // Clear any previous error
+    var prev = document.getElementById('bloques-error');
+    if(prev) prev.remove();
+  }
   agendaConfig.bloques = bloques.length ? bloques : [{ini:'09:00', fin:'18:00'}];
   // Keep legacy horario for backwards compat
   agendaConfig.horario = {inicio: bloques[0]?bloques[0].ini:'09:00', fin: bloques[bloques.length-1]?bloques[bloques.length-1].fin:'18:00'};
@@ -1166,6 +1219,35 @@ function confirmarAgendaFoto() {
   if(container) container.style.display = 'none';
   // Auto-save foto immediately so it persists
   guardarAgendaConfig();
+}
+
+function guardarForzado() {
+  // Save without validation (user confirmed)
+  if(!agendaConfig) agendaConfig=getDefaultAgendaCfg();
+  var bloqueRows = document.querySelectorAll('.bloque-row');
+  var bloques = [];
+  bloqueRows.forEach(function(row) {
+    var ini = row.querySelector('.bloque-ini');
+    var fin = row.querySelector('.bloque-fin');
+    if(ini && fin && ini.value && fin.value) bloques.push({ini: ini.value, fin: fin.value});
+  });
+  agendaConfig.bloques = bloques.length ? bloques : [{ini:'09:00', fin:'18:00'}];
+  agendaConfig.horario = {inicio: bloques[0]?bloques[0].ini:'09:00', fin: bloques[bloques.length-1]?bloques[bloques.length-1].fin:'18:00'};
+  var ini2 = document.getElementById('agenda-hora-ini');
+  var fin2 = document.getElementById('agenda-hora-fin');
+  var link = document.getElementById('agenda-link');
+  var msg = document.getElementById('agenda-msg');
+  if(link) agendaConfig.linkReunion = link.value;
+  if(msg) agendaConfig.mensaje = msg.value;
+  agendaConfig.nombre = CU ? CU.name : '';
+  agendaConfig.timezone = 'America/Bogota';
+  if(window._agendaFotoDataUrl) agendaConfig.foto = window._agendaFotoDataUrl;
+  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'saveConfig',user:CU.ref||CU.user||'',config:agendaConfig})})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok){showToast('✅ Agenda guardada');renderAgendaUI(document.getElementById('agenda-content'));}
+    else showToast('❌ Error guardando');})
+    .catch(function(){showToast('❌ Error de conexión');});
 }
 
 function cancelarCitaAgenda(id) {
@@ -1498,74 +1580,93 @@ function generarSlotsAgenda(cfg, bookings) {
   var slots = [];
   var ahora = new Date();
   var diasOk = cfg.dias || {};
-  var ini = (cfg.horario && cfg.horario.inicio || '09:00').split(':').map(Number);
-  var fin = (cfg.horario && cfg.horario.fin || '18:00').split(':').map(Number);
   var dur = cfg.duracion || 60;
-  var occupied = bookings.filter(function(b){ return b.status !== 'cancelada'; }).map(function(b){ return b.fechaISO; });
+  var occupied = bookings
+    .filter(function(b){ return b.status !== 'cancelada'; })
+    .map(function(b){ return b.fechaISO; });
 
-  // Simple reliable approach: iterate days, build slot in socio's LOCAL time
-  // Use Colombia/Bogota offset manually if Intl fails
+  // Use bloques array; fall back to single horario block
+  var bloques = cfg.bloques && cfg.bloques.length
+    ? cfg.bloques
+    : [{ ini: cfg.horario && cfg.horario.inicio || '09:00',
+         fin: cfg.horario && cfg.horario.fin   || '18:00' }];
+
+  // Get Bogota UTC offset (Colombia = UTC-5, no DST)
+  function getBogotaOffset() {
+    try {
+      var ref = new Date();
+      var utcH = ref.getUTCHours();
+      var bogotaH = parseInt(
+        new Intl.DateTimeFormat('en', {
+          timeZone: 'America/Bogota',
+          hour: 'numeric', hour12: false
+        }).format(ref)
+      );
+      // handle midnight crossing
+      var diff = utcH - bogotaH;
+      if(diff < -12) diff += 24;
+      if(diff >  12) diff -= 24;
+      return diff; // hours to ADD to local Bogota to get UTC (e.g. 5)
+    } catch(e) {
+      return 5; // fallback: UTC-5
+    }
+  }
+  var offsetHrs = getBogotaOffset();
+
+  // Iterate next 8 days
   for(var di = 0; di < 8; di++) {
-    var checkDate = new Date(ahora);
-    checkDate.setDate(checkDate.getDate() + di);
+    var base = new Date(ahora);
+    base.setDate(base.getDate() + di);
 
-    // Get year/month/day in America/Bogota timezone
-    var socioTZ = 'America/Bogota';
+    // Get date components in Bogota timezone
     var y, mo, d, dow;
     try {
       var parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: socioTZ, year:'numeric', month:'2-digit', day:'2-digit', weekday:'short'
-      }).formatToParts(checkDate);
-      var pmap = {};
-      parts.forEach(function(p){ pmap[p.type] = p.value; });
-      y = pmap.year; mo = pmap.month; d = pmap.day;
-      var dowMap = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
-      dow = dowMap[pmap.weekday] !== undefined ? dowMap[pmap.weekday] : checkDate.getDay();
+        timeZone: 'America/Bogota',
+        year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'
+      }).formatToParts(base);
+      var pm = {};
+      parts.forEach(function(p){ pm[p.type] = p.value; });
+      y = parseInt(pm.year); mo = parseInt(pm.month) - 1; d = parseInt(pm.day);
+      var dm = {Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6};
+      dow = dm[pm.weekday] !== undefined ? dm[pm.weekday] : base.getDay();
     } catch(e) {
-      y = checkDate.getFullYear();
-      mo = (checkDate.getMonth()+1).toString().padStart(2,'0');
-      d = checkDate.getDate().toString().padStart(2,'0');
-      dow = checkDate.getDay();
+      y = base.getFullYear(); mo = base.getMonth(); d = base.getDate();
+      dow = base.getDay();
     }
 
     if(!diasOk[dow]) continue;
 
-    var h = ini[0], m = ini[1];
-    while(h < fin[0] || (h === fin[0] && m < fin[1])) {
-      var hStr = h.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0');
-      var localStr = y + '-' + mo + '-' + d + 'T' + hStr + ':00';
+    // For each configured bloque on this day
+    bloques.forEach(function(bloque) {
+      var iniParts = (bloque.ini || '09:00').split(':').map(Number);
+      var finParts = (bloque.fin || '18:00').split(':').map(Number);
+      var iniMins = iniParts[0] * 60 + (iniParts[1] || 0);
+      var finMins = finParts[0] * 60 + (finParts[1] || 0);
 
-      // Convert local Bogota time to UTC
-      var slotISO;
-      try {
-        // Create a date from the string as if it's UTC, then adjust by TZ offset
-        var tempUTC = new Date(localStr + 'Z');
-        // Get what Bogota thinks this UTC time is
-        var bogotaOf = new Intl.DateTimeFormat('en-CA', {
-          timeZone: socioTZ, year:'numeric', month:'2-digit', day:'2-digit',
-          hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
-        }).format(tempUTC);
-        // Parse the Bogota formatted time
-        var bgMatch = bogotaOf.match(/(\d{4})-(\d{2})-(\d{2}),?\s*(\d{2}):(\d{2}):(\d{2})/);
-        if(bgMatch) {
-          var bogotaDate = new Date(Date.UTC(+bgMatch[1],+bgMatch[2]-1,+bgMatch[3],+bgMatch[4],+bgMatch[5],+bgMatch[6]));
-          var offset = tempUTC - bogotaDate; // TZ offset in ms
-          slotISO = new Date(new Date(localStr + 'Z').getTime() - offset).toISOString();
-        } else {
-          slotISO = new Date(localStr).toISOString();
+      // Skip invalid bloques (fin <= ini, or overnight spans)
+      if(finMins <= iniMins) return;
+
+      var curMins = iniMins;
+      while(curMins < finMins) {
+        var h = Math.floor(curMins / 60);
+        var m = curMins % 60;
+
+        // Build UTC ISO: Bogota local → UTC by adding offset
+        var slotUTC = new Date(Date.UTC(y, mo, d, h + offsetHrs, m, 0, 0));
+        var slotISO = slotUTC.toISOString();
+
+        // 30 min buffer from now + not already booked
+        if(slotUTC - ahora >= 30 * 60000 && occupied.indexOf(slotISO) === -1) {
+          slots.push({ iso: slotISO });
         }
-      } catch(e) {
-        slotISO = new Date(localStr).toISOString();
+        curMins += dur;
       }
-
-      var slotDate = new Date(slotISO);
-      if(slotDate - ahora >= 30 * 60000 && occupied.indexOf(slotISO) === -1) {
-        slots.push({ iso: slotISO });
-      }
-      m += dur;
-      if(m >= 60) { h += Math.floor(m/60); m = m % 60; }
-    }
+    });
   }
+
+  // Sort chronologically
+  slots.sort(function(a, b){ return new Date(a.iso) - new Date(b.iso); });
   return slots.slice(0, 24);
 }
 
