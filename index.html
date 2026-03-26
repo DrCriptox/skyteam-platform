@@ -1372,37 +1372,28 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
 
   // Group slots by local day
   function groupByDay(slots, tz) {
-    var groups = {};
-    var order = [];
+    var groups = {}, order = [];
     slots.forEach(function(s) {
-      // Deterministic scarcity hash
-      var sHash = 0;
-      for(var hi=0;hi<s.iso.length;hi++) sHash=(sHash*31+s.iso.charCodeAt(hi))&0x7fffffff;
-      var isOcc = sHash % 100 < 28;
-
-      var tz2 = prospectTZ;
-      var timeLabel2;
       try {
-        timeLabel2 = new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz2}).format(new Date(s.iso));
-      } catch(e) { timeLabel2 = s.iso; }
-      var fullLabel2;
-      try {
-        fullLabel2 = new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz2}).format(new Date(s.iso));
-      } catch(e) { fullLabel2 = s.iso; }
-
-      if(isOcc) {
-        html += '<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.45;cursor:not-allowed;">'
-          + '<span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.4);text-decoration:line-through;">'+timeLabel2+'</span>'
-          + '<span style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Ocupado</span>'
-          + '</div>';
-      } else {
-        html += '<button class="slot-btn" data-iso="'+s.iso+'" data-label="'+fullLabel2.replace(/"/g,'')+'" onclick="pbSelectSlot(this.dataset.iso,this.dataset.label)">'
-          + '<span style="color:#1CE8FF;">'+timeLabel2+'</span></button>';
+        var d = new Date(s.iso);
+        var dayKey = new Intl.DateTimeFormat('es-CO', {
+          weekday:'short', day:'numeric', month:'short', timeZone: tz
+        }).format(d);
+        if(!groups[dayKey]) { groups[dayKey] = []; order.push(dayKey); }
+        groups[dayKey].push(s);
+      } catch(e) {
+        var d2 = new Date(s.iso);
+        var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        var key = days[d2.getDay()]+' '+d2.getDate()+' '+months[d2.getMonth()];
+        if(!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(s);
       }
     });
     return {groups, order};
   }
 
+  
   var isDiffTZ = prospectTZ !== socioTZ;
   var tzLabel = getTZLabel(prospectTZ);
   var grouped = groupByDay(slots, prospectTZ);
