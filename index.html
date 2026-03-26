@@ -819,7 +819,8 @@ function renderAgendaUI(el) {
   }
   html += '<div style="flex:1;">';
   html += '<p style="margin:0;font-size:14px;font-weight:800;color:#F0EDE6;">' + (CU ? CU.name : '') + '</p>';
-  html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);color:#1CE8FF;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">📷 ' + (fotoActual ? 'Cambiar foto' : 'Agregar foto') + '<input type="file" accept="image/*" id="agenda-foto-btn" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
+  html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);color:#1CE8FF;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">📷 ' + (fotoActual ? 'Cambiar foto' : 'Agregar foto') + '<br><span style="font-size:10px;font-weight:400;opacity:0.7;">(imagen que verá el prospecto al reservar)</span><input type="file" accept="image/*" id="agenda-foto-btn" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
+  html += '<p style="font-size:10px;color:rgba(255,255,255,0.3);margin:5px 0 0;">Formato JPG o PNG · Máx. 10 MB · Se recorta en círculo</p>';
   html += '</div></div>';
 
   html += '<div id="agenda-crop-container" style="display:none;margin-bottom:14px;">';
@@ -872,7 +873,26 @@ function renderAgendaConfigUI() {
   });
   html += '</div></div>';
 
-  // Photo upload
+  // Photo upload placeholder (handled in renderAgendaUI top section)
+
+  // Horario — bloques
+  html += '<div class="card" style="margin-bottom:12px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px;">⏰ Horario de atención</p>';
+  var bloques = cfg.bloques || [{ini: cfg.horario&&cfg.horario.inicio||'09:00', fin: cfg.horario&&cfg.horario.fin||'18:00'}];
+  html += '<div id="bloques-container">';
+  bloques.forEach(function(b, i) {
+    html += '<div class="bloque-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+    html += '<input type="time" class="bloque-ini" value="' + (b.ini||'09:00') + '" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">';
+    html += '<span style="color:rgba(255,255,255,0.4);font-size:13px;">→</span>';
+    html += '<input type="time" class="bloque-fin" value="' + (b.fin||'18:00') + '" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">';
+    html += '<button onclick="eliminarBloque(this)" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;font-family:Nunito,sans-serif;"' + (i===0?' disabled style="opacity:0.3;cursor:not-allowed;"':'') + '>✕</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<button onclick="agregarBloque()" style="width:100%;padding:9px;border-radius:8px;background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);color:rgba(28,232,255,0.7);font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;margin-top:2px;">+ Agregar bloque</button>';
+  html += '<p style="font-size:10px;color:rgba(255,255,255,0.25);margin:8px 0 0;">Agrega múltiples bloques — ej: 7-9am, 11am-2pm, 4-6pm.</p>';
+  html += '</div>';
+
   // Duración
   html += '<div class="card" style="margin-bottom:12px;">';
   html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px;">⏱️ Duración por reunión</p>';
@@ -1010,6 +1030,24 @@ function subirFotoAgenda(input) {
   reader.readAsDataURL(file);
 }
 
+function agregarBloque() {
+  var container = document.getElementById('bloques-container');
+  if(!container) return;
+  var div = document.createElement('div');
+  div.className = 'bloque-row';
+  div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+  div.innerHTML = '<input type="time" class="bloque-ini" value="09:00" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">'
+    + '<span style="color:rgba(255,255,255,0.4);font-size:13px;">→</span>'
+    + '<input type="time" class="bloque-fin" value="18:00" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">'
+    + '<button onclick="eliminarBloque(this)" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;font-family:Nunito,sans-serif;">✕</button>';
+  container.appendChild(div);
+}
+
+function eliminarBloque(btn) {
+  var row = btn.closest('.bloque-row');
+  if(row) row.remove();
+}
+
 function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); }
 function toggleDiaAgenda(d) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.dias[d]=!agendaConfig.dias[d]; renderAgendaUI(document.getElementById('agenda-content')); }
 function setDuracionAgenda(m) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.duracion=m; renderAgendaUI(document.getElementById('agenda-content')); }
@@ -1075,6 +1113,8 @@ function guardarAgendaConfig() {
   if(msg) agendaConfig.mensaje=msg.value;
   agendaConfig.nombre=CU?CU.name:'';
   agendaConfig.timezone='America/Bogota';
+  // Preserve foto if already set
+  if(window._agendaFotoDataUrl) agendaConfig.foto = window._agendaFotoDataUrl;
   // Include photo in config so public page can show it
   var photoKey='skyteam_agenda_photo_'+(CU.ref||CU.user||'');
   var photoData=localStorage.getItem(photoKey);
