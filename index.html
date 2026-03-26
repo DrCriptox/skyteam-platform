@@ -1344,9 +1344,10 @@ function guardarAgendaConfig() {
     });
     agendaConfig.dias = dias;
   }
-  agendaConfig.bloques = bloques.length ? bloques : [{ini:'09:00', fin:'18:00'}];
   // Keep legacy horario for backwards compat
-  agendaConfig.horario = {inicio: bloques[0]?bloques[0].ini:'09:00', fin: bloques[bloques.length-1]?bloques[bloques.length-1].fin:'18:00'};
+  if(agendaConfig.bloques && agendaConfig.bloques.length) {
+    agendaConfig.horario = {inicio: agendaConfig.bloques[0].ini, fin: agendaConfig.bloques[agendaConfig.bloques.length-1].fin};
+  }
   // Validate all active days before saving
   var allValid = true;
   [1,2,3,4,5,6,0].forEach(function(d){ if(!validarDia(d)) allValid=false; });
@@ -1427,8 +1428,7 @@ function guardarForzado() {
     var fin = row.querySelector('.bloque-fin');
     if(ini && fin && ini.value && fin.value) bloques.push({ini: ini.value, fin: fin.value});
   });
-  agendaConfig.bloques = bloques.length ? bloques : [{ini:'09:00', fin:'18:00'}];
-  agendaConfig.horario = {inicio: bloques[0]?bloques[0].ini:'09:00', fin: bloques[bloques.length-1]?bloques[bloques.length-1].fin:'18:00'};
+  if(agendaConfig.bloques && agendaConfig.bloques.length) { agendaConfig.horario = {inicio: agendaConfig.bloques[0].ini, fin: agendaConfig.bloques[agendaConfig.bloques.length-1].fin}; }
   var ini2 = document.getElementById('agenda-hora-ini');
   var fin2 = document.getElementById('agenda-hora-fin');
   // Validate all active days before saving
