@@ -1302,7 +1302,7 @@ function checkPublicAgenda() {
 }
 
 function showPublicBookingPage(username) {
-  document.querySelectorAll('#app,#login').forEach(function(el){if(el)el.style.display='none';});
+  document.querySelectorAll('#app,#login,#login-screen').forEach(function(el){if(el)el.style.display='none';});
   var old=document.getElementById('public-booking'); if(old) old.remove();
   var div=document.createElement('div'); div.id='public-booking';
   div.style.cssText='min-height:100dvh;background:#030c1f;color:#F0EDE6;font-family:Nunito,sans-serif;';
