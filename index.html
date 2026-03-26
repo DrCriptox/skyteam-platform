@@ -6,7 +6,7 @@
 <title>Sky Team</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-html,body{height:100%;overflow:hidden;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}
+html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}
 :root{--gold:#FFD700;--gold2:#C9A84C;--gold-d:rgba(255,215,0,0.08);--gold-b:rgba(255,215,0,0.25);--gold-1:#FFE55A;--bg:#030c1f;--bg2:#040f28;--bg3:#061235;--bg4:#08173e;--border:rgba(255,255,255,0.07);--border2:rgba(28,232,255,0.15);--text:#F0EDE6;--muted:rgba(255,255,255,0.45);--muted2:rgba(255,255,255,0.25);--blue:#1CE8FF;--blue-d:rgba(28,232,255,0.07);--blue-b:rgba(28,232,255,0.18);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);background-image:radial-gradient(ellipse 500px 350px at 0% 0%,rgba(28,232,255,0.05) 0%,transparent 60%),radial-gradient(ellipse 400px 300px at 100% 15%,rgba(255,215,0,0.04) 0%,transparent 60%),radial-gradient(ellipse 350px 280px at 50% 100%,rgba(0,85,204,0.06) 0%,transparent 60%);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;min-height:100vh;}
@@ -18,7 +18,7 @@ select option{background:#040f28;color:#F0EDE6;}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
 
 /* ── LOGIN ── */
-#login-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:20px;padding-bottom:80px;position:relative;overflow-y:auto;overflow-x:hidden;}
+#login-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:20px;padding-bottom:80px;position:relative;overflow-y:auto;overflow-x:hidden;overflow-y:auto;}
 #login-screen::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
 .login-box{width:100%;max-width:380px;background:rgba(4,15,40,0.78);border:0.5px solid rgba(28,232,255,0.15);border-radius:20px;padding:32px 24px;position:relative;z-index:1;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);}
 @media(max-height:700px){
