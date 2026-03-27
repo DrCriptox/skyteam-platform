@@ -776,6 +776,7 @@ function showApp() {
     renderViajes();
     renderAnuncios();
     loadChat();
+    startNotifEngine();
     // Only show admin if truly admin
     if(CU && (CU.isAdmin === true || CU.rank === 8)) {
       if(al) al.style.display='block';
@@ -850,6 +851,7 @@ function renderAgenda() {
       agendaConfig = getDefaultAgendaCfg();
       agendaBookings = [];
       renderAgendaUI(el);
+      startNotifEngine();
     });
 }
 
@@ -1254,7 +1256,9 @@ function renderAgendaCitasUI() {
     var isHoy = d.toDateString() === ahora.toDateString();
     var badge = isPast ? '<span style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;">Pasada</span>' : isHoy ? '<span style="background:rgba(28,232,255,0.15);color:#1CE8FF;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;">HOY</span>' : '<span style="background:rgba(255,215,0,0.12);color:#FFD700;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;">Próxima</span>';
     var hStr = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
-    var fechaLabel = DIAS_SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + MESES_SHORT[d.getMonth()] + ' · ' + hStr;
+    var DIAS_FULL=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    var MESES_FULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    var fechaLabel = (isHoy ? 'Hoy' : DIAS_FULL[d.getDay()].charAt(0).toUpperCase()+DIAS_FULL[d.getDay()].slice(1)) + ' ' + d.getDate() + ' de ' + MESES_FULL[d.getMonth()] + ' · ' + hStr;
     var waNum = cita.whatsapp.replace(/[^0-9]/g,'');
     var linkR = agendaConfig&&agendaConfig.linkReunion||'';
     html += '<div class="card" style="margin-bottom:10px;">';
@@ -1608,8 +1612,11 @@ function startAgendaPoll() {
           if(newB) {
             var fd2=new Date(newB.fechaISO), rH=fd2.getHours(), mn=fd2.getMinutes().toString().padStart(2,'0');
             var ap=rH>=12?'PM':'AM', h2=rH%12||12;
-            var ds2=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-            pushNotification({id:'newbook_'+newB.id, type:'booking', icon:'🎉', title:'¡Nueva cita agendada!', subtitle:(newB.nombre||'Prospecto')+' — '+ds2[fd2.getDay()]+' '+h2+':'+mn+' '+ap, msg:'Alguien acaba de reservar contigo. Revisa tu agenda.', action:{label:'📅 Ver agenda', url:'javascript:navigate("agenda")'}});
+            var ds2=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+            var ms2=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            var now2=new Date(), esHoy2=fd2.getFullYear()===now2.getFullYear()&&fd2.getMonth()===now2.getMonth()&&fd2.getDate()===now2.getDate();
+            var dayLabel2=esHoy2?'Hoy':ds2[fd2.getDay()].charAt(0).toUpperCase()+ds2[fd2.getDay()].slice(1);
+            pushNotification({id:'newbook_'+newB.id, type:'booking', icon:'🎉', title:'¡Nueva cita agendada!', subtitle:(newB.nombre||'Prospecto')+' — '+dayLabel2+' '+fd2.getDate()+' de '+ms2[fd2.getMonth()]+' '+h2+':'+mn+' '+ap, msg:'Alguien acaba de reservar contigo. Revisa tu agenda.', action:{label:'📅 Ver agenda', url:'javascript:navigate("agenda")'}});
           }
           refreshNotifications();
         }
@@ -1895,16 +1902,36 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   var slots = generarSlotsAgenda(cfg, bookings);
 
   // Format slot label in prospect's timezone
+  // Helper: check if a date is today in a given timezone
+  function isDateToday(d, tz) {
+    try {
+      var now = new Date();
+      var dDay = new Intl.DateTimeFormat('en',{day:'numeric',month:'numeric',year:'numeric',timeZone:tz}).format(d);
+      var nDay = new Intl.DateTimeFormat('en',{day:'numeric',month:'numeric',year:'numeric',timeZone:tz}).format(now);
+      return dDay === nDay;
+    } catch(e) {
+      var now2 = new Date();
+      return d.getFullYear()===now2.getFullYear() && d.getMonth()===now2.getMonth() && d.getDate()===now2.getDate();
+    }
+  }
+
   function formatSlotLocal(isoStr, tz) {
     try {
       var d = new Date(isoStr);
-      var opts = { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:true, timeZone: tz };
-      return new Intl.DateTimeFormat('es-CO', opts).format(d);
+      var dayPart;
+      if(isDateToday(d, tz)) {
+        dayPart = 'Hoy, ' + new Intl.DateTimeFormat('es-CO',{day:'numeric',month:'long',timeZone:tz}).format(d);
+      } else {
+        dayPart = new Intl.DateTimeFormat('es-CO',{weekday:'long',day:'numeric',month:'long',timeZone:tz}).format(d);
+      }
+      var timePart = new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(d);
+      return dayPart + ', ' + timePart;
     } catch(e) {
       var d2 = new Date(isoStr);
-      var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-      var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-      return days[d2.getDay()]+' '+d2.getDate()+' '+months[d2.getMonth()]+' · '+d2.getHours().toString().padStart(2,'0')+':'+d2.getMinutes().toString().padStart(2,'0');
+      var days=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+      var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var prefix = isDateToday(d2) ? 'Hoy' : days[d2.getDay()];
+      return prefix+', '+d2.getDate()+' de '+months[d2.getMonth()]+', '+d2.getHours().toString().padStart(2,'0')+':'+d2.getMinutes().toString().padStart(2,'0');
     }
   }
 
@@ -1921,13 +1948,19 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   function formatDayLabel(isoStr, tz) {
     try {
       var d = new Date(isoStr);
-      var day = new Intl.DateTimeFormat('es-CO', {weekday:'short', timeZone: tz}).format(d);
+      var dayName;
+      if(isDateToday(d, tz)) {
+        dayName = 'HOY';
+      } else {
+        dayName = new Intl.DateTimeFormat('es-CO', {weekday:'short', timeZone: tz}).format(d).toUpperCase();
+      }
       var num = new Intl.DateTimeFormat('es-CO', {day:'numeric', timeZone: tz}).format(d);
-      return {day: day.toUpperCase(), num: num};
+      return {day: dayName, num: num};
     } catch(e) {
       var d2 = new Date(isoStr);
-      var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-      return {day: days[d2.getDay()], num: String(d2.getDate())};
+      var days=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+      var dayName2 = isDateToday(d2) ? 'HOY' : days[d2.getDay()];
+      return {day: dayName2, num: String(d2.getDate())};
     }
   }
 
@@ -2521,16 +2554,19 @@ function pbConfirmar(username) {
         var fd=new Date(_pbSlotISO);
         var cfg=window._pbCfg||{};
         var dur = cfg.duracion || 60;
-        var days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        var days=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
         var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
         var rawH=fd.getHours(), mins=fd.getMinutes().toString().padStart(2,'0');
         var ampm=rawH>=12?'PM':'AM', h12=rawH%12||12;
         var hStr=h12+':'+mins+' '+ampm;
-        var dateStr=days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()];
-        document.getElementById('pb-confirm-msg').textContent='Tu cita es el '+dateStr+' a las '+hStr+'. Recibirás recordatorios antes de la reunión.';
+        // Check if today
+        var now=new Date();
+        var esHoy=fd.getFullYear()===now.getFullYear()&&fd.getMonth()===now.getMonth()&&fd.getDate()===now.getDate();
+        var dateStr=esHoy?'hoy, '+fd.getDate()+' de '+months[fd.getMonth()]:days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()];
+        document.getElementById('pb-confirm-msg').textContent='Tu cita es '+dateStr+' a las '+hStr+'. Recibirás recordatorios antes de la reunión.';
         // WhatsApp: message the SOCIO (not the prospect)
         var socioWa=(cfg.whatsapp||'').replace(/[^0-9]/g,'');
-        var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para el '+dateStr+' a las '+hStr+'. ¡Nos vemos!';
+        var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para '+dateStr+' a las '+hStr+'. ¡Nos vemos!';
         if(cfg.linkReunion) msgToSocio+=' | Link: '+cfg.linkReunion;
         if(socioWa){
           document.getElementById('pb-wa-btn').href='https://wa.me/'+socioWa+'?text='+encodeURIComponent(msgToSocio);
@@ -2679,9 +2715,13 @@ function renderSkySales() {
   for(i = 0; i < agents.length; i++) {
     a = agents[i];
     active = (a.badge === 'Activo' || a.badge === 'Beta');
-    var onclk = active ? ' onclick="openAgent(\'' + a.id + '\')"' : '';
-    card = '<div class="agent-bubble"' + onclk + ' style="background:' + a.color + ';border:0.5px solid ' + a.border + ';border-radius:18px;padding:20px;cursor:' + (active ? 'pointer' : 'default') + ';position:relative;backdrop-filter:blur(12px);">'; 
-    if(active) { card = '<div class="agent-bubble" onclick="openAgent(\'' + a.id + '\')" style="background:' + a.color + ';border:0.5px solid ' + a.border + ';border-radius:18px;padding:20px;cursor:pointer;position:relative;backdrop-filter:blur(12px);">'; }
+    var onclk;
+    if(active) {
+      onclk = ' onclick="openAgent(\'' + a.id + '\')"';
+    } else {
+      onclk = ' onclick="showToast(\'🚀 ' + a.name + ' estará disponible muy pronto. ¡Prepárate!\')"';
+    }
+    card = '<div class="agent-bubble"' + onclk + ' style="background:' + a.color + ';border:0.5px solid ' + a.border + ';border-radius:18px;padding:20px;cursor:pointer;position:relative;backdrop-filter:blur(12px);">';
     card += '<div style="position:absolute;top:14px;right:14px;font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:20px;background:' + a.border + ';color:' + a.bc + ';">' + a.badge + '</div>';
     card += '<div style="font-size:30px;margin-bottom:10px;">' + a.icon + '</div>';
     card += '<div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;">' + a.name + '</div>';
