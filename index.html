@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="SKY TEAM">
 <link rel="apple-touch-icon" href="/logo-skyteam.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>if(window.navigator.standalone===true)document.documentElement.classList.add('ios-standalone');</script>
 <style>
 html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}
 :root{--gold:#FFD700;--gold2:#C9A84C;--gold-d:rgba(255,215,0,0.08);--gold-b:rgba(255,215,0,0.25);--gold-1:#FFE55A;--bg:#030c1f;--bg2:#040f28;--bg3:#061235;--bg4:#08173e;--border:rgba(255,255,255,0.07);--border2:rgba(28,232,255,0.15);--text:#F0EDE6;--muted:rgba(255,255,255,0.45);--muted2:rgba(255,255,255,0.25);--blue:#1CE8FF;--blue-d:rgba(28,232,255,0.07);--blue-b:rgba(28,232,255,0.18);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;}
@@ -23,6 +24,11 @@ html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-a
   #login-screen{padding-top:calc(180px + max(env(safe-area-inset-top,44px),44px)) !important;}
   body{padding-top:0 !important;}
 }
+/* iOS standalone fallback — JS adds .ios-standalone to <html> */
+html.ios-standalone .topbar{padding-top:max(env(safe-area-inset-top,50px),50px) !important;height:calc(64px + max(env(safe-area-inset-top,50px),50px)) !important;}
+html.ios-standalone #sidebar{padding-top:max(env(safe-area-inset-top,50px),50px) !important;}
+html.ios-standalone #login-logo-wrap{top:calc(24px + max(env(safe-area-inset-top,50px),50px)) !important;}
+html.ios-standalone #login-screen{padding-top:calc(180px + max(env(safe-area-inset-top,50px),50px)) !important;}
 body{background:var(--bg);background-image:radial-gradient(ellipse 500px 350px at 0% 0%,rgba(28,232,255,0.05) 0%,transparent 60%),radial-gradient(ellipse 400px 300px at 100% 15%,rgba(255,215,0,0.04) 0%,transparent 60%),radial-gradient(ellipse 350px 280px at 50% 100%,rgba(0,85,204,0.06) 0%,transparent 60%);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;min-height:100vh;}
 input,textarea,select,button{font-family:'Nunito',sans-serif;}
 select{background:#040f28 !important;color:#F0EDE6 !important;}
@@ -5028,6 +5034,10 @@ var _pwaInstalled = localStorage.getItem('skyteam_pwa_installed') === 'true';
 if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
   _pwaInstalled = true;
   localStorage.setItem('skyteam_pwa_installed', 'true');
+}
+// iOS standalone: add class to <html> so CSS safe-area rules apply
+if(window.navigator.standalone === true) {
+  document.documentElement.classList.add('ios-standalone');
 }
 
 window.addEventListener('beforeinstallprompt', function(e) {
