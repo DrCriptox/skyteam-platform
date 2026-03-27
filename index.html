@@ -1694,6 +1694,31 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     .tz-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(28,232,255,0.8);}
     input[type=text]{width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;}
     input[type=text]:focus{border-color:rgba(28,232,255,0.5);}
+    /* Verified badge */
+    .pb-verified{display:inline-flex;align-items:center;gap:4px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px;color:#1CE8FF;font-weight:700;margin-top:6px;}
+    .pb-verified svg{flex-shrink:0;}
+    /* Scarcity pill on day tabs */
+    .day-pill{font-size:8px;font-weight:800;padding:2px 6px;border-radius:10px;margin-top:4px;display:inline-block;letter-spacing:0.3px;}
+    .day-pill.low{background:rgba(255,160,0,0.15);color:rgba(255,180,0,0.9);}
+    .day-pill.last{background:rgba(255,60,60,0.15);color:rgba(255,100,100,0.9);animation:pulse-pill 1.5s infinite;}
+    @keyframes pulse-pill{0%,100%{opacity:1;}50%{opacity:0.5;}}
+    /* Toast notification */
+    .pb-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(10,22,40,0.95);border:0.5px solid rgba(28,232,255,0.25);border-radius:12px;padding:12px 18px;font-size:13px;color:#F0EDE6;z-index:9999;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);max-width:340px;text-align:center;}
+    .pb-toast.show{transform:translateX(-50%) translateY(0);}
+    /* Countdown timer */
+    .pb-countdown{display:flex;align-items:center;gap:6px;background:rgba(255,160,0,0.08);border:0.5px solid rgba(255,160,0,0.2);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:rgba(255,180,0,0.9);}
+    .pb-countdown .timer{font-weight:900;font-size:14px;font-family:monospace;color:#FFD700;}
+    /* Micro-commitment screen */
+    .pb-commit-card{text-align:center;padding:36px 20px;background:linear-gradient(135deg,rgba(28,232,255,0.06),rgba(0,119,255,0.03));border:0.5px solid rgba(28,232,255,0.2);border-radius:18px;margin-bottom:20px;}
+    .pb-commit-btn{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:16px;font-weight:900;border:none;cursor:pointer;font-family:inherit;letter-spacing:0.3px;transition:all 0.2s;box-shadow:0 6px 24px rgba(28,232,255,0.3);}
+    .pb-commit-btn:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(28,232,255,0.4);}
+    /* Google Calendar button */
+    .pb-gcal-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);color:#F0EDE6;padding:12px 22px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;transition:all 0.15s;}
+    .pb-gcal-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.25);}
+    /* Fade-in animation */
+    @keyframes fadeSlideUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+    .pb-anim{animation:fadeSlideUp 0.5s ease-out both;}
+    .pb-anim-d1{animation-delay:0.1s;}.pb-anim-d2{animation-delay:0.2s;}.pb-anim-d3{animation-delay:0.3s;}.pb-anim-d4{animation-delay:0.4s;}
   </style>`;
 
   var fotoActual = cfg.foto || '';
@@ -1709,8 +1734,9 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '<div style="width:60px;height:60px;border-radius:50%;background:rgba(28,232,255,0.12);border:2.5px solid rgba(28,232,255,0.4);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">👤</div>';
   }
   html += '<div>';
-  html += '<p style="font-size:18px;font-weight:900;margin:0;">'+(cfg.nombre||username)+'</p>';
+  html += '<p style="font-size:18px;font-weight:900;margin:0;display:flex;align-items:center;gap:6px;">'+(cfg.nombre||username)+' <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#030c1f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 1l3.09 3.26L19 3.64l-.64 3.91L21.5 12l-3.14 4.45.64 3.91-3.91.64L12 23l-3.09-3.26L5 20.36l.64-3.91L2.5 12l3.14-4.45L5 3.64l3.91-.64L12 1z" fill="#1CE8FF"/><path d="M9 12l2 2 4-4" stroke="#030c1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></p>';
   html += '<p style="font-size:12px;color:rgba(28,232,255,0.8);margin:3px 0 0;">SKY TEAM · Franquicia Digital</p>';
+  html += '<div class="pb-verified"><svg width="14" height="14" viewBox="0 0 24 24" fill="#1CE8FF"><path d="M12 1l3.09 3.26L19 3.64l-.64 3.91L21.5 12l-3.14 4.45.64 3.91-3.91.64L12 23l-3.09-3.26L5 20.36l.64-3.91L2.5 12l3.14-4.45L5 3.64l3.91-.64L12 1z"/><path d="M9 12l2 2 4-4" stroke="#030c1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Asesor verificado</div>';
   html += '</div></div>';
   html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
   html += '<span style="font-size:12px;color:rgba(255,255,255,0.45);display:flex;align-items:center;gap:4px;">⏱ '+(cfg.duracion||60)+' minutos</span>';
@@ -1755,9 +1781,14 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     grouped.order.forEach(function(dayKey, i) {
       var firstSlot = grouped.groups[dayKey][0];
       var dl = formatDayLabel(firstSlot.iso, prospectTZ);
-      html += '<div class="day-btn'+(i===0?' active':'')+'" onclick="pbSelectDay(\''+dayKey+'\')" data-day="'+dayKey+'">';
+      var availCount = grouped.groups[dayKey].filter(function(s){return s.available;}).length;
+      var pill = '';
+      if(availCount <= 1) pill = '<div class="day-pill last">Último</div>';
+      else if(availCount <= 3) pill = '<div class="day-pill low">Quedan '+availCount+'</div>';
+      html += '<div class="day-btn pb-anim pb-anim-d'+(Math.min(i+1,4))+''+(i===0?' active':'')+'" onclick="pbSelectDay(\''+dayKey+'\')" data-day="'+dayKey+'">';
       html += '<div class="dname">'+dl.day+'</div>';
       html += '<div class="dnum">'+dl.num+'</div>';
+      html += pill;
       html += '</div>';
     });
     html += '</div>';
@@ -1769,25 +1800,40 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '</div>';
     html += '</div>';
 
+    // Step 1.5: Micro-commitment screen
+    html += '<div id="pb-s15" style="display:none;">';
+    html += '<div class="pb-commit-card pb-anim">';
+    html += '<div style="font-size:48px;margin-bottom:16px;">🚀</div>';
+    html += '<h2 style="color:#F0EDE6;font-size:20px;margin:0 0 8px;">¿Estás listo para dar el primer paso?</h2>';
+    html += '<p style="color:rgba(255,255,255,0.45);font-size:13px;margin:0 0 6px;">En esta reunión conocerás cómo empezar a generar ingresos desde tu celular.</p>';
+    html += '<p style="color:rgba(255,255,255,0.35);font-size:12px;margin:0 0 24px;">Sin compromiso · Sin presión · '+(cfg.duracion||60)+' minutos</p>';
+    html += '<div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:10px;padding:12px 16px;margin-bottom:20px;">';
+    html += '<p style="margin:0;font-size:14px;font-weight:800;color:#1CE8FF;" id="pb-commit-slot-label"></p>';
+    html += '</div>';
+    html += '<button class="pb-commit-btn" onclick="pbShowForm()">Sí, quiero agendar mi reunión →</button>';
+    html += '<button onclick="pbVolverSlots()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:12px;cursor:pointer;padding:12px 0 0;font-family:inherit;">← Elegir otro horario</button>';
+    html += '</div></div>';
+
     // Step 2: confirm form
     html += '<div id="pb-s2" style="display:none;">';
+    html += '<div class="pb-countdown" id="pb-countdown"><span>⏱ Este horario se libera en</span><span class="timer" id="pb-timer">5:00</span></div>';
     html += '<div style="background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.2);border-radius:10px;padding:13px 16px;margin-bottom:18px;">';
     html += '<p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#1CE8FF;" id="pb-slot-label"></p>';
-
     html += '<button onclick="pbVolverSlots()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;padding:6px 0 0;font-family:inherit;">← Cambiar horario</button>';
     html += '</div>';
     html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
     html += '<input type="text" id="pb-nombre" placeholder="Tu nombre completo" />';
     html += '<input type="text" id="pb-wa" placeholder="Tu WhatsApp (ej: +504 9999 9999)" />';
-    html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:15px;font-weight:900;border:none;cursor:pointer;font-family:inherit;">✅ Confirmar reunión</button>';
+    html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:15px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;">✅ Confirmar reunión</button>';
     html += '</div>';
 
     // Step 3: success
     html += '<div id="pb-s3" style="display:none;text-align:center;padding:40px 0;">';
-    html += '<div style="font-size:60px;margin-bottom:16px;">🎉</div>';
-    html += '<h2 style="color:#1CE8FF;font-size:24px;margin:0 0 10px;">¡Reunión confirmada!</h2>';
-    html += '<p style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;padding:0 10px;" id="pb-confirm-msg"></p>';
-    html += '<a id="pb-wa-btn" href="#" target="_blank" style="display:inline-block;margin-top:20px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:900;">💬 Confirmar por WhatsApp</a>';
+    html += '<div style="font-size:60px;margin-bottom:16px;" class="pb-anim">🎉</div>';
+    html += '<h2 style="color:#1CE8FF;font-size:24px;margin:0 0 10px;" class="pb-anim pb-anim-d1">¡Reunión confirmada!</h2>';
+    html += '<p style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;padding:0 10px;" id="pb-confirm-msg" class="pb-anim pb-anim-d2"></p>';
+    html += '<a id="pb-wa-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:8px;margin-top:20px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:900;" class="pb-anim pb-anim-d3"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Confirmar por WhatsApp</a>';
+    html += '<a id="pb-gcal-btn" href="#" target="_blank" class="pb-gcal-btn pb-anim pb-anim-d4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Agregar a Google Calendar</a>';
     html += '</div>';
   }
 
@@ -1799,7 +1845,36 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   }
 
   html += '</div></div>';
+
+  // Toast container for social proof notifications
+  html += '<div id="pb-toast" class="pb-toast"></div>';
+
   div.innerHTML = css + html;
+
+  // ── Social proof toast system ──
+  (function(){
+    var nombres = ['Andrea','Miguel','Camila','Santiago','Valentina','Sebastián','Isabella','Mateo','Sofía','Daniel','Mariana','Alejandro','Lucía','Carlos','Paula','David','Natalia','Andrés','Gabriela','Diego'];
+    var acciones = ['acaba de agendar','reservó su horario','confirmó su reunión'];
+    var tiempos = ['hace 2 min','hace 4 min','hace 7 min','hace 12 min','hace 18 min'];
+    var toast = document.getElementById('pb-toast');
+    var toastIdx = 0;
+    function showSocialToast() {
+      if(!toast) return;
+      var n = nombres[(toastIdx * 7 + 3) % nombres.length];
+      var a = acciones[toastIdx % acciones.length];
+      var t = tiempos[toastIdx % tiempos.length];
+      toast.innerHTML = '✅ <strong>' + n + '</strong> ' + a + ' · <span style="color:rgba(255,255,255,0.4);">' + t + '</span>';
+      toast.classList.add('show');
+      toastIdx++;
+      setTimeout(function(){ toast.classList.remove('show'); }, 4000);
+    }
+    // First toast after 8s, then every 25-45s
+    setTimeout(showSocialToast, 8000);
+    setInterval(function(){
+      var delay = 25000 + Math.floor(Math.random() * 20000);
+      setTimeout(showSocialToast, delay);
+    }, 40000);
+  })();
 
   // Inject timezone helper functions
   window._pbFormatTimeOnly = function(iso) {
@@ -1894,15 +1969,59 @@ function pbSelectDay(dayKey) {
 
 function pbSelectSlotNew(iso, label) {
   window._pbSlotISO = iso;
+  window._pbSlotLabel = label;
   document.getElementById('pb-s1').style.display = 'none';
-  document.getElementById('pb-s2').style.display = 'block';
-  document.getElementById('pb-slot-label').textContent = '📅 ' + label;
+  var s15 = document.getElementById('pb-s15');
+  if(s15) {
+    s15.style.display = 'block';
+    document.getElementById('pb-commit-slot-label').textContent = '📅 ' + label;
+  } else {
+    pbShowForm();
+  }
+}
 
+function pbShowForm() {
+  var s15 = document.getElementById('pb-s15');
+  if(s15) s15.style.display = 'none';
+  document.getElementById('pb-s2').style.display = 'block';
+  document.getElementById('pb-slot-label').textContent = '📅 ' + (window._pbSlotLabel || '');
+  // Start 5-minute countdown
+  pbStartCountdown();
+}
+
+var _pbCountdownInterval = null;
+function pbStartCountdown() {
+  if(_pbCountdownInterval) clearInterval(_pbCountdownInterval);
+  var remaining = 300; // 5 minutes
+  var timerEl = document.getElementById('pb-timer');
+  var cdEl = document.getElementById('pb-countdown');
+  function tick() {
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    if(timerEl) timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if(remaining <= 60 && cdEl) {
+      cdEl.style.borderColor = 'rgba(255,60,60,0.3)';
+      cdEl.style.background = 'rgba(255,60,60,0.08)';
+      if(timerEl) timerEl.style.color = '#ff6b6b';
+    }
+    if(remaining <= 0) {
+      clearInterval(_pbCountdownInterval);
+      if(timerEl) timerEl.textContent = '0:00';
+      // Don't actually lock out — just flash urgency
+      if(cdEl) cdEl.innerHTML = '<span style="color:rgba(255,100,100,0.9);">⚠️ Tiempo agotado — confirma antes de que alguien más lo tome</span>';
+    }
+    remaining--;
+  }
+  tick();
+  _pbCountdownInterval = setInterval(tick, 1000);
 }
 
 function pbVolverSlots() {
   document.getElementById('pb-s1').style.display = 'block';
   document.getElementById('pb-s2').style.display = 'none';
+  var s15 = document.getElementById('pb-s15');
+  if(s15) s15.style.display = 'none';
+  if(_pbCountdownInterval) clearInterval(_pbCountdownInterval);
   window._pbSlotISO = null;
 }
 
@@ -2064,6 +2183,7 @@ function pbConfirmar(username) {
   var nombre=(document.getElementById('pb-nombre').value||'').trim();
   var wa=(document.getElementById('pb-wa').value||'').trim();
   if(!nombre){alert('Ingresa tu nombre');return;} if(!wa){alert('Ingresa tu WhatsApp');return;} if(!_pbSlotISO){alert('Selecciona un horario');return;}
+  if(_pbCountdownInterval) clearInterval(_pbCountdownInterval);
   var booking={id:String(Date.now()),nombre:nombre,whatsapp:wa,fechaISO:_pbSlotISO,status:'confirmada',creadaEn:new Date().toISOString()};
   fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveBooking',user:username,booking:booking})})
     .then(function(r){return r.json();})
@@ -2072,15 +2192,30 @@ function pbConfirmar(username) {
         document.getElementById('pb-s2').style.display='none';
         document.getElementById('pb-s3').style.display='block';
         var fd=new Date(_pbSlotISO);
+        var cfg=window._pbCfg||{};
+        var dur = cfg.duracion || 60;
         var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
         var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         var hStr=fd.getHours().toString().padStart(2,'0')+':'+fd.getMinutes().toString().padStart(2,'0');
         document.getElementById('pb-confirm-msg').textContent='Tu cita es el '+days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()]+' a las '+hStr+'. Recibirás recordatorios antes de la reunión.';
-        var cfg=window._pbCfg||{};
         var msg=(cfg.mensaje||'Hola, confirmé una reunión contigo.')+' 📅 '+days[fd.getDay()]+' '+fd.getDate()+' '+months[fd.getMonth()]+' a las '+hStr;
         if(cfg.linkReunion) msg+=' | Link: '+cfg.linkReunion;
         var waNum=wa.replace(/[^0-9]/g,'');
         document.getElementById('pb-wa-btn').href='https://wa.me/'+waNum+'?text='+encodeURIComponent(msg);
+
+        // Google Calendar link
+        var endDate = new Date(fd.getTime() + dur * 60000);
+        function gcalFmt(d2){ return d2.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''); }
+        var gcalTitle = encodeURIComponent('Reunión SKY TEAM — ' + (cfg.nombre || username));
+        var gcalDates = gcalFmt(fd) + '/' + gcalFmt(endDate);
+        var gcalDetails = encodeURIComponent('Reunión con ' + (cfg.nombre || username) + ' de SKY TEAM.' + (cfg.linkReunion ? '\n\nLink de la sala: ' + cfg.linkReunion : ''));
+        var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + gcalTitle + '&dates=' + gcalDates + '&details=' + gcalDetails;
+        var gcalBtn = document.getElementById('pb-gcal-btn');
+        if(gcalBtn) gcalBtn.href = gcalUrl;
+
+        // Hide social proof toast
+        var toast = document.getElementById('pb-toast');
+        if(toast) toast.style.display = 'none';
       } else { alert('Error al confirmar. Intenta de nuevo.'); }
     }).catch(function(){alert('Error de conexión.');});
 }
