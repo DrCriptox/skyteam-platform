@@ -2027,7 +2027,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     .day-btn.active .dname{color:#1CE8FF;}
     .day-btn .dnum{font-size:20px;font-weight:900;color:rgba(255,255,255,0.65);margin-top:3px;}
     .day-btn.active .dnum{color:#1CE8FF;}
-    .slot-row{width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:8px;transition:all 0.15s;}
+    .slot-row{width:100%;max-width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:8px;transition:all 0.15s;box-sizing:border-box;}
     .slot-row:hover{border-color:rgba(28,232,255,0.3);background:rgba(28,232,255,0.06);}
     .slot-row.active{background:rgba(28,232,255,0.12);border:1.5px solid rgba(28,232,255,0.5);}
     .slot-row .s-time{font-size:16px;font-weight:900;color:rgba(255,255,255,0.8);}
@@ -2035,7 +2035,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     .slot-row .s-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);}
     .slot-row.active .s-dot{background:#1CE8FF;}
     .tz-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(28,232,255,0.8);}
-    input[type=text]{width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;}
+    input[type=text]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;box-sizing:border-box;}
     input[type=text]:focus{border-color:rgba(28,232,255,0.5);}
     /* Verified badge */
     .pb-verified{display:inline-flex;align-items:center;gap:4px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px;color:#1CE8FF;font-weight:700;margin-top:6px;}
@@ -2049,11 +2049,11 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     .pb-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(10,22,40,0.95);border:0.5px solid rgba(28,232,255,0.25);border-radius:12px;padding:12px 18px;font-size:13px;color:#F0EDE6;z-index:9999;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);max-width:340px;text-align:center;}
     .pb-toast.show{transform:translateX(-50%) translateY(0);}
     /* Countdown timer */
-    .pb-countdown{display:flex;align-items:center;gap:6px;background:rgba(255,160,0,0.08);border:0.5px solid rgba(255,160,0,0.2);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:rgba(255,180,0,0.9);}
+    .pb-countdown{display:flex;align-items:center;gap:6px;background:rgba(255,160,0,0.08);border:0.5px solid rgba(255,160,0,0.2);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:rgba(255,180,0,0.9);max-width:100%;box-sizing:border-box;}
     .pb-countdown .timer{font-weight:900;font-size:14px;font-family:monospace;color:#FFD700;}
     /* Micro-commitment screen */
     .pb-commit-card{text-align:center;padding:36px 20px;background:linear-gradient(135deg,rgba(28,232,255,0.06),rgba(0,119,255,0.03));border:0.5px solid rgba(28,232,255,0.2);border-radius:18px;margin-bottom:20px;}
-    .pb-commit-btn{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:16px;font-weight:900;border:none;cursor:pointer;font-family:inherit;letter-spacing:0.3px;transition:all 0.2s;box-shadow:0 6px 24px rgba(28,232,255,0.3);}
+    .pb-commit-btn{width:100%;max-width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:16px;font-weight:900;border:none;cursor:pointer;font-family:inherit;letter-spacing:0.3px;transition:all 0.2s;box-shadow:0 6px 24px rgba(28,232,255,0.3);box-sizing:border-box;}
     .pb-commit-btn:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(28,232,255,0.4);}
     /* Google Calendar button */
     .pb-gcal-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);color:#F0EDE6;padding:12px 22px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;transition:all 0.15s;}
@@ -2140,8 +2140,8 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   html += '</div>'; // close header inner wrapper
   html += '</div>'; // close header bg
 
-  // Content — centered wrapper
-  html += '<div style="padding:20px;max-width:480px;margin:0 auto;">';
+  // Content — centered wrapper, overflow controlled for mobile
+  html += '<div style="padding:20px;max-width:480px;margin:0 auto;overflow-x:hidden;">';
 
   if(!slots.length) {
     html += '<div style="text-align:center;padding:48px 20px;background:rgba(255,255,255,0.03);border-radius:16px;border:0.5px solid rgba(255,255,255,0.08);margin-bottom:20px;">';
@@ -2194,14 +2194,14 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     // Step 2: confirm form
     html += '<div id="pb-s2" style="display:none;">';
     html += '<div class="pb-countdown" id="pb-countdown"><span>⏱ Este horario se libera en</span><span class="timer" id="pb-timer">5:00</span></div>';
-    html += '<div style="background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.2);border-radius:10px;padding:13px 16px;margin-bottom:18px;">';
+    html += '<div style="background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.2);border-radius:10px;padding:13px 16px;margin-bottom:18px;max-width:100%;box-sizing:border-box;">';
     html += '<p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#1CE8FF;" id="pb-slot-label"></p>';
     html += '<button onclick="pbVolverSlots()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;padding:6px 0 0;font-family:inherit;">← Cambiar horario</button>';
     html += '</div>';
     html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
     html += '<input type="text" id="pb-nombre" placeholder="Tu nombre completo" />';
     html += '<input type="text" id="pb-wa" placeholder="Tu WhatsApp (ej: +57 300 1234567)" />';
-    html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;">✅ Confirmar reunión</button>';
+    html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;max-width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;box-sizing:border-box;">✅ Confirmar reunión</button>';
     html += '</div>';
 
     // Step 3: success with interactive checklist — compact for mobile
@@ -2350,7 +2350,7 @@ function renderSlotList(slots, tz, ipHash) {
     var isOccupied = !s.available || fakeOccupied[s.iso];
 
     if(isOccupied){
-      html += '<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.42;cursor:not-allowed;">'
+      html += '<div style="width:100%;max-width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.42;cursor:not-allowed;box-sizing:border-box;">'
         + '<span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.3);text-decoration:line-through;">'+timeLabel+'</span>'
         + '<span style="font-size:11px;color:rgba(255,100,100,0.65);font-weight:700;background:rgba(255,60,60,0.07);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Reservado</span>'
         + '</div>';
