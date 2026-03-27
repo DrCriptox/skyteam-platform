@@ -856,7 +856,7 @@ function renderAgenda() {
 }
 
 function getDefaultAgendaCfg() {
-  return { dias:{1:true,2:true,3:true,4:true,5:true,6:false,0:false}, horario:{inicio:'09:00',fin:'18:00'}, duracion:60, linkReunion:'', nombre:CU?CU.name:'', mensaje:'¡Hola! Te confirmo nuestra reunión. Nos vemos pronto.', activa:false };
+  return { dias:{1:true,2:true,3:true,4:true,5:true,6:false,0:false}, horario:{inicio:'09:00',fin:'18:00'}, duracion:60, anticipacionMin:60, linkReunion:'', nombre:CU?CU.name:'', mensaje:'¡Hola! Te confirmo nuestra reunión. Nos vemos pronto.', activa:false };
 }
 
 function renderAgendaUI(el) {
@@ -1066,6 +1066,19 @@ function renderAgendaConfigUI() {
   [30,45,60].forEach(function(m) {
     var on = (cfg.duracion||60) === m;
     html += '<button class="ag-dur-btn ' + (on?'on':'off') + '" onclick="setDuracionAgenda(' + m + ')">' + m + ' min</button>';
+  });
+  html += '</div></div>';
+
+  // ── Anticipación mínima ────────────────────────────────────
+  html += '<div class="ag-card">';
+  html += '<p class="ag-label">⏳ Anticipación mínima para agendar</p>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0 0 10px;">¿Con cuánto tiempo de anticipación pueden reservarte?</p>';
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+  var anticipOpts = [{val:30,label:'30 min'},{val:60,label:'1 hora'},{val:120,label:'2 horas'},{val:180,label:'3 horas'},{val:240,label:'4 horas'},{val:360,label:'6 horas'},{val:480,label:'8 horas'}];
+  var currentAnticip = cfg.anticipacionMin || 60;
+  anticipOpts.forEach(function(opt) {
+    var on = currentAnticip === opt.val;
+    html += '<button class="ag-dur-btn ' + (on?'on':'off') + '" onclick="setAnticipacionAgenda(' + opt.val + ')">' + opt.label + '</button>';
   });
   html += '</div></div>';
 
@@ -1377,6 +1390,7 @@ function eliminarBloque(btn) {
 function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); }
 function toggleDiaAgenda(d) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.dias[d]=!agendaConfig.dias[d]; renderAgendaUI(document.getElementById('agenda-content')); }
 function setDuracionAgenda(m) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.duracion=m; renderAgendaUI(document.getElementById('agenda-content')); }
+function setAnticipacionAgenda(m) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.anticipacionMin=m; renderAgendaUI(document.getElementById('agenda-content')); }
 
 function agregarBloqueHorario() {
   var list = document.getElementById('agenda-bloques-list');
@@ -2508,7 +2522,8 @@ function generarSlotsAgenda(cfg, bookings) {
       var h=Math.floor(cur/60), m2=cur%60;
       var slotUTC=new Date(Date.UTC(y,mo,d,h+offsetHrs,m2,0,0));
       var slotISO=slotUTC.toISOString();
-      if(slotUTC-ahora >= 4*3600000 && isInBloques(dayBloques, cur) && booked.indexOf(slotISO)===-1) {
+      var anticipMs = (cfg.anticipacionMin || 60) * 60000;
+      if(slotUTC-ahora >= anticipMs && isInBloques(dayBloques, cur) && booked.indexOf(slotISO)===-1) {
         rawAvail.push({iso:slotISO, wallMin:cur});
       }
       cur+=dur;
