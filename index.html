@@ -2516,22 +2516,30 @@ function generarSlotsAgenda(cfg, bookings) {
     });
     if(earliestIni===Infinity) continue;
 
+    var anticipMs = (cfg.anticipacionMin || 60) * 60000;
+    var MIN_SLOTS_VISIBLE = 4; // minimum slots to show per day for scarcity effect
+
+    // 1) Generate ALL slots in schedule — separate available vs unavailable
     var rawAvail = [];
+    var rawUnavail = []; // within buffer, booked, or past — for visual padding
     var cur = earliestIni;
     while(cur + dur <= latestEnd) {
       var h=Math.floor(cur/60), m2=cur%60;
       var slotUTC=new Date(Date.UTC(y,mo,d,h+offsetHrs,m2,0,0));
       var slotISO=slotUTC.toISOString();
-      var anticipMs = (cfg.anticipacionMin || 60) * 60000;
-      if(slotUTC-ahora >= anticipMs && isInBloques(dayBloques, cur) && booked.indexOf(slotISO)===-1) {
-        rawAvail.push({iso:slotISO, wallMin:cur});
+      if(isInBloques(dayBloques, cur)) {
+        if(slotUTC-ahora >= anticipMs && booked.indexOf(slotISO)===-1) {
+          rawAvail.push({iso:slotISO, wallMin:cur});
+        } else if(slotUTC > ahora) {
+          rawUnavail.push({iso:slotISO, wallMin:cur});
+        }
       }
       cur+=dur;
     }
 
-    if(!rawAvail.length) continue;
+    if(!rawAvail.length) continue; // skip day entirely if zero available
 
-    // 2) Distribute into time bands
+    // 2) Distribute available slots into time bands
     var bandSlots = BANDS.map(function(band){
       return rawAvail.filter(function(s){ return s.wallMin >= band.from && s.wallMin < band.to; });
     });
@@ -2557,23 +2565,60 @@ function generarSlotsAgenda(cfg, bookings) {
     // Sort by time
     selected.sort(function(a,b){ return a.wallMin - b.wallMin; });
 
-    // 4) Mark ~40% as fake-busy for scarcity
-    var numBusy = Math.round(selected.length * BUSY_RATIO);
-    // Pick which indices become busy — spread them, don't bunch
-    var busySet = {};
-    if(numBusy > 0 && selected.length > 1) {
-      var indices = [];
-      for(var bi2=0;bi2<selected.length;bi2++) indices.push(bi2);
-      shuffle(indices);
-      for(var bk=0;bk<numBusy;bk++) busySet[indices[bk]] = true;
+    // 4) Smart scarcity: always show 2 available (if 2+ exist), disguise extras as occupied
+    //    Rule: prospect always sees at least 2 choices. If only 1 real slot, show 1.
+    //    Extra real slots beyond 2 get disguised as "Ocupado" for urgency.
+    var MIN_SHOW_AVAIL = 2;
+    var daySlots = [];
+
+    if(selected.length <= MIN_SHOW_AVAIL) {
+      // Few slots — show all as available
+      selected.forEach(function(s) {
+        daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
+      });
+    } else {
+      // More than 2 available — keep 2 as available, disguise the rest as occupied
+      // Pick the 2 to keep: spread them out (first and last, or first and a middle one)
+      var keepIndices = {};
+      keepIndices[0] = true; // always keep first
+      // Keep one more — pick the last one for max spread
+      keepIndices[selected.length - 1] = true;
+      selected.forEach(function(s, idx) {
+        daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: !!keepIndices[idx] });
+      });
     }
 
-    // 5) Push to final array
-    selected.forEach(function(s, idx) {
-      allSlots.push({
-        iso: s.iso,
-        available: !busySet[idx]
+    // 5) Visual padding — ensure minimum 4 visible total
+    //    Fill with "Ocupado" from unavailable pool (buffer/booked slots)
+    //    Prefer slots BEFORE available ones (feels like "they already filled up")
+    if(daySlots.length < MIN_SLOTS_VISIBLE) {
+      var needed = MIN_SLOTS_VISIBLE - daySlots.length;
+      var usedMins = {};
+      daySlots.forEach(function(s){ usedMins[s.wallMin] = true; });
+
+      var firstAvailMin = daySlots.length ? daySlots[0].wallMin : earliestIni;
+      var fillers = rawUnavail.filter(function(u){ return !usedMins[u.wallMin]; });
+      // Sort: prefer slots just before available ones, then just after
+      fillers.sort(function(a,b){
+        var da = a.wallMin - firstAvailMin;
+        var db = b.wallMin - firstAvailMin;
+        if(da < 0 && db >= 0) return -1;
+        if(da >= 0 && db < 0) return 1;
+        return Math.abs(da) - Math.abs(db);
       });
+      for(var fi=0; fi<fillers.length && needed>0; fi++) {
+        daySlots.push({ iso: fillers[fi].iso, wallMin: fillers[fi].wallMin, available: false });
+        usedMins[fillers[fi].wallMin] = true;
+        needed--;
+      }
+    }
+
+    // Sort everything by time
+    daySlots.sort(function(a,b){ return a.wallMin - b.wallMin; });
+
+    // 6) Push to final array
+    daySlots.forEach(function(s) {
+      allSlots.push({ iso: s.iso, available: s.available });
     });
   }
   return allSlots;
