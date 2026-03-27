@@ -1436,6 +1436,7 @@ function guardarAgendaConfig() {
     return;
   }
   agendaConfig.nombre=CU?CU.name:'';
+  agendaConfig.whatsapp=CU&&CU.whatsapp?CU.whatsapp:(localStorage.getItem('skyteam_ref_wa')||'');
   agendaConfig.timezone='America/Bogota';
   // Preserve foto if already set
   if(window._agendaFotoDataUrl) agendaConfig.foto = window._agendaFotoDataUrl;
@@ -1746,7 +1747,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   // Timezone badge
   // Viewer count
   var viewHash = 0; for(var vi=0;vi<username.length;vi++) viewHash = (viewHash*17 + username.charCodeAt(vi)) & 0xff;
-  var viewCount = 3 + (viewHash % 6);
+  var viewCount = 2 + (viewHash % 4);
 
   // IP-based scarcity hash: use userAgent + hour bucket → unique per visitor session
   var ipSeed = navigator.userAgent + String(Math.floor(Date.now() / 3600000)); // changes each hour
@@ -1823,7 +1824,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '</div>';
     html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
     html += '<input type="text" id="pb-nombre" placeholder="Tu nombre completo" />';
-    html += '<input type="text" id="pb-wa" placeholder="Tu WhatsApp (ej: +504 9999 9999)" />';
+    html += '<input type="text" id="pb-wa" placeholder="Tu WhatsApp (ej: +57 300 1234567)" />';
     html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:15px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;">✅ Confirmar reunión</button>';
     html += '</div>';
 
@@ -2194,14 +2195,23 @@ function pbConfirmar(username) {
         var fd=new Date(_pbSlotISO);
         var cfg=window._pbCfg||{};
         var dur = cfg.duracion || 60;
-        var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-        var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        var hStr=fd.getHours().toString().padStart(2,'0')+':'+fd.getMinutes().toString().padStart(2,'0');
-        document.getElementById('pb-confirm-msg').textContent='Tu cita es el '+days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()]+' a las '+hStr+'. Recibirás recordatorios antes de la reunión.';
-        var msg=(cfg.mensaje||'Hola, confirmé una reunión contigo.')+' 📅 '+days[fd.getDay()]+' '+fd.getDate()+' '+months[fd.getMonth()]+' a las '+hStr;
-        if(cfg.linkReunion) msg+=' | Link: '+cfg.linkReunion;
-        var waNum=wa.replace(/[^0-9]/g,'');
-        document.getElementById('pb-wa-btn').href='https://wa.me/'+waNum+'?text='+encodeURIComponent(msg);
+        var days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        var rawH=fd.getHours(), mins=fd.getMinutes().toString().padStart(2,'0');
+        var ampm=rawH>=12?'PM':'AM', h12=rawH%12||12;
+        var hStr=h12+':'+mins+' '+ampm;
+        var dateStr=days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()];
+        document.getElementById('pb-confirm-msg').textContent='Tu cita es el '+dateStr+' a las '+hStr+'. Recibirás recordatorios antes de la reunión.';
+        // WhatsApp: message the SOCIO (not the prospect)
+        var socioWa=(cfg.whatsapp||'').replace(/[^0-9]/g,'');
+        var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para el '+dateStr+' a las '+hStr+'. ¡Nos vemos!';
+        if(cfg.linkReunion) msgToSocio+=' | Link: '+cfg.linkReunion;
+        if(socioWa){
+          document.getElementById('pb-wa-btn').href='https://wa.me/'+socioWa+'?text='+encodeURIComponent(msgToSocio);
+          document.getElementById('pb-wa-btn').style.display='';
+        } else {
+          document.getElementById('pb-wa-btn').style.display='none';
+        }
 
         // Google Calendar link
         var endDate = new Date(fd.getTime() + dur * 60000);
