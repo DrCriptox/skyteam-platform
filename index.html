@@ -2565,40 +2565,95 @@ function generarSlotsAgenda(cfg, bookings) {
     // Sort by time
     selected.sort(function(a,b){ return a.wallMin - b.wallMin; });
 
-    // 4) Smart scarcity: ~40% busy, min 7 visible, rotación por día
-    //    - Many real slots (4+): ~60% available, ~40% disguised busy — rotated per day
+    // 4) Smart scarcity: ~40% busy, min 7 visible, max spread + day rotation
+    //    - Many real slots (4+): ~60% available, ~40% busy — MAX DISTANCE between available
     //    - Few real slots (1-3): ALL real as available, pad with busy to min 7
-    //    - Day rotation: if 12pm is "busy" today, it's "available" tomorrow
-    //    - Booked slots NEVER shown as available (anti double-booking already handled)
+    //    - Day rotation: slots hidden today appear available tomorrow
+    //    - Spread rule: available slots should be as far apart as possible (not consecutive)
+    //    - Booked slots NEVER shown as available (anti double-booking)
     var MIN_VISIBLE = 7;
     var daySlots = [];
 
     if(selected.length >= 4) {
-      // NORMAL CASE: enough real slots — apply 40% busy ratio with day rotation
+      // NORMAL CASE: enough real slots — apply 40% busy + max spread + day rotation
       var nBusy = Math.round(selected.length * BUSY_RATIO);
       var nAvail = selected.length - nBusy;
       if(nAvail < 2) nAvail = 2;
       if(nAvail > selected.length) nAvail = selected.length;
       nBusy = selected.length - nAvail;
 
-      // DAY ROTATION: offset which slots are "available" based on day index (di)
-      // Day 0 (hoy): positions 0,2,4,6 available | Day 1 (mañana): 1,3,5,7 available
-      // This ensures every real time slot gets shown as available on some day
       var availIndices = {};
       if(nAvail >= selected.length) {
         for(var ai=0;ai<selected.length;ai++) availIndices[ai]=true;
       } else {
-        var rotOffset = di % selected.length; // shifts pattern each day
-        var step = selected.length / nAvail;
-        for(var ai=0;ai<nAvail;ai++) {
-          var idx = Math.floor((rotOffset + ai * step) % selected.length);
-          // Avoid duplicates — find next free if collision
-          var tries = 0;
-          while(availIndices[idx] && tries < selected.length) {
-            idx = (idx + 1) % selected.length;
-            tries++;
+        // MAX SPREAD + PAIRED DAY ROTATION (wallMin-based)
+        // Days in PAIRS: (0,1), (2,3), (4,5), (6,7)
+        // Day A: greedy max-spread picks nAvail slots
+        // Day B: TARGETS the wallMin times that were busy on Day A
+        //        → finds nearest ACTUALLY AVAILABLE slot to each target
+        //        → if that exact time got booked, picks closest alternative
+        //        → fills remaining with greedy spread
+        // PRIORITY: slot must be REALLY available. Inversion is best-effort.
+
+        var pairIdx = Math.floor(di / 2);
+        var isInvertDay = (di % 2 === 1);
+
+        // Helper: greedy spread from a set of already-picked indices
+        function greedyFill(picked, total, maxPick) {
+          while(Object.keys(picked).length < maxPick) {
+            var bI = -1, bMD = -1;
+            for(var c=0; c<selected.length; c++) {
+              if(picked[c]) continue;
+              var mD = Infinity;
+              for(var p in picked) {
+                if(picked.hasOwnProperty(p)) {
+                  var dd = Math.abs(selected[c].wallMin - selected[parseInt(p)].wallMin);
+                  if(dd < mD) mD = dd;
+                }
+              }
+              if(mD > bMD) { bMD = mD; bI = c; }
+            }
+            if(bI >= 0) picked[bI] = true; else break;
           }
-          availIndices[idx] = true;
+        }
+
+        // Step 1: Compute Day A pattern (greedy spread from pair-specific start)
+        var dayAIndices = {};
+        var pairStart = pairIdx % selected.length;
+        dayAIndices[pairStart] = true;
+        greedyFill(dayAIndices, selected.length, nAvail);
+
+        if(!isInvertDay) {
+          // Day A: use greedy pattern directly
+          availIndices = dayAIndices;
+        } else {
+          // Day B: target Day A's BUSY wallMin times
+          // Collect the wallMin values that were hidden on Day A
+          var busyTargetMins = [];
+          for(var bt=0;bt<selected.length;bt++) {
+            if(!dayAIndices[bt]) busyTargetMins.push(selected[bt].wallMin);
+          }
+
+          // For each busy target, find nearest available slot in today's selected
+          var usedForB = {};
+          busyTargetMins.forEach(function(targetMin) {
+            if(Object.keys(availIndices).length >= nAvail) return;
+            var bIdx = -1, bDist = Infinity;
+            for(var si=0; si<selected.length; si++) {
+              if(usedForB[si]) continue;
+              var dist = Math.abs(selected[si].wallMin - targetMin);
+              if(dist < bDist) { bDist = dist; bIdx = si; }
+            }
+            if(bIdx >= 0) {
+              availIndices[bIdx] = true;
+              usedForB[bIdx] = true;
+            }
+          });
+
+          // Fill remaining slots (if nAvail > nBusy) with greedy spread
+          if(Object.keys(availIndices).length < nAvail) {
+            greedyFill(availIndices, selected.length, nAvail);
+          }
         }
       }
 
