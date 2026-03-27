@@ -272,7 +272,7 @@ select option{background:#040f28;color:#F0EDE6;}
 @keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
 
 /* ── HAMBURGER (mobile) ── */
-.hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px;}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:28px;cursor:pointer;padding:6px;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;}
 
 @media(max-width:480px){
@@ -491,7 +491,7 @@ select option{background:#040f28;color:#F0EDE6;}
 
     <!-- MATERIALES -->
     <div class="section" id="section-materiales">
-      <div class="topbar"><div class="topbar-title">Materiales</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="topbar"><div class="topbar-title">Materiales Descargables</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
       <div class="sc" id="materiales-content"></div>
     </div>
 
@@ -579,8 +579,7 @@ select option{background:#040f28;color:#F0EDE6;}
 
   </main>
 
-<!-- GLOBAL NOTIFICATION BELL -->
-<button id="notif-bell-global" class="notif-bell" onclick="toggleNotifPanel()" style="display:none;position:fixed;top:16px;right:60px;z-index:100;background:rgba(8,18,42,0.85);border:0.5px solid rgba(28,232,255,0.15);border-radius:50%;width:42px;height:42px;font-size:20px;cursor:pointer;backdrop-filter:blur(16px);box-shadow:0 4px 16px rgba(0,0,0,0.4);display:none;">🔔<span id="notif-badge-global" class="notif-badge" style="display:none;"></span></button>
+<!-- GLOBAL NOTIFICATION BELL — injected into topbars via JS -->
 
 <!-- NOTIFICATION PANEL -->
 <div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:rgba(8,18,42,0.97);border:0.5px solid rgba(28,232,255,0.15);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Nunito,sans-serif;">
@@ -850,9 +849,8 @@ function renderAgendaUI(el) {
   var bookingLink = window.location.origin + '?agenda=' + username;
   var pendientes = agendaBookings.filter(function(b){ return b.status !== 'cancelada'; });
 
-  var html = '<div class="sc-title">📅 Mi Agenda de Cierres</div>';
-  html += '<div class="sc-sub">Configura tus horarios y gestiona las citas de tus prospectos</div>';
-  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:20px;"></div>';
+  var html = '<div class="sc-sub">Configura tus horarios y gestiona las citas de tus prospectos</div>';
+  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
   html += '<div style="max-width:680px;padding:8px 0;">';
 
   // Foto de perfil — top of page
@@ -1648,9 +1646,29 @@ function clearOldNotifications() {
 
 function startNotifEngine() {
   if(_notifInterval) clearInterval(_notifInterval);
+  injectBellIntoTopbars();
   clearOldNotifications();
   refreshNotifications();
   _notifInterval = setInterval(refreshNotifications, 60000);
+}
+
+function injectBellIntoTopbars() {
+  if(document.querySelector('.notif-bell-injected')) return;
+  document.querySelectorAll('.topbar').forEach(function(tb) {
+    var hamburger = tb.querySelector('.hamburger');
+    if(!hamburger) return;
+    // Wrap hamburger + bell in a flex container
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    var bell = document.createElement('button');
+    bell.className = 'notif-bell notif-bell-injected';
+    bell.onclick = toggleNotifPanel;
+    bell.style.cssText = 'background:none;border:none;font-size:22px;cursor:pointer;padding:4px;position:relative;';
+    bell.innerHTML = '🔔<span class="notif-badge notif-badge-tb" style="display:none;"></span>';
+    hamburger.parentNode.insertBefore(wrap, hamburger);
+    wrap.appendChild(bell);
+    wrap.appendChild(hamburger);
+  });
 }
 
 function refreshNotifications() {
@@ -1751,17 +1769,14 @@ function refreshNotifications() {
 }
 
 function updateNotifBadges(count) {
-  var bell = document.getElementById('notif-bell-global');
-  var badge = document.getElementById('notif-badge-global');
-  if(bell) bell.style.display = 'flex';
-  if(badge) {
+  document.querySelectorAll('.notif-badge-tb').forEach(function(badge) {
     if(count > 0) {
       badge.style.display = 'flex';
       badge.textContent = count > 9 ? '9+' : count;
     } else {
       badge.style.display = 'none';
     }
-  }
+  });
 }
 
 function renderNotifList(notifs) {
@@ -2549,7 +2564,9 @@ function renderSkySales() {
     {id:'seguimiento',icon:'🔔',name:'Agente de Seguimiento',desc:'Qué mensaje enviar según la etapa del prospecto.',color:'rgba(216,90,48,0.1)',border:'rgba(216,90,48,0.2)',badge:'Próximo',bc:'#D85A30'},
     {id:'copy',icon:'✍️',name:'Agente Copywriter',desc:'Textos persuasivos para posts, bio y mensajes.',color:'rgba(212,83,126,0.1)',border:'rgba(212,83,126,0.2)',badge:'Próximo',bc:'#D4537E'}
   ];
-  var html = '<div style="max-width:700px;">';
+  var html = '<div class="sc-sub">Genera tu link, usa tus agentes IA y cierra más prospectos</div>';
+  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
+  html += '<div style="max-width:700px;">';
   html += '<div class="card" style="background:rgba(28,232,255,0.05);border-color:rgba(28,232,255,0.2);margin-bottom:20px;">';
   html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.5);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
   html += '<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;line-height:1.6;">Completa tus datos y genera tu link único para compartir. Cada persona que se registre desde tu link llegará directo a tu WhatsApp.</p>';
@@ -3440,7 +3457,9 @@ function renderAcademyList(academyId, contentId, mainTitle, titleId, backBtnId) 
   currentModule = null;
   if(videoCheckInterval) { clearInterval(videoCheckInterval); videoCheckInterval = null; }
   var mods = MODULES_DATA[academyId] || [];
-  var html = '<div style="max-width:640px;">';
+  var html = '<div class="sc-sub">Selecciona un módulo para comenzar tu entrenamiento</div>';
+  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
+  html += '<div style="max-width:640px;">';
   mods.forEach(function(mod) {
     var pct = getModulePercent(academyId, mod.id);
     var completed = mod.videos.filter(function(v){ return getVideoPercent(academyId, mod.id, v.id) >= 80; }).length;
@@ -3837,7 +3856,6 @@ function renderMateriales() {
       + '</div>';
   }
   el.innerHTML = '<div style="max-width:640px;">'
-    + '<div class="sc-title">Materiales Descargables</div>'
     + '<div class="sc-sub">Todos los recursos del equipo en un solo lugar</div>'
     + '<div class="section-label">Materiales de Servicios</div>'
     + matCard('📄', 'Guía de Servicios Innova', 'PDF · Próximamente')
