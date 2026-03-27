@@ -1,5 +1,3 @@
-Abrir
-
 {
   "name": "SKY TEAM — Franquicia Digital",
   "short_name": "SKY TEAM",
@@ -23,10 +21,7 @@ Abrir
       "purpose": "any maskable"
     }
   ],
-  "categories": [
-    "business",
-    "education"
-  ],
+  "categories": ["business", "education"],
   "lang": "es",
   "dir": "ltr"
 }
