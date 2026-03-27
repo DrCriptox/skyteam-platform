@@ -2023,8 +2023,14 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     *,*::before,*::after{box-sizing:border-box!important;}
     html,body{overflow-x:hidden!important;max-width:100vw!important;}
     body{background:#030c1f;margin:0;font-family:'Segoe UI',sans-serif;}
-    #public-booking,#public-booking *{max-width:100%!important;}
+    #public-booking{width:100%!important;max-width:100vw!important;overflow-x:hidden!important;}
+    #public-booking *{max-width:100%!important;}
     #public-booking div,#public-booking input,#public-booking button,#public-booking a{box-sizing:border-box!important;}
+    #pb-s1,#pb-s15,#pb-s2,#pb-s3{width:100%!important;max-width:100%!important;overflow:hidden!important;}
+    #pb-s2 input,#pb-s2 button,#pb-s3 a,#pb-s3 div,#pb-s1 div{max-width:100%!important;}
+    .pb-countdown{width:auto!important;max-width:100%!important;}
+    #pb-task-wa,#pb-task-gcal,#pb-all-done{width:100%!important;max-width:100%!important;overflow:hidden!important;}
+    #pb-task-wa a,#pb-task-gcal a{max-width:100%!important;flex-wrap:wrap!important;}
     .day-btn{flex-shrink:0;text-align:center;padding:11px 14px;border-radius:12px;cursor:pointer;min-width:62px;transition:all 0.15s;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);}
     .day-btn.active{background:rgba(28,232,255,0.15);border-color:rgba(28,232,255,0.5);}
     .day-btn .dname{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);}
@@ -2070,10 +2076,10 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
 
   var fotoActual = cfg.foto || '';
 
-  var html = '<div style="min-height:100vh;background:#030c1f;color:#F0EDE6;">';
+  var html = '<div style="min-height:100vh;background:#030c1f;color:#F0EDE6;width:100%;max-width:100vw;overflow-x:hidden;">';
 
   // Header — inner wrapper centered
-  html += '<div style="background:linear-gradient(135deg,rgba(28,232,255,0.09),rgba(0,119,255,0.04));border-bottom:0.5px solid rgba(28,232,255,0.18);padding:24px 20px 18px;">';
+  html += '<div style="background:linear-gradient(135deg,rgba(28,232,255,0.09),rgba(0,119,255,0.04));border-bottom:0.5px solid rgba(28,232,255,0.18);padding:24px 28px 18px;">';
   html += '<div style="max-width:480px;margin:0 auto;">';
   html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
   if(fotoActual) {
@@ -2145,7 +2151,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   html += '</div>'; // close header bg
 
   // Content — centered wrapper, overflow controlled for mobile
-  html += '<div style="padding:20px;max-width:480px;margin:0 auto;overflow-x:hidden;">';
+  html += '<div style="padding:20px 28px;max-width:480px;margin:0 auto;overflow-x:hidden;">';
 
   if(!slots.length) {
     html += '<div style="text-align:center;padding:48px 20px;background:rgba(255,255,255,0.03);border-radius:16px;border:0.5px solid rgba(255,255,255,0.08);margin-bottom:20px;">';
