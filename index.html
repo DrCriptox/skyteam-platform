@@ -2350,7 +2350,7 @@ function renderSlotList(slots, tz, ipHash) {
     if(isOccupied){
       html += '<div style="width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.42;cursor:not-allowed;">'
         + '<span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.3);text-decoration:line-through;">'+timeLabel+'</span>'
-        + '<span style="font-size:11px;color:rgba(255,100,100,0.65);font-weight:700;background:rgba(255,60,60,0.07);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Ocupado</span>'
+        + '<span style="font-size:11px;color:rgba(255,100,100,0.65);font-weight:700;background:rgba(255,60,60,0.07);border:0.5px solid rgba(255,60,60,0.15);padding:3px 8px;border-radius:6px;">Reservado</span>'
         + '</div>';
     } else {
       html += '<div class="slot-row" data-iso="'+s.iso+'" data-label="'+fullLabel.replace(/"/g,'')+'" onclick="pbSelectSlotNew(this.dataset.iso,this.dataset.label)">'
@@ -2521,7 +2521,7 @@ function generarSlotsAgenda(cfg, bookings) {
 
     // 1) Generate ALL slots in schedule — separate available vs unavailable
     var rawAvail = [];
-    var rawUnavail = []; // within buffer, booked, or past — for visual padding
+    var rawUnavail = []; // past, within buffer, or booked — for "Reservado" padding
     var cur = earliestIni;
     while(cur + dur <= latestEnd) {
       var h=Math.floor(cur/60), m2=cur%60;
@@ -2530,7 +2530,10 @@ function generarSlotsAgenda(cfg, bookings) {
       if(isInBloques(dayBloques, cur)) {
         if(slotUTC-ahora >= anticipMs && booked.indexOf(slotISO)===-1) {
           rawAvail.push({iso:slotISO, wallMin:cur});
-        } else if(slotUTC > ahora) {
+        } else {
+          // Past slots, within anticipation buffer, or already booked
+          // ALL go to rawUnavail — perfect as "Reservado" padding
+          // (past slots = "ya se llenaron", buffer = "muy pronto", booked = real)
           rawUnavail.push({iso:slotISO, wallMin:cur});
         }
       }
@@ -2662,33 +2665,65 @@ function generarSlotsAgenda(cfg, bookings) {
       });
 
     } else {
-      // SCARCE CASE (1-3 real slots): show ALL as available — no hiding
-      selected.forEach(function(s) {
-        daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
-      });
+      // SCARCE CASE (1-3 real slots):
+      // - 3 consecutive slots → hide middle one (show 2 spread + 1 occupied)
+      // - 2 slots → always show both
+      // - 1 slot → show 1 available (padding added later in step 5)
+      if(selected.length === 3) {
+        // Check if all 3 are consecutive (each one is ~dur apart)
+        var gap01 = selected[1].wallMin - selected[0].wallMin;
+        var gap12 = selected[2].wallMin - selected[1].wallMin;
+        var isConsecutive = (gap01 <= dur + 5) && (gap12 <= dur + 5);
+
+        if(isConsecutive) {
+          // Hide middle slot — show first and last for max spread
+          daySlots.push({ iso: selected[0].iso, wallMin: selected[0].wallMin, available: true });
+          daySlots.push({ iso: selected[1].iso, wallMin: selected[1].wallMin, available: false }); // middle = occupied
+          daySlots.push({ iso: selected[2].iso, wallMin: selected[2].wallMin, available: true });
+        } else {
+          // Not consecutive — show all 3 as available
+          selected.forEach(function(s) {
+            daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
+          });
+        }
+      } else {
+        // 1 or 2 slots — show all as available
+        selected.forEach(function(s) {
+          daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
+        });
+      }
     }
 
-    // 5) Visual padding — ensure minimum 7 visible total
-    //    Fill with "Ocupado" from unavailable pool (buffer/booked/past slots)
-    //    Prefer slots BEFORE and AROUND available ones ("ya se llenaron")
-    if(daySlots.length < MIN_VISIBLE) {
-      var needed = MIN_VISIBLE - daySlots.length;
+    // 5) Visual padding — fill with "Reservado" from real schedule slots
+    //    TWO sources of padding:
+    //    A) rawUnavail = REAL schedule slots (past, buffered, booked)
+    //       → No time cap — these are legitimate "ya se reservaron"
+    //       → Preferred source: most natural and believable
+    //    B) Synthetic = invented slots within schedule range
+    //       → ONLY before 8 PM — never invent slots late at night
+    //    Minimums: 4+ "Reservado" when 1-2 available, 7 total otherwise
+    var SYNTHETIC_TOPE_MIN = 20 * 60; // 8 PM — only for INVENTED slots
+    var availCount = daySlots.filter(function(s){return s.available;}).length;
+    var minReservado = (availCount <= 2) ? 4 : 0;
+    var minTotal = Math.max(MIN_VISIBLE, availCount + minReservado);
+    if(daySlots.length < minTotal) {
+      var needed = minTotal - daySlots.length;
       var usedMins = {};
       daySlots.forEach(function(s){ usedMins[s.wallMin] = true; });
 
-      // Find center of available slots to distribute padding around them
+      // Find the first available slot to center padding around it
       var availMins = daySlots.filter(function(s){return s.available;}).map(function(s){return s.wallMin;});
       var centerMin = availMins.length ? availMins[Math.floor(availMins.length/2)] : earliestIni;
 
+      // A) Real schedule slots — no time cap (past=ya se reservaron, booked=real)
+      //    Prefer slots JUST BEFORE available ones ("se llenaron los anteriores")
       var fillers = rawUnavail.filter(function(u){ return !usedMins[u.wallMin]; });
-      // Sort: prefer slots before available (feels "filled up"), then close after
       fillers.sort(function(a,b){
         var da = a.wallMin - centerMin;
         var db = b.wallMin - centerMin;
-        // Prefer before center
-        if(da < 0 && db >= 0) return -1;
+        if(da < 0 && db >= 0) return -1; // before center first
         if(da >= 0 && db < 0) return 1;
-        return Math.abs(da) - Math.abs(db);
+        return Math.abs(da) - Math.abs(db); // then by proximity
       });
       for(var fi=0; fi<fillers.length && needed>0; fi++) {
         daySlots.push({ iso: fillers[fi].iso, wallMin: fillers[fi].wallMin, available: false });
@@ -2696,19 +2731,16 @@ function generarSlotsAgenda(cfg, bookings) {
         needed--;
       }
 
-      // If still not enough (few real unavail), generate synthetic occupied slots
+      // B) Synthetic slots — ONLY before 8 PM (don't invent late-night slots)
       if(needed > 0) {
-        // Create fake occupied from the schedule range, avoiding existing wallMins
         var synCur = earliestIni;
         while(synCur + dur <= latestEnd && needed > 0) {
-          if(!usedMins[synCur]) {
+          if(!usedMins[synCur] && synCur < SYNTHETIC_TOPE_MIN) {
             var sh=Math.floor(synCur/60), sm=synCur%60;
             var synUTC=new Date(Date.UTC(y,mo,d,sh+offsetHrs,sm,0,0));
-            if(synUTC > ahora) { // only future-looking
-              daySlots.push({ iso: synUTC.toISOString(), wallMin: synCur, available: false });
-              usedMins[synCur] = true;
-              needed--;
-            }
+            daySlots.push({ iso: synUTC.toISOString(), wallMin: synCur, available: false });
+            usedMins[synCur] = true;
+            needed--;
           }
           synCur += dur;
         }
