@@ -301,7 +301,7 @@ select option{background:#040f28;color:#F0EDE6;}
   .app-layout{margin-left:0 !important;}
   main{margin-left:0 !important;}
   .hamburger{display:flex !important;}
-  .sc{padding:14px;}
+  .sc{padding:18px 14px;}
   .stats-grid{grid-template-columns:repeat(2,1fr);}
   .sidebar-close-btn{display:flex !important;}
   .sidebar-nav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;}
@@ -3472,8 +3472,8 @@ function renderAcademyList(academyId, contentId, mainTitle, titleId, backBtnId) 
   currentModule = null;
   if(videoCheckInterval) { clearInterval(videoCheckInterval); videoCheckInterval = null; }
   var mods = MODULES_DATA[academyId] || [];
-  var html = '<div class="sc-sub">Selecciona un módulo para comenzar tu entrenamiento</div>';
-  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
+  var html = '<div class="sc-sub" style="margin-top:10px;">Selecciona un módulo para comenzar tu entrenamiento</div>';
+  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:18px;"></div>';
   html += '<div style="max-width:640px;">';
   mods.forEach(function(mod) {
     var pct = getModulePercent(academyId, mod.id);
