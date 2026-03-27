@@ -850,7 +850,10 @@ function renderAgendaUI(el) {
   var bookingLink = window.location.origin + '?agenda=' + username;
   var pendientes = agendaBookings.filter(function(b){ return b.status !== 'cancelada'; });
 
-  var html = '<div style="max-width:680px;padding:8px 0;">';
+  var html = '<div class="sc-title">📅 Mi Agenda de Cierres</div>';
+  html += '<div class="sc-sub">Configura tus horarios y gestiona las citas de tus prospectos</div>';
+  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:20px;"></div>';
+  html += '<div style="max-width:680px;padding:8px 0;">';
 
   // Foto de perfil — top of page
   var fotoActual = agendaConfig && agendaConfig.foto ? agendaConfig.foto : '';
