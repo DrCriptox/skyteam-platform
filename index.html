@@ -443,6 +443,7 @@ select option{background:#040f28;color:#F0EDE6;}
       <button class="nav-item" data-sec="admin" id="nav-admin-btn" onclick="navigate('admin')" style="display:none;"><span class="nav-icon">⚙️</span>Panel Admin</button>
     </div>
     <div class="sidebar-bottom">
+      <button id="pwa-install-menu-btn" onclick="installPWA()" style="display:none;width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;margin-bottom:8px;">📲 Instalar como App</button>
       <button class="btn-logout" onclick="doLogout()">← Cerrar sesión</button>
     </div>
   </nav>
@@ -5013,30 +5014,60 @@ if('serviceWorker' in navigator) {
 
 // Capture install prompt for custom install button
 var _deferredInstallPrompt = null;
+var _pwaInstalled = localStorage.getItem('skyteam_pwa_installed') === 'true';
+
+// Check if running as installed PWA already
+if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  _pwaInstalled = true;
+  localStorage.setItem('skyteam_pwa_installed', 'true');
+}
+
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   _deferredInstallPrompt = e;
-  // Show install banner
+  // Show menu button
+  showInstallMenuBtn();
+  // Also show floating banner
   showInstallBanner();
 });
 
+function showInstallMenuBtn() {
+  var btn = document.getElementById('pwa-install-menu-btn');
+  if(!btn) return;
+  if(_pwaInstalled) {
+    btn.style.display = 'block';
+    btn.disabled = true;
+    btn.style.background = 'rgba(255,255,255,0.04)';
+    btn.style.color = 'rgba(255,255,255,0.3)';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = '✅ App instalada';
+  } else {
+    btn.style.display = 'block';
+  }
+}
+
 function showInstallBanner() {
+  if(_pwaInstalled) return;
   if(document.getElementById('pwa-install-banner')) return;
   var banner = document.createElement('div');
   banner.id = 'pwa-install-banner';
   banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;background:linear-gradient(135deg,#1CE8FF,#0077FF);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(28,232,255,0.3);font-family:Nunito,sans-serif;max-width:360px;width:calc(100% - 32px);animation:fadeSlideUp 0.4s ease;';
-  banner.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:#030c1f;">Instala SKY TEAM</div><div style="font-size:11px;color:rgba(3,12,31,0.6);margin-top:2px;">Accede más rápido desde tu pantalla de inicio</div></div>'
+  banner.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:#030c1f;">📲 Instala SKY TEAM</div><div style="font-size:11px;color:rgba(3,12,31,0.6);margin-top:2px;">Accede más rápido desde tu pantalla de inicio</div></div>'
     + '<button onclick="installPWA()" style="background:#030c1f;color:#1CE8FF;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">Instalar</button>'
     + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(3,12,31,0.4);font-size:16px;cursor:pointer;padding:4px;">✕</button>';
   document.body.appendChild(banner);
 }
 
 function installPWA() {
-  if(!_deferredInstallPrompt) return;
+  if(!_deferredInstallPrompt) {
+    // If no prompt available, show manual instructions
+    showToast('Abre el menú de tu navegador (⋮) y selecciona "Agregar a pantalla de inicio"');
+    return;
+  }
   _deferredInstallPrompt.prompt();
   _deferredInstallPrompt.userChoice.then(function(choice) {
     if(choice.outcome === 'accepted') {
-      showToast('✅ ¡SKY TEAM instalado! Búscalo en tu pantalla de inicio');
+      markPWAInstalled();
     }
     _deferredInstallPrompt = null;
     var banner = document.getElementById('pwa-install-banner');
@@ -5044,11 +5075,31 @@ function installPWA() {
   });
 }
 
+function markPWAInstalled() {
+  _pwaInstalled = true;
+  localStorage.setItem('skyteam_pwa_installed', 'true');
+  showToast('✅ ¡SKY TEAM instalado! Búscalo en tu pantalla de inicio');
+  var btn = document.getElementById('pwa-install-menu-btn');
+  if(btn) {
+    btn.disabled = true;
+    btn.style.background = 'rgba(255,255,255,0.04)';
+    btn.style.color = 'rgba(255,255,255,0.3)';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = '✅ App instalada';
+  }
+}
+
 window.addEventListener('appinstalled', function() {
-  showToast('✅ ¡SKY TEAM instalado como app!');
+  markPWAInstalled();
   _deferredInstallPrompt = null;
   var banner = document.getElementById('pwa-install-banner');
   if(banner) banner.remove();
+});
+
+// On page load, show menu button state
+window.addEventListener('load', function() {
+  // Small delay to let sidebar render
+  setTimeout(showInstallMenuBtn, 500);
 });
 </script>
 <script src="/fix-aprobar.js"></script>
