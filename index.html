@@ -1887,7 +1887,7 @@ function showPublicBookingPage(username) {
   document.querySelectorAll('#app,#login,#login-screen').forEach(function(el){if(el)el.style.display='none';});
   var old=document.getElementById('public-booking'); if(old) old.remove();
   var div=document.createElement('div'); div.id='public-booking';
-  div.style.cssText='min-height:100dvh;background:#030c1f;color:#F0EDE6;font-family:Nunito,sans-serif;';
+  div.style.cssText='min-height:100dvh;background:#030c1f;color:#F0EDE6;font-family:Nunito,sans-serif;overflow-x:hidden;width:100%;max-width:100vw;';
   div.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;"><div style="text-align:center;"><img src="/logo-skyteam.png" style="height:40px;margin-bottom:16px;" /><p style="color:rgba(255,255,255,0.4);">Cargando agenda...</p></div></div>';
   document.body.appendChild(div);
 
@@ -2019,8 +2019,11 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   window._pbGrouped = grouped;
 
   var css = `<style>
-    *{box-sizing:border-box;}
+    *,*::before,*::after{box-sizing:border-box!important;}
+    html,body{overflow-x:hidden!important;max-width:100vw!important;}
     body{background:#030c1f;margin:0;font-family:'Segoe UI',sans-serif;}
+    #public-booking,#public-booking *{max-width:100%!important;}
+    #public-booking div,#public-booking input,#public-booking button,#public-booking a{box-sizing:border-box!important;}
     .day-btn{flex-shrink:0;text-align:center;padding:11px 14px;border-radius:12px;cursor:pointer;min-width:62px;transition:all 0.15s;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);}
     .day-btn.active{background:rgba(28,232,255,0.15);border-color:rgba(28,232,255,0.5);}
     .day-btn .dname{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);}
