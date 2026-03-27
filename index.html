@@ -2266,7 +2266,34 @@ function renderSkySales() {
 
   html += '<div>';
   html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">📱 Tu WhatsApp (con código de país)</p>';
-  html += '<input id="ss-ref-wa" placeholder="+573001234567" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.whatsapp||'') + '">';
+  html += '<div style="display:flex;gap:8px;align-items:center;">';
+  // 24h cooldown check (needed before input to set disabled)
+  var waLockKey = 'skyteam_wa_saved_' + (CU.ref||CU.user||'');
+  var waLastSave = localStorage.getItem(waLockKey);
+  var waIsLocked = false;
+  var waHorasRestantes = 0;
+  if(waLastSave) {
+    var waDiff = Date.now() - parseInt(waLastSave);
+    if(waDiff < 24*60*60*1000) { waIsLocked = true; waHorasRestantes = Math.ceil((24*60*60*1000 - waDiff) / (60*60*1000)); }
+  }
+  if(waIsLocked) {
+    html += '<input id="ss-ref-wa" disabled placeholder="+573001234567" style="flex:1;background:rgba(0,0,0,0.15);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.35);font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;cursor:not-allowed;" value="' + (CU.whatsapp||'') + '">';
+  } else {
+    html += '<input id="ss-ref-wa" placeholder="+573001234567" style="flex:1;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.whatsapp||'') + '">';
+  }
+  if(waIsLocked) {
+    html += '<button disabled style="flex-shrink:0;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border-radius:8px;padding:9px 14px;font-size:11px;font-weight:700;cursor:not-allowed;font-family:Nunito,sans-serif;white-space:nowrap;" title="Podrás cambiar en ' + waHorasRestantes + 'h">🔒 ' + waHorasRestantes + 'h</button>';
+  } else {
+    html += '<button id="ss-save-wa-btn" onclick="guardarWhatsAppSocio()" style="flex-shrink:0;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">💾 Guardar</button>';
+  }
+  html += '</div>';
+  if(waIsLocked) {
+    html += '<p style="font-size:10px;color:rgba(255,255,255,0.2);margin:4px 0 0;">✅ WhatsApp guardado — podrás cambiarlo en ' + waHorasRestantes + ' hora' + (waHorasRestantes===1?'':'s') + '</p>';
+  } else if(CU.whatsapp) {
+    html += '<p style="font-size:10px;color:rgba(37,211,102,0.5);margin:4px 0 0;">✅ WhatsApp actual: ' + CU.whatsapp + '</p>';
+  } else {
+    html += '<p style="font-size:10px;color:rgba(255,165,0,0.5);margin:4px 0 0;">⚠️ Guarda tu WhatsApp para que los prospectos te contacten al agendar</p>';
+  }
   html += '</div>';
 
   html += '<div>';
@@ -2399,6 +2426,55 @@ function generarLinkVentas() {
     btn.textContent = '🔒 Link generado — disponible en 7 días';
     btn.onclick = null;
   }
+}
+
+function guardarWhatsAppSocio() {
+  var waInput = document.getElementById('ss-ref-wa');
+  var wa = (waInput ? waInput.value : '').trim();
+  if(!wa) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
+  var waClean = wa.replace(/[^0-9]/g, '');
+  if(waClean.length < 10) { showToast('Número de WhatsApp inválido ⚠️'); return; }
+
+  // Save to CU and localStorage
+  if(CU) CU.whatsapp = wa;
+  localStorage.setItem('skyteam_ref_wa', wa);
+
+  // 24h lock
+  var waLockKey = 'skyteam_wa_saved_' + (CU.ref||CU.user||'');
+  localStorage.setItem(waLockKey, String(Date.now()));
+
+  // Update agenda config on server (so public agenda has socio's WhatsApp)
+  var userKey = CU.ref || CU.user || '';
+  fetch('/api/agenda', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'getConfig', user:userKey})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var cfg = (d.ok && d.config) ? d.config : {};
+      cfg.whatsapp = wa;
+      cfg.nombre = cfg.nombre || (CU ? CU.name : '');
+      return fetch('/api/agenda', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveConfig', user:userKey, config:cfg})});
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok) {
+        showToast('✅ WhatsApp guardado — tu agenda y link de ventas actualizados');
+      } else {
+        showToast('✅ WhatsApp guardado localmente (agenda se actualizará al guardar config)');
+      }
+    })
+    .catch(function(){
+      showToast('✅ WhatsApp guardado localmente');
+    });
+
+  // Update existing referral link if one exists
+  var codigo = CU.ref || CU.user || '';
+  var savedLink = localStorage.getItem('skyteam_ref_link_' + codigo);
+  if(savedLink && codigo) {
+    var newLink = 'https://innovaia.app?ref=' + codigo + '&wa=' + waClean;
+    localStorage.setItem('skyteam_ref_link_' + codigo, newLink);
+  }
+
+  // Lock the button & disable input, re-render
+  renderSkySales();
 }
 
 function copiarLinkVentas() {
