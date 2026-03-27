@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Sky Team</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1CE8FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SKY TEAM">
+<link rel="apple-touch-icon" href="/logo-skyteam.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}
@@ -446,7 +452,7 @@ select option{background:#040f28;color:#F0EDE6;}
 
     <!-- HOME -->
     <div class="section active" id="section-home">
-      <div class="topbar"><div class="topbar-title">Inicio</div><div style="display:flex;align-items:center;gap:10px;"><button id="notif-bell-home" class="notif-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">🔔<span id="notif-badge-home" class="notif-badge" style="display:none;"></span></button><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
+      <div class="topbar"><div class="topbar-title">Inicio</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
       <div class="sc" id="home-content"></div>
     </div>
 
@@ -567,11 +573,14 @@ select option{background:#040f28;color:#F0EDE6;}
     </div>
   <!-- AGENDA DE CIERRES -->
 <div class="section" id="section-agenda">
-  <div class="topbar"><div class="topbar-title">📅 Mi Agenda de Cierres</div><div style="display:flex;align-items:center;gap:10px;"><button id="notif-bell-agenda" class="notif-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">🔔<span id="notif-badge-agenda" class="notif-badge" style="display:none;"></span></button><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
+  <div class="topbar"><div class="topbar-title">📅 Mi Agenda de Cierres</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
   <div class="sc" id="agenda-content"></div>
 </div>
 
   </main>
+
+<!-- GLOBAL NOTIFICATION BELL -->
+<button id="notif-bell-global" class="notif-bell" onclick="toggleNotifPanel()" style="display:none;position:fixed;top:16px;right:60px;z-index:100;background:rgba(8,18,42,0.85);border:0.5px solid rgba(28,232,255,0.15);border-radius:50%;width:42px;height:42px;font-size:20px;cursor:pointer;backdrop-filter:blur(16px);box-shadow:0 4px 16px rgba(0,0,0,0.4);display:none;">🔔<span id="notif-badge-global" class="notif-badge" style="display:none;"></span></button>
 
 <!-- NOTIFICATION PANEL -->
 <div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:rgba(8,18,42,0.97);border:0.5px solid rgba(28,232,255,0.15);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Nunito,sans-serif;">
@@ -1576,7 +1585,18 @@ function startAgendaPoll() {
       .then(function(d){
         var prev=agendaBookings.filter(function(b){return b.status!=='cancelada';}).length;
         var nuevo=(d.bookings||[]).filter(function(b){return b.status!=='cancelada';}).length;
-        if(nuevo>prev){agendaBookings=d.bookings||[];showToast('🔔 ¡Nueva cita agendada!');renderAgendaUI(document.getElementById('agenda-content'));refreshNotifications();}
+        if(nuevo>prev){
+          agendaBookings=d.bookings||[];showToast('🔔 ¡Nueva cita agendada!');renderAgendaUI(document.getElementById('agenda-content'));
+          // Find the new booking and push notification
+          var newB = agendaBookings.filter(function(b){return b.status!=='cancelada';}).sort(function(a,b){return new Date(b.creadaEn||0)-new Date(a.creadaEn||0);})[0];
+          if(newB) {
+            var fd2=new Date(newB.fechaISO), rH=fd2.getHours(), mn=fd2.getMinutes().toString().padStart(2,'0');
+            var ap=rH>=12?'PM':'AM', h2=rH%12||12;
+            var ds2=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+            pushNotification({id:'newbook_'+newB.id, type:'booking', icon:'🎉', title:'¡Nueva cita agendada!', subtitle:(newB.nombre||'Prospecto')+' — '+ds2[fd2.getDay()]+' '+h2+':'+mn+' '+ap, msg:'Alguien acaba de reservar contigo. Revisa tu agenda.', action:{label:'📅 Ver agenda', url:'javascript:navigate("agenda")'}});
+          }
+          refreshNotifications();
+        }
         else { agendaBookings=d.bookings||[]; refreshNotifications(); }
       }).catch(function(){});
   },45000);
@@ -1589,6 +1609,8 @@ function stopAgendaPoll(){if(agendaPollInterval){clearInterval(agendaPollInterva
 var _notifOpen = false;
 var _notifInterval = null;
 var _notifDismissed = JSON.parse(sessionStorage.getItem('skyteam_notif_dismissed')||'{}');
+// General notification queue for non-agenda notifications (content, events, etc.)
+var _notifQueue = JSON.parse(localStorage.getItem('skyteam_notif_queue_'+(typeof CU!=='undefined'&&CU?(CU.ref||CU.user):''))||'[]');
 
 function toggleNotifPanel() {
   _notifOpen = !_notifOpen;
@@ -1599,19 +1621,58 @@ function toggleNotifPanel() {
   if(_notifOpen) refreshNotifications();
 }
 
+// Push a general notification (callable from anywhere in the app)
+function pushNotification(notif) {
+  // notif: {id, type:'content'|'event'|'booking'|'system', icon, title, subtitle, msg, action:{label,url}, timestamp}
+  notif.timestamp = notif.timestamp || Date.now();
+  notif.id = notif.id || 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  // Avoid duplicates
+  var exists = _notifQueue.some(function(n){ return n.id === notif.id; });
+  if(!exists) {
+    _notifQueue.unshift(notif);
+    // Keep max 30 notifications
+    if(_notifQueue.length > 30) _notifQueue = _notifQueue.slice(0, 30);
+    localStorage.setItem('skyteam_notif_queue_'+(CU?(CU.ref||CU.user):''), JSON.stringify(_notifQueue));
+  }
+  refreshNotifications();
+}
+
+function clearOldNotifications() {
+  var cutoff = Date.now() - 48*3600000; // 48h max
+  _notifQueue = _notifQueue.filter(function(n){ return n.timestamp > cutoff; });
+  localStorage.setItem('skyteam_notif_queue_'+(CU?(CU.ref||CU.user):''), JSON.stringify(_notifQueue));
+}
+
 function startNotifEngine() {
   if(_notifInterval) clearInterval(_notifInterval);
+  clearOldNotifications();
   refreshNotifications();
-  _notifInterval = setInterval(refreshNotifications, 60000); // check every minute
+  _notifInterval = setInterval(refreshNotifications, 60000);
 }
 
 function refreshNotifications() {
-  if(!CU || !agendaBookings) return;
+  if(!CU) return;
   var now = Date.now();
   var notifs = [];
   var activeCount = 0;
 
-  agendaBookings.forEach(function(b) {
+  // ── General notifications (content, events, system) ──
+  _notifQueue.forEach(function(n) {
+    if(_notifDismissed[n.id]) return;
+    notifs.push({
+      id: n.id, booking: null, type: n.type||'system', icon: n.icon||'📢',
+      timeStr: '', dayStr: '',
+      title: n.title||'Notificación',
+      subtitle: n.subtitle||'',
+      msg: n.msg||'',
+      action: n.action||null,
+      priority: n.type==='event' ? 2.5 : 0.5
+    });
+    activeCount++;
+  });
+
+  // ── Agenda booking reminders ──
+  if(agendaBookings) agendaBookings.forEach(function(b) {
     if(b.status === 'cancelada') return;
     var t = new Date(b.fechaISO).getTime();
     var diff = t - now;
@@ -1687,16 +1748,17 @@ function refreshNotifications() {
 }
 
 function updateNotifBadges(count) {
-  ['notif-badge-home','notif-badge-agenda'].forEach(function(id){
-    var el = document.getElementById(id);
-    if(!el) return;
+  var bell = document.getElementById('notif-bell-global');
+  var badge = document.getElementById('notif-badge-global');
+  if(bell) bell.style.display = 'flex';
+  if(badge) {
     if(count > 0) {
-      el.style.display = 'flex';
-      el.textContent = count > 9 ? '9+' : count;
+      badge.style.display = 'flex';
+      badge.textContent = count > 9 ? '9+' : count;
     } else {
-      el.style.display = 'none';
+      badge.style.display = 'none';
     }
-  });
+  }
 }
 
 function renderNotifList(notifs) {
@@ -1706,8 +1768,8 @@ function renderNotifList(notifs) {
   if(!notifs.length) {
     list.innerHTML = '<div style="text-align:center;padding:30px 10px;">'
       + '<div style="font-size:36px;margin-bottom:10px;">✅</div>'
-      + '<p style="font-size:13px;color:rgba(255,255,255,0.3);margin:0;">No hay reuniones próximas</p>'
-      + '<p style="font-size:11px;color:rgba(255,255,255,0.15);margin:6px 0 0;">Los recordatorios aparecerán 3 horas antes de cada cita</p>'
+      + '<p style="font-size:13px;color:rgba(255,255,255,0.3);margin:0;">Todo al día</p>'
+      + '<p style="font-size:11px;color:rgba(255,255,255,0.15);margin:6px 0 0;">Aquí verás recordatorios de citas, contenido nuevo, eventos y más</p>'
       + '</div>';
     return;
   }
@@ -1717,8 +1779,9 @@ function renderNotifList(notifs) {
     var cardClass = 'notif-card';
     if(n.type === 'urgent') cardClass += ' urgent';
     else if(n.type === 'soon') cardClass += ' soon';
+    else if(n.type === 'event') cardClass += ' soon';
 
-    var waNum = (n.booking.whatsapp||'').replace(/[^0-9]/g,'');
+    var waNum = n.booking ? (n.booking.whatsapp||'').replace(/[^0-9]/g,'') : '';
 
     html += '<div class="' + cardClass + '">';
     html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
@@ -1728,11 +1791,15 @@ function renderNotifList(notifs) {
     html += '<div style="font-size:11px;color:' + (n.type==='urgent'?'#FF6B6B':n.type==='soon'?'#FFB347':'rgba(28,232,255,0.7)') + ';font-weight:700;margin-bottom:6px;">' + n.subtitle + '</div>';
     html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 10px;line-height:1.5;">' + n.msg + '</p>';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-    if(waNum) {
+    if(waNum && n.waMsg) {
       html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent(n.waMsg) + '" target="_blank" class="notif-wa-btn">💬 Enviar WhatsApp</a>';
     }
     if(n.type === 'urgent' && agendaConfig && agendaConfig.linkReunion) {
       html += '<a href="' + agendaConfig.linkReunion + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">🖥️ Abrir sala</a>';
+    }
+    // Generic action button for non-agenda notifications
+    if(n.action && n.action.url) {
+      html += '<a href="' + n.action.url + '" ' + (n.action.url.startsWith('http')?'target="_blank"':'onclick="toggleNotifPanel();'+(n.action.onclick||'')+'"') + ' style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
     }
     html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Nunito,sans-serif;">Descartar</button>';
     html += '</div></div></div></div>';
@@ -1744,6 +1811,9 @@ function renderNotifList(notifs) {
 function dismissNotif(id) {
   _notifDismissed[id] = true;
   sessionStorage.setItem('skyteam_notif_dismissed', JSON.stringify(_notifDismissed));
+  // Also remove from general queue
+  _notifQueue = _notifQueue.filter(function(n){ return n.id !== id; });
+  localStorage.setItem('skyteam_notif_queue_'+(CU?(CU.ref||CU.user):''), JSON.stringify(_notifQueue));
   refreshNotifications();
 }
 
@@ -4905,6 +4975,59 @@ window.addEventListener('DOMContentLoaded', function(){
   if(params.get('agenda')) {
     checkPublicAgenda();
   }
+});
+
+// ═══════════════════════════════════════════════════
+//  PWA — SERVICE WORKER + INSTALL PROMPT
+// ═══════════════════════════════════════════════════
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      console.log('[SW] Registrado:', reg.scope);
+    }).catch(function(err) {
+      console.log('[SW] Error:', err);
+    });
+  });
+}
+
+// Capture install prompt for custom install button
+var _deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  // Show install banner
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  if(document.getElementById('pwa-install-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;background:linear-gradient(135deg,#1CE8FF,#0077FF);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(28,232,255,0.3);font-family:Nunito,sans-serif;max-width:360px;width:calc(100% - 32px);animation:fadeSlideUp 0.4s ease;';
+  banner.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:#030c1f;">Instala SKY TEAM</div><div style="font-size:11px;color:rgba(3,12,31,0.6);margin-top:2px;">Accede más rápido desde tu pantalla de inicio</div></div>'
+    + '<button onclick="installPWA()" style="background:#030c1f;color:#1CE8FF;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">Instalar</button>'
+    + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(3,12,31,0.4);font-size:16px;cursor:pointer;padding:4px;">✕</button>';
+  document.body.appendChild(banner);
+}
+
+function installPWA() {
+  if(!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(function(choice) {
+    if(choice.outcome === 'accepted') {
+      showToast('✅ ¡SKY TEAM instalado! Búscalo en tu pantalla de inicio');
+    }
+    _deferredInstallPrompt = null;
+    var banner = document.getElementById('pwa-install-banner');
+    if(banner) banner.remove();
+  });
+}
+
+window.addEventListener('appinstalled', function() {
+  showToast('✅ ¡SKY TEAM instalado como app!');
+  _deferredInstallPrompt = null;
+  var banner = document.getElementById('pwa-install-banner');
+  if(banner) banner.remove();
 });
 </script>
 <script src="/fix-aprobar.js"></script>
