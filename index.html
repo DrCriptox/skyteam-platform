@@ -2049,8 +2049,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     input[type=text]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;box-sizing:border-box;}
     input[type=text]:focus,input[type=tel]:focus{border-color:rgba(28,232,255,0.5);}
     input[type=tel]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;}
-    #pb-wa-code{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
-    #pb-wa-code option{background:#0a1628;color:#F0EDE6;}
+    #pb-wa-code option{background:#0a1628;color:#F0EDE6;padding:8px;}
     /* Verified badge */
     .pb-verified{display:inline-flex;align-items:center;gap:4px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.2);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px;color:#1CE8FF;font-weight:700;margin-top:6px;}
     .pb-verified svg{flex-shrink:0;}
@@ -2214,40 +2213,36 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '</div>';
     html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
     html += '<input type="text" id="pb-nombre" placeholder="Tu nombre completo" />';
-    html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:stretch;">';
-    html += '<div style="position:relative;flex-shrink:0;width:110px;">';
-    html += '<select id="pb-wa-code" onchange="var s=this;var f=s.options[s.selectedIndex].getAttribute(\'data-flag\');document.getElementById(\'pb-wa-flag\').textContent=f;" style="width:100%;height:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px 8px 12px 36px;outline:none;font-family:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;cursor:pointer;">';
-    html += '<option value="57" data-flag="🇨🇴" selected>+57</option>';
-    html += '<option value="52" data-flag="🇲🇽">+52</option>';
-    html += '<option value="1" data-flag="🇺🇸">+1</option>';
-    html += '<option value="34" data-flag="🇪🇸">+34</option>';
-    html += '<option value="54" data-flag="🇦🇷">+54</option>';
-    html += '<option value="56" data-flag="🇨🇱">+56</option>';
-    html += '<option value="51" data-flag="🇵🇪">+51</option>';
-    html += '<option value="593" data-flag="🇪🇨">+593</option>';
-    html += '<option value="58" data-flag="🇻🇪">+58</option>';
-    html += '<option value="507" data-flag="🇵🇦">+507</option>';
-    html += '<option value="506" data-flag="🇨🇷">+506</option>';
-    html += '<option value="502" data-flag="🇬🇹">+502</option>';
-    html += '<option value="591" data-flag="🇧🇴">+591</option>';
-    html += '<option value="595" data-flag="🇵🇾">+595</option>';
-    html += '<option value="598" data-flag="🇺🇾">+598</option>';
-    html += '<option value="503" data-flag="🇸🇻">+503</option>';
-    html += '<option value="504" data-flag="🇭🇳">+504</option>';
-    html += '<option value="505" data-flag="🇳🇮">+505</option>';
-    html += '<option value="53" data-flag="🇨🇺">+53</option>';
-    html += '<option value="1809" data-flag="🇩🇴">+1809</option>';
-    html += '<option value="55" data-flag="🇧🇷">+55</option>';
-    html += '<option value="44" data-flag="🇬🇧">+44</option>';
-    html += '<option value="49" data-flag="🇩🇪">+49</option>';
-    html += '<option value="33" data-flag="🇫🇷">+33</option>';
-    html += '<option value="39" data-flag="🇮🇹">+39</option>';
-    html += '<option value="351" data-flag="🇵🇹">+351</option>';
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 6px;">Tu WhatsApp</p>';
+    html += '<select id="pb-wa-code" style="width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:8px;cursor:pointer;">';
+    html += '<option value="57" selected>\\ud83c\\udde8\\ud83c\\uddf4 Colombia (+57)</option>';
+    html += '<option value="52">\\ud83c\\uddf2\\ud83c\\uddfd M\\u00e9xico (+52)</option>';
+    html += '<option value="1">\\ud83c\\uddfa\\ud83c\\uddf8 Estados Unidos (+1)</option>';
+    html += '<option value="34">\\ud83c\\uddea\\ud83c\\uddf8 Espa\\u00f1a (+34)</option>';
+    html += '<option value="54">\\ud83c\\udde6\\ud83c\\uddf7 Argentina (+54)</option>';
+    html += '<option value="56">\\ud83c\\udde8\\ud83c\\uddf1 Chile (+56)</option>';
+    html += '<option value="51">\\ud83c\\uddf5\\ud83c\\uddea Per\\u00fa (+51)</option>';
+    html += '<option value="593">\\ud83c\\uddea\\ud83c\\udde8 Ecuador (+593)</option>';
+    html += '<option value="58">\\ud83c\\uddfb\\ud83c\\uddea Venezuela (+58)</option>';
+    html += '<option value="507">\\ud83c\\uddf5\\ud83c\\udde6 Panam\\u00e1 (+507)</option>';
+    html += '<option value="506">\\ud83c\\udde8\\ud83c\\uddf7 Costa Rica (+506)</option>';
+    html += '<option value="502">\\ud83c\\uddec\\ud83c\\uddf9 Guatemala (+502)</option>';
+    html += '<option value="591">\\ud83c\\udde7\\ud83c\\uddf4 Bolivia (+591)</option>';
+    html += '<option value="595">\\ud83c\\uddf5\\ud83c\\uddfe Paraguay (+595)</option>';
+    html += '<option value="598">\\ud83c\\uddfa\\ud83c\\uddfe Uruguay (+598)</option>';
+    html += '<option value="503">\\ud83c\\uddf8\\ud83c\\uddfb El Salvador (+503)</option>';
+    html += '<option value="504">\\ud83c\\udded\\ud83c\\uddf3 Honduras (+504)</option>';
+    html += '<option value="505">\\ud83c\\uddf3\\ud83c\\uddee Nicaragua (+505)</option>';
+    html += '<option value="53">\\ud83c\\udde8\\ud83c\\uddfa Cuba (+53)</option>';
+    html += '<option value="1809">\\ud83c\\udde9\\ud83c\\uddf4 Rep. Dominicana (+1809)</option>';
+    html += '<option value="55">\\ud83c\\udde7\\ud83c\\uddf7 Brasil (+55)</option>';
+    html += '<option value="44">\\ud83c\\uddec\\ud83c\\udde7 Reino Unido (+44)</option>';
+    html += '<option value="49">\\ud83c\\udde9\\ud83c\\uddea Alemania (+49)</option>';
+    html += '<option value="33">\\ud83c\\uddeb\\ud83c\\uddf7 Francia (+33)</option>';
+    html += '<option value="39">\\ud83c\\uddee\\ud83c\\uddf9 Italia (+39)</option>';
+    html += '<option value="351">\\ud83c\\uddf5\\ud83c\\uddf9 Portugal (+351)</option>';
     html += '</select>';
-    html += '<span id="pb-wa-flag" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none;">🇨🇴</span>';
-    html += '</div>';
-    html += '<input type="tel" id="pb-wa" placeholder="300 123 4567" style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;" />';
-    html += '</div>';
+    html += '<input type="tel" id="pb-wa" placeholder="300 123 4567" style="width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:10px;" />';
     html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;max-width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;box-sizing:border-box;">✅ Confirmar reunión</button>';
     html += '</div>';
 
