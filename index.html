@@ -2914,6 +2914,57 @@ function openAgent(id) {
   setTimeout(function(){ initAgentChat(id); }, 150);
 }
 
+/* ── PHONE COUNTRY SELECTOR HELPER ── */
+var _phoneCountries = [
+  {code:'57',iso:'co',name:'Colombia'},{code:'52',iso:'mx',name:'M\u00e9xico'},{code:'1',iso:'us',name:'Estados Unidos'},
+  {code:'34',iso:'es',name:'Espa\u00f1a'},{code:'54',iso:'ar',name:'Argentina'},{code:'56',iso:'cl',name:'Chile'},
+  {code:'51',iso:'pe',name:'Per\u00fa'},{code:'593',iso:'ec',name:'Ecuador'},{code:'58',iso:'ve',name:'Venezuela'},
+  {code:'507',iso:'pa',name:'Panam\u00e1'},{code:'506',iso:'cr',name:'Costa Rica'},{code:'502',iso:'gt',name:'Guatemala'},
+  {code:'591',iso:'bo',name:'Bolivia'},{code:'595',iso:'py',name:'Paraguay'},{code:'598',iso:'uy',name:'Uruguay'},
+  {code:'503',iso:'sv',name:'El Salvador'},{code:'504',iso:'hn',name:'Honduras'},{code:'505',iso:'ni',name:'Nicaragua'},
+  {code:'53',iso:'cu',name:'Cuba'},{code:'1809',iso:'do',name:'Rep. Dominicana'},{code:'55',iso:'br',name:'Brasil'},
+  {code:'44',iso:'gb',name:'Reino Unido'},{code:'49',iso:'de',name:'Alemania'},{code:'33',iso:'fr',name:'Francia'},
+  {code:'39',iso:'it',name:'Italia'},{code:'351',iso:'pt',name:'Portugal'}
+];
+
+function phoneCountrySelectHTML(idPrefix, currentWa, disabled) {
+  // Parse existing WhatsApp to extract code & number
+  var savedCode='57', savedNum='', savedIso='co';
+  if(currentWa) {
+    var clean = currentWa.replace(/[^0-9]/g,'');
+    // Try matching known codes (longest first)
+    var sorted = _phoneCountries.slice().sort(function(a,b){return b.code.length-a.code.length;});
+    for(var i=0;i<sorted.length;i++){
+      if(clean.indexOf(sorted[i].code)===0){savedCode=sorted[i].code;savedIso=sorted[i].iso;savedNum=clean.substring(sorted[i].code.length);break;}
+    }
+    if(!savedNum) savedNum=clean;
+  }
+  var dis = disabled ? ' disabled' : '';
+  var disStyle = disabled ? 'opacity:0.5;cursor:not-allowed;' : '';
+  var h = '<div style="display:flex;gap:8px;align-items:stretch;height:42px;'+disStyle+'">';
+  h += '<div style="position:relative;flex-shrink:0;width:100px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;overflow:hidden;">';
+  h += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;gap:5px;z-index:1;">';
+  h += '<img id="'+idPrefix+'-flag" src="https://flagcdn.com/w40/'+savedIso+'.png" style="width:20px;height:14px;border-radius:2px;object-fit:cover;display:block;" />';
+  h += '<span id="'+idPrefix+'-codetext" style="font-size:12px;font-weight:700;color:#F0EDE6;">+'+savedCode+'</span>';
+  h += '<span style="font-size:8px;color:rgba(255,255,255,0.3);">\u25BE</span>';
+  h += '</div>';
+  h += '<select id="'+idPrefix+'-code"'+dis+' onchange="var o=this.options[this.selectedIndex];document.getElementById(\''+idPrefix+'-flag\').src=\'https://flagcdn.com/w40/\'+o.getAttribute(\'data-iso\')+\'.png\';document.getElementById(\''+idPrefix+'-codetext\').textContent=\'+\'+o.value;" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;z-index:2;">';
+  for(var j=0;j<_phoneCountries.length;j++){
+    var c=_phoneCountries[j];
+    h+='<option value="'+c.code+'" data-iso="'+c.iso+'"'+(c.code===savedCode?' selected':'')+'>'+c.name+' (+'+c.code+')</option>';
+  }
+  h += '</select></div>';
+  h += '<input type="tel" id="'+idPrefix+'-num"'+dis+' placeholder="300 123 4567" value="'+savedNum+'" style="flex:1;min-width:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" />';
+  h += '</div>';
+  return h;
+}
+
+function getPhoneValue(idPrefix) {
+  var code = (document.getElementById(idPrefix+'-code')||{}).value||'57';
+  var num = (document.getElementById(idPrefix+'-num')||{value:''}).value.replace(/[^0-9]/g,'');
+  return num ? ('+'+code+num) : '';
+}
+
 /* ── SKY SALES IA ── */
 function renderSkySales() {
   if(!CU) return;
@@ -2943,9 +2994,8 @@ function renderSkySales() {
   html += '</div>';
 
   html += '<div>';
-  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">📱 Tu WhatsApp (con código de país)</p>';
-  html += '<div style="display:flex;gap:8px;align-items:center;">';
-  // 24h cooldown check (needed before input to set disabled)
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">📱 Tu WhatsApp</p>';
+  // 24h cooldown check
   var waLockKey = 'skyteam_wa_saved_' + (CU.ref||CU.user||'');
   var waLastSave = localStorage.getItem(waLockKey);
   var waIsLocked = false;
@@ -2954,19 +3004,12 @@ function renderSkySales() {
     var waDiff = Date.now() - parseInt(waLastSave);
     if(waDiff < 24*60*60*1000) { waIsLocked = true; waHorasRestantes = Math.ceil((24*60*60*1000 - waDiff) / (60*60*1000)); }
   }
-  if(waIsLocked) {
-    html += '<input id="ss-ref-wa" disabled placeholder="+573001234567" style="flex:1;background:rgba(0,0,0,0.15);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.35);font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;cursor:not-allowed;" value="' + (CU.whatsapp||'') + '">';
-  } else {
-    html += '<input id="ss-ref-wa" placeholder="+573001234567" style="flex:1;background:rgba(0,0,0,0.25);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.whatsapp||'') + '">';
+  html += phoneCountrySelectHTML('ss-ref-wa', CU.whatsapp||'', waIsLocked);
+  if(!waIsLocked) {
+    html += '<button id="ss-save-wa-btn" onclick="guardarWhatsAppSocio()" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💾 Guardar WhatsApp</button>';
   }
   if(waIsLocked) {
-    html += '<button disabled style="flex-shrink:0;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border-radius:8px;padding:9px 14px;font-size:11px;font-weight:700;cursor:not-allowed;font-family:Nunito,sans-serif;white-space:nowrap;" title="Podrás cambiar en ' + waHorasRestantes + 'h">🔒 ' + waHorasRestantes + 'h</button>';
-  } else {
-    html += '<button id="ss-save-wa-btn" onclick="guardarWhatsAppSocio()" style="flex-shrink:0;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">💾 Guardar</button>';
-  }
-  html += '</div>';
-  if(waIsLocked) {
-    html += '<p style="font-size:10px;color:rgba(255,255,255,0.2);margin:4px 0 0;">✅ WhatsApp guardado — podrás cambiarlo en ' + waHorasRestantes + ' hora' + (waHorasRestantes===1?'':'s') + '</p>';
+    html += '<p style="font-size:10px;color:rgba(255,255,255,0.2);margin:4px 0 0;">🔒 WhatsApp guardado — podrás cambiarlo en ' + waHorasRestantes + ' hora' + (waHorasRestantes===1?'':'s') + '</p>';
   } else if(CU.whatsapp) {
     html += '<p style="font-size:10px;color:rgba(37,211,102,0.5);margin:4px 0 0;">✅ WhatsApp actual: ' + CU.whatsapp + '</p>';
   } else {
@@ -3052,7 +3095,7 @@ function renderSkySales() {
 
 function generarLinkVentas() {
   var nombre = (document.getElementById('ss-ref-nombre') ? document.getElementById('ss-ref-nombre').value : '').trim();
-  var wa = (document.getElementById('ss-ref-wa').value || '').trim();
+  var wa = getPhoneValue('ss-ref-wa') || (CU.whatsapp||'');
   var codigo = (document.getElementById('ss-ref-code').value || '').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
 
   if(!nombre) { showToast('Ingresa tu nombre completo ⚠️'); return; }
@@ -3111,8 +3154,7 @@ function generarLinkVentas() {
 }
 
 function guardarWhatsAppSocio() {
-  var waInput = document.getElementById('ss-ref-wa');
-  var wa = (waInput ? waInput.value : '').trim();
+  var wa = getPhoneValue('ss-ref-wa');
   if(!wa) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
   var waClean = wa.replace(/[^0-9]/g, '');
   if(waClean.length < 10) { showToast('Número de WhatsApp inválido ⚠️'); return; }
@@ -3155,8 +3197,9 @@ function guardarWhatsAppSocio() {
     localStorage.setItem('skyteam_ref_link_' + codigo, newLink);
   }
 
-  // Lock the button & disable input, re-render
+  // Lock the button & disable input, re-render both sections
   renderSkySales();
+  renderPerfil();
 }
 
 function copiarLinkVentas() {
@@ -5507,10 +5550,25 @@ function renderPerfil() {
     + '<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Usuario</span><span class="perfil-data-value mono">'+CU.username+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Correo</span><span class="perfil-data-value mono">'+(CU.email||'—')+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">WhatsApp</span><span class="perfil-data-value">'+(CU.wa||'—')+'</span></div>'
+    + '<div class="perfil-data-row"><span class="perfil-data-label">WhatsApp</span><span class="perfil-data-value">'+(CU.whatsapp||CU.wa||'—')+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Referido</span><span class="perfil-data-value cyan">'+CU.ref+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
+    + '</div>'
+    + '<div class="perfil-data-card">'
+    + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
+    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.4);text-transform:uppercase;">📱 WhatsApp</span>'
+    + '</div>'
+    + '<div style="padding:14px 18px;">'
+    + (function(){
+        var lk='skyteam_wa_saved_'+(CU.ref||CU.user||''),ls=localStorage.getItem(lk),locked=false,hrs=0;
+        if(ls){var df=Date.now()-parseInt(ls);if(df<86400000){locked=true;hrs=Math.ceil((86400000-df)/3600000);}}
+        var h=phoneCountrySelectHTML('perfil-wa',CU.whatsapp||'',locked);
+        if(!locked) h+='<button onclick="guardarWhatsAppPerfil()" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💾 Guardar</button>';
+        if(locked) h+='<p style="font-size:10px;color:rgba(255,255,255,0.2);margin:4px 0 0;">🔒 Podrás cambiarlo en '+hrs+' hora'+(hrs===1?'':'s')+'</p>';
+        return h;
+      })()
+    + '</div>'
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
@@ -5529,6 +5587,33 @@ function renderPerfil() {
     + '</div>'
     + '</div>';
   document.getElementById('perfil-content').innerHTML = html;
+}
+
+function guardarWhatsAppPerfil() {
+  var wa = getPhoneValue('perfil-wa');
+  if(!wa) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
+  var waClean = wa.replace(/[^0-9]/g, '');
+  if(waClean.length < 10) { showToast('Número inválido ⚠️'); return; }
+  // Save to CU and localStorage (same as guardarWhatsAppSocio)
+  if(CU) CU.whatsapp = wa;
+  localStorage.setItem('skyteam_ref_wa', wa);
+  // 24h lock
+  var waLockKey = 'skyteam_wa_saved_' + (CU.ref||CU.user||'');
+  localStorage.setItem(waLockKey, String(Date.now()));
+  // Update agenda config on server
+  var userKey = CU.ref || CU.user || '';
+  fetch('/api/agenda', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'getConfig', user:userKey})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var cfg = (d.ok && d.config) ? d.config : {};
+      cfg.whatsapp = wa;
+      cfg.nombre = cfg.nombre || (CU ? CU.name : '');
+      return fetch('/api/agenda', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveConfig', user:userKey, config:cfg})});
+    }).then(function(){ showToast('✅ WhatsApp guardado y sincronizado'); })
+    .catch(function(){ showToast('✅ WhatsApp guardado localmente'); });
+  // Re-render both sections
+  renderPerfil();
+  renderSkySales();
 }
 
 function triggerPhotoUpload() {
