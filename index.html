@@ -79,6 +79,18 @@ select option{background:#040f28;color:#F0EDE6;}
 .topbar-title{font-family:'Nunito',sans-serif;font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.3px;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
 
+/* ── NOTIFICATION BELL ── */
+.notif-bell{position:relative;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;transition:transform 0.2s;}
+.notif-bell:active{transform:scale(0.9);}
+.notif-badge{position:absolute;top:-2px;right:-4px;background:#FF3B30;color:#fff;font-size:9px;font-weight:900;min-width:16px;height:16px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;font-family:Nunito,sans-serif;border:2px solid #030c1f;animation:notifPulse 2s infinite;}
+@keyframes notifPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+.notif-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:10px;transition:all 0.2s;}
+.notif-card:hover{background:rgba(28,232,255,0.06);border-color:rgba(28,232,255,0.15);}
+.notif-card.urgent{border-color:rgba(255,59,48,0.3);background:rgba(255,59,48,0.06);}
+.notif-card.soon{border-color:rgba(255,160,0,0.25);background:rgba(255,160,0,0.05);}
+.notif-wa-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;transition:transform 0.15s;}
+.notif-wa-btn:active{transform:scale(0.95);}
+
 /* ── SECTION CONTENT ── */
 .sc{padding:28px;padding-bottom:calc(28px + env(safe-area-inset-bottom, 80px));}
 .sc-title{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;letter-spacing:-0.3px;}
@@ -434,7 +446,7 @@ select option{background:#040f28;color:#F0EDE6;}
 
     <!-- HOME -->
     <div class="section active" id="section-home">
-      <div class="topbar"><div class="topbar-title">Inicio</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="topbar"><div class="topbar-title">Inicio</div><div style="display:flex;align-items:center;gap:10px;"><button id="notif-bell-home" class="notif-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">🔔<span id="notif-badge-home" class="notif-badge" style="display:none;"></span></button><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
       <div class="sc" id="home-content"></div>
     </div>
 
@@ -555,11 +567,24 @@ select option{background:#040f28;color:#F0EDE6;}
     </div>
   <!-- AGENDA DE CIERRES -->
 <div class="section" id="section-agenda">
-  <div class="topbar"><div class="topbar-title">📅 Mi Agenda de Cierres</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+  <div class="topbar"><div class="topbar-title">📅 Mi Agenda de Cierres</div><div style="display:flex;align-items:center;gap:10px;"><button id="notif-bell-agenda" class="notif-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;">🔔<span id="notif-badge-agenda" class="notif-badge" style="display:none;"></span></button><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
   <div class="sc" id="agenda-content"></div>
 </div>
 
   </main>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:rgba(8,18,42,0.97);border:0.5px solid rgba(28,232,255,0.15);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Nunito,sans-serif;">
+  <div style="padding:16px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(255,255,255,0.06);">
+    <span style="font-size:15px;font-weight:800;color:#fff;">🔔 Notificaciones</span>
+    <button onclick="toggleNotifPanel()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;">✕</button>
+  </div>
+  <div id="notif-list" style="padding:10px 14px 14px;">
+    <p style="font-size:12px;color:rgba(255,255,255,0.25);text-align:center;padding:20px 0;">Sin notificaciones por ahora</p>
+  </div>
+</div>
+<div id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:199;"></div>
+
 </div>
 </div>
 
@@ -796,6 +821,7 @@ function renderAgenda() {
       agendaBookings = d.bookings || [];
       renderAgendaUI(el);
       startAgendaPoll();
+      startNotifEngine();
     })
     .catch(function(){
       agendaConfig = getDefaultAgendaCfg();
@@ -1550,11 +1576,176 @@ function startAgendaPoll() {
       .then(function(d){
         var prev=agendaBookings.filter(function(b){return b.status!=='cancelada';}).length;
         var nuevo=(d.bookings||[]).filter(function(b){return b.status!=='cancelada';}).length;
-        if(nuevo>prev){agendaBookings=d.bookings||[];showToast('🔔 ¡Nueva cita agendada!');renderAgendaUI(document.getElementById('agenda-content'));}
+        if(nuevo>prev){agendaBookings=d.bookings||[];showToast('🔔 ¡Nueva cita agendada!');renderAgendaUI(document.getElementById('agenda-content'));refreshNotifications();}
+        else { agendaBookings=d.bookings||[]; refreshNotifications(); }
       }).catch(function(){});
   },45000);
 }
 function stopAgendaPoll(){if(agendaPollInterval){clearInterval(agendaPollInterval);agendaPollInterval=null;}}
+
+// ═══════════════════════════════════════════════════
+//  SISTEMA DE NOTIFICACIONES — RECORDATORIOS DE CITAS
+// ═══════════════════════════════════════════════════
+var _notifOpen = false;
+var _notifInterval = null;
+var _notifDismissed = JSON.parse(sessionStorage.getItem('skyteam_notif_dismissed')||'{}');
+
+function toggleNotifPanel() {
+  _notifOpen = !_notifOpen;
+  var panel = document.getElementById('notif-panel');
+  var overlay = document.getElementById('notif-overlay');
+  if(panel) panel.style.display = _notifOpen ? 'block' : 'none';
+  if(overlay) overlay.style.display = _notifOpen ? 'block' : 'none';
+  if(_notifOpen) refreshNotifications();
+}
+
+function startNotifEngine() {
+  if(_notifInterval) clearInterval(_notifInterval);
+  refreshNotifications();
+  _notifInterval = setInterval(refreshNotifications, 60000); // check every minute
+}
+
+function refreshNotifications() {
+  if(!CU || !agendaBookings) return;
+  var now = Date.now();
+  var notifs = [];
+  var activeCount = 0;
+
+  agendaBookings.forEach(function(b) {
+    if(b.status === 'cancelada') return;
+    var t = new Date(b.fechaISO).getTime();
+    var diff = t - now;
+    if(diff < 0 || diff > 4 * 3600000) return; // only future within 4h
+
+    var dismissKey = b.id + '_';
+    var days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    var fd = new Date(b.fechaISO);
+    var rawH = fd.getHours(), mins = fd.getMinutes().toString().padStart(2,'0');
+    var ampm = rawH >= 12 ? 'PM' : 'AM', h12 = rawH % 12 || 12;
+    var timeStr = h12 + ':' + mins + ' ' + ampm;
+    var dayStr = days[fd.getDay()];
+
+    var prospectWa = (b.whatsapp||'').replace(/[^0-9]/g,'');
+
+    // 3h reminder (between 3h and 30min)
+    if(diff <= 3*3600000 && diff > 30*60000) {
+      var dk = dismissKey + '3h';
+      if(!_notifDismissed[dk]) {
+        notifs.push({
+          id: dk, booking: b, type: 'info', icon: '📋', timeStr: timeStr, dayStr: dayStr,
+          title: 'Hoy tienes cita con ' + (b.nombre||'un prospecto'),
+          subtitle: dayStr + ' a las ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
+          msg: '¡Buen momento para preparar tus notas y tener todo listo! 📝',
+          waMsg: 'Hola ' + (b.nombre||'') + ', te saluda ' + (CU.name||'tu asesor') + ' de SKY TEAM. Te escribo para recordarte nuestra reunión de hoy a las ' + timeStr + '. ¿Nos vemos ahí? 😊',
+          priority: 1
+        });
+        activeCount++;
+      }
+    }
+
+    // 30min reminder
+    if(diff <= 30*60000 && diff > 60000) {
+      var dk2 = dismissKey + '30m';
+      if(!_notifDismissed[dk2]) {
+        notifs.push({
+          id: dk2, booking: b, type: 'soon', icon: '⏰', timeStr: timeStr, dayStr: dayStr,
+          title: (b.nombre||'Tu prospecto') + ' te espera pronto',
+          subtitle: 'En ' + Math.ceil(diff/60000) + ' min — ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
+          msg: 'Recuérdale que la sala está lista. Sería genial que tuviera cámara y micrófono activos, y esté en un lugar cómodo.',
+          waMsg: '¡Hey ' + (b.nombre||'') + '! Soy ' + (CU.name||'tu asesor') + '. En unos 30 minutos arranca nuestra reunión (' + timeStr + '). Ya tengo todo preparado para ti. ¿Todo bien para conectarnos? 🚀\n\nSería genial que tuvieras tu cámara y micrófono activos, y estés en un lugar cómodo. ¡Nos vemos!',
+          priority: 2
+        });
+        activeCount++;
+      }
+    }
+
+    // 1min reminder — sala abierta
+    if(diff <= 60000) {
+      var dk3 = dismissKey + '1m';
+      if(!_notifDismissed[dk3]) {
+        notifs.push({
+          id: dk3, booking: b, type: 'urgent', icon: '🟢', timeStr: timeStr, dayStr: dayStr,
+          title: '¡Sala abierta! — ' + (b.nombre||'Prospecto'),
+          subtitle: '¡AHORA! — ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
+          msg: 'Envíale el link de la sala y conéctate ya.',
+          waMsg: '¡' + (b.nombre||'Hola') + '! Ya estoy en la sala esperándote. Conéctate por aquí 👇\n' + (agendaConfig && agendaConfig.linkReunion ? agendaConfig.linkReunion : '(tu link de reunión)') + '\n¡Te espero!',
+          priority: 3
+        });
+        activeCount++;
+      }
+    }
+  });
+
+  // Sort by priority (most urgent first)
+  notifs.sort(function(a,b){ return b.priority - a.priority; });
+
+  // Update badges
+  updateNotifBadges(activeCount);
+
+  // Render list if panel is open
+  if(_notifOpen) renderNotifList(notifs);
+}
+
+function updateNotifBadges(count) {
+  ['notif-badge-home','notif-badge-agenda'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    if(count > 0) {
+      el.style.display = 'flex';
+      el.textContent = count > 9 ? '9+' : count;
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+function renderNotifList(notifs) {
+  var list = document.getElementById('notif-list');
+  if(!list) return;
+
+  if(!notifs.length) {
+    list.innerHTML = '<div style="text-align:center;padding:30px 10px;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">✅</div>'
+      + '<p style="font-size:13px;color:rgba(255,255,255,0.3);margin:0;">No hay reuniones próximas</p>'
+      + '<p style="font-size:11px;color:rgba(255,255,255,0.15);margin:6px 0 0;">Los recordatorios aparecerán 3 horas antes de cada cita</p>'
+      + '</div>';
+    return;
+  }
+
+  var html = '';
+  notifs.forEach(function(n) {
+    var cardClass = 'notif-card';
+    if(n.type === 'urgent') cardClass += ' urgent';
+    else if(n.type === 'soon') cardClass += ' soon';
+
+    var waNum = (n.booking.whatsapp||'').replace(/[^0-9]/g,'');
+
+    html += '<div class="' + cardClass + '">';
+    html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
+    html += '<span style="font-size:24px;">' + n.icon + '</span>';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">' + n.title + '</div>';
+    html += '<div style="font-size:11px;color:' + (n.type==='urgent'?'#FF6B6B':n.type==='soon'?'#FFB347':'rgba(28,232,255,0.7)') + ';font-weight:700;margin-bottom:6px;">' + n.subtitle + '</div>';
+    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 10px;line-height:1.5;">' + n.msg + '</p>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    if(waNum) {
+      html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent(n.waMsg) + '" target="_blank" class="notif-wa-btn">💬 Enviar WhatsApp</a>';
+    }
+    if(n.type === 'urgent' && agendaConfig && agendaConfig.linkReunion) {
+      html += '<a href="' + agendaConfig.linkReunion + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">🖥️ Abrir sala</a>';
+    }
+    html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Nunito,sans-serif;">Descartar</button>';
+    html += '</div></div></div></div>';
+  });
+
+  list.innerHTML = html;
+}
+
+function dismissNotif(id) {
+  _notifDismissed[id] = true;
+  sessionStorage.setItem('skyteam_notif_dismissed', JSON.stringify(_notifDismissed));
+  refreshNotifications();
+}
 
 // ═══════════════════════════════════════════════════
 //  PÁGINA PÚBLICA DE BOOKING — ?agenda=USERNAME
