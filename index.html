@@ -8071,6 +8071,7 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 
 
+
 /* ========================================
    CRM MISSING FUNCTIONS - Sky Prospectos
    ======================================== */
@@ -8145,7 +8146,7 @@ function closeCrmModalAdd() {
   if (form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var data = {
+      var prospecto = {
         nombre: document.getElementById('crm-input-nombre').value.trim(),
         telefono: document.getElementById('crm-input-telefono').value.trim(),
         email: document.getElementById('crm-input-email').value.trim(),
@@ -8154,12 +8155,13 @@ function closeCrmModalAdd() {
         temperatura: parseInt(document.getElementById('crm-input-temperatura').value) || 50,
         notas: document.getElementById('crm-input-notas').value.trim(),
         valor_estimado: parseFloat(document.getElementById('crm-input-valor-estimado').value) || 0,
-        fecha_cierre: document.getElementById('crm-input-fecha-cierre').value
+        fecha_cierre_estimada: document.getElementById('crm-input-fecha-cierre').value || null
       };
-      if (!data.nombre) { crmToast('Ingresa el nombre del prospecto', 'error'); return; }
+      if (!prospecto.nombre) { crmToast('Ingresa el nombre del prospecto', 'error'); return; }
       var action = crmEditingId ? 'update' : 'add';
-      if (crmEditingId) data.id = crmEditingId;
-      var res = await crmApi(action, data);
+      var payload = { prospecto: prospecto };
+      if (crmEditingId) payload.prospecto.id = crmEditingId;
+      var res = await crmApi(action, payload);
       if (res && res.ok) {
         closeCrmModalAdd();
         crmToast(crmEditingId ? 'Prospecto actualizado' : 'Prospecto agregado', 'success');
@@ -8171,6 +8173,22 @@ function closeCrmModalAdd() {
     });
   }
 })();
+
+/* --- Temperatura slider sync --- */
+(function() {
+  var slider = document.getElementById('crm-input-temperatura');
+  var display = document.getElementById('crm-temperatura-display');
+  if (slider && display) {
+    slider.addEventListener('input', function() {
+      display.textContent = this.value + '/100';
+    });
+  }
+})();
+
+/* --- crmFilter fallback --- */
+if (typeof crmFilter === 'undefined') {
+  var crmFilter = function(list) { return list; };
+}
 
 /* --- Modal: Detalle de Prospecto --- */
 function openCrmDetail(id) {
@@ -8322,7 +8340,7 @@ function sendViaCrmWhatsapp() {
   if (!p || !p.telefono) { crmToast('El prospecto no tiene telefono', 'error'); return; }
   var ctx = document.getElementById('crm-wa-context');
   var msg = ctx ? encodeURIComponent(ctx.value) : '';
-  var phone = p.telefono.replace(/\\D/g, '');
+  var phone = p.telefono.replace(/\D/g, '');
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
   closeCrmModalWa();
   if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
