@@ -8091,10 +8091,6 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 
 /* ========================================
-   CRM MISSING FUNCTIONS - Sky Prospectos
-   ======================================== */
-
-/* --- initSkyProspectos (called by navigate) --- */
 
 /* ========================================
    CRM MISSING FUNCTIONS - Sky Team Platform
@@ -8157,7 +8153,7 @@ function crmInjectExtraFields() {
       var telefonoParent = telefonoInput.closest('[class*="row"], div');
       var instagramHtml = '<div style="position: relative; margin-bottom: 1rem;">' +
         '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">' +
-        'ð· Instagram</label>' +
+        '\uD83D\uDCF7 Instagram</label>' +
         '<div style="display: flex; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.75rem; font-family: monospace;">' +
         '<span style="color: #E1306C; margin-right: 0.5rem; font-weight: bold;">@</span>' +
         '<input id="crm-input-instagram" type="text" placeholder="username" style="flex: 1; background: transparent; border: none; color: #F0EDE6; font-size: 1rem; outline: none;" />' +
@@ -8179,7 +8175,7 @@ function crmInjectExtraFields() {
     var ratingHtml = '<div id="crm-rating-section" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">' +
       '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">CalificaciÃ³n</label>' +
       '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">' +
-      '<span id="crm-stars-display" style="font-size: 1.5rem; color: #FFD700; letter-spacing: 2px;">âââââ</span>' +
+      '<span id="crm-stars-display" style="font-size: 1.5rem; color: #FFD700; letter-spacing: 2px;">\u2606\u2606\u2606\u2606\u2606</span>' +
       '<button id="crm-btn-calificar" type="button" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">Calificar</button>' +
       '</div>' +
       '</div>';
@@ -8326,8 +8322,8 @@ function crmUpdateStarsDisplay() {
    ======================================== */
 
 function crmStarsText(n, max) {
-  var filled = 'â'.repeat(Math.max(0, Math.min(n, max)));
-  var empty = 'â'.repeat(Math.max(0, max - n));
+  var filled = '\u2605'.repeat(Math.max(0, Math.min(n, max)));
+  var empty = '\u2606'.repeat(Math.max(0, max - n));
   return filled + empty;
 }
 
@@ -8607,7 +8603,7 @@ function openCrmDetail(id) {
     if (prospect.instagram) {
       var profileUrl = crmInstagramUrl(prospect.instagram);
       igDisplay.innerHTML = '<a href="' + profileUrl + '" target="_blank" style="color: #E1306C; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">' +
-        'ð· Ver perfil <span style="cursor: pointer; margin-left: auto;">âï¸</span></a>';
+        '\uD83D\uDCF7 Ver perfil <span style="cursor: pointer; margin-left: auto;">\u270F\uFE0F</span></a>';
       var editIcon = igDisplay.querySelector('span');
       if (editIcon) {
         editIcon.addEventListener('click', function(e) {
@@ -8662,8 +8658,8 @@ function closeCrmModalDetail() {
 function crmEditInstagramInline(display, prospect) {
   var currentIG = prospect.instagram || '';
   var inputHtml = '<input type="text" value="' + crmEsc(currentIG) + '" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #F0EDE6; padding: 0.5rem; border-radius: 6px; font-size: 0.9rem;" />';
-  var buttonsHtml = '<button style="margin-left: 0.5rem; padding: 0.4rem 0.8rem; background: #10b981; color: #fff; border: none; border-radius: 4px; cursor: pointer;">â</button>' +
-    '<button style="margin-left: 0.3rem; padding: 0.4rem 0.8rem; background: rgba(255,255,255,0.1); color: #F0EDE6; border: none; border-radius: 4px; cursor: pointer;">â</button>';
+  var buttonsHtml = '<button style="margin-left: 0.5rem; padding: 0.4rem 0.8rem; background: #10b981; color: #fff; border: none; border-radius: 4px; cursor: pointer;">\u2713</button>' +
+    '<button style="margin-left: 0.3rem; padding: 0.4rem 0.8rem; background: rgba(255,255,255,0.1); color: #F0EDE6; border: none; border-radius: 4px; cursor: pointer;">\u2715</button>';
 
   var temp = display.innerHTML;
   display.innerHTML = inputHtml + ' ' + buttonsHtml;
@@ -8702,15 +8698,15 @@ function crmShowStarsPopup(anchorEl, prospect) {
   items.forEach(function(item) {
     var value = prospect[item.key] || 0;
     if (value) {
-      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-star">â</span>' + item.label + '</div>';
+      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-star">\u2605</span>' + item.label + '</div>';
     } else {
-      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-x">â</span><span style="color: #888;">' + item.label + '</span></div>';
+      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-x">\u2715</span><span style="color: #888;">' + item.label + '</span></div>';
     }
   });
 
   html += '<div class="crm-stars-popup-buttons">' +
-    '<button class="crm-stars-popup-btn" data-action="close">â</button>' +
-    '<button class="crm-stars-popup-btn" data-action="edit">âï¸</button>' +
+    '<button class="crm-stars-popup-btn" data-action="close">\u2715</button>' +
+    '<button class="crm-stars-popup-btn" data-action="edit">\u270F\uFE0F</button>' +
     '</div>';
 
   popup.innerHTML = html;
@@ -8761,7 +8757,7 @@ async function addCrmInteraction() {
   if (!crmDetailId) return;
   var tipo = document.getElementById('crm-interaccion-tipo');
   var texto = document.getElementById('crm-interaccion-texto');
-  if (!texto || !texto.value.trim()) { crmToast('Escriba la interaccion', 'error'); return; }
+  if (!texto || !texto.value.trim()) { crmToast('Escribe la interaccion', 'error'); return; }
   var res = await crmApi('addInteraccion', {
     prospecto_id: crmDetailId,
     tipo: tipo ? tipo.value : 'nota',
@@ -8809,7 +8805,7 @@ async function deleteCrmProspect() {
 }
 
 /* ========================================
-   WHATSAP  FUNCTIONS
+   WHATSAPP FUNCTIONS
    ======================================== */
 
 function openCrmModalWa() {
