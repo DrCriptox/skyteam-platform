@@ -8507,78 +8507,7 @@ if (typeof crmEsc === 'undefined') {
   };
 }
 
-/* ========================================
-   RENDER PATCH - Stars & Instagram on Cards
-   ======================================== */
-
-(function() {
-  if (typeof crmRenderKanban === 'function') {
-    var _origKanban = crmRenderKanban;
-    crmRenderKanban = function() {
-      _origKanban.apply(this, arguments);
-      setTimeout(function() {
-        document.querySelectorAll('.crm-prospect-card, .crm-card').forEach(function(card) {
-          if (card.dataset.extraDone) return;
-          card.dataset.extraDone = '1';
-          var id = card.dataset.id;
-          if (!id) return;
-          var p = crmProspectos.find(function(x) { return x.id === id; });
-          if (!p) return;
-          var starCount = (p.calif_positivo || 0) + (p.calif_social || 0) + (p.calif_emprendedor || 0) + (p.calif_dinero || 0) + (p.calif_lider || 0);
-          var nameEl = card.querySelector('strong, .crm-card-name, h4');
-          if (nameEl) {
-            nameEl.innerHTML = crmEsc(p.nombre) + ' <span style="color:#FFD700;font-size:12px;letter-spacing:-1px;margin-left:4px">' + crmStarsText(starCount, 5) + '</span>';
-          }
-          var extra = document.createElement('div');
-          extra.style.cssText = 'margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
-          var html = '';
-          if (p.instagram) {
-            html += '<a href="' + crmInstagramUrl(p.instagram) + '" target="_blank" onclick="event.stopPropagation();window.open(\'' + crmInstagramAppUrl(p.instagram) + '\');return false;" class="crm-ig-link">@' + crmEsc(p.instagram) + '</a>';
-          }
-          if (p.updated_at) {
-            var d = new Date(p.updated_at);
-            var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-            html += '<span style="color:#666;font-size:10px">' + d.getDate() + ' ' + months[d.getMonth()] + '</span>';
-          }
-          if (html) { extra.innerHTML = html; card.appendChild(extra); }
-        });
-      }, 100);
-    };
-  }
-  if (typeof crmRenderList === 'function') {
-    var _origList = crmRenderList;
-    crmRenderList = function() {
-      _origList.apply(this, arguments);
-      setTimeout(function() {
-        document.querySelectorAll('.crm-prospect-card, .crm-card').forEach(function(card) {
-          if (card.dataset.extraDone) return;
-          card.dataset.extraDone = '1';
-          var id = card.dataset.id;
-          if (!id) return;
-          var p = crmProspectos.find(function(x) { return x.id === id; });
-          if (!p) return;
-          var starCount = (p.calif_positivo || 0) + (p.calif_social || 0) + (p.calif_emprendedor || 0) + (p.calif_dinero || 0) + (p.calif_lider || 0);
-          var nameEl = card.querySelector('strong, .crm-card-name, h4');
-          if (nameEl) {
-            nameEl.innerHTML = crmEsc(p.nombre) + ' <span style="color:#FFD700;font-size:12px;letter-spacing:-1px;margin-left:4px">' + crmStarsText(starCount, 5) + '</span>';
-          }
-          var extra = document.createElement('div');
-          extra.style.cssText = 'margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
-          var html = '';
-          if (p.instagram) {
-            html += '<a href="' + crmInstagramUrl(p.instagram) + '" target="_blank" onclick="event.stopPropagation();window.open(\'' + crmInstagramAppUrl(p.instagram) + '\');return false;" class="crm-ig-link">@' + crmEsc(p.instagram) + '</a>';
-          }
-          if (p.updated_at) {
-            var d = new Date(p.updated_at);
-            var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-            html += '<span style="color:#666;font-size:10px">' + d.getDate() + ' ' + months[d.getMonth()] + '</span>';
-          }
-          if (html) { extra.innerHTML = html; card.appendChild(extra); }
-        });
-      }, 100);
-    };
-  }
-})();
+/* RENDER PATCH removed - functionality now in crmCard() */
 
 /* ========================================
    MODAL - DETAIL
