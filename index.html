@@ -8065,6 +8065,253 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 })();
 
 
+
+/* ========================================
+   CRM MISSING FUNCTIONS - Sky Prospectos
+   ======================================== */
+
+/* --- Fix crmSwitchView (tab active class bug) --- */
+var _origSwitchView = crmSwitchView;
+crmSwitchView = function(view) {
+  crmCurrentView = view;
+  var k = document.getElementById('crm-kanban');
+  var l = document.getElementById('crm-list-view');
+  var m = document.getElementById('crm-metrics-view');
+  if (k) k.style.display = view === 'kanban' ? '' : 'none';
+  if (l) l.style.display = view === 'list' ? '' : 'none';
+  if (m) m.style.display = view === 'metrics' ? '' : 'none';
+  document.querySelectorAll('.crm-view-btn').forEach(function(b) {
+    b.classList.remove('active');
+    b.classList.remove('crm-view-btn-active');
+  });
+  var clicked = event && event.target ? event.target.closest('.crm-view-btn') : null;
+  if (clicked) clicked.classList.add('crm-view-btn-active');
+  if (view === 'metrics' && typeof crmDashInit === 'function') crmDashInit();
+};
+
+/* --- Modal: Agregar / Editar Prospecto --- */
+function openCrmModalAdd(editId) {
+  var modal = document.getElementById('crm-modal-add');
+  var title = document.getElementById('crm-modal-add-title');
+  var form = document.getElementById('crm-form-add');
+  if (!modal) return;
+  form.reset();
+  if (editId) {
+    crmEditingId = editId;
+    title.textContent = 'Editar Prospecto';
+    var p = crmProspectos.find(function(x) { return x.id === editId; });
+    if (p) {
+      document.getElementById('crm-input-nombre').value = p.nombre || '';
+      document.getElementById('crm-input-telefono').value = p.telefono || '';
+      document.getElementById('crm-input-email').value = p.email || '';
+      document.getElementById('crm-input-etapa').value = p.etapa || 'nuevo';
+      document.getElementById('crm-input-fuente').value = p.fuente || 'manual';
+      document.getElementById('crm-input-temperatura').value = p.temperatura || 50;
+      document.getElementById('crm-input-notas').value = p.notas || '';
+      document.getElementById('crm-input-valor-estimado').value = p.valor_estimado || '';
+      document.getElementById('crm-input-fecha-cierre').value = p.fecha_cierre || '';
+    }
+  } else {
+    crmEditingId = null;
+    title.textContent = 'Agregar Prospecto';
+  }
+  modal.style.display = 'flex';
+}
+
+function closeCrmModalAdd() {
+  var modal = document.getElementById('crm-modal-add');
+  if (modal) modal.style.display = 'none';
+  crmEditingId = null;
+}
+
+/* --- Form submit: Guardar Prospecto --- */
+(function() {
+  var form = document.getElementById('crm-form-add');
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var data = {
+        nombre: document.getElementById('crm-input-nombre').value.trim(),
+        telefono: document.getElementById('crm-input-telefono').value.trim(),
+        email: document.getElementById('crm-input-email').value.trim(),
+        etapa: document.getElementById('crm-input-etapa').value,
+        fuente: document.getElementById('crm-input-fuente').value,
+        temperatura: parseInt(document.getElementById('crm-input-temperatura').value) || 50,
+        notas: document.getElementById('crm-input-notas').value.trim(),
+        valor_estimado: parseFloat(document.getElementById('crm-input-valor-estimado').value) || 0,
+        fecha_cierre: document.getElementById('crm-input-fecha-cierre').value
+      };
+      if (!data.nombre) { crmToast('Ingresa el nombre del prospecto', 'error'); return; }
+      var action = crmEditingId ? 'update' : 'add';
+      if (crmEditingId) data.id = crmEditingId;
+      var res = await crmApi(action, data);
+      if (res && res.ok) {
+        closeCrmModalAdd();
+        crmToast(crmEditingId ? 'Prospecto actualizado' : 'Prospecto agregado', 'success');
+        await crmLoadData();
+        if (typeof crmDashAddXP === 'function' && !crmEditingId) crmDashAddXP('prospect_added', 15);
+      } else {
+        crmToast('Error al guardar', 'error');
+      }
+    });
+  }
+})();
+
+/* --- Modal: Detalle de Prospecto --- */
+function openCrmDetail(id) {
+  var p = crmProspectos.find(function(x) { return x.id === id; });
+  if (!p) return;
+  crmDetailId = id;
+  var modal = document.getElementById('crm-modal-detail');
+  if (!modal) return;
+  var el = function(eid) { return document.getElementById(eid); };
+  var setT = function(eid, val) { var e = el(eid); if (e) e.textContent = val || '-'; };
+  setT('crm-detail-telefono', p.telefono);
+  setT('crm-detail-email', p.email);
+  setT('crm-detail-fuente', p.fuente);
+  setT('crm-detail-valor', p.valor_estimado ? '$' + Number(p.valor_estimado).toLocaleString() : '-');
+  var gauge = el('crm-detail-temperature-gauge');
+  if (gauge) {
+    var temp = p.temperatura || 50;
+    gauge.style.width = temp + '%';
+    gauge.style.background = temp <= 33 ? '#1CE8FF' : temp <= 66 ? '#FFD700' : '#E24B4A';
+  }
+  setT('crm-detail-notas', p.notas);
+  var headerTitle = modal.querySelector('.crm-modal-header h2, .crm-modal-header h3');
+  if (headerTitle) headerTitle.textContent = p.nombre || 'Prospecto';
+  var timeline = el('crm-detail-interactions-timeline');
+  if (timeline && p.interacciones) {
+    var html = '';
+    p.interacciones.forEach(function(i) {
+      html += '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">'
+        + '<strong>' + (i.tipo || 'nota') + '</strong> <small style="color:#888">' + new Date(i.fecha).toLocaleDateString() + '</small>'
+        + '<p style="margin:4px 0 0;color:#ccc">' + (i.texto || '') + '</p></div>';
+    });
+    timeline.innerHTML = html || '<p style="color:#666">Sin interacciones</p>';
+  }
+  modal.style.display = 'flex';
+}
+
+function closeCrmModalDetail() {
+  var modal = document.getElementById('crm-modal-detail');
+  if (modal) modal.style.display = 'none';
+  crmDetailId = null;
+}
+
+/* --- Click en card del kanban para abrir detalle --- */
+document.addEventListener('click', function(e) {
+  var card = e.target.closest('.crm-card');
+  if (card && card.dataset.id) {
+    openCrmDetail(card.dataset.id);
+  }
+});
+
+/* --- Interacciones --- */
+async function addCrmInteraction() {
+  if (!crmDetailId) return;
+  var tipo = document.getElementById('crm-interaction-tipo');
+  var texto = document.getElementById('crm-interaction-texto');
+  if (!texto || !texto.value.trim()) { crmToast('Escribe la interaccion', 'error'); return; }
+  var res = await crmApi('addInteraction', {
+    prospecto_id: crmDetailId,
+    tipo: tipo ? tipo.value : 'nota',
+    texto: texto.value.trim()
+  });
+  if (res && res.ok) {
+    texto.value = '';
+    crmToast('Interaccion agregada', 'success');
+    await crmLoadData();
+    openCrmDetail(crmDetailId);
+    if (typeof crmDashAddXP === 'function') crmDashAddXP('interaction', 10);
+  }
+}
+
+/* --- Recordatorios --- */
+async function addCrmReminder() {
+  if (!crmDetailId) return;
+  var fecha = document.getElementById('crm-reminder-fecha');
+  var texto = document.getElementById('crm-reminder-texto');
+  if (!fecha || !fecha.value || !texto || !texto.value.trim()) {
+    crmToast('Completa fecha y texto del recordatorio', 'error'); return;
+  }
+  var res = await crmApi('addReminder', {
+    prospecto_id: crmDetailId,
+    fecha: fecha.value,
+    texto: texto.value.trim()
+  });
+  if (res && res.ok) {
+    fecha.value = '';
+    texto.value = '';
+    crmToast('Recordatorio creado', 'success');
+    await crmLoadData();
+    if (typeof crmDashAddXP === 'function') crmDashAddXP('reminder', 5);
+  }
+}
+
+/* --- Eliminar Prospecto --- */
+async function deleteCrmProspect() {
+  if (!crmDetailId) return;
+  if (!confirm('Seguro que deseas eliminar este prospecto?')) return;
+  var res = await crmApi('delete', { id: crmDetailId });
+  if (res && res.ok) {
+    closeCrmModalDetail();
+    crmToast('Prospecto eliminado', 'success');
+    await crmLoadData();
+  }
+}
+
+/* --- Modal WhatsApp con IA --- */
+function openCrmModalWa() {
+  var modal = document.getElementById('crm-modal-wa');
+  if (modal) modal.style.display = 'flex';
+  var ctx = document.getElementById('crm-wa-context');
+  if (ctx) ctx.value = '';
+}
+
+function closeCrmModalWa() {
+  var modal = document.getElementById('crm-modal-wa');
+  if (modal) modal.style.display = 'none';
+}
+
+async function crmGenerateWaMessage() {
+  var p = crmProspectos.find(function(x) { return x.id === crmDetailId; });
+  if (!p) { crmToast('Selecciona un prospecto primero', 'error'); return; }
+  var ctx = document.getElementById('crm-wa-context');
+  crmToast('Generando mensaje con IA...', 'info');
+  var res = await crmApi('generateWa', {
+    prospecto_id: crmDetailId,
+    context: ctx ? ctx.value : '',
+    nombre: p.nombre,
+    etapa: p.etapa,
+    temperatura: p.temperatura
+  });
+  if (res && res.message) {
+    if (ctx) ctx.value = res.message;
+    crmToast('Mensaje generado', 'success');
+  } else {
+    if (ctx) ctx.value = 'Hola ' + (p.nombre || '') + ', soy parte del equipo de Sky Team. Me gustaria conversar contigo sobre una oportunidad que puede interesarte. Tienes un momento?';
+    crmToast('Mensaje por defecto generado', 'info');
+  }
+}
+
+function copyCrmWaMessage() {
+  var ctx = document.getElementById('crm-wa-context');
+  if (!ctx || !ctx.value) { crmToast('No hay mensaje para copiar', 'error'); return; }
+  navigator.clipboard.writeText(ctx.value).then(function() {
+    crmToast('Mensaje copiado al portapapeles', 'success');
+  });
+}
+
+function sendViaCrmWhatsapp() {
+  var p = crmProspectos.find(function(x) { return x.id === crmDetailId; });
+  if (!p || !p.telefono) { crmToast('El prospecto no tiene telefono', 'error'); return; }
+  var ctx = document.getElementById('crm-wa-context');
+  var msg = ctx ? encodeURIComponent(ctx.value) : '';
+  var phone = p.telefono.replace(/\D/g, '');
+  window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
+  closeCrmModalWa();
+  if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
+}
 </script>
 <script src="/fix-aprobar.js"></script>
 </body>
