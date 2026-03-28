@@ -8070,6 +8070,13 @@ else if(t.includes('trica'))crmSwitchView('metricas');
    CRM MISSING FUNCTIONS - Sky Prospectos
    ======================================== */
 
+/* --- initSkyProspectos (called by navigate) --- */
+function initSkyProspectos() {
+  crmLoadData().then(function() {
+    crmSwitchView(crmCurrentView || 'kanban');
+  });
+}
+
 /* --- Fix crmSwitchView (tab active class bug) --- */
 var _origSwitchView = crmSwitchView;
 crmSwitchView = function(view) {
@@ -8078,15 +8085,18 @@ crmSwitchView = function(view) {
   var l = document.getElementById('crm-list-view');
   var m = document.getElementById('crm-metrics-view');
   if (k) k.style.display = view === 'kanban' ? '' : 'none';
-  if (l) l.style.display = view === 'list' ? '' : 'none';
-  if (m) m.style.display = view === 'metrics' ? '' : 'none';
+  if (l) l.style.display = view === 'lista' ? '' : 'none';
+  if (m) m.style.display = view === 'metricas' ? '' : 'none';
   document.querySelectorAll('.crm-view-btn').forEach(function(b) {
     b.classList.remove('active');
     b.classList.remove('crm-view-btn-active');
+    var t = b.textContent;
+    if ((view === 'kanban' && t.includes('Kanban')) ||
+        (view === 'lista' && t.includes('Lista')) ||
+        (view === 'metricas' && t.includes('tricas')))
+      b.classList.add('crm-view-btn-active');
   });
-  var clicked = event && event.target ? event.target.closest('.crm-view-btn') : null;
-  if (clicked) clicked.classList.add('crm-view-btn-active');
-  if (view === 'metrics' && typeof crmDashInit === 'function') crmDashInit();
+  if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
 };
 
 /* --- Modal: Agregar / Editar Prospecto --- */
@@ -8307,7 +8317,7 @@ function sendViaCrmWhatsapp() {
   if (!p || !p.telefono) { crmToast('El prospecto no tiene telefono', 'error'); return; }
   var ctx = document.getElementById('crm-wa-context');
   var msg = ctx ? encodeURIComponent(ctx.value) : '';
-  var phone = p.telefono.replace(/\D/g, '');
+  var phone = p.telefono.replace(/\\D/g, '');
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
   closeCrmModalWa();
   if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
