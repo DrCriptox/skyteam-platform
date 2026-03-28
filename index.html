@@ -7529,7 +7529,7 @@ window.addEventListener('load', function() {
    SKY PROSPECTOS \u2014 CRM Module
    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
 var crmProspectos=[];var crmRecordatorios=[];var crmMetricas={};var crmCurrentView='kanban';var crmEditingId=null;var crmDetailId=null;var crmDragId=null;var crmLoading=false;var crmSearchTerm='';var crmReminderInterval=null;
-var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
+var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\uDB7A\uDDECemoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
 var CRM_FUENTES={manual:'\u270D\uFE0F',landing:'\uD83C\uDF10',whatsapp:'\uD83D\uDCAC',instagram:'\uD83D\uDCF8',facebook:'\uD83D\uDCD8',referido:'\uD83E\uDD1D',otro:'\uD83D\uDCCC'};
 var CRM_TIPOS={llamada:'\uD83D\uDCDE',whatsapp:'\uD83D\uDCAC',reunion:'\uD83E\uDD1D',email:'\uD83D\uDCE7',nota:'\uD83D\uDCDD',presentacion:'\uD83C\uDFAF',seguimiento:'\uD83D\uDC41\uFE0F',cierre:'\u2705'};
 
@@ -7667,12 +7667,12 @@ function crmRenderMetricsDashboard(){
       +'<div style="width:'+Math.max(pct,2)+'%;height:100%;background:'+info.color+';border-radius:3px;"></div></div></div>';});
   el.style.display='block';
   el.querySelector('.crm-metrics-grid').innerHTML=''
-    +'<div class="card" style="grid-column:1/-1;"><div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:14px;">\uD83D\uDCCA Embudo de Conversi\u00F3n</div>'+fh+'</div>'
+    +'<div class="card" style="grid-column:1/-1;"><div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:14px;">\uD83D\uDCCA Embudo de Conversi\uDB7B\uDF2Fdiv>'+fh+'</div>'
     +'<div class="card"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">\uD83D\uDCC8 Resumen 30d</div>'
     +'<div style="display:flex;flex-direction:column;gap:10px;">'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Ganados</span><span style="color:#25D366;font-weight:800;">'+(m.cerrados_30d||0)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Perdidos</span><span style="color:#E24B4A;font-weight:800;">'+(m.perdidos_30d||0)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Tasa conversi\u00F3n</span><span style="color:#1CE8FF;font-weight:800;">'+(m.tasa_conversion||0)+'%</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Tasa conversi\uDB7B\uDF2Fspan><span style="color:#1CE8FF;font-weight:800;">'+(m.tasa_conversion||0)+'%</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Pipeline</span><span style="color:#FFD700;font-weight:800;">$'+((m.valor_pipeline||0).toLocaleString())+'</span></div></div></div>'
     +'<div class="card"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">\uD83C\uDFAF Por Etapa</div>'
     +'<div style="display:flex;flex-direction:column;gap:8px;">'
@@ -8158,7 +8158,7 @@ function crmInjectExtraFields() {
       var telefonoParent = telefonoInput.closest('[class*="row"], div');
       var instagramHtml = '<div style="position: relative; margin-bottom: 1rem;">' +
         '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">' +
-        '\u00F0\u009F\u0093\u00B7 Instagram</label>' +
+        '\uD83D\uDCF7 Instagram</label>' +
         '<div style="display: flex; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.75rem; font-family: monospace;">' +
         '<span style="color: #E1306C; margin-right: 0.5rem; font-weight: bold;">@</span>' +
         '<input id="crm-input-instagram" type="text" placeholder="username" style="flex: 1; background: transparent; border: none; color: #F0EDE6; font-size: 1rem; outline: none;" />' +
@@ -8178,9 +8178,9 @@ function crmInjectExtraFields() {
     if (insertRef.parentElement !== form) insertRef = submitBtn;
 
     var ratingHtml = '<div id="crm-rating-section" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">' +
-      '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Calificaci\u00C3\u00B3n</label>' +
+      '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Calificaci\u00F3n</label>' +
       '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">' +
-      '<span id="crm-stars-display" style="font-size: 1.5rem; color: #FFD700; letter-spacing: 2px;">\u00E2\u0098\u0086\u00E2\u0098\u0086\u00E2\u0098\u0086\u00E2\u0098\u0086\u00E2\u0098\u0086</span>' +
+      '<span id="crm-stars-display" style="font-size: 1.5rem; color: #FFD700; letter-spacing: 2px;">\u2606\u2606\u2606\u2606\u2606</span>' +
       '<button id="crm-btn-calificar" type="button" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">Calificar</button>' +
       '</div>' +
       '</div>';
@@ -8249,11 +8249,11 @@ function crmInjectRatingCSS() {
 
 function crmStartRatingWizard(onComplete) {
   var questions = [
-    { text: '\u00C2\u00BFTu prospecto es Positivo?', key: 'calif_positivo', number: 1 },
-    { text: '\u00C2\u00BFTu prospecto es Social?', key: 'calif_social', number: 2 },
-    { text: '\u00C2\u00BFTu prospecto es Emprendedor?', key: 'calif_emprendedor', number: 3 },
-    { text: '\u00C2\u00BFTu prospecto tiene Dinero?', key: 'calif_dinero', number: 4 },
-    { text: '\u00C2\u00BFTu prospecto es L\u00C3\u00ADder?', key: 'calif_lider', number: 5 }
+    { text: '\u00BFTu prospecto es Positivo?', key: 'calif_positivo', number: 1 },
+    { text: '\u00BFTu prospecto es Social?', key: 'calif_social', number: 2 },
+    { text: '\u00BFTu prospecto es Emprendedor?', key: 'calif_emprendedor', number: 3 },
+    { text: '\u00BFTu prospecto tiene Dinero?', key: 'calif_dinero', number: 4 },
+    { text: '\u00BFTu prospecto es L\u00EDder?', key: 'calif_lider', number: 5 }
   ];
 
   crmRatingWizardState.isOpen = true;
@@ -8287,7 +8287,7 @@ function crmStartRatingWizard(onComplete) {
     card.innerHTML = '<div class="crm-wizard-question">' + q.text + '</div>' +
       '<div class="crm-wizard-subtitle">Pregunta ' + q.number + ' de 5</div>' +
       '<div class="crm-wizard-buttons">' +
-      '<button class="crm-wizard-btn crm-wizard-btn-yes" data-answer="1">S\u00C3\u00AD</button>' +
+      '<button class="crm-wizard-btn crm-wizard-btn-yes" data-answer="1">S\u00ED</button>' +
       '<button class="crm-wizard-btn crm-wizard-btn-no" data-answer="0">No</button>' +
       '</div>';
 
@@ -8327,8 +8327,8 @@ function crmUpdateStarsDisplay() {
    ======================================== */
 
 function crmStarsText(n, max) {
-  var filled = '\u00E2\u0098\u0085'.repeat(Math.max(0, Math.min(n, max)));
-  var empty = '\u00E2\u0098\u0086'.repeat(Math.max(0, max - n));
+  var filled = '\u2605'.repeat(Math.max(0, Math.min(n, max)));
+  var empty = '\u2606'.repeat(Math.max(0, max - n));
   return filled + empty;
 }
 
@@ -8406,7 +8406,7 @@ function openCrmModalAdd(editId) {
   // Update temperature display
   var tempInput2 = form.querySelector('#crm-input-temperatura');
   var tempDisp = document.getElementById('crm-temperatura-display');
-  if (tempInput2 && tempDisp) tempDisp.textContent = (tempInput2.value || 50) + '\u00C2\u00B0';
+  if (tempInput2 && tempDisp) tempDisp.textContent = (tempInput2.value || 50) + '\u00B0';
 
   crmEditingId = editId || null;
   modal.style.display = 'block';
@@ -8608,7 +8608,7 @@ function openCrmDetail(id) {
     if (prospect.instagram) {
       var profileUrl = crmInstagramUrl(prospect.instagram);
       igDisplay.innerHTML = '<a href="' + profileUrl + '" target="_blank" style="color: #E1306C; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">' +
-        '\u00F0\u009F\u0093\u00B7 Ver perfil <span style="cursor: pointer; margin-left: auto;">\u00E2\u009C\u008F\u00EF\u00B8\u008F</span></a>';
+        '\uD83D\uDCF7 Ver perfil <span style="cursor: pointer; margin-left: auto;">\u270F\uFE0F</span></a>';
       var editIcon = igDisplay.querySelector('span');
       if (editIcon) {
         editIcon.addEventListener('click', function(e) {
@@ -8632,7 +8632,7 @@ function openCrmDetail(id) {
   var tempGauge = modal.querySelector('#crm-detail-temperature-gauge');
   if (tempGauge) {
     tempGauge.style.width = (prospect.temperatura || 50) + '%';
-    tempGauge.textContent = (prospect.temperatura || 50) + '\u00C2\u00B0';
+    tempGauge.textContent = (prospect.temperatura || 50) + '\u00B0';
   }
 
   var notasDisplay = modal.querySelector('#crm-detail-notas');
@@ -8663,8 +8663,8 @@ function closeCrmModalDetail() {
 function crmEditInstagramInline(display, prospect) {
   var currentIG = prospect.instagram || '';
   var inputHtml = '<input type="text" value="' + crmEsc(currentIG) + '" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #F0EDE6; padding: 0.5rem; border-radius: 6px; font-size: 0.9rem;" />';
-  var buttonsHtml = '<button style="margin-left: 0.5rem; padding: 0.4rem 0.8rem; background: #10b981; color: #fff; border: none; border-radius: 4px; cursor: pointer;">\u00E2\u009C\u0093</button>' +
-    '<button style="margin-left: 0.3rem; padding: 0.4rem 0.8rem; background: rgba(255,255,255,0.1); color: #F0EDE6; border: none; border-radius: 4px; cursor: pointer;">\u00E2\u009C\u0095</button>';
+  var buttonsHtml = '<button style="margin-left: 0.5rem; padding: 0.4rem 0.8rem; background: #10b981; color: #fff; border: none; border-radius: 4px; cursor: pointer;">\u2713</button>' +
+    '<button style="margin-left: 0.3rem; padding: 0.4rem 0.8rem; background: rgba(255,255,255,0.1); color: #F0EDE6; border: none; border-radius: 4px; cursor: pointer;">\u2715</button>';
 
   var temp = display.innerHTML;
   display.innerHTML = inputHtml + ' ' + buttonsHtml;
@@ -8696,22 +8696,22 @@ function crmShowStarsPopup(anchorEl, prospect) {
     { key: 'calif_social', label: 'Social' },
     { key: 'calif_emprendedor', label: 'Emprendedor' },
     { key: 'calif_dinero', label: 'Dinero' },
-    { key: 'calif_lider', label: 'L\u00C3\u00ADder' }
+    { key: 'calif_lider', label: 'L\u00EDder' }
   ];
 
   var html = '';
   items.forEach(function(item) {
     var value = prospect[item.key] || 0;
     if (value) {
-      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-star">\u00E2\u0098\u0085</span>' + item.label + '</div>';
+      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-star">\u2605</span>' + item.label + '</div>';
     } else {
-      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-x">\u00E2\u009C\u0095</span><span style="color: #888;">' + item.label + '</span></div>';
+      html += '<div class="crm-stars-popup-item"><span class="crm-stars-popup-x">\u2715</span><span style="color: #888;">' + item.label + '</span></div>';
     }
   });
 
   html += '<div class="crm-stars-popup-buttons">' +
-    '<button class="crm-stars-popup-btn" data-action="close">\u00E2\u009C\u0095</button>' +
-    '<button class="crm-stars-popup-btn" data-action="edit">\u00E2\u009C\u008F\u00EF\u00B8\u008F</button>' +
+    '<button class="crm-stars-popup-btn" data-action="close">\u2715</button>' +
+    '<button class="crm-stars-popup-btn" data-action="edit">\u270F\uFE0F</button>' +
     '</div>';
 
   popup.innerHTML = html;
@@ -8800,7 +8800,7 @@ async function addCrmReminder() {
 
 async function deleteCrmProspect() {
   if (!crmDetailId) return;
-  if (!confirm('\u00C2\u00BFSeguro que deseas eliminar este prospecto?')) return;
+  if (!confirm('\u00BFSeguro que deseas eliminar este prospecto?')) return;
   var res = await crmApi('delete', { id: crmDetailId });
   if (res && res.ok) {
     closeCrmModalDetail();
@@ -8841,7 +8841,7 @@ async function crmGenerateWaMessage() {
     if (ctx) ctx.value = res.mensaje;
     crmToast('Mensaje generado', 'success');
   } else {
-    if (ctx) ctx.value = 'Hola ' + (p.nombre || '') + ', soy parte del equipo de Sky Team. Me gustar\u00C3\u00ADa conversar contigo sobre una oportunidad que puede interesarte. \u00C2\u00BFTienes un momento?';
+    if (ctx) ctx.value = 'Hola ' + (p.nombre || '') + ', soy parte del equipo de Sky Team. Me gustar\u00EDa conversar contigo sobre una oportunidad que puede interesarte. \u00BFTienes un momento?';
     crmToast('Mensaje por defecto generado', 'info');
   }
 }
@@ -8856,7 +8856,7 @@ function copyCrmWaMessage() {
 
 function sendViaCrmWhatsapp() {
   var p = crmProspectos.find(function(x) { return x.id === crmDetailId; });
-  if (!p || !p.telefono) { crmToast('El prospecto no tiene tel\u00C3\u00A9fono', 'error'); return; }
+  if (!p || !p.telefono) { crmToast('El prospecto no tiene tel\u00E9fono', 'error'); return; }
   var ctx = document.getElementById('crm-wa-context');
   var msg = ctx ? encodeURIComponent(ctx.value) : '';
   var phone = p.telefono.replace(/\D/g, '');
@@ -8888,7 +8888,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (tempInput) {
     tempInput.addEventListener('input', function() {
       var display = document.getElementById('crm-temperatura-display');
-      if (display) display.textContent = this.value + '\u00C2\u00B0';
+      if (display) display.textContent = this.value + '\u00B0';
     });
   }
 
