@@ -2539,12 +2539,13 @@ function renderAgendaUI(el) {
   html += '</div></div></div>';
 
   // Tabs
-  html += '<div style="display:flex;gap:6px;margin-bottom:16px;">';
+  html += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">';
   html += '<button onclick="switchAgendaTab(\'config\')" class="' + (agendaTab==='config'?'atab-on':'atab-off') + '">⚙️ Configurar</button>';
   html += '<button onclick="switchAgendaTab(\'citas\')" class="' + (agendaTab==='citas'?'atab-on':'atab-off') + '">📋 Citas (' + pendientes.length + ')</button>';
+  html += '<button onclick="switchAgendaTab(\'plandiario\')" class="' + (agendaTab==='plandiario'?'atab-on':'atab-off') + '">📅 Mi Plan Diario</button>';
   html += '</div>';
 
-  html += agendaTab === 'config' ? renderAgendaConfigUI() : renderAgendaCitasUI();
+  html += agendaTab === 'config' ? renderAgendaConfigUI() : agendaTab === 'plandiario' ? renderPlanDiarioUI() : renderAgendaCitasUI();
   html += '</div>';
   el.innerHTML = html;
   setTimeout(function(){
@@ -3025,7 +3026,335 @@ function eliminarBloque(btn) {
   if(row) row.remove();
 }
 
-function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); }
+function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); if(t==='plandiario') loadPlanDiario(); }
+function getPlanDiarioWeekDates(offset) {
+  var now = new Date(); now.setDate(now.getDate() + (offset||0)*7);
+  var day = now.getDay(); var diff = now.getDate() - day + (day===0?-6:1);
+  var mon = new Date(now); mon.setDate(diff); mon.setHours(0,0,0,0);
+  var dates = [];
+  for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); dates.push(d); }
+  return dates;
+}
+
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+function loadPlanDiario() {
+  if(!CU) return;
+  var dates = getPlanDiarioWeekDates(planDiarioWeekOffset);
+  var ws = fmtDate(dates[0]), we = fmtDate(dates[6]);
+  fetch('/api/plan-diario?user='+(CU.ref||CU.user||'')+'&weekStart='+ws+'&weekEnd='+we)
+    .then(function(r){return r.json();})
+    .then(function(d){ planDiarioBlocks=d.blocks||[]; renderPlanDiarioCalendar(); })
+    .catch(function(){ planDiarioBlocks=[]; renderPlanDiarioCalendar(); });
+}
+
+function renderPlanDiarioUI() {
+  injectPlanDiarioCSS();
+  var html = '';
+  // Title + description
+  html += '<div style="text-align:center;margin-bottom:16px;">';
+  html += '<p style="font-size:20px;font-weight:900;color:#F0EDE6;margin:0;">📅 Mi Plan Diario</p>';
+  html += '<p style="font-size:12px;color:rgba(255,255,255,0.4);margin:6px 0 0;">Organiza tu tiempo personal. Los bloques se sincronizan con tu agenda de cierres.</p>';
+  html += '</div>';
+
+  // Voice + text input card
+  html += '<div class="card pd-input-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(28,232,255,0.06),rgba(0,119,255,0.04));border-color:rgba(28,232,255,0.2);">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(28,232,255,0.55);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 10px;">🎙️ Agregar actividad con voz o texto</p>';
+  html += '<div style="display:flex;gap:8px;align-items:stretch;">';
+  html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio de 7 a 8 am todos los lunes y miércoles" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(28,232,255,0.2);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
+  html += '<button id="pd-mic-btn" onclick="togglePlanDiarioVoice()" style="background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:10px;padding:0 16px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.3s;" title="Hablar">🎙️</button>';
+  html += '<button onclick="processPlanDiarioInput()" style="background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;border-radius:10px;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;flex-shrink:0;">Agregar</button>';
+  html += '</div>';
+  html += '<p id="pd-voice-status" style="font-size:11px;color:rgba(28,232,255,0.5);margin:8px 0 0;display:none;"></p>';
+  html += '<p id="pd-ai-status" style="font-size:11px;color:rgba(255,215,0,0.6);margin:6px 0 0;display:none;">🤖 Procesando con IA...</p>';
+  html += '</div>';
+
+  // Week navigation
+  var dates = getPlanDiarioWeekDates(planDiarioWeekOffset);
+  var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var weekLabel = dates[0].getDate()+' '+MESES[dates[0].getMonth()]+' — '+dates[6].getDate()+' '+MESES[dates[6].getMonth()]+' '+dates[6].getFullYear();
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+  html += '<button onclick="planDiarioWeekOffset--;loadPlanDiario()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;">◀</button>';
+  html += '<div style="text-align:center;">';
+  html += '<span style="font-size:14px;font-weight:800;color:#F0EDE6;">'+weekLabel+'</span>';
+  if(planDiarioWeekOffset!==0) html += ' <button onclick="planDiarioWeekOffset=0;loadPlanDiario()" style="background:rgba(28,232,255,0.1);border:0.5px solid rgba(28,232,255,0.2);color:#1CE8FF;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;margin-left:8px;">Hoy</button>';
+  html += '</div>';
+  html += '<button onclick="planDiarioWeekOffset++;loadPlanDiario()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;">▶</button>';
+  html += '</div>';
+
+  // Calendar grid placeholder
+  html += '<div id="pd-calendar-grid"></div>';
+
+  return html;
+}
+
+function renderPlanDiarioCalendar() {
+  var container = document.getElementById('pd-calendar-grid');
+  if(!container) return;
+  var dates = getPlanDiarioWeekDates(planDiarioWeekOffset);
+  var DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  var hoy = fmtDate(new Date());
+  var html = '';
+
+  // Hours from 5am to 11pm
+  var hours = [];
+  for(var h=5;h<=23;h++) hours.push(h);
+
+  // Day headers
+  html += '<div class="pd-grid-header">';
+  html += '<div class="pd-time-col"></div>';
+  dates.forEach(function(d){
+    var isToday = fmtDate(d)===hoy;
+    html += '<div class="pd-day-header'+(isToday?' pd-today':'')+'">';
+    html += '<span class="pd-day-name">'+DIAS[d.getDay()]+'</span>';
+    html += '<span class="pd-day-num'+(isToday?' pd-today-num':'')+'">'+d.getDate()+'</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Grid body
+  html += '<div class="pd-grid-body">';
+  hours.forEach(function(h){
+    html += '<div class="pd-grid-row">';
+    html += '<div class="pd-time-label">'+String(h).padStart(2,'0')+':00</div>';
+    dates.forEach(function(d){
+      var dateStr = fmtDate(d);
+      var hStr = String(h).padStart(2,'0')+':00';
+      var hEnd = String(h).padStart(2,'0')+':59';
+      // Find blocks in this hour
+      var cellBlocks = planDiarioBlocks.filter(function(b){
+        return b.fecha===dateStr && b.hora_inicio<String(h+1).padStart(2,'0')+':00' && b.hora_fin>hStr;
+      });
+      html += '<div class="pd-cell" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+hStr+'\')">';
+      cellBlocks.forEach(function(b){
+        var cat = b.categoria||'personal';
+        var catColors = {personal:'#1CE8FF',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C'};
+        var color = catColors[cat]||'#1CE8FF';
+        html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+color+'15;" onclick="event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')">';
+        html += '<span class="pd-block-title">'+b.titulo+'</span>';
+        html += '<span class="pd-block-time">'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+'</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Legend
+  html += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding:10px;background:rgba(0,0,0,0.15);border-radius:10px;">';
+  var cats = [{k:'personal',e:'👤',l:'Personal'},{k:'gym',e:'💪',l:'Gym'},{k:'estudio',e:'📚',l:'Estudio'},{k:'trabajo',e:'💼',l:'Trabajo'},{k:'salud',e:'🏥',l:'Salud'},{k:'otro',e:'📌',l:'Otro'}];
+  var catColors = {personal:'#1CE8FF',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C'};
+  cats.forEach(function(c){
+    html += '<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.5);"><div style="width:10px;height:10px;border-radius:3px;background:'+catColors[c.k]+';"></div>'+c.e+' '+c.l+'</div>';
+  });
+  html += '</div>';
+
+  // Sync notice
+  html += '<div style="margin-top:12px;padding:10px 14px;background:rgba(28,232,255,0.05);border:0.5px solid rgba(28,232,255,0.15);border-radius:10px;font-size:11px;color:rgba(28,232,255,0.5);">🔗 Los bloques personales se sincronizan automáticamente con tu agenda de cierres. Nadie podrá agendar una cita durante tus actividades personales.</div>';
+
+  container.innerHTML = html;
+}
+
+function openPlanDiarioAdd(fecha, hora) {
+  var hEnd = String(parseInt(hora.split(':')[0])+1).padStart(2,'0')+':00';
+  var html = '<div id="pd-modal-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.remove()">';
+  html += '<div style="background:#0a1628;border:0.5px solid rgba(28,232,255,0.2);border-radius:16px;padding:24px;width:100%;max-width:380px;">';
+  html += '<p style="font-size:16px;font-weight:900;color:#F0EDE6;margin:0 0 16px;">➕ Nueva actividad</p>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 14px;">📅 '+fecha+'</p>';
+  html += '<label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Título</label>';
+  html += '<input type="text" id="pd-add-titulo" placeholder="Ej: Gimnasio" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px 12px;margin:6px 0 12px;outline:none;box-sizing:border-box;font-family:Nunito,sans-serif;">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
+  html += '<div><label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Inicio</label><input type="time" id="pd-add-ini" value="'+hora.substring(0,5)+'" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px;margin-top:6px;outline:none;box-sizing:border-box;"></div>';
+  html += '<div><label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Fin</label><input type="time" id="pd-add-fin" value="'+hEnd.substring(0,5)+'" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px;margin-top:6px;outline:none;box-sizing:border-box;"></div>';
+  html += '</div>';
+  html += '<label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Categoría</label>';
+  html += '<select id="pd-add-cat" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px;margin:6px 0 16px;outline:none;box-sizing:border-box;font-family:Nunito,sans-serif;">';
+  html += '<option value="personal">👤 Personal</option><option value="gym">💪 Gym</option><option value="estudio">📚 Estudio</option><option value="trabajo">💼 Trabajo</option><option value="salud">🏥 Salud</option><option value="otro">📌 Otro</option>';
+  html += '</select>';
+  html += '<div style="display:flex;gap:8px;">';
+  html += '<button onclick="savePlanDiarioBlock(\''+fecha+'\')" style="flex:1;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💾 Guardar</button>';
+  html += '<button onclick="document.getElementById(\'pd-modal-overlay\').remove()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);border-radius:10px;padding:12px 18px;font-size:14px;cursor:pointer;font-family:Nunito,sans-serif;">✕</button>';
+  html += '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  setTimeout(function(){ var t=document.getElementById('pd-add-titulo'); if(t)t.focus(); },100);
+}
+
+function savePlanDiarioBlock(fecha) {
+  var titulo = document.getElementById('pd-add-titulo');
+  var ini = document.getElementById('pd-add-ini');
+  var fin = document.getElementById('pd-add-fin');
+  var cat = document.getElementById('pd-add-cat');
+  if(!titulo||!ini||!fin||!titulo.value.trim()){showToast('Completa todos los campos');return;}
+  if(ini.value>=fin.value){showToast('La hora de inicio debe ser antes del fin');return;}
+  var block = {fecha:fecha,hora_inicio:ini.value,hora_fin:fin.value,titulo:titulo.value.trim(),categoria:cat?cat.value:'personal'};
+  fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:CU.ref||CU.user||'',blocks:[block]})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){showToast('✅ Actividad guardada');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();}
+      else showToast('❌ Error: '+(d.error||''));
+    }).catch(function(){showToast('❌ Error de conexión');});
+}
+
+function openPlanDiarioEdit(id) {
+  var block = planDiarioBlocks.find(function(b){return b.id===id;});
+  if(!block) return;
+  var html = '<div id="pd-modal-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.remove()">';
+  html += '<div style="background:#0a1628;border:0.5px solid rgba(28,232,255,0.2);border-radius:16px;padding:24px;width:100%;max-width:380px;">';
+  html += '<p style="font-size:16px;font-weight:900;color:#F0EDE6;margin:0 0 16px;">✏️ Editar actividad</p>';
+  html += '<label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Título</label>';
+  html += '<input type="text" id="pd-edit-titulo" value="'+block.titulo+'" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px 12px;margin:6px 0 12px;outline:none;box-sizing:border-box;font-family:Nunito,sans-serif;">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
+  html += '<div><label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Inicio</label><input type="time" id="pd-edit-ini" value="'+block.hora_inicio.substring(0,5)+'" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px;margin-top:6px;outline:none;box-sizing:border-box;"></div>';
+  html += '<div><label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Fin</label><input type="time" id="pd-edit-fin" value="'+block.hora_fin.substring(0,5)+'" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px;margin-top:6px;outline:none;box-sizing:border-box;"></div>';
+  html += '</div>';
+  html += '<label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Categoría</label>';
+  html += '<select id="pd-edit-cat" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px;margin:6px 0 16px;outline:none;box-sizing:border-box;font-family:Nunito,sans-serif;">';
+  var cats=['personal','gym','estudio','trabajo','salud','otro'];
+  var catLabels={personal:'👤 Personal',gym:'💪 Gym',estudio:'📚 Estudio',trabajo:'💼 Trabajo',salud:'🏥 Salud',otro:'📌 Otro'};
+  cats.forEach(function(c){ html += '<option value="'+c+'"'+(block.categoria===c?' selected':'')+'>'+catLabels[c]+'</option>'; });
+  html += '</select>';
+  html += '<div style="display:flex;gap:8px;">';
+  html += '<button onclick="updatePlanDiarioBlock(\''+id+'\')" style="flex:1;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💾 Guardar</button>';
+  html += '<button onclick="deletePlanDiarioBlock(\''+id+'\')" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.25);color:rgba(255,100,100,0.8);border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:Nunito,sans-serif;">🗑️</button>';
+  html += '<button onclick="document.getElementById(\'pd-modal-overlay\').remove()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:Nunito,sans-serif;">✕</button>';
+  html += '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function updatePlanDiarioBlock(id) {
+  var titulo=document.getElementById('pd-edit-titulo');
+  var ini=document.getElementById('pd-edit-ini');
+  var fin=document.getElementById('pd-edit-fin');
+  var cat=document.getElementById('pd-edit-cat');
+  if(!titulo||!titulo.value.trim()){showToast('Ingresa un título');return;}
+  if(ini.value>=fin.value){showToast('La hora de inicio debe ser antes del fin');return;}
+  fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:id,updates:{titulo:titulo.value.trim(),hora_inicio:ini.value,hora_fin:fin.value,categoria:cat?cat.value:'personal'}})})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok){showToast('✅ Actividad actualizada');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();}else showToast('❌ Error');})
+    .catch(function(){showToast('❌ Error de conexión');});
+}
+
+function deletePlanDiarioBlock(id) {
+  if(!confirm('¿Eliminar esta actividad?')) return;
+  fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',user:CU.ref||CU.user||'',id:id})})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok){showToast('Actividad eliminada');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();}})
+    .catch(function(){showToast('❌ Error de conexión');});
+}
+
+// ── Voice input (Web Speech API) ──
+function togglePlanDiarioVoice() {
+  if(planDiarioRecording) { stopPlanDiarioVoice(); return; }
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Tu navegador no soporta reconocimiento de voz. Usa Chrome.');
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  planDiarioRecognition = new SR();
+  planDiarioRecognition.lang = 'es-MX';
+  planDiarioRecognition.continuous = false;
+  planDiarioRecognition.interimResults = true;
+
+  var btn = document.getElementById('pd-mic-btn');
+  var status = document.getElementById('pd-voice-status');
+  if(btn){btn.style.background='rgba(255,60,60,0.3)';btn.style.borderColor='rgba(255,60,60,0.5)';btn.innerHTML='🔴';}
+  if(status){status.style.display='block';status.textContent='🎙️ Escuchando...';}
+  planDiarioRecording = true;
+
+  planDiarioRecognition.onresult = function(e) {
+    var transcript = '';
+    for(var i=e.resultIndex;i<e.results.length;i++) transcript += e.results[i][0].transcript;
+    var input = document.getElementById('pd-text-input');
+    if(input) input.value = transcript;
+    if(status) status.textContent = '🎙️ "'+transcript+'"';
+  };
+  planDiarioRecognition.onend = function() {
+    planDiarioRecording = false;
+    if(btn){btn.style.background='rgba(28,232,255,0.12)';btn.style.borderColor='rgba(28,232,255,0.3)';btn.innerHTML='🎙️';}
+    if(status){status.style.display='none';}
+    // Auto-process if we got text
+    var input = document.getElementById('pd-text-input');
+    if(input && input.value.trim()) processPlanDiarioInput();
+  };
+  planDiarioRecognition.onerror = function(e) {
+    planDiarioRecording = false;
+    if(btn){btn.style.background='rgba(28,232,255,0.12)';btn.style.borderColor='rgba(28,232,255,0.3)';btn.innerHTML='🎙️';}
+    if(status){status.style.display='none';}
+    if(e.error!=='no-speech') showToast('Error de voz: '+e.error);
+  };
+  planDiarioRecognition.start();
+}
+
+function stopPlanDiarioVoice() {
+  if(planDiarioRecognition) planDiarioRecognition.stop();
+  planDiarioRecording = false;
+}
+
+// ── AI interpretation via /api/chat ──
+function processPlanDiarioInput() {
+  var input = document.getElementById('pd-text-input');
+  if(!input || !input.value.trim()) { showToast('Escribe o dicta una actividad'); return; }
+  var text = input.value.trim();
+  var aiStatus = document.getElementById('pd-ai-status');
+  if(aiStatus){aiStatus.style.display='block';aiStatus.textContent='🤖 Procesando: "'+text+'"...';}
+
+  var dates = getPlanDiarioWeekDates(planDiarioWeekOffset);
+  var hoy = new Date();
+  var todayStr = fmtDate(hoy);
+  var dayOfWeek = hoy.getDay();
+  var DIAS_ES = {0:'domingo',1:'lunes',2:'martes',3:'miércoles',4:'jueves',5:'viernes',6:'sábado'};
+
+  var systemPrompt = 'Eres un asistente que convierte instrucciones de texto en bloques de calendario personal. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). La semana actual mostrada va del '+fmtDate(dates[0])+' al '+fmtDate(dates[6])+'. Responde SOLO con un JSON array de objetos, sin explicación. Cada objeto debe tener: {fecha:"YYYY-MM-DD", hora_inicio:"HH:MM", hora_fin:"HH:MM", titulo:"string corto", categoria:"personal|gym|estudio|trabajo|salud|otro"}. Si el usuario dice "todos los lunes y miércoles" o similar, genera un bloque por cada día que aplique dentro de la semana mostrada. Si no especifica fecha, usa hoy. Si no especifica hora exacta, usa una hora razonable. Si dice "mañana", calcula la fecha correcta.';
+
+  fetch('/api/chat', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:500,
+      system:systemPrompt,
+      messages:[{role:'user',content:text}]
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(aiStatus) aiStatus.style.display='none';
+    if(d.content && d.content[0] && d.content[0].text) {
+      var raw = d.content[0].text.trim();
+      // Extract JSON from response (may have markdown code blocks)
+      var jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if(jsonMatch) {
+        try {
+          var blocks = JSON.parse(jsonMatch[0]);
+          if(blocks.length === 0) { showToast('No se pudo interpretar. Intenta de nuevo.'); return; }
+          // Save all blocks
+          fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:CU.ref||CU.user||'',blocks:blocks})})
+            .then(function(r2){return r2.json();})
+            .then(function(d2){
+              if(d2.ok){
+                showToast('✅ '+blocks.length+' actividad'+(blocks.length>1?'es':'')+' agregada'+(blocks.length>1?'s':''));
+                input.value='';
+                loadPlanDiario();
+              } else showToast('❌ Error guardando: '+(d2.error||''));
+            }).catch(function(){showToast('❌ Error de conexión');});
+        } catch(e) { showToast('❌ Error interpretando respuesta de IA'); }
+      } else { showToast('❌ No se pudo interpretar. Intenta ser más específico.'); }
+    } else { showToast('❌ Error de IA: '+(d.error&&d.error.message||'sin respuesta')); }
+  })
+  .catch(function(e){ if(aiStatus) aiStatus.style.display='none'; showToast('❌ Error conectando con IA'); });
+}
+
+// ── CSS for Plan Diario ──
+function injectPlanDiarioCSS() {
+  if(document.getElementById('plan-diario-css')) return;
+  var s = document.createElement('style'); s.id = 'plan-diario-css';
+  s.textContent = '.pd-grid-header{display:grid;grid-template-columns:48px repeat(7,1fr);gap:2px;margin-bottom:4px;}.pd-day-header{text-align:center;padding:8px 2px;}.pd-day-name{display:block;font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;}.pd-day-num{display:block;font-size:16px;font-weight:900;color:#F0EDE6;margin-top:2px;}.pd-today .pd-day-name{color:#1CE8FF;}.pd-today-num{color:#030c1f;background:#1CE8FF;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;}.pd-time-col{width:48px;}.pd-grid-body{max-height:500px;overflow-y:auto;border-radius:10px;border:0.5px solid rgba(255,255,255,0.06);}.pd-grid-row{display:grid;grid-template-columns:48px repeat(7,1fr);gap:0;border-bottom:0.5px solid rgba(255,255,255,0.04);}.pd-time-label{font-size:10px;color:rgba(255,255,255,0.25);padding:8px 4px 8px 2px;text-align:right;font-weight:600;border-right:0.5px solid rgba(255,255,255,0.06);}.pd-cell{min-height:48px;border-right:0.5px solid rgba(255,255,255,0.04);padding:2px;cursor:pointer;transition:background 0.15s;}.pd-cell:hover{background:rgba(28,232,255,0.04);}.pd-block{border-radius:6px;padding:3px 5px;margin:1px 0;cursor:pointer;transition:transform 0.1s;}.pd-block:hover{transform:scale(1.03);}.pd-block-title{display:block;font-size:9px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.pd-block-time{display:block;font-size:8px;color:rgba(255,255,255,0.4);}.pd-input-card{transition:all 0.3s;}@media(max-width:600px){.pd-grid-header,.pd-grid-row{grid-template-columns:36px repeat(7,1fr);}.pd-day-name{font-size:8px;}.pd-day-num{font-size:13px;}.pd-time-label{font-size:8px;padding:6px 2px;}.pd-cell{min-height:36px;}.pd-block-title{font-size:8px;}.pd-block-time{font-size:7px;}}';
+  document.head.appendChild(s);
+}
+// ═══════════════════════════════════════════════════════════════
+// END MI PLAN DIARIO
+// ═══════════════════════════════════════════════════════════════
 function toggleDiaAgenda(d) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.dias[d]=!agendaConfig.dias[d]; renderAgendaUI(document.getElementById('agenda-content')); }
 function setDuracionAgenda(m) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.duracion=m; renderAgendaUI(document.getElementById('agenda-content')); }
 function setAnticipacionAgenda(m) { if(!agendaConfig) agendaConfig=getDefaultAgendaCfg(); agendaConfig.anticipacionMin=m; renderAgendaUI(document.getElementById('agenda-content')); }
@@ -4311,6 +4640,19 @@ function generarSlotsAgenda(cfg, bookings) {
     var anticipMs = (cfg.anticipacionMin || 60) * 60000;
     var MIN_SLOTS_VISIBLE = 4; // minimum slots to show per day for scarcity effect
 
+
+    // Personal blocks for this date (from Plan Diario)
+    var dateKey = y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var personalBlocks = (cfg.bloqueos_personales && cfg.bloqueos_personales[dateKey]) || [];
+    function isBlockedByPersonal(wallMin) {
+      for(var pi=0;pi<personalBlocks.length;pi++){
+        var pIni=toMins(personalBlocks[pi].ini), pFin=toMins(personalBlocks[pi].fin);
+        if(wallMin>=pIni && wallMin+dur<=pFin) return true;
+        if(wallMin<pFin && wallMin+dur>pIni) return true;
+      }
+      return false;
+    }
+
     // 1) Generate ALL slots in schedule — separate available vs unavailable
     var rawAvail = [];
     var rawUnavail = []; // past, within buffer, or booked — for "Reservado" padding
@@ -4320,7 +4662,9 @@ function generarSlotsAgenda(cfg, bookings) {
       var slotUTC=new Date(Date.UTC(y,mo,d,h+offsetHrs,m2,0,0));
       var slotISO=slotUTC.toISOString();
       if(isInBloques(dayBloques, cur)) {
-        if(slotUTC-ahora >= anticipMs && booked.indexOf(slotISO)===-1) {
+        if(isBlockedByPersonal(cur)) {
+          rawUnavail.push({iso:slotISO, wallMin:cur});
+        } else if(slotUTC-ahora >= anticipMs && booked.indexOf(slotISO)===-1) {
           rawAvail.push({iso:slotISO, wallMin:cur});
         } else {
           // Past slots, within anticipation buffer, or already booked
