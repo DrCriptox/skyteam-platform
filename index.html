@@ -419,6 +419,1302 @@ select option{background:#040f28;color:#F0EDE6;}
 .crm-column{flex:0 0 240px;min-height:300px;}
 .crm-modal-content{max-height:90vh;margin:10px;}
 .crm-detail-info-grid{grid-template-columns:1fr;}
+
+/* ============================================================================
+   GAMIFICATION + METRICS DASHBOARD CSS
+   Dark-themed SPA with glass-morphism, animations, and premium styling
+   All classes prefixed with .crm-dash- to avoid conflicts
+   ============================================================================ */
+
+:root {
+  --crm-bg-dark: #0a0e17;
+  --crm-card-bg: #0d1520;
+  --crm-border: #1a2332;
+  --crm-gold: #FFD700;
+  --crm-cyan: #1CE8FF;
+  --crm-green: #25D366;
+  --crm-purple: #7F77DD;
+  --crm-red: #FF4757;
+  --crm-text-primary: #ffffff;
+  --crm-text-secondary: #a0aec0;
+  --crm-glass-blur: 10px;
+}
+
+/* ============================================================================
+   GLOBAL BASE STYLES
+   ============================================================================ */
+
+.crm-dash-container {
+  background: linear-gradient(135deg, var(--crm-bg-dark) 0%, #0f1525 100%);
+  color: var(--crm-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', sans-serif;
+  padding: 32px 24px;
+  min-height: 100vh;
+}
+
+.crm-dash-card {
+  background: rgba(13, 21, 32, 0.6);
+  border: 1px solid var(--crm-border);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(var(--crm-glass-blur));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.crm-dash-card:hover {
+  border-color: rgba(28, 232, 255, 0.3);
+  box-shadow: 0 12px 48px rgba(28, 232, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.crm-dash-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--crm-text-primary);
+}
+
+.crm-dash-card-title::before {
+  font-size: 24px;
+  display: block;
+}
+
+.crm-dash-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--crm-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--crm-border);
+}
+
+/* ============================================================================
+   LAYOUT GRID
+   ============================================================================ */
+
+.crm-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .crm-dash-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .crm-dash-container {
+    padding: 16px 12px;
+  }
+
+  .crm-dash-grid {
+    gap: 16px;
+  }
+
+  .crm-dash-card {
+    padding: 16px;
+  }
+}
+
+/* ============================================================================
+   1. TOP STATS ROW - KPI CARDS
+   ============================================================================ */
+
+.crm-dash-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  grid-column: 1 / -1;
+}
+
+.crm-dash-kpi {
+  background: rgba(13, 21, 32, 0.7);
+  border: 1px solid var(--crm-border);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(var(--crm-glass-blur));
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.crm-dash-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at 100% 0%,
+    rgba(28, 232, 255, 0.1) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.crm-dash-kpi:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--crm-cyan);
+  box-shadow: 0 8px 32px rgba(28, 232, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.crm-dash-kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--crm-cyan) 0%, var(--crm-text-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  animation: crm-countUp 2s ease-out forwards;
+}
+
+.crm-dash-kpi-label {
+  font-size: 13px;
+  color: var(--crm-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.crm-dash-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(37, 211, 102, 0.1);
+  color: var(--crm-green);
+}
+
+.crm-dash-kpi-trend.negative {
+  background: rgba(255, 71, 87, 0.1);
+  color: var(--crm-red);
+}
+
+.crm-dash-kpi-trend::before {
+  content: '↑';
+  font-size: 14px;
+}
+
+.crm-dash-kpi-trend.negative::before {
+  content: '↓';
+}
+
+@media (max-width: 1024px) {
+  .crm-dash-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .crm-dash-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-dash-kpi-value {
+    font-size: 24px;
+  }
+}
+
+/* ============================================================================
+   2. XP & LEVEL BAR - GAMIFICATION HERO
+   ============================================================================ */
+
+.crm-dash-xp-hero {
+  background: rgba(13, 21, 32, 0.8);
+  border: 2px solid var(--crm-border);
+  border-radius: 20px;
+  padding: 32px 24px;
+  backdrop-filter: blur(var(--crm-glass-blur));
+  position: relative;
+  overflow: hidden;
+  grid-column: 1 / -1;
+  animation: crm-rainbow-border 4s linear infinite;
+}
+
+.crm-dash-xp-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    var(--crm-gold) 0deg,
+    var(--crm-cyan) 90deg,
+    var(--crm-purple) 180deg,
+    var(--crm-gold) 360deg
+  );
+  animation: crm-rainbow-border-rotate 8s linear infinite;
+  pointer-events: none;
+}
+
+.crm-dash-xp-hero-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.crm-dash-level-badge {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--crm-purple) 0%, var(--crm-cyan) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--crm-text-primary);
+  box-shadow: 0 0 30px rgba(127, 119, 221, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+  animation: crm-pulse-glow 2s ease-in-out infinite;
+}
+
+.crm-dash-xp-info {
+  flex: 1;
+}
+
+.crm-dash-level-title {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--crm-gold) 0%, var(--crm-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+}
+
+.crm-dash-xp-bar-container {
+  margin-bottom: 12px;
+}
+
+.crm-dash-xp-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  border: 1px solid var(--crm-border);
+  overflow: hidden;
+  position: relative;
+}
+
+.crm-dash-xp-bar-fill {
+  height: 100%;
+  width: 62.5%;
+  background: linear-gradient(90deg, var(--crm-cyan) 0%, var(--crm-gold) 50%, var(--crm-green) 100%);
+  border-radius: 6px;
+  position: relative;
+  animation: crm-shimmer 3s infinite;
+}
+
+.crm-dash-xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: crm-shimmer-move 2s infinite;
+}
+
+.crm-dash-xp-text {
+  font-size: 13px;
+  color: var(--crm-text-secondary);
+  font-weight: 500;
+}
+
+.crm-dash-xp-text strong {
+  color: var(--crm-cyan);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .crm-dash-xp-hero-content {
+    gap: 16px;
+  }
+
+  .crm-dash-level-badge {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .crm-dash-level-title {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================================
+   3. STREAK TRACKER
+   ============================================================================ */
+
+.crm-dash-streak {
+  background: rgba(13, 21, 32, 0.7);
+  border: 1px solid var(--crm-border);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(var(--crm-glass-blur));
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.crm-dash-streak-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.crm-dash-streak-flame {
+  font-size: 40px;
+  animation: crm-streak-fire 1.5s ease-in-out infinite;
+}
+
+.crm-dash-streak-count {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crm-dash-streak-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--crm-gold);
+}
+
+.crm-dash-streak-label {
+  font-size: 12px;
+  color: var(--crm-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crm-dash-streak-days {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+}
+
+.crm-dash-day-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--crm-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--crm-text-secondary);
+  transition: all 0.3s ease;
+}
+
+.crm-dash-day-circle.active {
+  background: linear-gradient(135deg, var(--crm-gold) 0%, var(--crm-green) 100%);
+  border-color: var(--crm-gold);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+  color: var(--crm-text-primary);
+  font-weight: 700;
+}
+
+.crm-dash-streak-best {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(127, 119, 221, 0.15);
+  border: 1px solid rgba(127, 119, 221, 0.3);
+  border-radius: 8px;
+  color: var(--crm-purple);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .crm-dash-streak {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .crm-dash-streak-days {
+    flex-basis: 100%;
+  }
+}
+
+/* ============================================================================
+   4. FUNNEL CHART
+   ============================================================================ */
+
+.crm-dash-funnel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.crm-dash-funnel-stage {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--crm-text-primary);
+  position: relative;
+  animation: crm-funnel-enter 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.crm-dash-funnel-stage:nth-child(1) {
+  width: 100%;
+  animation-delay: 0s;
+  background: linear-gradient(90deg, rgba(28, 232, 255, 0.2) 0%, rgba(28, 232, 255, 0.05) 100%);
+  border: 1px solid var(--crm-cyan);
+}
+
+.crm-dash-funnel-stage:nth-child(2) {
+  width: 85%;
+  animation-delay: 0.1s;
+  background: linear-gradient(90deg, rgba(127, 119, 221, 0.2) 0%, rgba(127, 119, 221, 0.05) 100%);
+  border: 1px solid var(--crm-purple);
+}
+
+.crm-dash-funnel-stage:nth-child(3) {
+  width: 70%;
+  animation-delay: 0.2s;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+  border: 1px solid var(--crm-gold);
+}
+
+.crm-dash-funnel-stage:nth-child(4) {
+  width: 55%;
+  animation-delay: 0.3s;
+  background: linear-gradient(90deg, rgba(37, 211, 102, 0.2) 0%, rgba(37, 211, 102, 0.05) 100%);
+  border: 1px solid var(--crm-green);
+}
+
+.crm-dash-funnel-stage:nth-child(5) {
+  width: 40%;
+  animation-delay: 0.4s;
+  background: linear-gradient(90deg, rgba(255, 71, 87, 0.2) 0%, rgba(255, 71, 87, 0.05) 100%);
+  border: 1px solid var(--crm-red);
+}
+
+.crm-dash-funnel-label {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+}
+
+.crm-dash-funnel-label-text {
+  color: var(--crm-text-primary);
+  font-weight: 600;
+}
+
+.crm-dash-funnel-label-count {
+  color: var(--crm-text-secondary);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   5. RING/DONUT CHART
+   ============================================================================ */
+
+.crm-dash-donut-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.crm-dash-donut {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    var(--crm-cyan) 0deg 90deg,
+    var(--crm-gold) 90deg 180deg,
+    var(--crm-purple) 180deg 270deg,
+    var(--crm-green) 270deg 360deg
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 0 40px rgba(28, 232, 255, 0.2);
+  animation: crm-spin 20s linear infinite;
+}
+
+.crm-dash-donut::after {
+  content: '';
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: var(--crm-card-bg);
+  z-index: 1;
+}
+
+.crm-dash-donut-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  z-index: 2;
+  position: relative;
+}
+
+.crm-dash-donut-number {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--crm-cyan) 0%, var(--crm-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.crm-dash-donut-label {
+  font-size: 12px;
+  color: var(--crm-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crm-dash-donut-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.crm-dash-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--crm-text-secondary);
+}
+
+.crm-dash-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.crm-dash-legend-color.cyan {
+  background: var(--crm-cyan);
+}
+
+.crm-dash-legend-color.gold {
+  background: var(--crm-gold);
+}
+
+.crm-dash-legend-color.purple {
+  background: var(--crm-purple);
+}
+
+.crm-dash-legend-color.green {
+  background: var(--crm-green);
+}
+
+/* ============================================================================
+   6. ACTIVITY CHART - 7 DAY BAR CHART
+   ============================================================================ */
+
+.crm-dash-activity {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 200px;
+  gap: 12px;
+  padding: 20px 0 40px 0;
+  position: relative;
+}
+
+.crm-dash-activity::after {
+  content: '';
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--crm-border), transparent);
+}
+
+.crm-dash-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.crm-dash-bar {
+  width: 100%;
+  background: linear-gradient(180deg, var(--crm-cyan) 0%, var(--crm-purple) 100%);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(28, 232, 255, 0.2);
+}
+
+.crm-dash-bar:nth-child(1) {
+  height: 40%;
+  animation: crm-bar-grow 0.8s ease-out 0s forwards;
+}
+
+.crm-dash-bar:nth-child(2) {
+  height: 70%;
+  animation: crm-bar-grow 0.8s ease-out 0.1s forwards;
+}
+
+.crm-dash-bar:nth-child(3) {
+  height: 85%;
+  animation: crm-bar-grow 0.8s ease-out 0.2s forwards;
+}
+
+.crm-dash-bar:nth-child(4) {
+  height: 60%;
+  animation: crm-bar-grow 0.8s ease-out 0.3s forwards;
+}
+
+.crm-dash-bar:nth-child(5) {
+  height: 75%;
+  animation: crm-bar-grow 0.8s ease-out 0.4s forwards;
+}
+
+.crm-dash-bar:nth-child(6) {
+  height: 95%;
+  animation: crm-bar-grow 0.8s ease-out 0.5s forwards;
+}
+
+.crm-dash-bar:nth-child(7) {
+  height: 50%;
+  animation: crm-bar-grow 0.8s ease-out 0.6s forwards;
+}
+
+.crm-dash-bar:hover {
+  filter: brightness(1.2);
+  transform: scaleY(1.05);
+}
+
+.crm-dash-bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--crm-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   7. ACHIEVEMENTS GRID
+   ============================================================================ */
+
+.crm-dash-achievements {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 0;
+}
+
+.crm-dash-badge {
+  background: rgba(13, 21, 32, 0.6);
+  border: 1px solid var(--crm-border);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(var(--crm-glass-blur));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.crm-dash-badge.locked {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+.crm-dash-badge.unlocked {
+  border-color: var(--crm-gold);
+  animation: crm-badge-unlock 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.crm-dash-badge.unlocked::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    var(--crm-gold) 0deg,
+    transparent 180deg,
+    var(--crm-gold) 360deg
+  );
+  animation: crm-badge-glow-rotate 4s linear infinite;
+  pointer-events: none;
+}
+
+.crm-dash-badge:hover:not(.locked) {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(28, 232, 255, 0.2);
+}
+
+.crm-dash-badge-icon {
+  font-size: 48px;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.crm-dash-badge:hover:not(.locked) .crm-dash-badge-icon {
+  transform: scale(1.15) rotate(10deg);
+}
+
+.crm-dash-badge-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--crm-text-primary);
+}
+
+.crm-dash-badge-desc {
+  font-size: 11px;
+  color: var(--crm-text-secondary);
+  line-height: 1.3;
+}
+
+@media (max-width: 1024px) {
+  .crm-dash-achievements {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .crm-dash-achievements {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .crm-dash-achievements {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .crm-dash-badge {
+    padding: 12px;
+  }
+
+  .crm-dash-badge-icon {
+    font-size: 36px;
+  }
+}
+
+/* ============================================================================
+   8. LEADERBOARD
+   ============================================================================ */
+
+.crm-dash-leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.crm-dash-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--crm-border);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.crm-dash-lb-row:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.crm-dash-lb-row:hover {
+  background: rgba(28, 232, 255, 0.05);
+}
+
+.crm-dash-lb-row.me {
+  border-left: 3px solid var(--crm-cyan);
+  background: rgba(28, 232, 255, 0.1);
+  border-bottom: 1px solid var(--crm-cyan);
+}
+
+.crm-dash-lb-row:last-child {
+  border-bottom: none;
+}
+
+.crm-dash-lb-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--crm-border);
+}
+
+.crm-dash-lb-rank.rank-1 {
+  background: linear-gradient(135deg, var(--crm-gold) 0%, rgba(255, 215, 0, 0.3) 100%);
+  border-color: var(--crm-gold);
+  color: #000;
+}
+
+.crm-dash-lb-rank.rank-1::before {
+  content: '👑 ';
+  margin-right: 4px;
+}
+
+.crm-dash-lb-rank.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, rgba(192, 192, 192, 0.3) 100%);
+  border-color: #c0c0c0;
+  color: #000;
+}
+
+.crm-dash-lb-rank.rank-2::before {
+  content: '🥈 ';
+  margin-right: 4px;
+}
+
+.crm-dash-lb-rank.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, rgba(205, 127, 50, 0.3) 100%);
+  border-color: #cd7f32;
+  color: #fff;
+}
+
+.crm-dash-lb-rank.rank-3::before {
+  content: '🥉 ';
+  margin-right: 4px;
+}
+
+.crm-dash-lb-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--crm-purple) 0%, var(--crm-cyan) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--crm-text-primary);
+  flex-shrink: 0;
+}
+
+.crm-dash-lb-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--crm-text-primary);
+}
+
+.crm-dash-lb-xp-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.crm-dash-lb-xp {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--crm-cyan);
+  min-width: 50px;
+  text-align: right;
+}
+
+.crm-dash-lb-xp-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.crm-dash-lb-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--crm-cyan) 0%, var(--crm-purple) 100%);
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .crm-dash-lb-row {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .crm-dash-lb-xp-bar {
+    width: 50px;
+  }
+
+  .crm-dash-lb-xp {
+    min-width: 40px;
+  }
+}
+
+/* ============================================================================
+   9. CONFETTI CELEBRATION
+   ============================================================================ */
+
+.crm-dash-confetti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.crm-dash-confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: crm-confetti-fall 3s ease-in forwards;
+}
+
+.crm-dash-confetti-piece:nth-child(1) {
+  background: var(--crm-gold);
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 2.5s;
+}
+
+.crm-dash-confetti-piece:nth-child(2) {
+  background: var(--crm-cyan);
+  left: 20%;
+  animation-delay: 0.1s;
+  animation-duration: 2.8s;
+}
+
+.crm-dash-confetti-piece:nth-child(3) {
+  background: var(--crm-green);
+  left: 30%;
+  animation-delay: 0.2s;
+  animation-duration: 3s;
+}
+
+.crm-dash-confetti-piece:nth-child(4) {
+  background: var(--crm-purple);
+  left: 40%;
+  animation-delay: 0.3s;
+  animation-duration: 2.6s;
+}
+
+.crm-dash-confetti-piece:nth-child(5) {
+  background: var(--crm-gold);
+  left: 50%;
+  animation-delay: 0.4s;
+  animation-duration: 2.9s;
+}
+
+.crm-dash-confetti-piece:nth-child(6) {
+  background: var(--crm-cyan);
+  left: 60%;
+  animation-delay: 0.5s;
+  animation-duration: 2.7s;
+}
+
+.crm-dash-confetti-piece:nth-child(7) {
+  background: var(--crm-green);
+  left: 70%;
+  animation-delay: 0.6s;
+  animation-duration: 3.1s;
+}
+
+.crm-dash-confetti-piece:nth-child(8) {
+  background: var(--crm-purple);
+  left: 80%;
+  animation-delay: 0.7s;
+  animation-duration: 2.8s;
+}
+
+.crm-dash-confetti-piece:nth-child(9) {
+  background: var(--crm-gold);
+  left: 90%;
+  animation-delay: 0.8s;
+  animation-duration: 3s;
+}
+
+.crm-dash-confetti-piece:nth-child(10) {
+  background: var(--crm-cyan);
+  left: 15%;
+  animation-delay: 0.9s;
+  animation-duration: 2.9s;
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================ */
+
+@keyframes crm-countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes crm-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes crm-shimmer-move {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes crm-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(127, 119, 221, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(127, 119, 221, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes crm-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes crm-bar-grow {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crm-funnel-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes crm-badge-unlock {
+  0% {
+    transform: scale(0.8) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes crm-badge-glow-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes crm-streak-fire {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(-5deg);
+  }
+}
+
+@keyframes crm-rainbow-border {
+  0%, 100% {
+    border-color: var(--crm-gold);
+  }
+  25% {
+    border-color: var(--crm-cyan);
+  }
+  50% {
+    border-color: var(--crm-purple);
+  }
+  75% {
+    border-color: var(--crm-green);
+  }
+}
+
+@keyframes crm-rainbow-border-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes crm-confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes crm-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes crm-level-up {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY & UTILITY CLASSES
+   ============================================================================ */
+
+.crm-dash-hidden {
+  display: none !important;
+}
+
+.crm-dash-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-dash-kpi,
+  .crm-dash-badge,
+  .crm-dash-bar,
+  .crm-dash-funnel-stage,
+  .crm-dash-level-badge,
+  .crm-dash-streak-flame,
+  .crm-dash-xp-bar-fill,
+  .crm-dash-confetti-piece {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .crm-dash-container {
+    background: white;
+    padding: 0;
+  }
+
+  .crm-dash-card {
+    background: white;
+    border: 1px solid #ddd;
+    page-break-inside: avoid;
+  }
+}
+
 .crm-metrics-grid{grid-template-columns:1fr;}
 .crm-list-table{min-width:600px;}
 
@@ -710,7 +2006,126 @@ select option{background:#040f28;color:#F0EDE6;}
         <th>Nombre</th><th>Teléfono</th><th>Email</th><th>Etapa</th><th>Temp.</th><th>Fuente</th><th>Valor</th><th>Acciones</th>
       </tr></thead><tbody id="crm-list-tbody"></tbody></table></div>
     </div>
-    <div id="crm-metrics-view" class="crm-metrics-view" style="display:none;"><div class="crm-metrics-grid"></div></div>
+    <div id="crm-metrics-view" class="crm-metrics-view" style="display:none;"><!-- SECTION: Gamification Hero -->
+<div class="crm-dash-xp-hero" id="crm-dash-xp-hero">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div class="crm-dash-level-badge" id="crm-dash-level-badge">1</div>
+    <div style="flex:1;min-width:200px">
+      <div class="crm-dash-level-title" id="crm-dash-level-title">Novato</div>
+      <div class="crm-dash-xp-bar">
+        <div class="crm-dash-xp-bar-fill" id="crm-dash-xp-fill" style="width:0%"></div>
+      </div>
+      <div class="crm-dash-xp-text" id="crm-dash-xp-text">0 / 100 XP</div>
+    </div>
+    <div class="crm-dash-streak" id="crm-dash-streak">
+      <div class="crm-dash-streak-flame">🔥</div>
+      <div>
+        <div style="font-size:24px;font-weight:800" id="crm-dash-streak-num">0</div>
+        <div style="font-size:11px;opacity:0.6">días seguidos</div>
+      </div>
+      <div class="crm-dash-streak-best" id="crm-dash-streak-best">Mejor: 0</div>
+    </div>
+  </div>
+  <!-- 7-day streak dots -->
+  <div class="crm-dash-streak-days" id="crm-dash-streak-days">
+    <span class="crm-dash-day" data-day="L">L</span>
+    <span class="crm-dash-day" data-day="M">M</span>
+    <span class="crm-dash-day" data-day="X">X</span>
+    <span class="crm-dash-day" data-day="J">J</span>
+    <span class="crm-dash-day" data-day="V">V</span>
+    <span class="crm-dash-day" data-day="S">S</span>
+    <span class="crm-dash-day" data-day="D">D</span>
+  </div>
+</div>
+
+<!-- SECTION: KPI Stats -->
+<div class="crm-dash-stats-row" id="crm-dash-stats-row">
+  <div class="crm-dash-kpi">
+    <div class="crm-dash-kpi-icon">📊</div>
+    <div class="crm-dash-kpi-value" id="crm-dash-kpi-total">0</div>
+    <div class="crm-dash-kpi-label">Total Prospectos</div>
+    <div class="crm-dash-kpi-trend" id="crm-dash-trend-total"></div>
+  </div>
+  <div class="crm-dash-kpi">
+    <div class="crm-dash-kpi-icon">✅</div>
+    <div class="crm-dash-kpi-value" id="crm-dash-kpi-cerrados">0</div>
+    <div class="crm-dash-kpi-label">Cerrados Ganados</div>
+    <div class="crm-dash-kpi-trend" id="crm-dash-trend-cerrados"></div>
+  </div>
+  <div class="crm-dash-kpi">
+    <div class="crm-dash-kpi-icon">🏯</div>
+    <div class="crm-dash-kpi-value" id="crm-dash-kpi-tasa">0%</div>
+    <div class="crm-dash-kpi-label">Tasa de Cierre</div>
+    <div class="crm-dash-kpi-trend" id="crm-dash-trend-tasa"></div>
+  </div>
+  <div class="crm-dash-kpi">
+    <div class="crm-dash-kpi-icon">🔥</div>
+    <div class="crm-dash-kpi-value" id="crm-dash-kpi-calientes">0</div>
+    <div class="crm-dash-kpi-label">Prospectos Calientes</div>
+    <div class="crm-dash-kpi-trend" id="crm-dash-trend-calientes"></div>
+  </div>
+</div>
+
+<!-- SECTION: Grid Layout for charts -->
+<div class="crm-dash-grid">
+
+  <!-- Funnel Chart -->
+  <div class="crm-dash-card">
+    <div class="crm-dash-card-title">📊 Funnel de Conversión</div>
+    <div class="crm-dash-funnel" id="crm-dash-funnel">
+      <!-- JS will populate: stages nuevo→contactado→interesado→presentacion→cerrado -->
+    </div>
+  </div>
+
+  <!-- Donut Chart - Distribution -->
+  <div class="crm-dash-card">
+    <div class="crm-dash-card-title">📊 Distribución por Etapa</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap">
+      <div class="crm-dash-donut" id="crm-dash-donut">
+        <div class="crm-dash-donut-center" id="crm-dash-donut-center">0</div>
+      </div>
+      <div class="crm-dash-donut-legend" id="crm-dash-donut-legend">
+        <!-- JS fills legend items -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Chart - Last 7 days -->
+  <div class="crm-dash-card">
+    <div class="crm-dash-card-title">📈 Actividad Semanal (XP)</div>
+    <div class="crm-dash-activity" id="crm-dash-activity">
+      <!-- JS fills 7 bars -->
+    </div>
+  </div>
+
+  <!-- Pipeline Speed -->
+  <div class="crm-dash-card">
+    <div class="crm-dash-card-title">⚡ Velocidad del Pipeline</div>
+    <div id="crm-dash-pipeline-speed">
+      <!-- JS fills: avg time per stage -->
+    </div>
+  </div>
+
+  <!-- Achievements -->
+  <div class="crm-dash-card" style="grid-column:1/-1">
+    <div class="crm-dash-card-title">🏆 Logros</div>
+    <div class="crm-dash-achievements" id="crm-dash-achievements">
+      <!-- JS fills badge grid -->
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="crm-dash-card" style="grid-column:1/-1">
+    <div class="crm-dash-card-title">👑 Leaderboard del Equipo</div>
+    <div class="crm-dash-leaderboard" id="crm-dash-leaderboard">
+      <!-- JS fills rows -->
+    </div>
+  </div>
+
+</div>
+
+<!-- Confetti overlay (hidden by default) -->
+<div class="crm-dash-confetti" id="crm-dash-confetti" style="display:none"></div></div>
   </div>
 </div>
 
@@ -6262,6 +7677,395 @@ async function crmMoveStage(id,etapa){
   var res=await crmApi('moveStage',{id:id,etapa:etapa});
   if(res&&res.ok)crmToast('Movido a '+(CRM_ETAPAS[etapa]?CRM_ETAPAS[etapa].label:etapa),'success');
   crmLoadData();}
+/* ============================================================================
+   SKY PROSPECTOS — GAMIFICATION + METRICS ENGINE
+   ============================================================================ */
+
+var CRM_LEVELS=[
+{level:1,name:'Novato',minXP:0,maxXP:100,color:'#8892a0',emoji:'🌱'},
+{level:2,name:'Explorador',minXP:100,maxXP:300,color:'#1CE8FF',emoji:'🔍'},
+{level:3,name:'Vendedor',minXP:300,maxXP:600,color:'#7F77DD',emoji:'💼'},
+{level:4,name:'Closer',minXP:600,maxXP:1000,color:'#FFD700',emoji:'🎯'},
+{level:5,name:'Master',minXP:1000,maxXP:2000,color:'#25D366',emoji:'⚡'},
+{level:6,name:'Diamante',minXP:2000,maxXP:3500,color:'#E91E9C',emoji:'💎'},
+{level:7,name:'Leyenda',minXP:3500,maxXP:999999,color:'#FF6B35',emoji:'👑'}
+];
+
+var CRM_ACHIEVEMENTS=[
+{id:'first_close',name:'Primer Cierre',emoji:'🎯',desc:'Cierra tu primer prospecto'},
+{id:'streak_7',name:'Racha de Fuego',emoji:'🔥',desc:'7 dias consecutivos'},
+{id:'century',name:'Centurion',emoji:'💯',desc:'100 prospectos agregados'},
+{id:'velocity',name:'Velocity',emoji:'🚀',desc:'5 cierres en una semana'},
+{id:'pipeline_king',name:'Rey del Pipeline',emoji:'👑',desc:'50 prospectos activos'},
+{id:'call_master',name:'Call Master',emoji:'📞',desc:'20 contactos en un dia'},
+{id:'perfectionist',name:'Perfeccionista',emoji:'⭐',desc:'80%+ tasa de cierre'},
+{id:'mvp',name:'MVP',emoji:'🏆',desc:'#1 en el leaderboard'},
+{id:'streak_30',name:'Imparable',emoji:'💪',desc:'30 dias de racha'},
+{id:'explorer',name:'Explorador',emoji:'🗺️',desc:'Llega a nivel Explorador'},
+{id:'diamond',name:'Diamante',emoji:'💎',desc:'Llega a nivel Diamante'},
+{id:'legend',name:'Leyenda Viva',emoji:'🌟',desc:'Llega a nivel Leyenda'}
+];
+
+var CRM_XP_VALUES={add_prospect:10,contact:15,interested:20,presentation:30,close_won:100,close_lost:5,complete_reminder:5,whatsapp_sent:5,daily_login:10};
+
+var crmDashProfile=null;
+var crmDashLeaderboard=[];
+var crmDashActivity=[];
+
+function crmDashGetLevel(xp){
+for(var i=0;i<CRM_LEVELS.length;i++){if(xp>=CRM_LEVELS[i].minXP&&xp<CRM_LEVELS[i].maxXP)return CRM_LEVELS[i];}
+return CRM_LEVELS[CRM_LEVELS.length-1];
+}
+
+async function crmDashApi(action,data){
+try{var body=Object.assign({action:action,user:CU.username},data||{});
+var r=await fetch('/api/gamification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+var j=await r.json();if(j.error)throw new Error(j.error);return j;}
+catch(e){console.error('crmDashApi:',e);return null;}
+}
+
+/* === VIEW SWITCH === */
+function crmSwitchView(view){
+crmCurrentView=view;
+var k=document.getElementById('crm-kanban');
+var l=document.getElementById('crm-list-view');
+var m=document.getElementById('crm-metrics-view');
+if(k)k.style.display=view==='kanban'?'':'none';
+if(l)l.style.display=view==='lista'?'':'none';
+if(m)m.style.display=view==='metricas'?'':'none';
+document.querySelectorAll('.crm-view-btn').forEach(function(btn){
+btn.classList.remove('active');
+var t=btn.textContent;
+if((view==='kanban'&&t.includes('Kanban'))||(view==='lista'&&t.includes('Lista'))||(view==='metricas'&&t.includes('trica')))btn.classList.add('active');
+});
+if(view==='metricas')crmDashInit();
+}
+
+/* === INIT === */
+async function crmDashInit(){
+var mv=document.getElementById('crm-metrics-view');if(!mv)return;
+try{
+var p=await crmDashApi('get_profile');
+if(p&&p.data)crmDashProfile=p.data;
+else crmDashProfile={xp:0,level:1,streak_current:0,streak_best:0,achievements:[],total_closed:0};
+var s=await crmDashApi('check_streak');
+if(s&&s.data){crmDashProfile.streak_current=s.data.streak_current||0;crmDashProfile.streak_best=s.data.streak_best||0;}
+var lb=await crmDashApi('get_leaderboard');
+crmDashLeaderboard=(lb&&lb.data)?lb.data:[];
+var act=await crmDashApi('get_activity');
+crmDashActivity=(act&&act.data)?act.data:[];
+}catch(e){console.error('crmDashInit error:',e);
+crmDashProfile=crmDashProfile||{xp:0,level:1,streak_current:0,streak_best:0,achievements:[],total_closed:0};
+}
+crmDashRenderXPHero();
+crmDashRenderKPIs();
+crmDashRenderFunnel();
+crmDashRenderDonut();
+crmDashRenderActivity();
+crmDashRenderPipelineSpeed();
+crmDashRenderAchievements();
+crmDashRenderLeaderboard();
+}
+
+/* === ANIMATED COUNTER === */
+function crmDashAnimateCount(el,target,suffix,dur){
+suffix=suffix||'';dur=dur||1500;
+var start=performance.now();
+function tick(now){
+var p=Math.min((now-start)/dur,1);
+p=1-Math.pow(1-p,3);
+el.textContent=Math.floor(target*p)+suffix;
+if(p<1)requestAnimationFrame(tick);
+else el.textContent=target+suffix;
+}
+requestAnimationFrame(tick);
+}
+
+/* === XP HERO === */
+function crmDashRenderXPHero(){
+var badge=document.getElementById('crm-dash-level-badge');
+var title=document.getElementById('crm-dash-level-title');
+var fill=document.getElementById('crm-dash-xp-fill');
+var xpText=document.getElementById('crm-dash-xp-text');
+var streakNum=document.getElementById('crm-dash-streak-num');
+var streakBest=document.getElementById('crm-dash-streak-best');
+if(!badge)return;
+var xp=crmDashProfile?crmDashProfile.xp||0:0;
+var lv=crmDashGetLevel(xp);
+var pct=lv.maxXP>lv.minXP?Math.round(((xp-lv.minXP)/(lv.maxXP-lv.minXP))*100):100;
+badge.textContent=lv.level;
+badge.style.background='linear-gradient(135deg,'+lv.color+','+lv.color+'88)';
+badge.style.boxShadow='0 0 20px '+lv.color+'66';
+if(title)title.textContent=lv.emoji+' '+lv.name;
+if(title)title.style.background='linear-gradient(90deg,'+lv.color+',#fff)';
+if(title){title.style.webkitBackgroundClip='text';title.style.webkitTextFillColor='transparent';title.style.backgroundClip='text';}
+if(fill){fill.style.transition='width 1.2s cubic-bezier(0.4,0,0.2,1)';setTimeout(function(){fill.style.width=pct+'%';},100);}
+if(xpText)xpText.textContent=xp.toLocaleString()+' / '+lv.maxXP.toLocaleString()+' XP';
+var streak=crmDashProfile?crmDashProfile.streak_current||0:0;
+var best=crmDashProfile?crmDashProfile.streak_best||0:0;
+if(streakNum)streakNum.textContent=streak;
+if(streakBest)streakBest.textContent='Mejor: '+best;
+/* streak days */
+var days=document.querySelectorAll('.crm-dash-day');
+var today=new Date().getDay();
+var dayMap=[6,0,1,2,3,4,5];
+var todayIdx=dayMap[today];
+days.forEach(function(d,i){
+d.classList.remove('active');
+if(i<=todayIdx&&i>(todayIdx-streak))d.classList.add('active');
+});
+}
+
+/* === KPI CARDS === */
+function crmDashRenderKPIs(){
+var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
+var total=pros.length;
+var ganados=pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length;
+var tasa=total>0?Math.round((ganados/total)*100):0;
+var calientes=pros.filter(function(p){return p.etapa==='interesado'||p.etapa==='presentacion';}).length;
+var map={
+'crm-dash-kpi-total':{v:total,s:''},
+'crm-dash-kpi-cerrados':{v:ganados,s:''},
+'crm-dash-kpi-tasa':{v:tasa,s:'%'},
+'crm-dash-kpi-calientes':{v:calientes,s:''}
+};
+Object.keys(map).forEach(function(id){
+var el=document.getElementById(id);
+if(el)crmDashAnimateCount(el,map[id].v,map[id].s,1200);
+});
+}
+
+/* === FUNNEL === */
+function crmDashRenderFunnel(){
+var el=document.getElementById('crm-dash-funnel');if(!el)return;
+var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
+if(pros.length===0){el.innerHTML='<div style="text-align:center;padding:30px;opacity:0.5">Agrega prospectos para ver el funnel</div>';return;}
+var stages=['nuevo','contactado','interesado','presentacion','cerrado_ganado'];
+var counts={};var max=0;
+stages.forEach(function(s){var c=pros.filter(function(p){return p.etapa===s;}).length;counts[s]=c;if(c>max)max=c;});
+if(max===0)max=1;
+var widths=[100,85,65,45,30];
+var h='';
+stages.forEach(function(s,i){
+var info=CRM_ETAPAS[s]||{label:s,color:'#888',emoji:''};
+var c=counts[s];
+var w=c>0?Math.max(widths[i],Math.round((c/max)*100)):widths[i];
+h+='<div class="crm-dash-funnel-stage" style="width:'+w+'%;background:linear-gradient(135deg,'+info.color+'cc,'+info.color+'44);border-left:4px solid '+info.color+';animation-delay:'+(i*0.15)+'s">';
+h+='<span class="crm-dash-funnel-label">'+info.emoji+' '+info.label+'</span>';
+h+='<span class="crm-dash-funnel-count">'+c+'</span>';
+h+='</div>';
+});
+el.innerHTML=h;
+}
+
+/* === DONUT === */
+function crmDashRenderDonut(){
+var donut=document.getElementById('crm-dash-donut');
+var center=document.getElementById('crm-dash-donut-center');
+var legend=document.getElementById('crm-dash-donut-legend');
+if(!donut)return;
+var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
+var total=pros.length;
+if(total===0){if(center)center.textContent='0';return;}
+var stages=Object.keys(CRM_ETAPAS);
+var parts=[];var deg=0;var legendH='';
+stages.forEach(function(s){
+var c=pros.filter(function(p){return p.etapa===s;}).length;
+var pct=(c/total)*360;
+var info=CRM_ETAPAS[s];
+parts.push(info.color+' '+deg+'deg '+(deg+pct)+'deg');
+deg+=pct;
+legendH+='<div class="crm-dash-legend-item"><span class="crm-dash-legend-dot" style="background:'+info.color+'"></span>'+info.label+' <strong>'+c+'</strong></div>';
+});
+donut.style.background='conic-gradient('+parts.join(',')+')';
+if(center)center.textContent=total;
+if(legend)legend.innerHTML=legendH;
+}
+
+/* === ACTIVITY BARS === */
+function crmDashRenderActivity(){
+var el=document.getElementById('crm-dash-activity');if(!el)return;
+var data=crmDashActivity||[];
+var labels=['L','M','X','J','V','S','D'];
+if(data.length===0){
+var h='<div class="crm-dash-activity-bars">';
+for(var i=0;i<7;i++){
+h+='<div class="crm-dash-bar-wrap"><div class="crm-dash-bar" style="height:4px"></div><div class="crm-dash-bar-label">'+labels[i]+'</div><div class="crm-dash-bar-val">0</div></div>';
+}
+h+='</div>';el.innerHTML=h;return;
+}
+var max=0;data.forEach(function(d){if(d.xp>max)max=d.xp;});
+if(max===0)max=1;
+var h='<div class="crm-dash-activity-bars">';
+for(var i=0;i<Math.min(data.length,7);i++){
+var pct=Math.round((data[i].xp/max)*100);
+h+='<div class="crm-dash-bar-wrap"><div class="crm-dash-bar" style="height:'+pct+'%;animation-delay:'+(i*0.1)+'s"></div><div class="crm-dash-bar-label">'+(data[i].label||labels[i%7])+'</div><div class="crm-dash-bar-val">'+data[i].xp+'</div></div>';
+}
+h+='</div>';el.innerHTML=h;
+}
+
+/* === PIPELINE SPEED === */
+function crmDashRenderPipelineSpeed(){
+var el=document.getElementById('crm-dash-pipeline-speed');if(!el)return;
+var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
+if(pros.length===0){el.innerHTML='<div style="text-align:center;padding:30px;opacity:0.5">Agrega prospectos para ver velocidad</div>';return;}
+var stages=['nuevo','contactado','interesado','presentacion','cerrado_ganado'];
+var avgs={};var maxAvg=0;
+stages.forEach(function(s){
+var sp=pros.filter(function(p){return p.etapa===s;});
+if(sp.length===0){avgs[s]=0;return;}
+var totalDays=0;
+sp.forEach(function(p){
+var c=new Date(p.created_at);var u=new Date(p.updated_at);
+totalDays+=Math.max(1,Math.ceil((u-c)/(86400000)));
+});
+avgs[s]=Math.ceil(totalDays/sp.length);
+if(avgs[s]>maxAvg)maxAvg=avgs[s];
+});
+if(maxAvg===0)maxAvg=1;
+var h='';
+stages.forEach(function(s,i){
+var info=CRM_ETAPAS[s]||{label:s,color:'#888'};
+var w=Math.round((avgs[s]/maxAvg)*100);
+h+='<div class="crm-dash-speed-row" style="animation-delay:'+(i*0.1)+'s">';
+h+='<div class="crm-dash-speed-label">'+info.emoji+' '+info.label+'</div>';
+h+='<div class="crm-dash-speed-track"><div class="crm-dash-speed-bar" style="width:'+w+'%;background:'+info.color+'"></div></div>';
+h+='<div class="crm-dash-speed-val">'+avgs[s]+' d</div>';
+h+='</div>';
+});
+el.innerHTML=h;
+}
+
+/* === ACHIEVEMENTS === */
+function crmDashRenderAchievements(){
+var el=document.getElementById('crm-dash-achievements');if(!el)return;
+var unlocked=crmDashProfile&&crmDashProfile.achievements?crmDashProfile.achievements:[];
+var h='';
+CRM_ACHIEVEMENTS.forEach(function(a){
+var isU=false;
+for(var i=0;i<unlocked.length;i++){if(typeof unlocked[i]==='string'&&unlocked[i]===a.id){isU=true;break;}if(typeof unlocked[i]==='object'&&unlocked[i].id===a.id){isU=true;break;}}
+h+='<div class="crm-dash-badge '+(isU?'unlocked':'locked')+'" title="'+a.desc+'">';
+h+='<div class="crm-dash-badge-icon">'+(isU?a.emoji:'🔒')+'</div>';
+h+='<div class="crm-dash-badge-name">'+a.name+'</div>';
+h+='<div class="crm-dash-badge-desc">'+a.desc+'</div>';
+h+='</div>';
+});
+el.innerHTML=h;
+}
+
+/* === LEADERBOARD === */
+function crmDashRenderLeaderboard(){
+var el=document.getElementById('crm-dash-leaderboard');if(!el)return;
+var lb=crmDashLeaderboard||[];
+if(lb.length===0){el.innerHTML='<div style="text-align:center;padding:30px;opacity:0.5">Sin datos de equipo aun</div>';return;}
+var medals=['🥇','🥈','🥉'];
+var h='';
+lb.forEach(function(u,i){
+var isMe=CU&&u.user_ref===CU.username;
+var lv=crmDashGetLevel(u.xp||0);
+var initial=u.user_ref?u.user_ref.charAt(0).toUpperCase():'?';
+h+='<div class="crm-dash-lb-row'+(isMe?' crm-dash-lb-me':'')+'">';
+h+='<div class="crm-dash-lb-rank">'+(i<3?medals[i]:(i+1))+'</div>';
+h+='<div class="crm-dash-lb-avatar" style="background:'+lv.color+'">'+initial+'</div>';
+h+='<div class="crm-dash-lb-info"><div class="crm-dash-lb-name">'+u.user_ref+'</div><div class="crm-dash-lb-level">'+lv.emoji+' '+lv.name+'</div></div>';
+h+='<div class="crm-dash-lb-xp">'+((u.xp||0).toLocaleString())+' XP</div>';
+h+='</div>';
+});
+el.innerHTML=h;
+}
+
+/* === XP AWARD === */
+async function crmDashAddXP(action_type,details){
+var amt=CRM_XP_VALUES[action_type]||0;if(!amt||!CU)return;
+var r=await crmDashApi('add_xp',{xp_amount:amt,action_type:action_type,details:details||''});
+if(r&&r.data){
+var old=crmDashProfile?crmDashProfile.level||1:1;
+crmDashProfile=r.data.profile||r.data;
+if(r.data.leveled_up)crmDashCelebrate('levelup');
+crmDashRenderXPHero();
+crmDashCheckAchievements();
+}
+}
+
+/* === CHECK ACHIEVEMENTS === */
+async function crmDashCheckAchievements(){
+if(!crmDashProfile)return;
+var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
+var unlocked=crmDashProfile.achievements||[];
+var uIds=unlocked.map(function(a){return typeof a==='string'?a:a.id;});
+var checks={
+first_close:function(){return(crmDashProfile.total_closed||0)>=1||pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length>=1;},
+streak_7:function(){return(crmDashProfile.streak_best||0)>=7;},
+century:function(){return pros.length>=100;},
+velocity:function(){var wa=new Date();wa.setDate(wa.getDate()-7);return pros.filter(function(p){return p.etapa==='cerrado_ganado'&&new Date(p.updated_at)>=wa;}).length>=5;},
+pipeline_king:function(){return pros.filter(function(p){return p.etapa!=='cerrado_ganado'&&p.etapa!=='cerrado_perdido';}).length>=50;},
+perfectionist:function(){if(pros.length<5)return false;return(pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length/pros.length)*100>=80;},
+mvp:function(){return crmDashLeaderboard.length>0&&crmDashLeaderboard[0]&&crmDashLeaderboard[0].user_ref===CU.username;},
+streak_30:function(){return(crmDashProfile.streak_best||0)>=30;},
+explorer:function(){return(crmDashProfile.level||1)>=2;},
+diamond:function(){return(crmDashProfile.level||1)>=6;},
+legend:function(){return(crmDashProfile.level||1)>=7;}
+};
+for(var id in checks){
+if(uIds.indexOf(id)<0&&checks[id]()){
+var ach=CRM_ACHIEVEMENTS.find(function(a){return a.id===id;});
+if(ach){
+await crmDashApi('unlock_achievement',{achievement_id:id,achievement_name:ach.name,achievement_emoji:ach.emoji});
+uIds.push(id);
+crmDashCelebrate('achievement');
+crmToast(ach.emoji+' '+ach.name+' desbloqueado!');
+}
+}
+}
+crmDashProfile.achievements=uIds;
+crmDashRenderAchievements();
+}
+
+/* === CELEBRATIONS === */
+function crmDashCelebrate(type){
+crmDashConfetti(type==='levelup'?50:type==='close'?30:20);
+if(type==='levelup'){
+var ov=document.createElement('div');
+ov.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;animation:crm-dash-fadeout 3s forwards';
+ov.innerHTML='<div style="font-size:72px;font-weight:900;color:#FFD700;text-shadow:0 0 40px rgba(255,215,0,0.8);animation:crm-dash-popup 0.5s cubic-bezier(0.34,1.56,0.64,1)">LEVEL UP!</div>';
+document.body.appendChild(ov);
+setTimeout(function(){if(ov.parentNode)ov.parentNode.removeChild(ov);},3000);
+}
+}
+
+function crmDashConfetti(count){
+var c=document.getElementById('crm-dash-confetti');
+if(!c){c=document.createElement('div');c.id='crm-dash-confetti';c.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9999';document.body.appendChild(c);}
+c.innerHTML='';c.style.display='block';
+var cols=['#FFD700','#FF6B35','#25D366','#7F77DD','#1CE8FF','#E91E9C','#FF4757'];
+for(var i=0;i<count;i++){
+var p=document.createElement('div');
+var sz=Math.random()*10+4;
+var col=cols[Math.floor(Math.random()*cols.length)];
+var dur=(Math.random()*2+2).toFixed(1);
+var dl=(Math.random()*0.5).toFixed(2);
+var x=Math.random()*100;
+var shapes=['50%','0','2px'];
+p.style.cssText='position:absolute;width:'+sz+'px;height:'+sz+'px;background:'+col+';border-radius:'+shapes[Math.floor(Math.random()*3)]+';left:'+x+'%;top:-10px;opacity:1;animation:crm-dash-confetti-fall '+dur+'s linear '+dl+'s forwards';
+c.appendChild(p);
+}
+setTimeout(function(){c.innerHTML='';c.style.display='none';},5000);
+}
+
+/* === INIT VIEW LISTENERS === */
+(function(){
+var btns=document.querySelectorAll('.crm-view-btn');
+btns.forEach(function(b){
+b.addEventListener('click',function(){
+var t=this.textContent;
+if(t.includes('Kanban'))crmSwitchView('kanban');
+else if(t.includes('Lista'))crmSwitchView('lista');
+else if(t.includes('trica'))crmSwitchView('metricas');
+});
+});
+})();
+
+
 </script>
 <script src="/fix-aprobar.js"></script>
 </body>
