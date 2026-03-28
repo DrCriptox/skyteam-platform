@@ -8089,6 +8089,7 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 
 
+
 /* ========================================
    CRM MISSING FUNCTIONS - Sky Prospectos
    ======================================== */
@@ -8131,9 +8132,11 @@ function crmInjectExtraFields() {
   if (!form || form.dataset.extraInjected) return;
   form.dataset.extraInjected = '1';
 
-  /* --- find insertion point (before submit button) --- */
+  /* --- find insertion point (before submit actions div) --- */
   var submitBtn = form.querySelector('button[type="submit"]');
   if (!submitBtn) return;
+  var insertRef = submitBtn.closest('.crm-form-actions') || submitBtn.parentElement;
+  if (insertRef.parentElement !== form) insertRef = submitBtn;
 
   var wrapper = document.createElement('div');
   wrapper.innerHTML = ''
@@ -8170,7 +8173,7 @@ function crmInjectExtraFields() {
     + '  </div>'
     + '</div>';
 
-  form.insertBefore(wrapper, submitBtn);
+  form.insertBefore(wrapper, insertRef);
 
   /* --- Build star buttons for each row --- */
   wrapper.querySelectorAll('.crm-rating-row').forEach(function(row) {
@@ -8288,7 +8291,7 @@ function openCrmModalAdd(editId) {
       document.getElementById('crm-input-nombre').value = p.nombre || '';
       document.getElementById('crm-input-telefono').value = p.telefono || '';
       document.getElementById('crm-input-email').value = p.email || '';
-      document.getElementById('crm-input-etapa').value = p.etapa || 'nuevo';
+      document.getElentById('crm-input-etapa').value = p.etapa || 'nuevo';
       document.getElementById('crm-input-fuente').value = p.fuente || 'manual';
       document.getElementById('crm-input-temperatura').value = p.temperatura || 50;
       document.getElementById('crm-input-notas').value = p.notas || '';
@@ -8324,7 +8327,7 @@ function closeCrmModalAdd() {
       var prospecto = {
         nombre: document.getElementById('crm-input-nombre').value.trim(),
         telefono: document.getElementById('crm-input-telefono').value.trim(),
-        email: document.getElementById('crm-input-email').value.trim(),
+        email: document.getElementById('crmrm-input-email').value.trim(),
         etapa: document.getElementById('crm-input-etapa').value,
         fuente: document.getElementById('crm-input-fuente').value,
         temperatura: parseInt(document.getElementById('crm-input-temperatura').value) || 50,
@@ -8678,7 +8681,6 @@ function sendViaCrmWhatsapp() {
   closeCrmModalWa();
   if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
 }
-
 </script>
 <script src="/fix-aprobar.js"></script>
 </body>
