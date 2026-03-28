@@ -8088,12 +8088,14 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 
 
+
 /* ========================================
    CRM MISSING FUNCTIONS - Sky Prospectos
    ======================================== */
 
 /* --- initSkyProspectos (called by navigate) --- */
 function initSkyProspectos() {
+  crmInjectExtraFields();
   crmLoadData().then(function() {
     crmSwitchView(crmCurrentView || 'kanban');
   });
@@ -8121,13 +8123,163 @@ crmSwitchView = function(view) {
   if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
 };
 
+/* ========================================
+   INJECT: Calificacion + Instagram fields
+   ======================================== */
+function crmInjectExtraFields() {
+  var form = document.getElementById('crm-form-add');
+  if (!form || form.dataset.extraInjected) return;
+  form.dataset.extraInjected = '1';
+
+  /* --- find insertion point (before submit button) --- */
+  var submitBtn = form.querySelector('button[type="submit"]');
+  if (!submitBtn) return;
+
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = ''
+    /* --- Instagram --- */
+    + '<div style="margin:12px 0 8px">'
+    + '  <label style="display:block;font-size:12px;color:#aaa;margin-bottom:4px">Instagram del prospecto</label>'
+    + '  <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px 12px">'
+    + '    <span style="font-size:18px">&#xf16d;</span>'
+    + '    <span style="color:#E1306C;font-size:16px;font-weight:bold">@</span>'
+    + '    <input type="text" id="crm-input-instagram" placeholder="usuario_instagram" '
+    + '      style="flex:1;background:transparent;border:none;color:#F0EDE6;font-size:14px;outline:none" />'
+    + '  </div>'
+    + '</div>'
+    /* --- Calificacion 4 caracteristicas --- */
+    + '<div style="margin:14px 0 10px">'
+    + '  <label style="display:block;font-size:12px;color:#aaa;margin-bottom:8px">Calificacion del prospecto</label>'
+    + '  <div class="crm-rating-grid">'
+    + '    <div class="crm-rating-row" data-field="calif_positivo">'
+    + '      <span class="crm-rating-label">&#x1F60A; Positivo</span>'
+    + '      <div class="crm-rating-stars"></div>'
+    + '    </div>'
+    + '    <div class="crm-rating-row" data-field="calif_emprendedor">'
+    + '      <span class="crm-rating-label">&#x1F680; Emprendedor</span>'
+    + '      <div class="crm-rating-stars"></div>'
+    + '    </div>'
+    + '    <div class="crm-rating-row" data-field="calif_dinero">'
+    + '      <span class="crm-rating-label">&#x1F4B0; Dinero</span>'
+    + '      <div class="crm-rating-stars"></div>'
+    + '    </div>'
+    + '    <div class="crm-rating-row" data-field="calif_lider">'
+    + '      <span class="crm-rating-label">&#x1F451; Lider</span>'
+    + '      <div class="crm-rating-stars"></div>'
+    + '    </div>'
+    + '  </div>'
+    + '</div>';
+
+  form.insertBefore(wrapper, submitBtn);
+
+  /* --- Build star buttons for each row --- */
+  wrapper.querySelectorAll('.crm-rating-row').forEach(function(row) {
+    var starsDiv = row.querySelector('.crm-rating-stars');
+    var field = row.dataset.field;
+    for (var i = 1; i <= 5; i++) {
+      var star = document.createElement('span');
+      star.className = 'crm-star';
+      star.dataset.value = i;
+      star.dataset.field = field;
+      star.textContent = '\u2605';
+      star.addEventListener('click', function() {
+        var val = parseInt(this.dataset.value);
+        var f = this.dataset.field;
+        this.parentNode.dataset.selected = val;
+        this.parentNode.querySelectorAll('.crm-star').forEach(function(s) {
+          s.classList.toggle('crm-star-active', parseInt(s.dataset.value) <= val);
+        });
+      });
+      starsDiv.appendChild(star);
+    }
+    starsDiv.dataset.selected = '0';
+  });
+
+  /* --- Inject CSS once --- */
+  if (!document.getElementById('crm-rating-css')) {
+    var style = document.createElement('style');
+    style.id = 'crm-rating-css';
+    style.textContent = ''
+      + '.crm-rating-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }'
+      + '.crm-rating-row { display:flex; align-items:center; justify-content:space-between; '
+      + '  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); '
+      + '  border-radius:8px; padding:6px 10px; }'
+      + '.crm-rating-label { font-size:11px; color:#ccc; white-space:nowrap; }'
+      + '.crm-rating-stars { display:flex; gap:2px; }'
+      + '.crm-star { font-size:16px; cursor:pointer; color:rgba(255,255,255,0.15); transition:color .15s; }'
+      + '.crm-star:hover, .crm-star-active { color:#FFD700; }'
+      + '@media(max-width:480px){ .crm-rating-grid { grid-template-columns:1fr 1fr; gap:6px; } '
+      + '  .crm-rating-row { padding:5px 8px; } .crm-rating-label { font-size:10px; } .crm-star { font-size:14px; } }'
+      /* --- Instagram badge on cards --- */
+      + '.crm-ig-link { display:inline-flex; align-items:center; gap:3px; color:#E1306C; '
+      + '  font-size:11px; text-decoration:none; background:rgba(225,48,108,0.1); '
+      + '  padding:2px 7px; border-radius:20px; margin-top:4px; }'
+      + '.crm-ig-link:hover { background:rgba(225,48,108,0.25); }'
+      /* --- Rating dots on cards --- */
+      + '.crm-card-ratings { display:flex; gap:6px; flex-wrap:wrap; margin-top:5px; }'
+      + '.crm-card-rating-item { font-size:10px; color:#aaa; display:flex; align-items:center; gap:2px; }'
+      + '.crm-card-rating-item .crm-mini-stars { color:#FFD700; font-size:9px; letter-spacing:-1px; }'
+      /* --- Detail modal ratings --- */
+      + '.crm-detail-ratings { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0; }'
+      + '.crm-detail-rating-item { background:rgba(255,255,255,0.04); border-radius:8px; padding:8px 10px; '
+      + '  display:flex; align-items:center; justify-content:space-between; }'
+      + '.crm-detail-rating-label { font-size:12px; color:#ccc; }'
+      + '.crm-detail-rating-stars { color:#FFD700; font-size:14px; letter-spacing:1px; }';
+    document.head.appendChild(style);
+  }
+}
+
+/* --- Helper: get rating value from form --- */
+function crmGetRating(field) {
+  var row = document.querySelector('.crm-rating-row[data-field="' + field + '"] .crm-rating-stars');
+  return row ? parseInt(row.dataset.selected) || 0 : 0;
+}
+
+/* --- Helper: set rating value in form --- */
+function crmSetRating(field, value) {
+  var row = document.querySelector('.crm-rating-row[data-field="' + field + '"] .crm-rating-stars');
+  if (!row) return;
+  row.dataset.selected = value || 0;
+  row.querySelectorAll('.crm-star').forEach(function(s) {
+    s.classList.toggle('crm-star-active', parseInt(s.dataset.value) <= (value || 0));
+  });
+}
+
+/* --- Helper: render stars as text --- */
+function crmStarsText(n, max) {
+  max = max || 5;
+  n = n || 0;
+  var s = '';
+  for (var i = 0; i < max; i++) s += i < n ? '\u2605' : '\u2606';
+  return s;
+}
+
+/* --- Helper: Instagram deep link (opens app or browser) --- */
+function crmInstagramUrl(username) {
+  if (!username) return '';
+  username = username.replace(/^@/, '').trim();
+  /* Try app deep link first, fallback to web */
+  return 'https://instagram.com/' + username;
+}
+function crmInstagramAppUrl(username) {
+  if (!username) return '';
+  username = username.replace(/^@/, '').trim();
+  return 'instagram://user?username=' + username;
+}
+
 /* --- Modal: Agregar / Editar Prospecto --- */
 function openCrmModalAdd(editId) {
   var modal = document.getElementById('crm-modal-add');
   var title = document.getElementById('crm-modal-add-title');
   var form = document.getElementById('crm-form-add');
   if (!modal) return;
+  crmInjectExtraFields();
   form.reset();
+  /* Reset ratings */
+  ['calif_positivo','calif_emprendedor','calif_dinero','calif_lider'].forEach(function(f) { crmSetRating(f, 0); });
+  var igInput = document.getElementById('crm-input-instagram');
+  if (igInput) igInput.value = '';
+
   if (editId) {
     crmEditingId = editId;
     title.textContent = 'Editar Prospecto';
@@ -8142,6 +8294,12 @@ function openCrmModalAdd(editId) {
       document.getElementById('crm-input-notas').value = p.notas || '';
       document.getElementById('crm-input-valor-estimado').value = p.valor_estimado || '';
       document.getElementById('crm-input-fecha-cierre').value = p.fecha_cierre || '';
+      /* New fields */
+      if (igInput) igInput.value = p.instagram || '';
+      crmSetRating('calif_positivo', p.calif_positivo);
+      crmSetRating('calif_emprendedor', p.calif_emprendedor);
+      crmSetRating('calif_dinero', p.calif_dinero);
+      crmSetRating('calif_lider', p.calif_lider);
     }
   } else {
     crmEditingId = null;
@@ -8162,6 +8320,7 @@ function closeCrmModalAdd() {
   if (form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
+      var igInput = document.getElementById('crm-input-instagram');
       var prospecto = {
         nombre: document.getElementById('crm-input-nombre').value.trim(),
         telefono: document.getElementById('crm-input-telefono').value.trim(),
@@ -8171,7 +8330,13 @@ function closeCrmModalAdd() {
         temperatura: parseInt(document.getElementById('crm-input-temperatura').value) || 50,
         notas: document.getElementById('crm-input-notas').value.trim(),
         valor_estimado: parseFloat(document.getElementById('crm-input-valor-estimado').value) || 0,
-        fecha_cierre_estimada: document.getElementById('crm-input-fecha-cierre').value || null
+        fecha_cierre_estimada: document.getElementById('crm-input-fecha-cierre').value || null,
+        /* New fields */
+        instagram: igInput ? igInput.value.replace(/^@/, '').trim() : '',
+        calif_positivo: crmGetRating('calif_positivo'),
+        calif_emprendedor: crmGetRating('calif_emprendedor'),
+        calif_dinero: crmGetRating('calif_dinero'),
+        calif_lider: crmGetRating('calif_lider')
       };
       if (!prospecto.nombre) { crmToast('Ingresa el nombre del prospecto', 'error'); return; }
       var action = crmEditingId ? 'update' : 'add';
@@ -8216,7 +8381,7 @@ if (typeof crmEsc === 'undefined') {
   };
 }
 
-/* --- Modal: Detalle de Prospecto --- */
+/* --- Modal: Detalle de Prospecto (updated with ratings + IG) --- */
 function openCrmDetail(id) {
   var p = crmProspectos.find(function(x) { return x.id === id; });
   if (!p) return;
@@ -8238,6 +8403,61 @@ function openCrmDetail(id) {
   setT('crm-detail-notas', p.notas);
   var headerTitle = modal.querySelector('.crm-modal-header h2, .crm-modal-header h3');
   if (headerTitle) headerTitle.textContent = p.nombre || 'Prospecto';
+
+  /* --- Inject Instagram link in detail --- */
+  var igContainer = el('crm-detail-instagram');
+  if (!igContainer) {
+    var telefonoEl = el('crm-detail-telefono');
+    if (telefonoEl && telefonoEl.parentNode) {
+      var igDiv = document.createElement('div');
+      igDiv.id = 'crm-detail-instagram';
+      igDiv.style.cssText = 'margin:8px 0';
+      telefonoEl.parentNode.parentNode.insertBefore(igDiv, telefonoEl.parentNode.nextSibling);
+      igContainer = igDiv;
+    }
+  }
+  if (igContainer) {
+    if (p.instagram) {
+      igContainer.innerHTML = '<span style="font-size:12px;color:#888">Instagram:</span> '
+        + '<a href="' + crmInstagramUrl(p.instagram) + '" target="_blank" '
+        + 'onclick="var w=window.open(\'' + crmInstagramAppUrl(p.instagram) + '\');setTimeout(function(){try{if(!w||w.closed)window.open(\'' + crmInstagramUrl(p.instagram) + '\',\'_blank\')}catch(e){window.open(\'' + crmInstagramUrl(p.instagram) + '\',\'_blank\')}},500);return false;" '
+        + 'class="crm-ig-link" style="font-size:13px">'
+        + '<span style="color:#E1306C;font-weight:bold">@' + crmEsc(p.instagram) + '</span></a>';
+    } else {
+      igContainer.innerHTML = '';
+    }
+  }
+
+  /* --- Inject Ratings in detail --- */
+  var ratingsContainer = el('crm-detail-ratings');
+  if (!ratingsContainer) {
+    var notasEl = el('crm-detail-notas');
+    if (notasEl && notasEl.parentNode) {
+      var rDiv = document.createElement('div');
+      rDiv.id = 'crm-detail-ratings';
+      rDiv.className = 'crm-detail-ratings';
+      notasEl.parentNode.parentNode.insertBefore(rDiv, notasEl.parentNode);
+      ratingsContainer = rDiv;
+    }
+  }
+  if (ratingsContainer) {
+    var ratings = [
+      { key: 'calif_positivo', emoji: '\uD83D\uDE0A', label: 'Positivo' },
+      { key: 'calif_emprendedor', emoji: '\uD83D\uDE80', label: 'Emprendedor' },
+      { key: 'calif_dinero', emoji: '\uD83D\uDCB0', label: 'Dinero' },
+      { key: 'calif_lider', emoji: '\uD83D\uDC51', label: 'Lider' }
+    ];
+    var rhtml = '';
+    ratings.forEach(function(r) {
+      var val = p[r.key] || 0;
+      rhtml += '<div class="crm-detail-rating-item">'
+        + '<span class="crm-detail-rating-label">' + r.emoji + ' ' + r.label + '</span>'
+        + '<span class="crm-detail-rating-stars">' + crmStarsText(val) + '</span>'
+        + '</div>';
+    });
+    ratingsContainer.innerHTML = rhtml;
+  }
+
   var timeline = el('crm-detail-interactions-timeline');
   if (timeline && p.interacciones) {
     var html = '';
@@ -8260,10 +8480,97 @@ function closeCrmModalDetail() {
 /* --- Click en card del kanban para abrir detalle --- */
 document.addEventListener('click', function(e) {
   var card = e.target.closest('.crm-prospect-card, .crm-card');
+  /* Don't open detail if clicking the Instagram link */
+  if (e.target.closest('.crm-ig-link')) return;
   if (card && card.dataset.id) {
     openCrmDetail(card.dataset.id);
   }
 });
+
+/* ========================================
+   PATCH: crmRenderKanban & crmRenderList
+   Add ratings + Instagram to cards
+   ======================================== */
+(function() {
+  /* Patch kanban render to add IG + ratings */
+  if (typeof crmRenderKanban === 'function') {
+    var _origKanban = crmRenderKanban;
+    crmRenderKanban = function() {
+      _origKanban.apply(this, arguments);
+      /* After render, inject extra info into each card */
+      setTimeout(function() {
+        document.querySelectorAll('.crm-prospect-card, .crm-card').forEach(function(card) {
+          if (card.dataset.extraDone) return;
+          card.dataset.extraDone = '1';
+          var id = card.dataset.id;
+          var p = crmProspectos.find(function(x) { return x.id === id; });
+          if (!p) return;
+          var extra = document.createElement('div');
+          extra.style.cssText = 'margin-top:6px';
+          var html = '';
+          /* Instagram badge */
+          if (p.instagram) {
+            html += '<a href="' + crmInstagramUrl(p.instagram) + '" target="_blank" '
+              + 'onclick="event.stopPropagation();window.open(\'' + crmInstagramAppUrl(p.instagram) + '\');return false;" '
+              + 'class="crm-ig-link">@' + crmEsc(p.instagram) + '</a>';
+          }
+          /* Compact ratings */
+          var hasRating = p.calif_positivo || p.calif_emprendedor || p.calif_dinero || p.calif_lider;
+          if (hasRating) {
+            html += '<div class="crm-card-ratings">';
+            if (p.calif_positivo) html += '<span class="crm-card-rating-item">\uD83D\uDE0A<span class="crm-mini-stars">' + crmStarsText(p.calif_positivo) + '</span></span>';
+            if (p.calif_emprendedor) html += '<span class="crm-card-rating-item">\uD83D\uDE80<span class="crm-mini-stars">' + crmStarsText(p.calif_emprendedor) + '</span></span>';
+            if (p.calif_dinero) html += '<span class="crm-card-rating-item">\uD83D\uDCB0<span class="crm-mini-stars">' + crmStarsText(p.calif_dinero) + '</span></span>';
+            if (p.calif_lider) html += '<span class="crm-card-rating-item">\uD83D\uDC51<span class="crm-mini-stars">' + crmStarsText(p.calif_lider) + '</span></span>';
+            html += '</div>';
+          }
+          if (html) {
+            extra.innerHTML = html;
+            card.appendChild(extra);
+          }
+        });
+      }, 100);
+    };
+  }
+
+  /* Same patch for list render */
+  if (typeof crmRenderList === 'function') {
+    var _origList = crmRenderList;
+    crmRenderList = function() {
+      _origList.apply(this, arguments);
+      setTimeout(function() {
+        document.querySelectorAll('.crm-prospect-card, .crm-card').forEach(function(card) {
+          if (card.dataset.extraDone) return;
+          card.dataset.extraDone = '1';
+          var id = card.dataset.id;
+          var p = crmProspectos.find(function(x) { return x.id === id; });
+          if (!p) return;
+          var extra = document.createElement('div');
+          extra.style.cssText = 'margin-top:6px';
+          var html = '';
+          if (p.instagram) {
+            html += '<a href="' + crmInstagramUrl(p.instagram) + '" target="_blank" '
+              + 'onclick="event.stopPropagation();window.open(\'' + crmInstagramAppUrl(p.instagram) + '\');return false;" '
+              + 'class="crm-ig-link">@' + crmEsc(p.instagram) + '</a>';
+          }
+          var hasRating = p.calif_positivo || p.calif_emprendedor || p.calif_dinero || p.calif_lider;
+          if (hasRating) {
+            html += '<div class="crm-card-ratings">';
+            if (p.calif_positivo) html += '<span class="crm-card-rating-item">\uD83D\uDE0A<span class="crm-mini-stars">' + crmStarsText(p.calif_positivo) + '</span></span>';
+            if (p.calif_emprendedor) html += '<span class="crm-card-rating-item">\uD83D\uDE80<span class="crm-mini-stars">' + crmStarsText(p.calif_emprendedor) + '</span></span>';
+            if (p.calif_dinero) html += '<span class="crm-card-rating-item">\uD83D\uDCB0<span class="crm-mini-stars">' + crmStarsText(p.calif_dinero) + '</span></span>';
+            if (p.calif_lider) html += '<span class="crm-card-rating-item">\uD83D\uDC51<span class="crm-mini-stars">' + crmStarsText(p.calif_lider) + '</span></span>';
+            html += '</div>';
+          }
+          if (html) {
+            extra.innerHTML = html;
+            card.appendChild(extra);
+          }
+        });
+      }, 100);
+    };
+  }
+})();
 
 /* --- Interacciones --- */
 async function addCrmInteraction() {
@@ -8371,6 +8678,7 @@ function sendViaCrmWhatsapp() {
   closeCrmModalWa();
   if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
 }
+
 </script>
 <script src="/fix-aprobar.js"></script>
 </body>
