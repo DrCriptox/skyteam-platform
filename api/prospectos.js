@@ -80,7 +80,6 @@ export default async function handler(req, res) {
         fecha_cierre_estimada: prospecto.fecha_cierre_estimada || null,
         instagram: prospecto.instagram || null,
         calif_positivo: prospecto.calif_positivo || 0,
-        calif_social: prospecto.calif_social || 0,
         calif_emprendedor: prospecto.calif_emprendedor || 0,
         calif_dinero: prospecto.calif_dinero || 0,
         calif_lider: prospecto.calif_lider || 0
@@ -108,7 +107,7 @@ export default async function handler(req, res) {
           valor_estimado: p.valor_estimado || 0,
           fecha_cierre_estimada: p.fecha_cierre_estimada || null,
           instagram: p.instagram || null,
-          calif_positivo: p.calif_positivo || 0, calif_social: p.calif_social || 0,
+          calif_positivo: p.calif_positivo || 0,
           calif_emprendedor: p.calif_emprendedor || 0,
           calif_dinero: p.calif_dinero || 0, calif_lider: p.calif_lider || 0
         };
