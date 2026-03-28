@@ -7524,573 +7524,6 @@ window.addEventListener('load', function() {
   // Small delay to let sidebar render
   setTimeout(showInstallMenuBtn, 500);
 });
-/* ══════════════════════════════════════════════════════════════
-   SKY PROSPECTOS — CRM Module
-   ══════════════════════════════════════════════════════════════ */
-var crmProspectos=[];var crmRecordatorios=[];var crmMetricas={};var crmCurrentView='kanban';var crmEditingId=null;var crmDetailId=null;var crmDragId=null;var crmLoading=false;var crmSearchTerm='';var crmReminderInterval=null;
-var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'🆕',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'📞',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'🔥',color:'#FFD700'},presentacion:{label:'Presentación',emoji:'🎯',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'✅',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'❌',color:'#E24B4A'}};
-var CRM_FUENTES={manual:'✍️',landing:'🌐',whatsapp:'💬',instagram:'📸',facebook:'📘',referido:'🤝',otro:'📌'};
-var CRM_TIPOS={llamada:'📞',whatsapp:'💬',reunion:'🤝',email:'📧',nota:'📝',presentacion:'🎯',seguimiento:'👁️',cierre:'✅'};
-
-async function crmApi(action,data){
-  if(!CU)return null;
-  try{var body=Object.assign({action:action,user:CU.username},data||{});
-  var r=await fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  var json=await r.json();if(!r.ok)throw new Error(json.error||'Error');return json;
-  }catch(e){console.error('CRM:',e.message);crmToast('Error: '+e.message,'error');return null;}}
-
-function crmToast(msg,type){
-  var t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:700;font-family:Nunito;z-index:9999;animation:fadeUp 0.3s ease;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
-  if(type==='error'){t.style.background='rgba(226,75,74,0.95)';t.style.color='#fff';}
-  else if(type==='success'){t.style.background='rgba(29,158,117,0.95)';t.style.color='#fff';}
-  else{t.style.background='rgba(28,232,255,0.95)';t.style.color='#030c1f';}
-  t.textContent=msg;document.body.appendChild(t);
-  setTimeout(function(){t.style.opacity='0';t.style.transition='opacity 0.3s';},2500);
-  setTimeout(function(){t.remove();},3000);}
-
-async function crmLoadData(){
-  if(crmLoading)return;crmLoading=true;
-  var res=await crmApi('getAll');crmLoading=false;if(!res)return;
-  crmProspectos=res.prospectos||[];crmRecordatorios=res.recordatorios||[];crmMetricas=res.metricas||{};
-  crmRenderAll();}
-
-function crmRenderAll(){crmRenderMetricsBar();crmRenderRemindersBar();
-  if(crmCurrentView==='kanban')crmRenderKanban();
-  else if(crmCurrentView==='list')crmRenderList();
-  else if(crmCurrentView==='metrics')crmRenderMetricsDashboard();}
-
-function crmRenderMetricsBar(){
-  var m=crmMetricas;var el=document.getElementById('crm-metrics-bar');if(!el)return;
-  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:4px;">'
-    +crmStat('👥',m.total||0,'Total','#1CE8FF')
-    +crmStat('🎯',(m.tasa_conversion||0)+'%','Tasa Cierre','#25D366')
-    +crmStat('🆕',m.nuevos_7d||0,'Nuevos 7d','#FFD700')
-    +crmStat('✅',m.cerrados_30d||0,'Cerrados 30d','#1D9E75')
-    +crmStat('💰','$'+((m.valor_pipeline||0).toLocaleString()),'Pipeline','#7F77DD')
-    +'</div>';}
-
-function crmStat(icon,num,label,color){
-  return '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;text-align:center;backdrop-filter:blur(8px);">'
-    +'<div style="font-size:18px;margin-bottom:2px;">'+icon+'</div>'
-    +'<div style="font-family:Nunito;font-size:20px;font-weight:900;color:'+color+';">'+num+'</div>'
-    +'<div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">'+label+'</div></div>';}
-
-function crmRenderRemindersBar(){
-  var el=document.getElementById('crm-reminders-bar');if(!el)return;
-  var now=new Date();var activos=(crmRecordatorios||[]).filter(function(r){return !r.completado;});
-  if(activos.length===0){el.style.display='none';return;}
-  el.style.display='block';
-  var html='<div style="font-size:13px;font-weight:800;color:#FFD700;margin-bottom:8px;">⏰ Recordatorios ('+activos.length+')</div>';
-  activos.forEach(function(r){
-    var fecha=new Date(r.fecha_recordatorio);var diff=fecha-now;
-    var urgente=diff<0;var pronto=diff<3600000&&diff>=0;
-    var nombre=r.prospectos?r.prospectos.nombre:'Prospecto';
-    var bc=urgente?'rgba(226,75,74,0.3)':pronto?'rgba(255,160,0,0.25)':'rgba(255,255,255,0.06)';
-    var bg=urgente?'rgba(226,75,74,0.06)':pronto?'rgba(255,160,0,0.04)':'rgba(255,255,255,0.02)';
-    html+='<div style="background:'+bg+';border:0.5px solid '+bc+';border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">'
-      +'<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:#fff;">'+crmEsc(nombre)+'</div>'
-      +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">'+crmEsc(r.mensaje||'Seguimiento')+'</div>'
-      +'<div style="font-size:10px;color:'+(urgente?'#E24B4A':pronto?'#FFA000':'rgba(255,255,255,0.25)')+';margin-top:3px;">'+(urgente?'⚠️ VENCIDO':'📅 '+crmFecha(fecha))+'</div></div>'
-      +'<button onclick="crmCompleteReminder(\''+r.id+'\')" style="background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Nunito;">✓</button></div>';});
-  el.innerHTML=html;}
-
-function crmRenderKanban(){
-  var kb=document.getElementById('crm-kanban');if(!kb)return;
-  var filtered=crmFilter();
-  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],cerrado:[]};
-  filtered.forEach(function(p){
-    if(p.etapa==='cerrado_ganado'||p.etapa==='cerrado_perdido')groups.cerrado.push(p);
-    else if(groups[p.etapa])groups[p.etapa].push(p);
-    else groups.nuevo.push(p);});
-  kb.querySelectorAll('.crm-column').forEach(function(col){
-    var etapa=col.getAttribute('data-etapa');var cards=col.querySelector('.crm-column-cards');
-    var count=col.querySelector('.crm-column-count');var list=groups[etapa]||[];
-    if(count)count.textContent=list.length;if(!cards)return;
-    var h='';list.forEach(function(p){h+=crmCard(p);});
-    if(!list.length)h='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.12);font-size:11px;">Sin prospectos</div>';
-    cards.innerHTML=h;});
-  crmSetupDrag();}
-
-function crmCard(p){
-  var ei=CRM_ETAPAS[p.etapa]||CRM_ETAPAS.nuevo;
-  var fi=CRM_FUENTES[(p.fuente||'manual').toLowerCase()]||'📌';
-  var temp=p.temperatura||50;var tc=temp<=33?'#1CE8FF':temp<=66?'#FFD700':'#E24B4A';
-  var da=Math.floor((Date.now()-new Date(p.updated_at).getTime())/86400000);
-  var dl=da===0?'Hoy':da===1?'Ayer':'Hace '+da+'d';
-  return '<div class="crm-prospect-card" draggable="true" data-id="'+p.id+'" onclick="crmOpenDetail(\''+p.id+'\')" style="background:rgba(4,15,40,0.7);border:0.5px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;cursor:grab;transition:all 0.15s;">'
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">'
-    +'<div style="font-size:13px;font-weight:700;color:#fff;flex:1;line-height:1.3;">'+crmEsc(p.nombre)+'</div>'
-    +'<span style="font-size:9px;padding:2px 6px;border-radius:10px;background:rgba(255,215,0,0.08);border:0.5px solid rgba(255,215,0,0.2);color:#FFD700;white-space:nowrap;">'+fi+'</span></div>'
-    +(p.telefono?'<div style="font-size:11px;color:rgba(255,255,255,0.35);font-family:monospace;">'+crmEsc(p.telefono)+'</div>':'')
-    +'<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:9px;color:rgba(255,255,255,0.2);">🌡️</span>'
-    +'<div style="flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">'
-    +'<div style="width:'+temp+'%;height:100%;border-radius:2px;background:'+tc+';"></div></div>'
-    +'<span style="font-size:10px;color:'+tc+';font-weight:700;">'+temp+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.04);font-size:10px;">'
-    +'<span style="color:rgba(255,255,255,0.18);">'+dl+'</span>'
-    +'<div style="display:flex;gap:3px;">'
-    +(p.telefono?'<button onclick="event.stopPropagation();crmQuickWA(\''+p.id+'\')" style="background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.3);color:#25D366;border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer;font-family:Nunito;font-weight:700;">💬</button>':'')
-    +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" style="background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.18);color:#1CE8FF;border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer;font-family:Nunito;font-weight:700;">✏️</button>'
-    +'</div></div></div>';}
-
-function crmRenderList(){
-  var tb=document.getElementById('crm-list-tbody');if(!tb)return;
-  var filtered=crmFilter();
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(255,255,255,0.15);font-size:12px;">No hay prospectos</td></tr>';return;}
-  var h='';filtered.forEach(function(p){
-    var ei=CRM_ETAPAS[p.etapa]||CRM_ETAPAS.nuevo;var temp=p.temperatura||50;var tc=temp<=33?'#1CE8FF':temp<=66?'#FFD700':'#E24B4A';
-    h+='<tr style="cursor:pointer;" onclick="crmOpenDetail(\''+p.id+'\')">'
-      +'<td style="font-weight:700;color:#fff;">'+crmEsc(p.nombre)+'</td>'
-      +'<td style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.4);">'+crmEsc(p.telefono||'—')+'</td>'
-      +'<td style="font-size:11px;color:rgba(255,255,255,0.35);">'+crmEsc(p.email||'—')+'</td>'
-      +'<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+ei.color+'15;border:0.5px solid '+ei.color+'30;color:'+ei.color+';">'+ei.emoji+' '+ei.label+'</span></td>'
-      +'<td><div style="display:flex;align-items:center;gap:4px;"><div style="width:40px;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;"><div style="width:'+temp+'%;height:100%;background:'+tc+';border-radius:2px;"></div></div><span style="font-size:10px;color:'+tc+';font-weight:700;">'+temp+'</span></div></td>'
-      +'<td style="font-size:11px;color:rgba(255,255,255,0.35);">'+crmEsc(p.fuente||'—')+'</td>'
-      +'<td style="font-size:11px;color:#FFD700;font-weight:700;">$'+((parseFloat(p.valor_estimado)||0).toLocaleString())+'</td>'
-      +'<td><div style="display:flex;gap:3px;">'
-      +(p.telefono?'<button onclick="event.stopPropagation();crmQuickWA(\''+p.id+'\')" style="background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.3);color:#25D366;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;">💬</button>':'')
-      +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" style="background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.18);color:#1CE8FF;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;">✏️</button></div></td></tr>';});
-  tb.innerHTML=h;}
-
-function crmRenderMetricsDashboard(){
-  var el=document.getElementById('crm-metrics-view');if(!el)return;
-  var m=crmMetricas;var pe=m.por_etapa||{};var total=m.total||1;
-  var fh='';
-  ['nuevo','contactado','interesado','presentacion','cerrado_ganado'].forEach(function(k){
-    var info=CRM_ETAPAS[k];var count=pe[k]||0;var pct=Math.round((count/total)*100);
-    fh+='<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">'
-      +'<span style="color:rgba(255,255,255,0.5);">'+info.emoji+' '+info.label+'</span>'
-      +'<span style="color:'+info.color+';font-weight:700;">'+count+' ('+pct+'%)</span></div>'
-      +'<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">'
-      +'<div style="width:'+Math.max(pct,2)+'%;height:100%;background:'+info.color+';border-radius:3px;"></div></div></div>';});
-  el.style.display='block';
-  el.querySelector('.crm-metrics-grid').innerHTML=''
-    +'<div class="card" style="grid-column:1/-1;"><div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:14px;">📊 Embudo de Conversión</div>'+fh+'</div>'
-    +'<div class="card"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">📈 Resumen 30d</div>'
-    +'<div style="display:flex;flex-direction:column;gap:10px;">'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Ganados</span><span style="color:#25D366;font-weight:800;">'+(m.cerrados_30d||0)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Perdidos</span><span style="color:#E24B4A;font-weight:800;">'+(m.perdidos_30d||0)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Tasa conversión</span><span style="color:#1CE8FF;font-weight:800;">'+(m.tasa_conversion||0)+'%</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Pipeline</span><span style="color:#FFD700;font-weight:800;">$'+((m.valor_pipeline||0).toLocaleString())+'</span></div></div></div>'
-    +'<div class="card"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">🎯 Por Etapa</div>'
-    +'<div style="display:flex;flex-direction:column;gap:8px;">'
-    +Object.keys(CRM_ETAPAS).map(function(k){var i=CRM_ETAPAS[k];return '<div style="display:flex;justify-content:space-between;"><span style="color:rgba(255,255,255,0.4);font-size:12px;">'+i.emoji+' '+i.label+'</span><span style="color:'+i.color+';font-weight:800;font-size:16px;">'+(pe[k]||0)+'</span></div>';}).join('')
-    +'</div></div>';}
-
-function crmSetupDrag(){
-  document.querySelectorAll('.crm-prospect-card[draggable]').forEach(function(card){
-    card.addEventListener('dragstart',function(e){crmDragId=card.getAttribute('data-id');card.style.opacity='0.5';e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',crmDragId);});
-    card.addEventListener('dragend',function(){card.style.opacity='1';crmDragId=null;document.querySelectorAll('.crm-column').forEach(function(c){c.classList.remove('dragging-over');});});});
-  document.querySelectorAll('.crm-column').forEach(function(col){
-    col.addEventListener('dragover',function(e){e.preventDefault();e.dataTransfer.dropEffect='move';col.classList.add('dragging-over');});
-    col.addEventListener('dragleave',function(){col.classList.remove('dragging-over');});
-    col.addEventListener('drop',function(e){e.preventDefault();col.classList.remove('dragging-over');
-      var id=e.dataTransfer.getData('text/plain');var etapa=col.getAttribute('data-etapa');
-      if(id&&etapa)crmMoveStage(id,etapa);});});}
-
-async function crmMoveStage(id,etapa){
-  if(etapa==='cerrado')etapa='cerrado_ganado';
-  var p=crmProspectos.find(function(x){return x.id===id;});if(p)p.etapa=etapa;
-  crmRenderKanban();
-  var res=await crmApi('moveStage',{id:id,etapa:etapa});
-  if(res&&res.ok)crmToast('Movido a '+(CRM_ETAPAS[etapa]?CRM_ETAPAS[etapa].label:etapa),'success');
-  crmLoadData();}
-/* ============================================================================
-   SKY PROSPECTOS — GAMIFICATION + METRICS ENGINE
-   ============================================================================ */
-
-var CRM_LEVELS=[
-{level:1,name:'Novato',minXP:0,maxXP:100,color:'#8892a0',emoji:'🌱'},
-{level:2,name:'Explorador',minXP:100,maxXP:300,color:'#1CE8FF',emoji:'🔍'},
-{level:3,name:'Vendedor',minXP:300,maxXP:600,color:'#7F77DD',emoji:'💼'},
-{level:4,name:'Closer',minXP:600,maxXP:1000,color:'#FFD700',emoji:'🎯'},
-{level:5,name:'Master',minXP:1000,maxXP:2000,color:'#25D366',emoji:'⚡'},
-{level:6,name:'Diamante',minXP:2000,maxXP:3500,color:'#E91E9C',emoji:'💎'},
-{level:7,name:'Leyenda',minXP:3500,maxXP:999999,color:'#FF6B35',emoji:'👑'}
-];
-
-var CRM_ACHIEVEMENTS=[
-{id:'first_close',name:'Primer Cierre',emoji:'🎯',desc:'Cierra tu primer prospecto'},
-{id:'streak_7',name:'Racha de Fuego',emoji:'🔥',desc:'7 dias consecutivos'},
-{id:'century',name:'Centurion',emoji:'💯',desc:'100 prospectos agregados'},
-{id:'velocity',name:'Velocity',emoji:'🚀',desc:'5 cierres en una semana'},
-{id:'pipeline_king',name:'Rey del Pipeline',emoji:'👑',desc:'50 prospectos activos'},
-{id:'call_master',name:'Call Master',emoji:'📞',desc:'20 contactos en un dia'},
-{id:'perfectionist',name:'Perfeccionista',emoji:'⭐',desc:'80%+ tasa de cierre'},
-{id:'mvp',name:'MVP',emoji:'🏆',desc:'#1 en el leaderboard'},
-{id:'streak_30',name:'Imparable',emoji:'💪',desc:'30 dias de racha'},
-{id:'explorer',name:'Explorador',emoji:'🗺️',desc:'Llega a nivel Explorador'},
-{id:'diamond',name:'Diamante',emoji:'💎',desc:'Llega a nivel Diamante'},
-{id:'legend',name:'Leyenda Viva',emoji:'🌟',desc:'Llega a nivel Leyenda'}
-];
-
-var CRM_XP_VALUES={add_prospect:10,contact:15,interested:20,presentation:30,close_won:100,close_lost:5,complete_reminder:5,whatsapp_sent:5,daily_login:10};
-
-var crmDashProfile=null;
-var crmDashLeaderboard=[];
-var crmDashActivity=[];
-
-function crmDashGetLevel(xp){
-for(var i=0;i<CRM_LEVELS.length;i++){if(xp>=CRM_LEVELS[i].minXP&&xp<CRM_LEVELS[i].maxXP)return CRM_LEVELS[i];}
-return CRM_LEVELS[CRM_LEVELS.length-1];
-}
-
-async function crmDashApi(action,data){
-try{var body=Object.assign({action:action,user:CU.username},data||{});
-var r=await fetch('/api/gamification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-var j=await r.json();if(j.error)throw new Error(j.error);return j;}
-catch(e){console.error('crmDashApi:',e);return null;}
-}
-
-/* === VIEW SWITCH === */
-function crmSwitchView(view){
-crmCurrentView=view;
-var k=document.getElementById('crm-kanban');
-var l=document.getElementById('crm-list-view');
-var m=document.getElementById('crm-metrics-view');
-if(k)k.style.display=view==='kanban'?'':'none';
-if(l)l.style.display=view==='lista'?'':'none';
-if(m)m.style.display=view==='metricas'?'':'none';
-document.querySelectorAll('.crm-view-btn').forEach(function(btn){
-btn.classList.remove('active');
-var t=btn.textContent;
-if((view==='kanban'&&t.includes('Kanban'))||(view==='lista'&&t.includes('Lista'))||(view==='metricas'&&t.includes('trica')))btn.classList.add('active');
-});
-if(view==='metricas')crmDashInit();
-}
-
-/* === INIT === */
-async function crmDashInit(){
-var mv=document.getElementById('crm-metrics-view');if(!mv)return;
-try{
-var p=await crmDashApi('get_profile');
-if(p&&p.data)crmDashProfile=p.data;
-else crmDashProfile={xp:0,level:1,streak_current:0,streak_best:0,achievements:[],total_closed:0};
-var s=await crmDashApi('check_streak');
-if(s&&s.data){crmDashProfile.streak_current=s.data.streak_current||0;crmDashProfile.streak_best=s.data.streak_best||0;}
-var lb=await crmDashApi('get_leaderboard');
-crmDashLeaderboard=(lb&&lb.data)?lb.data:[];
-var act=await crmDashApi('get_activity');
-crmDashActivity=(act&&act.data)?act.data:[];
-}catch(e){console.error('crmDashInit error:',e);
-crmDashProfile=crmDashProfile||{xp:0,level:1,streak_current:0,streak_best:0,achievements:[],total_closed:0};
-}
-crmDashRenderXPHero();
-crmDashRenderKPIs();
-crmDashRenderFunnel();
-crmDashRenderDonut();
-crmDashRenderActivity();
-crmDashRenderPipelineSpeed();
-crmDashRenderAchievements();
-crmDashRenderLeaderboard();
-}
-
-/* === ANIMATED COUNTER === */
-function crmDashAnimateCount(el,target,suffix,dur){
-suffix=suffix||'';dur=dur||1500;
-var start=performance.now();
-function tick(now){
-var p=Math.min((now-start)/dur,1);
-p=1-Math.pow(1-p,3);
-el.textContent=Math.floor(target*p)+suffix;
-if(p<1)requestAnimationFrame(tick);
-else el.textContent=target+suffix;
-}
-requestAnimationFrame(tick);
-}
-
-/* === XP HERO === */
-function crmDashRenderXPHero(){
-var badge=document.getElementById('crm-dash-level-badge');
-var title=document.getElementById('crm-dash-level-title');
-var fill=document.getElementById('crm-dash-xp-fill');
-var xpText=document.getElementById('crm-dash-xp-text');
-var streakNum=document.getElementById('crm-dash-streak-num');
-var streakBest=document.getElementById('crm-dash-streak-best');
-if(!badge)return;
-var xp=crmDashProfile?crmDashProfile.xp||0:0;
-var lv=crmDashGetLevel(xp);
-var pct=lv.maxXP>lv.minXP?Math.round(((xp-lv.minXP)/(lv.maxXP-lv.minXP))*100):100;
-badge.textContent=lv.level;
-badge.style.background='linear-gradient(135deg,'+lv.color+','+lv.color+'88)';
-badge.style.boxShadow='0 0 20px '+lv.color+'66';
-if(title)title.textContent=lv.emoji+' '+lv.name;
-if(title)title.style.background='linear-gradient(90deg,'+lv.color+',#fff)';
-if(title){title.style.webkitBackgroundClip='text';title.style.webkitTextFillColor='transparent';title.style.backgroundClip='text';}
-if(fill){fill.style.transition='width 1.2s cubic-bezier(0.4,0,0.2,1)';setTimeout(function(){fill.style.width=pct+'%';},100);}
-if(xpText)xpText.textContent=xp.toLocaleString()+' / '+lv.maxXP.toLocaleString()+' XP';
-var streak=crmDashProfile?crmDashProfile.streak_current||0:0;
-var best=crmDashProfile?crmDashProfile.streak_best||0:0;
-if(streakNum)streakNum.textContent=streak;
-if(streakBest)streakBest.textContent='Mejor: '+best;
-/* streak days */
-var days=document.querySelectorAll('.crm-dash-day');
-var today=new Date().getDay();
-var dayMap=[6,0,1,2,3,4,5];
-var todayIdx=dayMap[today];
-days.forEach(function(d,i){
-d.classList.remove('active');
-if(i<=todayIdx&&i>(todayIdx-streak))d.classList.add('active');
-});
-}
-
-/* === KPI CARDS === */
-function crmDashRenderKPIs(){
-var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
-var total=pros.length;
-var ganados=pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length;
-var tasa=total>0?Math.round((ganados/total)*100):0;
-var calientes=pros.filter(function(p){return p.etapa==='interesado'||p.etapa==='presentacion';}).length;
-var map={
-'crm-dash-kpi-total':{v:total,s:''},
-'crm-dash-kpi-cerrados':{v:ganados,s:''},
-'crm-dash-kpi-tasa':{v:tasa,s:'%'},
-'crm-dash-kpi-calientes':{v:calientes,s:''}
-};
-Object.keys(map).forEach(function(id){
-var el=document.getElementById(id);
-if(el)crmDashAnimateCount(el,map[id].v,map[id].s,1200);
-});
-}
-
-/* === FUNNEL === */
-function crmDashRenderFunnel(){
-var el=document.getElementById('crm-dash-funnel');if(!el)return;
-var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
-if(pros.length===0){el.innerHTML='<div style="text-align:center;padding:30px;opacity:0.5">Agrega prospectos para ver el funnel</div>';return;}
-var stages=['nuevo','contactado','interesado','presentacion','cerrado_ganado'];
-var counts={};var max=0;
-stages.forEach(function(s){var c=pros.filter(function(p){return p.etapa===s;}).length;counts[s]=c;if(c>max)max=c;});
-if(max===0)max=1;
-var widths=[100,85,65,45,30];
-var h='';
-stages.forEach(function(s,i){
-var info=CRM_ETAPAS[s]||{label:s,color:'#888',emoji:''};
-var c=counts[s];
-var w=c>0?Math.max(widths[i],Math.round((c/max)*100)):widths[i];
-h+='<div class="crm-dash-funnel-stage" style="width:'+w+'%;background:linear-gradient(135deg,'+info.color+'cc,'+info.color+'44);border-left:4px solid '+info.color+';animation-delay:'+(i*0.15)+'s">';
-h+='<span class="crm-dash-funnel-label">'+info.emoji+' '+info.label+'</span>';
-h+='<span class="crm-dash-funnel-count">'+c+'</span>';
-h+='</div>';
-});
-el.innerHTML=h;
-}
-
-/* === DONUT === */
-function crmDashRenderDonut(){
-var donut=document.getElementById('crm-dash-donut');
-var center=document.getElementById('crm-dash-donut-center');
-var legend=document.getElementById('crm-dash-donut-legend');
-if(!donut)return;
-var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
-var total=pros.length;
-if(total===0){if(center)center.textContent='0';return;}
-var stages=Object.keys(CRM_ETAPAS);
-var parts=[];var deg=0;var legendH='';
-stages.forEach(function(s){
-var c=pros.filter(function(p){return p.etapa===s;}).length;
-var pct=(c/total)*360;
-var info=CRM_ETAPAS[s];
-parts.push(info.color+' '+deg+'deg '+(deg+pct)+'deg');
-deg+=pct;
-legendH+='<div class="crm-dash-legend-item"><span class="crm-dash-legend-dot" style="background:'+info.color+'"></span>'+info.label+' <strong>'+c+'</strong></div>';
-});
-donut.style.background='conic-gradient('+parts.join(',')+')';
-if(center)center.textContent=total;
-if(legend)legend.innerHTML=legendH;
-}
-
-/* === ACTIVITY BARS === */
-function crmDashRenderActivity(){
-var el=document.getElementById('crm-dash-activity');if(!el)return;
-var data=crmDashActivity||[];
-var labels=['L','M','X','J','V','S','D'];
-if(data.length===0){
-var h='<div class="crm-dash-activity-bars">';
-for(var i=0;i<7;i++){
-h+='<div class="crm-dash-bar-wrap"><div class="crm-dash-bar" style="height:4px"></div><div class="crm-dash-bar-label">'+labels[i]+'</div><div class="crm-dash-bar-val">0</div></div>';
-}
-h+='</div>';el.innerHTML=h;return;
-}
-var max=0;data.forEach(function(d){if(d.xp>max)max=d.xp;});
-if(max===0)max=1;
-var h='<div class="crm-dash-activity-bars">';
-for(var i=0;i<Math.min(data.length,7);i++){
-var pct=Math.round((data[i].xp/max)*100);
-h+='<div class="crm-dash-bar-wrap"><div class="crm-dash-bar" style="height:'+pct+'%;animation-delay:'+(i*0.1)+'s"></div><div class="crm-dash-bar-label">'+(data[i].label||labels[i%7])+'</div><div class="crm-dash-bar-val">'+data[i].xp+'</div></div>';
-}
-h+='</div>';el.innerHTML=h;
-}
-
-/* === PIPELINE SPEED === */
-function crmDashRenderPipelineSpeed(){
-var el=document.getElementById('crm-dash-pipeline-speed');if(!el)return;
-var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
-if(pros.length===0){el.innerHTML='<div style="text-align:center;padding:30px;opacity:0.5">Agrega prospectos para ver velocidad</div>';return;}
-var stages=['nuevo','contactado','interesado','presentacion','cerrado_ganado'];
-var avgs={};var maxAvg=0;
-stages.forEach(function(s){
-var sp=pros.filter(function(p){return p.etapa===s;});
-if(sp.length===0){avgs[s]=0;return;}
-var totalDays=0;
-sp.forEach(function(p){
-var c=new Date(p.created_at);var u=new Date(p.updated_at);
-totalDays+=Math.max(1,Math.ceil((u-c)/(86400000)));
-});
-avgs[s]=Math.ceil(totalDays/sp.length);
-if(avgs[s]>maxAvg)maxAvg=avgs[s];
-});
-if(maxAvg===0)maxAvg=1;
-var h='';
-stages.forEach(function(s,i){
-var info=CRM_ETAPAS[s]||{label:s,color:'#888'};
-var w=Math.round((avgs[s]/maxAvg)*100);
-h+='<div class="crm-dash-speed-row" style="animation-delay:'+(i*0.1)+'s">';
-h+='<div class="crm-dash-speed-label">'+info.emoji+' '+info.label+'</div>';
-h+='<div class="crm-dash-speed-track"><div class="crm-dash-speed-bar" style="width:'+w+'%;background:'+info.color+'"></div></div>';
-h+='<div class="crm-dash-speed-val">'+avgs[s]+' d</div>';
-h+='</div>';
-});
-el.innerHTML=h;
-}
-
-/* === ACHIEVEMENTS === */
-function crmDashRenderAchievements(){
-var el=document.getElementById('crm-dash-achievements');if(!el)return;
-var unlocked=crmDashProfile&&crmDashProfile.achievements?crmDashProfile.achievements:[];
-var h='';
-CRM_ACHIEVEMENTS.forEach(function(a){
-var isU=false;
-for(var i=0;i<unlocked.length;i++){if(typeof unlocked[i]==='string'&&unlocked[i]===a.id){isU=true;break;}if(typeof unlocked[i]==='object'&&unlocked[i].id===a.id){isU=true;break;}}
-h+='<div class="crm-dash-badge '+(isU?'unlocked':'locked')+'" title="'+a.desc+'">';
-h+='<div class="crm-dash-badge-icon">'+(isU?a.emoji:'🔒')+'</div>';
-h+='<div class="crm-dash-badge-name">'+a.name+'</div>';
-h+='<div class="crm-dash-badge-desc">'+a.desc+'</div>';
-h+='</div>';
-});
-el.innerHTML=h;
-}
-
-/* === LEADERBOARD === */
-function crmDashRenderLeaderboard(){
-var el=document.getElementById('crm-dash-leaderboard');if(!el)return;
-var lb=crmDashLeaderboard||[];
-if(lb.length===0){el.innerHTML='<div style="text-align:center;padding:30px;opacity:0.5">Sin datos de equipo aun</div>';return;}
-var medals=['🥇','🥈','🥉'];
-var h='';
-lb.forEach(function(u,i){
-var isMe=CU&&u.user_ref===CU.username;
-var lv=crmDashGetLevel(u.xp||0);
-var initial=u.user_ref?u.user_ref.charAt(0).toUpperCase():'?';
-h+='<div class="crm-dash-lb-row'+(isMe?' crm-dash-lb-me':'')+'">';
-h+='<div class="crm-dash-lb-rank">'+(i<3?medals[i]:(i+1))+'</div>';
-h+='<div class="crm-dash-lb-avatar" style="background:'+lv.color+'">'+initial+'</div>';
-h+='<div class="crm-dash-lb-info"><div class="crm-dash-lb-name">'+u.user_ref+'</div><div class="crm-dash-lb-level">'+lv.emoji+' '+lv.name+'</div></div>';
-h+='<div class="crm-dash-lb-xp">'+((u.xp||0).toLocaleString())+' XP</div>';
-h+='</div>';
-});
-el.innerHTML=h;
-}
-
-/* === XP AWARD === */
-async function crmDashAddXP(action_type,details){
-var amt=CRM_XP_VALUES[action_type]||0;if(!amt||!CU)return;
-var r=await crmDashApi('add_xp',{xp_amount:amt,action_type:action_type,details:details||''});
-if(r&&r.data){
-var old=crmDashProfile?crmDashProfile.level||1:1;
-crmDashProfile=r.data.profile||r.data;
-if(r.data.leveled_up)crmDashCelebrate('levelup');
-crmDashRenderXPHero();
-crmDashCheckAchievements();
-}
-}
-
-/* === CHECK ACHIEVEMENTS === */
-async function crmDashCheckAchievements(){
-if(!crmDashProfile)return;
-var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
-var unlocked=crmDashProfile.achievements||[];
-var uIds=unlocked.map(function(a){return typeof a==='string'?a:a.id;});
-var checks={
-first_close:function(){return(crmDashProfile.total_closed||0)>=1||pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length>=1;},
-streak_7:function(){return(crmDashProfile.streak_best||0)>=7;},
-century:function(){return pros.length>=100;},
-velocity:function(){var wa=new Date();wa.setDate(wa.getDate()-7);return pros.filter(function(p){return p.etapa==='cerrado_ganado'&&new Date(p.updated_at)>=wa;}).length>=5;},
-pipeline_king:function(){return pros.filter(function(p){return p.etapa!=='cerrado_ganado'&&p.etapa!=='cerrado_perdido';}).length>=50;},
-perfectionist:function(){if(pros.length<5)return false;return(pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length/pros.length)*100>=80;},
-mvp:function(){return crmDashLeaderboard.length>0&&crmDashLeaderboard[0]&&crmDashLeaderboard[0].user_ref===CU.username;},
-streak_30:function(){return(crmDashProfile.streak_best||0)>=30;},
-explorer:function(){return(crmDashProfile.level||1)>=2;},
-diamond:function(){return(crmDashProfile.level||1)>=6;},
-legend:function(){return(crmDashProfile.level||1)>=7;}
-};
-for(var id in checks){
-if(uIds.indexOf(id)<0&&checks[id]()){
-var ach=CRM_ACHIEVEMENTS.find(function(a){return a.id===id;});
-if(ach){
-await crmDashApi('unlock_achievement',{achievement_id:id,achievement_name:ach.name,achievement_emoji:ach.emoji});
-uIds.push(id);
-crmDashCelebrate('achievement');
-crmToast(ach.emoji+' '+ach.name+' desbloqueado!');
-}
-}
-}
-crmDashProfile.achievements=uIds;
-crmDashRenderAchievements();
-}
-
-/* === CELEBRATIONS === */
-function crmDashCelebrate(type){
-crmDashConfetti(type==='levelup'?50:type==='close'?30:20);
-if(type==='levelup'){
-var ov=document.createElement('div');
-ov.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;animation:crm-dash-fadeout 3s forwards';
-ov.innerHTML='<div style="font-size:72px;font-weight:900;color:#FFD700;text-shadow:0 0 40px rgba(255,215,0,0.8);animation:crm-dash-popup 0.5s cubic-bezier(0.34,1.56,0.64,1)">LEVEL UP!</div>';
-document.body.appendChild(ov);
-setTimeout(function(){if(ov.parentNode)ov.parentNode.removeChild(ov);},3000);
-}
-}
-
-function crmDashConfetti(count){
-var c=document.getElementById('crm-dash-confetti');
-if(!c){c=document.createElement('div');c.id='crm-dash-confetti';c.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9999';document.body.appendChild(c);}
-c.innerHTML='';c.style.display='block';
-var cols=['#FFD700','#FF6B35','#25D366','#7F77DD','#1CE8FF','#E91E9C','#FF4757'];
-for(var i=0;i<count;i++){
-var p=document.createElement('div');
-var sz=Math.random()*10+4;
-var col=cols[Math.floor(Math.random()*cols.length)];
-var dur=(Math.random()*2+2).toFixed(1);
-var dl=(Math.random()*0.5).toFixed(2);
-var x=Math.random()*100;
-var shapes=['50%','0','2px'];
-p.style.cssText='position:absolute;width:'+sz+'px;height:'+sz+'px;background:'+col+';border-radius:'+shapes[Math.floor(Math.random()*3)]+';left:'+x+'%;top:-10px;opacity:1;animation:crm-dash-confetti-fall '+dur+'s linear '+dl+'s forwards';
-c.appendChild(p);
-}
-setTimeout(function(){c.innerHTML='';c.style.display='none';},5000);
-}
-
-/* === INIT VIEW LISTENERS === */
-(function(){
-var btns=document.querySelectorAll('.crm-view-btn');
-btns.forEach(function(b){
-b.addEventListener('click',function(){
-var t=this.textContent;
-if(t.includes('Kanban'))crmSwitchView('kanban');
-else if(t.includes('Lista'))crmSwitchView('lista');
-else if(t.includes('trica'))crmSwitchView('metricas');
-});
-});
-})();
-
-
-
-
-
-
-
-/* ========================================
 
 /* ========================================
    CRM MISSING FUNCTIONS - Sky Team Platform
@@ -8173,7 +7606,7 @@ function crmInjectExtraFields() {
     if (insertRef.parentElement !== form) insertRef = submitBtn;
 
     var ratingHtml = '<div id="crm-rating-section" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">' +
-      '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">CalificaciÃ³n</label>' +
+      '<label style="display: block; color: #ccc; font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Calificaci\u00F3n</label>' +
       '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">' +
       '<span id="crm-stars-display" style="font-size: 1.5rem; color: #FFD700; letter-spacing: 2px;">\u2606\u2606\u2606\u2606\u2606</span>' +
       '<button id="crm-btn-calificar" type="button" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">Calificar</button>' +
@@ -8244,11 +7677,11 @@ function crmInjectRatingCSS() {
 
 function crmStartRatingWizard(onComplete) {
   var questions = [
-    { text: 'Â¿Tu prospecto es Positivo?', key: 'calif_positivo', number: 1 },
-    { text: 'Â¿Tu prospecto es Social?', key: 'calif_social', number: 2 },
-    { text: 'Â¿Tu prospecto es Emprendedor?', key: 'calif_emprendedor', number: 3 },
-    { text: 'Â¿Tu prospecto tiene Dinero?', key: 'calif_dinero', number: 4 },
-    { text: 'Â¿Tu prospecto es LÃ­der?', key: 'calif_lider', number: 5 }
+    { text: '\u00BFTu prospecto es Positivo?', key: 'calif_positivo', number: 1 },
+    { text: '\u00BFTu prospecto es Social?', key: 'calif_social', number: 2 },
+    { text: '\u00BFTu prospecto es Emprendedor?', key: 'calif_emprendedor', number: 3 },
+    { text: '\u00BFTu prospecto tiene Dinero?', key: 'calif_dinero', number: 4 },
+    { text: '\u00BFTu prospecto es L\u00EDder?', key: 'calif_lider', number: 5 }
   ];
 
   crmRatingWizardState.isOpen = true;
@@ -8282,7 +7715,7 @@ function crmStartRatingWizard(onComplete) {
     card.innerHTML = '<div class="crm-wizard-question">' + q.text + '</div>' +
       '<div class="crm-wizard-subtitle">Pregunta ' + q.number + ' de 5</div>' +
       '<div class="crm-wizard-buttons">' +
-      '<button class="crm-wizard-btn crm-wizard-btn-yes" data-answer="1">SÃ­</button>' +
+      '<button class="crm-wizard-btn crm-wizard-btn-yes" data-answer="1">S\u00ED</button>' +
       '<button class="crm-wizard-btn crm-wizard-btn-no" data-answer="0">No</button>' +
       '</div>';
 
@@ -8401,7 +7834,7 @@ function openCrmModalAdd(editId) {
   // Update temperature display
   var tempInput2 = form.querySelector('#crm-input-temperatura');
   var tempDisp = document.getElementById('crm-temperatura-display');
-  if (tempInput2 && tempDisp) tempDisp.textContent = (tempInput2.value || 50) + 'Â°';
+  if (tempInput2 && tempDisp) tempDisp.textContent = (tempInput2.value || 50) + '\u00B0';
 
   crmEditingId = editId || null;
   modal.style.display = 'block';
@@ -8627,7 +8060,7 @@ function openCrmDetail(id) {
   var tempGauge = modal.querySelector('#crm-detail-temperature-gauge');
   if (tempGauge) {
     tempGauge.style.width = (prospect.temperatura || 50) + '%';
-    tempGauge.textContent = (prospect.temperatura || 50) + 'Â°';
+    tempGauge.textContent = (prospect.temperatura || 50) + '\u00B0';
   }
 
   var notasDisplay = modal.querySelector('#crm-detail-notas');
@@ -8691,7 +8124,7 @@ function crmShowStarsPopup(anchorEl, prospect) {
     { key: 'calif_social', label: 'Social' },
     { key: 'calif_emprendedor', label: 'Emprendedor' },
     { key: 'calif_dinero', label: 'Dinero' },
-    { key: 'calif_lider', label: 'LÃ­der' }
+    { key: 'calif_lider', label: 'L\u00EDder' }
   ];
 
   var html = '';
@@ -8795,7 +8228,7 @@ async function addCrmReminder() {
 
 async function deleteCrmProspect() {
   if (!crmDetailId) return;
-  if (!confirm('Â¿Seguro que deseas eliminar este prospecto?')) return;
+  if (!confirm('\u00BFSeguro que deseas eliminar este prospecto?')) return;
   var res = await crmApi('delete', { id: crmDetailId });
   if (res && res.ok) {
     closeCrmModalDetail();
@@ -8836,7 +8269,7 @@ async function crmGenerateWaMessage() {
     if (ctx) ctx.value = res.mensaje;
     crmToast('Mensaje generado', 'success');
   } else {
-    if (ctx) ctx.value = 'Hola ' + (p.nombre || '') + ', soy parte del equipo de Sky Team. Me gustarÃ­a conversar contigo sobre una oportunidad que puede interesarte. Â¿Tienes un momento?';
+    if (ctx) ctx.value = 'Hola ' + (p.nombre || '') + ', soy parte del equipo de Sky Team. Me gustar\u00EDa conversar contigo sobre una oportunidad que puede interesarte. \u00BFTienes un momento?';
     crmToast('Mensaje por defecto generado', 'info');
   }
 }
@@ -8851,7 +8284,7 @@ function copyCrmWaMessage() {
 
 function sendViaCrmWhatsapp() {
   var p = crmProspectos.find(function(x) { return x.id === crmDetailId; });
-  if (!p || !p.telefono) { crmToast('El prospecto no tiene telÃ©fono', 'error'); return; }
+  if (!p || !p.telefono) { crmToast('El prospecto no tiene tel\u00E9fono', 'error'); return; }
   var ctx = document.getElementById('crm-wa-context');
   var msg = ctx ? encodeURIComponent(ctx.value) : '';
   var phone = p.telefono.replace(/\D/g, '');
@@ -8883,7 +8316,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (tempInput) {
     tempInput.addEventListener('input', function() {
       var display = document.getElementById('crm-temperatura-display');
-      if (display) display.textContent = this.value + 'Â°';
+      if (display) display.textContent = this.value + '\u00B0';
     });
   }
 
@@ -8911,7 +8344,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
-</script>
 <script src="/fix-aprobar.js"></script>
 </body>
 </html>
