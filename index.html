@@ -8087,6 +8087,7 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 
 
+
 /* ========================================
    CRM MISSING FUNCTIONS - Sky Prospectos
    ======================================== */
@@ -8202,7 +8203,17 @@ function closeCrmModalAdd() {
 
 /* --- crmFilter fallback --- */
 if (typeof crmFilter === 'undefined') {
-  var crmFilter = function(list) { return list; };
+  var crmFilter = function(list) { return list || crmProspectos || []; };
+}
+
+/* --- crmEsc (HTML escape helper) --- */
+if (typeof crmEsc === 'undefined') {
+  var crmEsc = function(str) {
+    if (!str) return '';
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(String(str)));
+    return d.innerHTML;
+  };
 }
 
 /* --- Modal: Detalle de Prospecto --- */
@@ -8248,7 +8259,7 @@ function closeCrmModalDetail() {
 
 /* --- Click en card del kanban para abrir detalle --- */
 document.addEventListener('click', function(e) {
-  var card = e.target.closest('.crm-card');
+  var card = e.target.closest('.crm-prospect-card, .crm-card');
   if (card && card.dataset.id) {
     openCrmDetail(card.dataset.id);
   }
@@ -8359,6 +8370,7 @@ function sendViaCrmWhatsapp() {
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
   closeCrmModalWa();
   if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
+}
 }
 </script>
 <script src="/fix-aprobar.js"></script>
