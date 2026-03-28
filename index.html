@@ -7529,7 +7529,7 @@ window.addEventListener('load', function() {
    SKY PROSPECTOS \u2014 CRM Module
    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
 var crmProspectos=[];var crmRecordatorios=[];var crmMetricas={};var crmCurrentView='kanban';var crmEditingId=null;var crmDetailId=null;var crmDragId=null;var crmLoading=false;var crmSearchTerm='';var crmReminderInterval=null;
-var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\uDB7A\uDDECemoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
+var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
 var CRM_FUENTES={manual:'\u270D\uFE0F',landing:'\uD83C\uDF10',whatsapp:'\uD83D\uDCAC',instagram:'\uD83D\uDCF8',facebook:'\uD83D\uDCD8',referido:'\uD83E\uDD1D',otro:'\uD83D\uDCCC'};
 var CRM_TIPOS={llamada:'\uD83D\uDCDE',whatsapp:'\uD83D\uDCAC',reunion:'\uD83E\uDD1D',email:'\uD83D\uDCE7',nota:'\uD83D\uDCDD',presentacion:'\uD83C\uDFAF',seguimiento:'\uD83D\uDC41\uFE0F',cierre:'\u2705'};
 
@@ -7667,12 +7667,12 @@ function crmRenderMetricsDashboard(){
       +'<div style="width:'+Math.max(pct,2)+'%;height:100%;background:'+info.color+';border-radius:3px;"></div></div></div>';});
   el.style.display='block';
   el.querySelector('.crm-metrics-grid').innerHTML=''
-    +'<div class="card" style="grid-column:1/-1;"><div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:14px;">\uD83D\uDCCA Embudo de Conversi\uDB7B\uDF2Fdiv>'+fh+'</div>'
+    +'<div class="card" style="grid-column:1/-1;"><div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:14px;">\uD83D\uDCCA Embudo de Conversi\u00F3n</div>'+fh+'</div>'
     +'<div class="card"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">\uD83D\uDCC8 Resumen 30d</div>'
     +'<div style="display:flex;flex-direction:column;gap:10px;">'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Ganados</span><span style="color:#25D366;font-weight:800;">'+(m.cerrados_30d||0)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Perdidos</span><span style="color:#E24B4A;font-weight:800;">'+(m.perdidos_30d||0)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Tasa conversi\uDB7B\uDF2Fspan><span style="color:#1CE8FF;font-weight:800;">'+(m.tasa_conversion||0)+'%</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Tasa conversi\u00F3n</span><span style="color:#1CE8FF;font-weight:800;">'+(m.tasa_conversion||0)+'%</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.4);">Pipeline</span><span style="color:#FFD700;font-weight:800;">$'+((m.valor_pipeline||0).toLocaleString())+'</span></div></div></div>'
     +'<div class="card"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">\uD83C\uDFAF Por Etapa</div>'
     +'<div style="display:flex;flex-direction:column;gap:8px;">'
