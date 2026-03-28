@@ -8109,7 +8109,6 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 var crmRatingAnswers = {
   calif_positivo: 0,
-  calif_social: 0,
   calif_emprendedor: 0,
   calif_dinero: 0,
   calif_lider: 0
@@ -8256,7 +8255,6 @@ function crmInjectRatingCSS() {
 function crmStartRatingWizard(onComplete) {
   var questions = [
     { text: '\u00BFTu prospecto es Positivo?', key: 'calif_positivo', number: 1 },
-    { text: '\u00BFTu prospecto es Social?', key: 'calif_social', number: 2 },
     { text: '\u00BFTu prospecto es Emprendedor?', key: 'calif_emprendedor', number: 3 },
     { text: '\u00BFTu prospecto tiene Dinero?', key: 'calif_dinero', number: 4 },
     { text: '\u00BFTu prospecto es L\u00EDder?', key: 'calif_lider', number: 5 }
@@ -8319,7 +8317,7 @@ function crmStartRatingWizard(onComplete) {
 }
 
 function crmUpdateStarsDisplay() {
-  var count = (crmRatingAnswers.calif_positivo || 0) + (crmRatingAnswers.calif_social || 0) +
+  var count = (crmRatingAnswers.calif_positivo || 0) +
     (crmRatingAnswers.calif_emprendedor || 0) + (crmRatingAnswers.calif_dinero || 0) +
     (crmRatingAnswers.calif_lider || 0);
   var display = document.querySelector('#crm-stars-display');
@@ -8365,7 +8363,7 @@ function openCrmModalAdd(editId) {
 
   if (!isEditing) {
     form.reset();
-    crmRatingAnswers = { calif_positivo: 0, calif_social: 0, calif_emprendedor: 0, calif_dinero: 0, calif_lider: 0 };
+    crmRatingAnswers = { calif_positivo: 0, alif_emprendedor: 0, calif_dinero: 0, calif_lider: 0 };
     crmUpdateStarsDisplay();
     var calificarBtn = document.querySelector('#crm-btn-calificar');
     if (calificarBtn) calificarBtn.style.display = 'block';
@@ -8395,7 +8393,6 @@ function openCrmModalAdd(editId) {
 
       crmRatingAnswers = {
         calif_positivo: prospect.calif_positivo || 0,
-        calif_social: prospect.calif_social || 0,
         calif_emprendedor: prospect.calif_emprendedor || 0,
         calif_dinero: prospect.calif_dinero || 0,
         calif_lider: prospect.calif_lider || 0
@@ -8462,7 +8459,6 @@ function closeCrmModalAdd() {
         fecha_cierre_estimada: fechaInput ? fechaInput.value || null : null,
         instagram: igInput ? igInput.value.replace(/^@/, '').trim() : '',
         calif_positivo: crmRatingAnswers.calif_positivo,
-        calif_social: crmRatingAnswers.calif_social,
         calif_emprendedor: crmRatingAnswers.calif_emprendedor,
         calif_dinero: crmRatingAnswers.calif_dinero,
         calif_lider: crmRatingAnswers.calif_lider
@@ -8522,7 +8518,7 @@ function openCrmDetail(id) {
 
   var nameHeader = modal.querySelector('h2') || modal.querySelector('h3');
   if (nameHeader) {
-    var starCount = (prospect.calif_positivo || 0) + (prospect.calif_social || 0) +
+    var starCount = (prospect.calif_positivo || 0) +
       (prospect.calif_emprendedor || 0) + (prospect.calif_dinero || 0) +
       (prospect.calif_lider || 0);
     nameHeader.textContent = prospect.nombre + ' ' + crmStarsText(starCount, 5);
@@ -8628,7 +8624,6 @@ function crmShowStarsPopup(anchorEl, prospect) {
 
   var items = [
     { key: 'calif_positivo', label: 'Positivo' },
-    { key: 'calif_social', label: 'Social' },
     { key: 'calif_emprendedor', label: 'Emprendedor' },
     { key: 'calif_dinero', label: 'Dinero' },
     { key: 'calif_lider', label: 'L\u00EDder' }
@@ -8670,7 +8665,6 @@ function crmShowStarsPopup(anchorEl, prospect) {
       crmStartRatingWizard(function(answers) {
         crmRatingAnswers = answers;
         prospect.calif_positivo = answers.calif_positivo;
-        prospect.calif_social = answers.calif_social;
         prospect.calif_emprendedor = answers.calif_emprendedor;
         prospect.calif_dinero = answers.calif_dinero;
         prospect.calif_lider = answers.calif_lider;
