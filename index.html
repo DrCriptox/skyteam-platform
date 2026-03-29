@@ -2043,6 +2043,8 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <div class="crm-column" data-etapa="contactado"><div class="crm-column-header"><span class="crm-column-emoji">📞</span><span class="crm-column-name">Contactado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="interesado"><div class="crm-column-header"><span class="crm-column-emoji">🔥</span><span class="crm-column-name">Interesado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentación</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔔</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔔</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div><div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔍</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       
 <div class="crm-column" data-etapa="cerrado_perdido"><div class="crm-column-header"><span class="crm-column-emoji">❌</span><span class="crm-column-name">Perdido</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
@@ -2184,7 +2186,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <div class="crm-form-group"><label>Teléfono</label><input type="tel" id="crm-input-telefono" class="crm-form-input" placeholder="+57 300 123 4567" /></div>
       <div class="crm-form-group"><label>Email</label><input type="email" id="crm-input-email" class="crm-form-input" placeholder="nombre@email.com" /></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="crm-form-group"><label>Etapa</label><select id="crm-input-etapa" class="crm-form-select"><option value="nuevo">🆕 Nuevo</option><option value="contactado">📞 Contactado</option><option value="interesado">🔥 Interesado</option><option value="presentacion">🎯 Presentación</option><option value="cerrado_ganado">✅ Ganado</option><option value="cerrado_perdido">❌ Perdido</option></select></div>
+        <div class="crm-form-group"><label>Etapa</label><select id="crm-input-etapa" class="crm-form-select"><option value="nuevo">🆕 Nuevo</option><option value="contactado">📞 Contactado</option><option value="interesado">🔥 Interesado</option><option value="presentacion">🎯 Presentación</option><option value="seguimiento">🔔 Seguimiento</option><option value="cerrado_ganado">✅ Ganado</option><option value="cerrado_perdido">❌ Perdido</option></select></div>
         <div class="crm-form-group"><label>Fuente</label><select id="crm-input-fuente" class="crm-form-select"><option value="manual">✍️ Manual</option><option value="landing">🌐 Landing</option><option value="whatsapp">💬 WhatsApp</option><option value="instagram">📸 Instagram</option><option value="facebook">📘 Facebook</option><option value="referido">🤝 Referido</option><option value="otro">📌 Otro</option></select></div>
       </div>
       <div class="crm-form-group"><label>Temperatura</label><div class="crm-temperature-slider"><input type="range" id="crm-input-temperatura" class="crm-form-slider" min="0" max="100" value="50" /><span id="crm-temperatura-display">50/100</span></div></div>
@@ -2239,7 +2241,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
         </div>
       </div>
     </div>
-    <div class="crm-modal-footer"><button type="button" class="crm-btn-danger" onclick="deleteCrmProspect()">🗑️ Eliminar</button><button type="button" class="crm-btn-secondary" onclick="closeCrmModalDetail()">Cerrar</button></div>
+    <div class="crm-modal-footer"><button type="button" class="crm-btn-danger" onclick="deleteCrmProspect()">🗑️ Eliminar</button><button type="button" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;color:#030c1f;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;" onclick="closeCrmModalDetail();crmStartRatingWizard(crmDetailId)">⭐ Calificar</button><button type="button" class="crm-btn-secondary" onclick="closeCrmModalDetail()">Cerrar</button></div>
   </div>
 </div>
 
@@ -7930,7 +7932,7 @@ async function crmApi(action,data){
 
 function crmToast(msg,type){
   var t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:700;font-family:Nunito;z-index:9999;animation:fadeUp 0.3s ease;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:700;font-family:Nunito;z-index:200000;animation:fadeUp 0.3s ease;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
   if(type==='error'){t.style.background='rgba(226,75,74,0.95)';t.style.color='#fff';}
   else if(type==='success'){t.style.background='rgba(29,158,117,0.95)';t.style.color='#fff';}
   else{t.style.background='rgba(28,232,255,0.95)';t.style.color='#030c1f';}
@@ -7988,7 +7990,7 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
 function crmRenderKanban(){
   var kb=document.getElementById('crm-kanban');if(!kb)return;
   var filtered=crmFilter();
-  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],cerrado:[],seguimiento:[],cerrado_perdido:[]};
+  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],seguimiento:[],cerrado:[],seguimiento:[],cerrado_perdido:[]};
   filtered.forEach(function(p){
     if(p.etapa==='cerrado_ganado'||p.etapa==='cerrado_perdido')groups.cerrado.push(p);
     else if(groups[p.etapa])groups[p.etapa].push(p);
@@ -8057,7 +8059,7 @@ function crmRenderMetricsDashboard(){
   var el=document.getElementById('crm-metrics-view');if(!el)return;
   var m=crmMetricas;var pe=m.por_etapa||{};var total=m.total||1;
   var fh='';
-  ['nuevo','contactado','interesado','presentacion','cerrado_ganado'].forEach(function(k){
+  ['nuevo','contactado','interesado','presentacion','seguimiento','cerrado_ganado'].forEach(function(k){
     var info=CRM_ETAPAS[k];var count=pe[k]||0;var pct=Math.round((count/total)*100);
     fh+='<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">'
       +'<span style="color:rgba(255,255,255,0.5);">'+info.emoji+' '+info.label+'</span>'
@@ -8516,6 +8518,7 @@ var crmRatingWizardState = {
 
 function initSkyProspectos() {
   crmInjectExtraFields();
+  var _crmForm=document.getElementById("crm-form-add");if(_crmForm)_crmForm.addEventListener("submit",crmSaveProspect);
   crmLoadData().then(function() {
     crmSwitchView(crmCurrentView || 'kanban');
   });
@@ -9270,6 +9273,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 /* === Funciones faltantes CRM === */
+async function crmSaveProspect(e){
+  if(e)e.preventDefault();var nombre=document.getElementById("crm-input-nombre").value.trim();
+  if(!nombre){crmToast("El nombre es obligatorio","error");return;}
+  var data={nombre:nombre,telefono:document.getElementById("crm-input-telefono").value.trim()||null,
+    email:document.getElementById("crm-input-email").value.trim()||null,
+    etapa:document.getElementById("crm-input-etapa").value||"nuevo",
+    fuente:document.getElementById("crm-input-fuente").value||"manual",
+    temperatura:parseInt(document.getElementById("crm-input-temperatura").value)||50,
+    notas:document.getElementById("crm-input-notas").value.trim()||null,
+    valor_estimado:parseFloat(document.getElementById("crm-input-valor-estimado").value)||0,
+    fecha_cierre_estimada:document.getElementById("crm-input-fecha-cierre").value||null};
+  var res;if(crmEditingId){res=await crmApi("update",{id:crmEditingId,updates:data});if(res&&res.ok)crmToast("Prospecto actualizado","success");
+    closeCrmModalAdd();crmLoadData();}
+  else{res=await crmApi("add",{prospecto:data});if(res&&res.ok){crmToast("Prospecto agregado!","success");
+    closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){crmLoadData();crmStartRatingWizard(newId);}else crmLoadData();}
+    else{closeCrmModalAdd();crmLoadData();}}}
+
+function crmStartRatingWizard(prospectoId,onComplete){
+  var questions=[
+    {key:"calif_positivo",text:"Es Positivo?",desc:"Tiene actitud optimista y abierta ante nuevas oportunidades"},
+    {key:"calif_social",text:"Es Social?",desc:"Le gusta interactuar, conectar con personas y hacer networking"},
+    {key:"calif_emprendedor",text:"Es Emprendedor?",desc:"Tiene mentalidad de negocio y busca oportunidades de crecimiento"},
+    {key:"calif_dinero",text:"Necesita Dinero?",desc:"Busca activamente una fuente de ingresos adicional"},
+    {key:"calif_lider",text:"Es Lider?",desc:"Tiene capacidad de influir, motivar y guiar a otros"}
+  ];
+  var answers={};var step=0;
+  var overlay=document.createElement("div");
+  overlay.id="crm-rating-overlay";
+  overlay.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:100000;backdrop-filter:blur(6px);";
+  function renderStep(){
+    if(step>=questions.length){
+      var stars=Object.values(answers).reduce(function(s,v){return s+v;},0);
+      overlay.innerHTML='<div style="background:linear-gradient(145deg,#0a1628,#0d1f3c);border:0.5px solid rgba(28,232,255,0.2);border-radius:24px;padding:36px 30px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+        +'<div style="font-size:48px;margin-bottom:14px;">\u2B50</div>'
+        +'<div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:6px;">Calificacion: '+stars+'/5</div>'
+        +'<div style="font-size:28px;margin-bottom:6px;letter-spacing:4px;">'+("\u2B50".repeat(stars))+("\u2606".repeat(5-stars))+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:20px;">Prospecto calificado exitosamente</div>'
+        +'<button id="crm-wiz-done" style="background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;border-radius:14px;padding:14px 40px;font-size:15px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">Listo</button></div>';
+      overlay.querySelector("#crm-wiz-done").onclick=function(){overlay.remove();};
+      crmApi("update",{id:prospectoId,updates:answers}).then(function(){crmLoadData();if(onComplete)onComplete(answers);});
+      return;
+    }
+    var q=questions[step];var progress=Math.round(((step)/questions.length)*100);
+    overlay.innerHTML='<div style="background:linear-gradient(145deg,#0a1628,#0d1f3c);border:0.5px solid rgba(28,232,255,0.2);border-radius:24px;padding:36px 30px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:3px;margin-bottom:8px;">Calificar Prospecto</div>'
+      +'<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:20px;overflow:hidden;"><div style="width:'+progress+'%;height:100%;background:linear-gradient(90deg,#1CE8FF,#0077FF);border-radius:2px;transition:width 0.3s;"></div></div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:16px;">Pregunta '+(step+1)+' de '+questions.length+'</div>'
+      +'<div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">'+q.text+'</div>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:28px;line-height:1.5;">'+q.desc+'</div>'
+      +'<div style="display:flex;gap:14px;justify-content:center;">'
+      +'<button id="crm-wiz-no" style="flex:1;max-width:140px;background:rgba(226,75,74,0.12);border:0.5px solid rgba(226,75,74,0.25);color:#E24B4A;border-radius:14px;padding:16px;font-size:18px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">\u2717 No</button>'
+      +'<button id="crm-wiz-yes" style="flex:1;max-width:140px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.25);color:#1CE8FF;border-radius:14px;padding:16px;font-size:18px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">\u2713 Si</button>'
+      +'</div></div>';
+    overlay.querySelector("#crm-wiz-yes").onclick=function(){answers[q.key]=1;step++;renderStep();};
+    overlay.querySelector("#crm-wiz-no").onclick=function(){answers[q.key]=0;step++;renderStep();};
+  }
+  document.body.appendChild(overlay);
+  renderStep();
+}
+
 function crmOpenDetail(id){openCrmDetail(id);}
 function crmQuickWA(id){crmDetailId=id;openCrmModalWa();}
 function crmTempDisp(v){var d=document.getElementById('crm-temperatura-display');if(d)d.textContent=v+'/100';}
