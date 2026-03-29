@@ -9564,6 +9564,454 @@ function rateAgentMsg(btn){
   setTimeout(function(){bar.style.transition='opacity 0.5s';bar.style.opacity='0.5';},2000);
 }
 
+
+
+/* ========================================
+   FEATURE: Gamification & Leaderboard
+   Commit 26
+   ======================================== */
+
+/* --- Leaderboard API helper --- */
+async function lbApi(action, data) {
+  if (!CU) return null;
+  try {
+    var body = Object.assign({ action: action, user: CU.username }, data || {});
+    var r = await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return await r.json();
+  } catch (e) { console.error('LB API err:', e); return null; }
+}
+
+/* --- State --- */
+var lbWeeklyData = null;
+var lbDailyData = null;
+var lbAntiCheatData = null;
+var lbActiveTab = 'weekly';
+
+/* --- Inject CSS --- */
+(function injectLbCSS() {
+  var s = document.createElement('style');
+  s.textContent = ''
+    + '.lb-container{padding:16px;max-width:600px;margin:0 auto;}'
+    + '.lb-tabs{display:flex;gap:6px;margin-bottom:16px;}'
+    + '.lb-tab{flex:1;padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.3s;font-family:Nunito;}'
+    + '.lb-tab.active{background:linear-gradient(135deg,rgba(28,232,255,0.15),rgba(110,87,224,0.15));border-color:rgba(28,232,255,0.4);color:#1CE8FF;}'
+    + '.lb-tab:hover{border-color:rgba(28,232,255,0.25);}'
+    + '.lb-podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin-bottom:20px;padding:16px 0;}'
+    + '.lb-podium-item{text-align:center;border-radius:14px;padding:12px 10px;min-width:90px;position:relative;}'
+    + '.lb-podium-1{background:linear-gradient(180deg,rgba(255,215,0,0.15),rgba(255,215,0,0.03));border:1px solid rgba(255,215,0,0.3);order:2;min-height:140px;}'
+    + '.lb-podium-2{background:linear-gradient(180deg,rgba(192,192,192,0.12),rgba(192,192,192,0.03));border:1px solid rgba(192,192,192,0.25);order:1;min-height:110px;}'
+    + '.lb-podium-3{background:linear-gradient(180deg,rgba(205,127,50,0.12),rgba(205,127,50,0.03));border:1px solid rgba(205,127,50,0.25);order:3;min-height:90px;}'
+    + '.lb-podium-medal{font-size:28px;margin-bottom:4px;}'
+    + '.lb-podium-name{font-size:12px;font-weight:800;color:#F0EDE6;margin-bottom:2px;}'
+    + '.lb-podium-score{font-size:18px;font-weight:900;background:linear-gradient(135deg,#1CE8FF,#6E57E0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}'
+    + '.lb-podium-detail{font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;}'
+    + '.lb-row{display:flex;align-items:center;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);transition:all 0.3s;}'
+    + '.lb-row:hover{background:rgba(28,232,255,0.04);border-color:rgba(28,232,255,0.15);}'
+    + '.lb-rank{width:28px;font-size:14px;font-weight:900;color:rgba(255,255,255,0.3);}'
+    + '.lb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,rgba(28,232,255,0.2),rgba(110,87,224,0.2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#1CE8FF;margin-right:12px;flex-shrink:0;}'
+    + '.lb-info{flex:1;}'
+    + '.lb-name{font-size:13px;font-weight:700;color:#F0EDE6;}'
+    + '.lb-stats{font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;}'
+    + '.lb-score{font-size:16px;font-weight:900;color:#1CE8FF;text-align:right;}'
+    + '.lb-score-label{font-size:9px;color:rgba(255,255,255,0.25);text-align:right;}'
+    + '.lb-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px;}'
+    + '.lb-period{text-align:center;font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:12px;}'
+    + '.lb-hero{text-align:center;padding:20px;margin-bottom:16px;background:linear-gradient(135deg,rgba(28,232,255,0.06),rgba(110,87,224,0.06));border:1px solid rgba(28,232,255,0.12);border-radius:14px;}'
+    + '.lb-hero-title{font-size:20px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FF6B35,#1CE8FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}'
+    + '.lb-hero-sub{font-size:11px;color:rgba(255,255,255,0.4);}'
+    + '.lb-proof-btn{background:linear-gradient(135deg,rgba(29,158,117,0.2),rgba(28,232,255,0.15));border:1px solid rgba(29,158,117,0.3);color:#1D9E75;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Nunito;transition:all 0.3s;}'
+    + '.lb-proof-btn:hover{background:linear-gradient(135deg,rgba(29,158,117,0.3),rgba(28,232,255,0.25));}'
+    + '.lb-flag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;margin:2px;}'
+    + '.lb-flag-high{background:rgba(226,75,74,0.12);color:#E24B4A;border:0.5px solid rgba(226,75,74,0.25);}'
+    + '.lb-flag-medium{background:rgba(255,170,51,0.12);color:#FFAA33;border:0.5px solid rgba(255,170,51,0.25);}'
+    + '.lb-flag-low{background:rgba(29,158,117,0.12);color:#1D9E75;border:0.5px solid rgba(29,158,117,0.25);}'
+    + '.lb-anticheat-card{padding:14px;border-radius:12px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.06);}'
+    + '.lb-ac-clean{background:rgba(29,158,117,0.06);border-color:rgba(29,158,117,0.2);}'
+    + '.lb-ac-suspicious{background:rgba(255,170,51,0.06);border-color:rgba(255,170,51,0.2);}'
+    + '.lb-ac-flagged{background:rgba(226,75,74,0.06);border-color:rgba(226,75,74,0.2);}'
+    + '.lb-proof-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10002;align-items:center;justify-content:center;}'
+    + '.lb-proof-modal-inner{background:rgba(6,18,53,0.95);border:1px solid rgba(28,232,255,0.2);border-radius:16px;padding:24px;max-width:420px;width:90%;backdrop-filter:blur(20px);}'
+    + '.lb-animate-in{animation:lbSlideIn 0.4s ease;}@keyframes lbSlideIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}'
+    + '.lb-pulse{animation:lbPulse 2s infinite;}@keyframes lbPulse{0%,100%{opacity:1;}50%{opacity:0.6;}}';
+  document.head.appendChild(s);
+})();
+
+/* --- Medals/Icons --- */
+var lbMedals = ['', '&#x1F947;', '&#x1F948;', '&#x1F949;'];
+function lbInitials(name) {
+  var parts = (name || '??').split(' ');
+  return (parts[0] ? parts[0][0] : '') + (parts[1] ? parts[1][0] : '');
+}
+
+/* --- Render Podium (top 3) --- */
+function lbRenderPodium(ranking) {
+  if (!ranking || ranking.length < 1) return '';
+  var html = '<div class="lb-podium">';
+  var order = [1, 0, 2]; // Display: 2nd, 1st, 3rd
+  order.forEach(function(idx) {
+    if (idx >= ranking.length) return;
+    var r = ranking[idx];
+    var pos = idx + 1;
+    html += '<div class="lb-podium-item lb-podium-' + pos + ' lb-animate-in">'
+      + '<div class="lb-podium-medal">' + (lbMedals[pos] || '') + '</div>'
+      + '<div class="lb-podium-name">' + crmEsc(r.name) + '</div>'
+      + '<div class="lb-podium-score">' + r.score + '</div>'
+      + '<div class="lb-podium-detail">' + r.citas + ' citas / ' + r.verificadas + ' verif.</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+/* --- Render List (positions 4-10) --- */
+function lbRenderList(ranking) {
+  if (!ranking || ranking.length <= 3) return '';
+  var html = '';
+  for (var i = 3; i < ranking.length; i++) {
+    var r = ranking[i];
+    var isMe = CU && CU.username === r.username;
+    html += '<div class="lb-row lb-animate-in" style="animation-delay:' + (i * 0.05) + 's;' + (isMe ? 'border-color:rgba(28,232,255,0.3);background:rgba(28,232,255,0.05);' : '') + '">'
+      + '<div class="lb-rank">#' + (i + 1) + '</div>'
+      + '<div class="lb-avatar">' + lbInitials(r.name).toUpperCase() + '</div>'
+      + '<div class="lb-info"><div class="lb-name">' + crmEsc(r.name) + (isMe ? ' <span style="color:#1CE8FF;font-size:10px;">(Tu)</span>' : '') + '</div>'
+      + '<div class="lb-stats">' + r.citas + ' citas &middot; ' + r.verificadas + ' verificadas</div></div>'
+      + '<div><div class="lb-score">' + r.score + '</div><div class="lb-score-label">pts</div></div>'
+      + '</div>';
+  }
+  return html;
+}
+
+/* --- Render Weekly Tab --- */
+function lbRenderWeekly(container) {
+  var html = '<div class="lb-hero"><div class="lb-hero-title">Top 10 Semanal</div>'
+    + '<div class="lb-hero-sub">Lunes a Domingo &middot; Compite por el primer lugar!</div></div>';
+
+  if (!lbWeeklyData || !lbWeeklyData.ranking || lbWeeklyData.ranking.length === 0) {
+    html += '<div class="lb-empty"><div style="font-size:36px;margin-bottom:8px;">&#x1F3C6;</div>'
+      + 'Aun no hay citas esta semana.<br>Se el primero en agendar!</div>';
+    container.innerHTML = html;
+    return;
+  }
+
+  // Period info
+  var from = new Date(lbWeeklyData.from);
+  var to = new Date(lbWeeklyData.to);
+  html += '<div class="lb-period">Semana del ' + from.toLocaleDateString('es', { day: 'numeric', month: 'short' })
+    + ' al ' + to.toLocaleDateString('es', { day: 'numeric', month: 'short' }) + '</div>';
+
+  html += lbRenderPodium(lbWeeklyData.ranking);
+  html += lbRenderList(lbWeeklyData.ranking);
+
+  container.innerHTML = html;
+}
+
+/* --- Render Daily Tab --- */
+function lbRenderDaily(container) {
+  var html = '<div class="lb-hero"><div class="lb-hero-title" style="background:linear-gradient(135deg,#FF6B35,#E1306C,#6E57E0);-webkit-background-clip:text;">Top 5 del Dia</div>'
+    + '<div class="lb-hero-sub">Se actualiza cada noche a las 10:00 PM</div></div>';
+
+  if (!lbDailyData || !lbDailyData.ranking || lbDailyData.ranking.length === 0) {
+    html += '<div class="lb-empty"><div style="font-size:36px;margin-bottom:8px;">&#x26A1;</div>'
+      + 'Sin actividad en las ultimas 24 horas.<br>Agenda una cita para aparecer aqui!</div>';
+    container.innerHTML = html;
+    return;
+  }
+
+  html += '<div class="lb-period">Ultimas 24 horas</div>';
+  // Show as compact cards
+  lbDailyData.ranking.forEach(function(r, i) {
+    var isMe = CU && CU.username === r.username;
+    var colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#1CE8FF', '#6E57E0'];
+    html += '<div class="lb-row lb-animate-in" style="animation-delay:' + (i * 0.08) + 's;' + (isMe ? 'border-color:rgba(28,232,255,0.4);background:rgba(28,232,255,0.06);' : '') + '">'
+      + '<div class="lb-rank" style="color:' + colors[i] + ';font-size:18px;">' + (i < 3 ? lbMedals[i + 1] : '#' + (i + 1)) + '</div>'
+      + '<div class="lb-avatar">' + lbInitials(r.name).toUpperCase() + '</div>'
+      + '<div class="lb-info"><div class="lb-name">' + crmEsc(r.name) + (isMe ? ' <span style="color:#1CE8FF;font-size:10px;">(Tu)</span>' : '') + '</div>'
+      + '<div class="lb-stats">' + r.citas + ' citas &middot; ' + r.verificadas + ' verificadas hoy</div></div>'
+      + '<div><div class="lb-score">' + r.score + '</div><div class="lb-score-label">pts</div></div>'
+      + '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+/* --- Render Proof Upload Tab --- */
+function lbRenderProofs(container) {
+  var html = '<div class="lb-hero"><div class="lb-hero-title" style="background:linear-gradient(135deg,#1D9E75,#1CE8FF);-webkit-background-clip:text;">Verificacion de Citas</div>'
+    + '<div class="lb-hero-sub">Sube una foto/screenshot de tu Zoom como prueba</div></div>';
+
+  // Show user's active bookings that need proof
+  html += '<div id="lb-bookings-list" style="margin-bottom:16px;"><div class="lb-empty lb-pulse">Cargando tus citas...</div></div>';
+  container.innerHTML = html;
+
+  // Load bookings
+  lbLoadMyBookings();
+}
+
+async function lbLoadMyBookings() {
+  var listEl = document.getElementById('lb-bookings-list');
+  if (!listEl) return;
+
+  try {
+    // Get user's bookings
+    var bookings = agendaBookings || [];
+    if (bookings.length === 0) {
+      listEl.innerHTML = '<div class="lb-empty">No tienes citas activas.<br>Agenda una desde tu calendario!</div>';
+      return;
+    }
+
+    var html = '';
+    bookings.forEach(function(b) {
+      var fecha = new Date(b.fechaISO || b.fecha_iso);
+      var isPast = fecha < new Date();
+      var statusColor = b.status === 'verificada' ? '#1D9E75' : (b.status === 'completada' ? '#1CE8FF' : (isPast ? '#FFAA33' : 'rgba(255,255,255,0.3)'));
+      var statusLabel = b.status === 'verificada' ? 'Verificada' : (b.status === 'completada' ? 'Completada' : (isPast ? 'Pendiente prueba' : 'Programada'));
+
+      html += '<div class="lb-row" style="flex-wrap:wrap;">'
+        + '<div style="flex:1;min-width:150px;">'
+        + '<div class="lb-name">' + crmEsc(b.nombre) + '</div>'
+        + '<div class="lb-stats">' + fecha.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })
+        + ' ' + fecha.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) + '</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + '<span style="font-size:10px;color:' + statusColor + ';font-weight:700;">' + statusLabel + '</span>';
+
+      if (isPast && b.status !== 'verificada') {
+        html += '<button class="lb-proof-btn" onclick="lbOpenProofModal(\'' + b.id + '\',\'' + crmEsc(b.nombre) + '\')">Subir Prueba</button>';
+      }
+      if (b.status === 'verificada') {
+        html += '<span style="font-size:16px;">&#9989;</span>';
+      }
+
+      html += '</div></div>';
+    });
+
+    listEl.innerHTML = html;
+  } catch (e) {
+    listEl.innerHTML = '<div class="lb-empty">Error cargando citas</div>';
+  }
+}
+
+/* --- Proof Upload Modal --- */
+function lbOpenProofModal(bookingId, nombre) {
+  var modal = document.getElementById('lb-proof-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'lb-proof-modal';
+    modal.className = 'lb-proof-modal';
+    modal.innerHTML = '<div class="lb-proof-modal-inner">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+      + '<h3 style="color:#1CE8FF;font-size:15px;font-weight:800;margin:0;">Subir Prueba de Zoom</h3>'
+      + '<button onclick="lbCloseProofModal()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;">&times;</button></div>'
+      + '<div id="lb-proof-nombre" style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:12px;"></div>'
+      + '<div id="lb-proof-preview" style="display:none;margin-bottom:12px;text-align:center;"></div>'
+      + '<label style="display:block;text-align:center;padding:24px;border:2px dashed rgba(28,232,255,0.2);border-radius:12px;cursor:pointer;margin-bottom:12px;transition:all 0.3s;" id="lb-proof-drop">'
+      + '<input type="file" accept="image/*" onchange="lbHandleProofFile(this)" style="display:none;">'
+      + '<div style="font-size:28px;margin-bottom:6px;">&#x1F4F7;</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.4);">Toca para seleccionar foto o screenshot</div>'
+      + '</label>'
+      + '<button id="lb-proof-submit-btn" onclick="lbSubmitProof()" style="display:none;width:100%;background:linear-gradient(135deg,#1D9E75,#1CE8FF);border:none;color:#fff;padding:14px;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:Nunito;">Enviar Prueba</button>'
+      + '</div>';
+    document.body.appendChild(modal);
+  }
+
+  window._lbProofBookingId = bookingId;
+  window._lbProofData = null;
+  document.getElementById('lb-proof-nombre').textContent = 'Cita con: ' + nombre;
+  document.getElementById('lb-proof-preview').style.display = 'none';
+  document.getElementById('lb-proof-submit-btn').style.display = 'none';
+  var drop = document.getElementById('lb-proof-drop');
+  if (drop) drop.style.display = 'block';
+  modal.style.display = 'flex';
+}
+
+function lbCloseProofModal() {
+  var m = document.getElementById('lb-proof-modal');
+  if (m) m.style.display = 'none';
+}
+
+function lbHandleProofFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    window._lbProofData = e.target.result;
+    var preview = document.getElementById('lb-proof-preview');
+    preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:200px;border-radius:10px;border:1px solid rgba(28,232,255,0.2);">';
+    preview.style.display = 'block';
+    document.getElementById('lb-proof-submit-btn').style.display = 'block';
+    document.getElementById('lb-proof-drop').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function lbSubmitProof() {
+  var btn = document.getElementById('lb-proof-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+  var result = await lbApi('uploadProof', {
+    booking_id: window._lbProofBookingId,
+    proof_data: window._lbProofData
+  });
+
+  if (result && result.ok) {
+    showToast('Prueba enviada! Sera revisada pronto.');
+    lbCloseProofModal();
+    // Also mark booking as completed
+    await lbApi('completeBooking', { booking_id: window._lbProofBookingId });
+    lbLoadMyBookings();
+  } else {
+    showToast('Error enviando prueba');
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar Prueba'; }
+  }
+}
+
+/* --- Render Anti-Cheat Tab (Admin only) --- */
+function lbRenderAntiCheat(container) {
+  var html = '<div class="lb-hero"><div class="lb-hero-title" style="background:linear-gradient(135deg,#E24B4A,#FFAA33);-webkit-background-clip:text;">Anti-Trampa IA</div>'
+    + '<div class="lb-hero-sub">Deteccion inteligente de patrones sospechosos</div></div>';
+
+  html += '<div id="lb-anticheat-results"><div class="lb-empty lb-pulse">Analizando usuarios...</div></div>';
+  container.innerHTML = html;
+
+  // Analyze all users
+  lbRunAntiCheat();
+}
+
+async function lbRunAntiCheat() {
+  var resultsEl = document.getElementById('lb-anticheat-results');
+  if (!resultsEl) return;
+
+  var usernames = Object.keys(USERS);
+  var results = [];
+
+  for (var i = 0; i < usernames.length; i++) {
+    var u = usernames[i];
+    var data = await lbApi('antiCheat', { user: u });
+    if (data && data.ok && (data.flags.length > 0 || data.stats.todayCitas > 0)) {
+      results.push(data);
+    }
+  }
+
+  if (results.length === 0) {
+    resultsEl.innerHTML = '<div class="lb-empty"><div style="font-size:36px;margin-bottom:8px;">&#x1F6E1;&#xFE0F;</div>No se detectaron patrones sospechosos.<br>Todo limpio!</div>';
+    return;
+  }
+
+  // Sort by suspicion score descending
+  results.sort(function(a, b) { return b.suspicionScore - a.suspicionScore; });
+
+  var html = '';
+  results.forEach(function(r) {
+    var cssClass = 'lb-ac-' + r.classification;
+    var icon = r.classification === 'clean' ? '&#x2705;' : (r.classification === 'suspicious' ? '&#x26A0;&#xFE0F;' : '&#x1F6A8;');
+    var userName = USERS[r.user] ? USERS[r.user].name : r.user;
+
+    html += '<div class="lb-anticheat-card ' + cssClass + ' lb-animate-in">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      + '<div><span style="font-size:16px;margin-right:6px;">' + icon + '</span>'
+      + '<span style="font-weight:800;color:#F0EDE6;font-size:13px;">' + crmEsc(userName) + '</span>'
+      + ' <span style="font-size:10px;color:rgba(255,255,255,0.3);">@' + r.user + '</span></div>'
+      + '<div style="font-size:11px;font-weight:700;color:' + (r.suspicionScore >= 80 ? '#E24B4A' : (r.suspicionScore >= 50 ? '#FFAA33' : '#1D9E75')) + ';">'
+      + 'Score: ' + r.suspicionScore + '/100</div></div>';
+
+    // Stats
+    html += '<div style="display:flex;gap:12px;margin-bottom:8px;">'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.4);">Hoy: <strong style="color:#F0EDE6;">' + r.stats.todayCitas + ' citas</strong></div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.4);">Semana: <strong style="color:#F0EDE6;">' + r.stats.weekCitas + ' citas</strong></div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.4);">Pruebas: <strong style="color:#F0EDE6;">' + r.stats.proofRate + '%</strong></div>'
+      + '</div>';
+
+    // Flags
+    if (r.flags.length > 0) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+      r.flags.forEach(function(f) {
+        html += '<span class="lb-flag lb-flag-' + f.severity + '">' + f.msg + '</span>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  resultsEl.innerHTML = html;
+}
+
+/* --- Main Tab Switch --- */
+function lbSwitchTab(tab) {
+  lbActiveTab = tab;
+  document.querySelectorAll('.lb-tab').forEach(function(t) {
+    t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+  });
+  var content = document.getElementById('lb-content');
+  if (!content) return;
+
+  content.innerHTML = '<div class="lb-empty lb-pulse">Cargando...</div>';
+
+  if (tab === 'weekly') {
+    if (lbWeeklyData) { lbRenderWeekly(content); return; }
+    lbApi('weeklyTop').then(function(d) { lbWeeklyData = d; lbRenderWeekly(content); });
+  } else if (tab === 'daily') {
+    if (lbDailyData) { lbRenderDaily(content); return; }
+    lbApi('dailyTop').then(function(d) { lbDailyData = d; lbRenderDaily(content); });
+  } else if (tab === 'proofs') {
+    lbRenderProofs(content);
+  } else if (tab === 'anticheat') {
+    lbRenderAntiCheat(content);
+  }
+}
+
+/* --- Override Ranking Section --- */
+var _origRenderRanking = null;
+
+function lbInjectRankingUI() {
+  var sec = document.getElementById('section-ranking');
+  if (!sec) return;
+
+  // Find content area (after topbar)
+  var topbar = sec.querySelector('.topbar');
+  var contentArea = topbar ? topbar.nextElementSibling : sec;
+
+  // Replace content
+  var container = document.createElement('div');
+  container.className = 'lb-container';
+
+  // Tabs
+  var tabsHtml = '<div class="lb-tabs">'
+    + '<div class="lb-tab active" data-tab="weekly" onclick="lbSwitchTab(\'weekly\')">&#x1F3C6; Top 10 Semanal</div>'
+    + '<div class="lb-tab" data-tab="daily" onclick="lbSwitchTab(\'daily\')">&#x26A1; Top 5 Diario</div>'
+    + '<div class="lb-tab" data-tab="proofs" onclick="lbSwitchTab(\'proofs\')">&#x1F4F7; Mis Pruebas</div>';
+
+  if (CU && CU.isAdmin) {
+    tabsHtml += '<div class="lb-tab" data-tab="anticheat" onclick="lbSwitchTab(\'anticheat\')">&#x1F6E1;&#xFE0F; Anti-Trampa</div>';
+  }
+  tabsHtml += '</div>';
+
+  container.innerHTML = tabsHtml + '<div id="lb-content"><div class="lb-empty lb-pulse">Cargando ranking...</div></div>';
+
+  if (contentArea && contentArea !== sec) {
+    contentArea.innerHTML = '';
+    contentArea.appendChild(container);
+  } else {
+    // Remove existing content except topbar
+    var children = Array.from(sec.children);
+    children.forEach(function(c) { if (!c.classList.contains('topbar')) sec.removeChild(c); });
+    sec.appendChild(container);
+  }
+
+  // Auto-load weekly tab
+  lbSwitchTab('weekly');
+}
+
+/* --- Patch navigate to inject when ranking is opened --- */
+var _origNavigateForLb = navigate;
+navigate = function(section) {
+  _origNavigateForLb(section);
+  if (section === 'ranking') {
+    setTimeout(lbInjectRankingUI, 100);
+  }
+};
+
+
 </script>
 <script src="sky-tv.js"></script>
 <script src="sky-voice.js"></script>
