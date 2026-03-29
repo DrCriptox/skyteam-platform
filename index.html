@@ -2044,7 +2044,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator{filter:invert(1)
       <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentación</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div><div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔍</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       
-<div class="crm-column" data-etapa="cerrado_perdido"><div class="crm-column-header"><span class="crm-column-emoji">\u274C</span><span class="crm-column-name">Perdido</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+<div class="crm-column" data-etapa="cerrado_perdido"><div class="crm-column-header"><span class="crm-column-emoji">❌</span><span class="crm-column-name">Perdido</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
     </div>
     <div id="crm-list-view" class="crm-list-view" style="display:none;">
       <div class="crm-list-table-container"><table class="crm-list-table"><thead><tr>
@@ -7910,7 +7910,7 @@ window.addEventListener('load', function() {
    SKY PROSPECTOS \u2014 CRM Module
    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
 var crmProspectos=[];var crmRecordatorios=[];var crmMetricas={};var crmCurrentView='kanban';var crmEditingId=null;var crmDetailId=null;var crmDragId=null;var crmLoading=false;var crmSearchTerm='';var crmReminderInterval=null;
-var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'},seguimiento:{label:'Seguimiento',emoji:'\uD83D\uDD0D',color:'#FFA500'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
+var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'❌',color:'#E24B4A'},seguimiento:{label:'Seguimiento',emoji:'\uD83D\uDD0D',color:'#FFA500'},cerrado_perdido:{label:'Perdido',emoji:'❌',color:'#E24B4A'}};
 var CRM_FUENTES={manual:'\u270D\uFE0F',landing:'\uD83C\uDF10',whatsapp:'\uD83D\uDCAC',instagram:'\uD83D\uDCF8',facebook:'\uD83D\uDCD8',referido:'\uD83E\uDD1D',otro:'\uD83D\uDCCC'};
 var CRM_TIPOS={llamada:'\uD83D\uDCDE',whatsapp:'\uD83D\uDCAC',reunion:'\uD83E\uDD1D',email:'\uD83D\uDCE7',nota:'\uD83D\uDCDD',presentacion:'\uD83C\uDFAF',seguimiento:'\uD83D\uDC41\uFE0F',cierre:'\u2705'};
 
@@ -8018,7 +8018,7 @@ function crmCard(p){
     +'</div>'
     +'<span style="color:rgba(255,255,255,0.25);font-size:10px;">'+dl+'</span>'
     +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" title="Editar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.18);color:#1CE8FF;cursor:pointer;font-size:12px;padding:0;">\u270F\uFE0F</button>'
-    +'<button onclick="event.stopPropagation();crmApi(\'moveStage\',{id:\''+p.id+'\',etapa:\'cerrado_perdido\'}).then(function(){crmLoadData().then(crmRenderKanban)})" title="Descartar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(226,75,74,0.1);border:0.5px solid rgba(226,75,74,0.25);color:#E24B4A;cursor:pointer;font-size:12px;padding:0;">\u274C</button>'
+    +'<button onclick="event.stopPropagation();crmApi(\'moveStage\',{id:\''+p.id+'\',etapa:\'cerrado_perdido\'}).then(function(){crmLoadData().then(crmRenderKanban)})" title="Descartar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(226,75,74,0.1);border:0.5px solid rgba(226,75,74,0.25);color:#E24B4A;cursor:pointer;font-size:12px;padding:0;">❌</button>'
     +'</div></div>';}
 
 function crmRenderList(){
@@ -8529,7 +8529,8 @@ crmSwitchView = function(view) {
         (view === 'metricas' && t.includes('tricas')))
       b.classList.add('crm-view-btn-active');
   });
-  if (view === 'lista' && typeof crmRenderList === 'function') crmRenderList();
+  if (view === 'kanban' && typeof crmRenderKanban === 'function') crmRenderKanban();
+      if (view === 'lista' && typeof crmRenderList === 'function') crmRenderList();
       if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
 };
 
