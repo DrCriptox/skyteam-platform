@@ -10645,7 +10645,7 @@ var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
 function skyMic(tid,o){
 o=o||{};var t=document.getElementById(tid);if(!t||t.dataset.skyMic)return;
 t.dataset.skyMic="1";var b=document.createElement("button");b.type="button";b.className="sky-mic-btn";
-b.innerHTML="<span class=mi>\uD83C\uDF99\uFE0F</span><div class=si></div>";
+var sp=document.createElement("span");sp.className="mi";sp.textContent="\uD83C\uDF99\uFE0F";var sd=document.createElement("div");sd.className="si";b.appendChild(sp);b.appendChild(sd);
 var r=new SR();r.continuous=true;r.interimResults=true;r.lang="es-ES";
 var on=false,lp=null,isLP=false,buf="";
 r.onresult=function(e){var f="";for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)f+=e.results[i][0].transcript;}if(f){var c=t.value;t.value=c+(c&&!c.endsWith(" ")?" ":"")+f.trim();t.dispatchEvent(new Event("input",{bubbles:true}));buf+=f;}};
