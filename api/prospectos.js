@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
       const metricas = {
         total: all.length,
-        por_etapa: { nuevo: 0, contactado: 0, interesado: 0, presentacion: 0, cerrado_ganado: 0, cerrado_perdido: 0 },
+        por_etapa: { nuevo: 0, contactado: 0, interesado: 0, presentacion: 0, seguimiento: 0, cerrado_ganado: 0, cerrado_perdido: 0 },
         nuevos_7d: all.filter(p => new Date(p.created_at) >= hace7).length,
         cerrados_30d: all.filter(p => p.etapa === 'cerrado_ganado' && new Date(p.updated_at) >= hace30).length,
         perdidos_30d: all.filter(p => p.etapa === 'cerrado_perdido' && new Date(p.updated_at) >= hace30).length,
