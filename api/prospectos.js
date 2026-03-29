@@ -1,4 +1,4 @@
-// SKY PROSPECTOS â CRM API (Vercel Serverless + Supabase)
+// SKY PROSPECTOS â CRM API (Vercel Serverless + Supabase) 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
