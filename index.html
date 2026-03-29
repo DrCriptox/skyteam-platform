@@ -7958,7 +7958,8 @@ function crmStat(icon,num,label,color){
     +'<div style="font-family:Nunito;font-size:20px;font-weight:900;color:'+color+';">'+num+'</div>'
     +'<div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">'+label+'</div></div>';}
 
-function crmRenderRemindersBar(){
+function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var hoy=new Date();var dd=f.getDate(),mm=f.getMonth()+1,yy=f.getFullYear();var str=dd+'/'+mm+'/'+yy;var diff=Math.floor((f-hoy)/(1000*60*60*24));if(diff===0)return 'hoy';if(diff===1)return 'ma\u00F1ana';if(diff===-1)return 'ayer';return str;}
+    function crmRenderRemindersBar(){
   var el=document.getElementById('crm-reminders-bar');if(!el)return;
   var now=new Date();var activos=(crmRecordatorios||[]).filter(function(r){return !r.completado;});
   if(activos.length===0){el.style.display='none';return;}
