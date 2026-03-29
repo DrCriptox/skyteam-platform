@@ -10010,6 +10010,13 @@ function renderSkyTvCalendar(eventos) {
   const container = document.getElementById('skytv-calendar-container');
   if (!container) return;
 
+  // Update week display label
+  const _ws = skyTvState.selectedWeek;
+  const _we = new Date(_ws); _we.setDate(_we.getDate() + 6);
+  const _mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _wdEl = document.getElementById('skytv-week-display');
+  if (_wdEl) _wdEl.textContent = _ws.getDate() + ' ' + _mn[_ws.getMonth()] + ' - ' + _we.getDate() + ' ' + _mn[_we.getMonth()];
+
   const weekStart = skyTvState.selectedWeek;
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(weekStart);
@@ -10241,7 +10248,7 @@ function editSkyTvEvento(eventoId) {
 
 function renderSkyTvAdminModal() {
   const evento = skyTvState.editingEventoId
-    ? skyTvState.eventos.find(e => e.id === skyTvState.editingEventoId)
+    ? skyTvState.eventos.find(e => e.id == skyTvState.editingEventoId)
     : null;
 
   const overlay = document.createElement('div');
@@ -10420,7 +10427,7 @@ async function deleteSkyTvEvento(eventoId) {
 
 // ============ EVENT DETAIL & ACTIONS ============
 function openSkyTvEventDetail(eventoId) {
-  const evento = skyTvState.eventos.find(e => e.id === eventoId);
+  const evento = skyTvState.eventos.find(e => e.id == eventoId);
   if (!evento) return;
 
   const overlay = document.createElement('div');
