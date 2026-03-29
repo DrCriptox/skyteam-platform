@@ -24,8 +24,25 @@ export default async function handler(req, res) {
       const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
       const bookings = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&status=neq.cancelada&order=fecha_iso.asc');
  
+      // Fetch plan_diario blocks for next 8 days to block personal time in agenda
+      const today = new Date();
+      const fechaIni = today.toISOString().slice(0,10);
+      const futuro = new Date(today); futuro.setDate(futuro.getDate() + 8);
+      const fechaFin = futuro.toISOString().slice(0,10);
+      const planBlocks = await sb('plan_diario?username=eq.' + encodeURIComponent(user) + '&fecha=gte.' + fechaIni + '&fecha=lte.' + fechaFin + '&select=fecha,hora_inicio,hora_fin');
+      const bloqueos_personales = {};
+      if (planBlocks && Array.isArray(planBlocks)) {
+        planBlocks.forEach(function(pb) {
+          var key = pb.fecha;
+          if (!bloqueos_personales[key]) bloqueos_personales[key] = [];
+          bloqueos_personales[key].push({ ini: pb.hora_inicio.slice(0,5), fin: pb.hora_fin.slice(0,5) });
+        });
+      }
+      const cfgOut = configs && configs[0] ? Object.assign({}, configs[0].config) : null;
+      if (cfgOut) cfgOut.bloqueos_personales = bloqueos_personales;
+
       return res.status(200).json({
-        config: configs && configs[0] ? configs[0].config : null,
+        config: cfgOut,
         bookings: (bookings || []).map(b => ({ id: b.id, nombre: b.nombre, whatsapp: b.whatsapp, fechaISO: b.fecha_iso, status: b.status, notas: b.notas }))
       });
     }
