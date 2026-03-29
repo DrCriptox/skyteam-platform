@@ -3033,14 +3033,12 @@ let planDiarioRecognition = null;
 
 function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); if(t==='plandiario') loadPlanDiario(); }
 function getPlanDiarioWeekDates(offset) {
-  var now = new Date(); now.setDate(now.getDate() + (offset||0)*7);
-  var day = now.getDay(); var diff = now.getDate() - day + (day===0?-6:1);
-  var mon = new Date(now); mon.setDate(diff); mon.setHours(0,0,0,0);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var yesterday = new Date(today); yesterday.setDate(today.getDate() - 1 + (offset||0)*7);
   var dates = [];
-  for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); dates.push(d); }
+  for(var i=0; i<7; i++) { var d = new Date(yesterday); d.setDate(yesterday.getDate()+i); dates.push(d); }
   return dates;
 }
-
 function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 function loadPlanDiario() {
@@ -3258,7 +3256,7 @@ function togglePlanDiarioVoice() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   planDiarioRecognition = new SR();
   planDiarioRecognition.lang = 'es-MX';
-  planDiarioRecognition.continuous = false;
+  planDiarioRecognition.continuous = true;
   planDiarioRecognition.interimResults = true;
 
   var btn = document.getElementById('pd-mic-btn');
@@ -3275,13 +3273,21 @@ function togglePlanDiarioVoice() {
     if(status) status.textContent = '🎙️ "'+transcript+'"';
   };
   planDiarioRecognition.onend = function() {
-    planDiarioRecording = false;
-    if(btn){btn.style.background='rgba(28,232,255,0.12)';btn.style.borderColor='rgba(28,232,255,0.3)';btn.innerHTML='🎙️';}
-    if(status){status.style.display='none';}
-    // Auto-process if we got text
-    var input = document.getElementById('pd-text-input');
-    if(input && input.value.trim()) processPlanDiarioInput();
-  };
+    // If user explicitly stopped (planDiarioRecording already false), process text
+    if(!planDiarioRecording) {
+      if(btn){btn.style.background='rgba(28,232,255,0.12)';btn.style.borderColor='rgba(28,232,255,0.3)';btn.innerHTML='\uD83C\uDF99\uFE0F';}
+      if(status){status.style.display='none';}
+      var input = document.getElementById('pd-text-input');
+      if(input && input.value.trim()) processPlanDiarioInput();
+      return;
+    }
+    // Continuous mode: auto-restart to keep listening
+    try { planDiarioRecognition.start(); } catch(ex) {
+      planDiarioRecording = false;
+      if(btn){btn.style.background='rgba(28,232,255,0.12)';btn.style.borderColor='rgba(28,232,255,0.3)';btn.innerHTML='\uD83C\uDF99\uFE0F';}
+      if(status){status.style.display='none';}
+    }
+  }
   planDiarioRecognition.onerror = function(e) {
     planDiarioRecording = false;
     if(btn){btn.style.background='rgba(28,232,255,0.12)';btn.style.borderColor='rgba(28,232,255,0.3)';btn.innerHTML='🎙️';}
@@ -3292,8 +3298,8 @@ function togglePlanDiarioVoice() {
 }
 
 function stopPlanDiarioVoice() {
-  if(planDiarioRecognition) planDiarioRecognition.stop();
   planDiarioRecording = false;
+  if(planDiarioRecognition) planDiarioRecognition.stop();
 }
 
 // ── AI interpretation via /api/chat ──
