@@ -10638,34 +10638,6 @@ function initSkyTv() {
 // ============ END SKY TV MODULE ============
 
 </script>
-// === SKY VOICE MIC SYSTEM ===
-(function(){
-var s=document.createElement("style");s.textContent=".sky-mic-btn{width:36px;height:36px;min-width:36px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;margin-left:6px}.sky-mic-btn:hover{background:rgba(255,60,60,0.15);border-color:rgba(255,60,60,0.3)}.sky-mic-btn.recording{background:rgba(255,40,40,0.25);border-color:rgba(255,40,40,0.6);animation:skyMicPulse 1s ease-in-out infinite}.sky-mic-btn .mi{font-size:16px;line-height:1}.sky-mic-btn.recording .mi{display:none}.sky-mic-btn .si{width:14px;height:14px;background:#ff3333;border-radius:3px;display:none}.sky-mic-btn.recording .si{display:block}@keyframes skyMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,40,40,0.4)}50%{box-shadow:0 0 0 8px rgba(255,40,40,0)}}";document.head.appendChild(s);
-var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
-function skyMic(tid,o){
-o=o||{};var t=document.getElementById(tid);if(!t||t.dataset.skyMic)return;
-t.dataset.skyMic="1";var b=document.createElement("button");b.type="button";b.className="sky-mic-btn";
-var sp=document.createElement("span");sp.className="mi";sp.textContent="\uD83C\uDF99\uFE0F";var sd=document.createElement("div");sd.className="si";b.appendChild(sp);b.appendChild(sd);
-var r=new SR();r.continuous=true;r.interimResults=true;r.lang="es-ES";
-var on=false,lp=null,isLP=false,buf="";
-r.onresult=function(e){var f="";for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)f+=e.results[i][0].transcript;}if(f){var c=t.value;t.value=c+(c&&!c.endsWith(" ")?" ":"")+f.trim();t.dispatchEvent(new Event("input",{bubbles:true}));buf+=f;}};
-r.onerror=function(){stp();};r.onend=function(){if(on){try{r.start();}catch(x){stp();}}};
-function go(){if(on)return;on=true;buf="";b.classList.add("recording");try{r.start();}catch(x){on=false;b.classList.remove("recording");}}
-function stp(){on=false;b.classList.remove("recording");try{r.stop();}catch(x){}if(isLP&&buf.trim()&&o.autoSend){setTimeout(o.autoSend,300);}isLP=false;}
-b.onclick=function(e){e.preventDefault();e.stopPropagation();if(lp){lp=null;return;}if(on)stp();else go();};
-b.onmousedown=function(e){e.preventDefault();lp=setTimeout(function(){isLP=true;lp=null;go();},500);};
-b.onmouseup=function(){if(lp){clearTimeout(lp);lp=null;}if(isLP&&on)stp();};
-b.onmouseleave=function(){if(lp){clearTimeout(lp);lp=null;}if(isLP&&on)stp();};
-b.ontouchstart=function(e){e.preventDefault();lp=setTimeout(function(){isLP=true;lp=null;go();},500);};
-b.ontouchend=function(e){e.preventDefault();if(lp){clearTimeout(lp);lp=null;if(!on)go();else stp();}else if(isLP&&on)stp();};
-if(o.after){var ref=document.getElementById(o.after);if(ref&&ref.parentElement)ref.parentElement.insertBefore(b,ref.nextSibling);else t.parentElement.appendChild(b);}else t.parentElement.appendChild(b);}
-window.skyMicInit=function(){
-skyMic("agente-input",{after:"agente-send-btn",autoSend:function(){var x=document.getElementById("agente-send-btn");if(x)x.click();}});
-skyMic("crm-interaction-texto");
-skyMic("crm-wa-context");
-};
-skyMicInit();
-})();
-<script src="/fix-aprobar.js"></script>
+<script src="sky-voice.js"></script>
 </body>
 </html>
