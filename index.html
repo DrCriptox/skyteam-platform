@@ -10380,7 +10380,7 @@ async function saveSkyTvEvento() {
     const method = skyTvState.editingEventoId ? 'PUT' : 'POST';
     const action = skyTvState.editingEventoId ? 'update' : 'create';
 
-    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=${action}`, {
+    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=${action}&username=${(JSON.parse(localStorage.getItem('skyteam_u')||'{}').username||'admin')}`, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(evento)
@@ -10402,7 +10402,7 @@ async function deleteSkyTvEvento(eventoId) {
   if (!confirm('&#191;Est&#225;s seguro de que deseas eliminar este evento?')) return;
 
   try {
-    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=delete&id=${eventoId}`, {
+    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=delete&id=${eventoId}&username=${(JSON.parse(localStorage.getItem('skyteam_u')||'{}').username||'admin')}`, {
       method: 'DELETE'
     });
 
