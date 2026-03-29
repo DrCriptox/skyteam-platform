@@ -9318,8 +9318,14 @@ let skyTvState = {
   selectedWeek: getWeekStart(new Date()),
   adminModalOpen: false,
   editingEventoId: null,
-  userIsAdmin: currentUser && currentUser.rango >= 7
+  userIsAdmin: false
 };
+
+// Set admin status safely after declaration
+try {
+  const _stu = JSON.parse(localStorage.getItem('skyteam_u') || '{}');
+  skyTvState.userIsAdmin = _stu && (_stu.isAdmin === true || _stu.rank >= 7);
+} catch(e) { skyTvState.userIsAdmin = false; }
 
 // ============ CSS INJECTION ============
 function injectSkyTvCSS() {
