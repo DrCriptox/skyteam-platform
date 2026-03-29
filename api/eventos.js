@@ -1,6 +1,6 @@
 // api/eventos.js - Sky TV: Events API + Zoom SDK Signature
 const SUPABASE_URL = 'https://dheosuwekrhdfayikuil.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 const ZOOM_SDK_KEY = process.env.ZOOM_SDK_KEY || 'SIVRhsyhRgqvgNfKdoT6rg';
 const ZOOM_SDK_SECRET = process.env.ZOOM_SDK_SECRET || '';
 const crypto = require('crypto');
@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const SB = (u,o={}) => fetch(SUPABASE_URL+'/rest/v1/'+u, {...o, headers: {apikey:SUPABASE_KEY, Authorization:'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json', Prefer:'return=representation', ...(o.headers||{})}});
+  const SB = (u,o={}) => fetch(SUPABASE_URL+'/rest/v1/'+u, {...o, headers: {apikey:SUPABASE_SERVICE_KEY, Authorization:'Bearer '+SUPABASE_SERVICE_KEY, 'Content-Type':'application/json', Prefer:'return=representation', ...(o.headers||{})}});
   const { action } = req.query;
   const ADMINS = ['yonfer','admin','dryonfer'];
   const isAdmin = u => ADMINS.includes((u||'').toLowerCase());
