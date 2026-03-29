@@ -200,6 +200,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // ── GET RECORDATORIOS ──
+    if (action === 'getRecordatorios') {
+      const { prospecto_id } = body;
+      if (!prospecto_id) return res.status(400).json({ error: 'Missing prospecto_id' });
+      const data = await sb('recordatorios?prospecto_id=eq.' + encodeURIComponent(prospecto_id) + '&completado=eq.false&order=fecha_recordatorio.asc&limit=50');
+      return res.status(200).json({ recordatorios: data });
+    }
+
     // ââ COMPLETE RECORDATORIO ââ
     if (action === 'completeRecordatorio') {
       const { id } = body;
