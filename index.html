@@ -8592,7 +8592,7 @@ function crmInjectExtraFields() {
     if (calificarBtn) {
       calificarBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        crmStartRatingWizard(function(answers) {
+        crmStartRatingWizard(prospect.id,function(answers) {
           crmRatingAnswers = answers;
           crmUpdateStarsDisplay();
         });
@@ -9081,7 +9081,7 @@ function crmShowStarsPopup(anchorEl, prospect) {
   if (editBtn) {
     editBtn.addEventListener('click', function() {
       popup.remove();
-      crmStartRatingWizard(function(answers) {
+      crmStartRatingWizard(prospect.id,function(answers) {
         crmRatingAnswers = answers;
         prospect.calif_positivo = answers.calif_positivo;
         prospect.calif_emprendedor = answers.calif_emprendedor;
@@ -9289,7 +9289,7 @@ function crmStartRatingWizard(prospectoId,onComplete){
     {key:"calif_positivo",text:"Es Positivo?",desc:"Tiene actitud optimista y abierta ante nuevas oportunidades"},
     {key:"calif_social",text:"Es Social?",desc:"Le gusta interactuar, conectar con personas y hacer networking"},
     {key:"calif_emprendedor",text:"Es Emprendedor?",desc:"Tiene mentalidad de negocio y busca oportunidades de crecimiento"},
-    {key:"calif_dinero",text:"Necesita Dinero?",desc:"Busca activamente una fuente de ingresos adicional"},
+    {key:"calif_dinero",text:"Tiene Dinero?",desc:"Tiene recursos o capacidad econ\u00f3mica para invertir en un negocio"},
     {key:"calif_lider",text:"Es Lider?",desc:"Tiene capacidad de influir, motivar y guiar a otros"}
   ];
   var answers={};var step=0;
