@@ -9373,6 +9373,197 @@ const SKYTV_CONFIG = {
   FONT: 'Nunito'
 };
 
+
+/* ========================================
+   FEATURE: IG Pre-Message AI + Agent Rating
+   Commit 25
+   ======================================== */
+
+/* --- Instagram AI Message --- */
+function crmQuickIG(id){crmDetailId=id;openCrmModalIg();}
+
+function openCrmModalIg(){
+  var p=crmProspectos.find(function(x){return x.id===crmDetailId;});
+  if(!p||!p.instagram){crmToast('Este prospecto no tiene Instagram','error');return;}
+  var modal=document.getElementById('crm-modal-ig');
+  if(!modal){
+    modal=document.createElement('div');modal.id='crm-modal-ig';
+    modal.style.cssText='display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10001;align-items:center;justify-content:center;';
+    modal.innerHTML='<div style="background:rgba(6,18,53,0.95);border:1px solid rgba(225,48,108,0.3);border-radius:16px;padding:24px;max-width:420px;width:90%;backdrop-filter:blur(20px);">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+      +'<h3 style="color:#E1306C;font-size:15px;font-weight:800;margin:0;">Mensaje para Instagram</h3>'
+      +'<button onclick="closeCrmModalIg()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;">&times;</button></div>'
+      +'<textarea id="crm-ig-context" placeholder="Contexto adicional (opcional)..." rows="2" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;color:#F0EDE6;font-size:13px;resize:none;margin-bottom:12px;font-family:Nunito;box-sizing:border-box;"></textarea>'
+      +'<div id="crm-ig-result" style="display:none;background:rgba(225,48,108,0.08);border:1px solid rgba(225,48,108,0.2);border-radius:10px;padding:14px;margin-bottom:12px;">'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;">MENSAJE GENERADO:</div>'
+      +'<div id="crm-ig-msg-text" style="color:#F0EDE6;font-size:13px;line-height:1.5;white-space:pre-wrap;"></div></div>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button id="crm-ig-gen-btn" onclick="crmGenIgMsg()" style="flex:1;background:linear-gradient(135deg,#E1306C,#C13584);border:none;color:#fff;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Nunito;">Generar Mensaje</button>'
+      +'<button id="crm-ig-copy-btn" onclick="crmCopyIgMsg()" style="display:none;background:rgba(28,232,255,0.15);border:1px solid rgba(28,232,255,0.3);color:#1CE8FF;padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Nunito;">Copiar</button>'
+      +'<button id="crm-ig-go-btn" onclick="crmGoIg()" style="display:none;background:rgba(225,48,108,0.15);border:1px solid rgba(225,48,108,0.3);color:#E1306C;padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Nunito;">Ir a IG</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+  var res=document.getElementById('crm-ig-result');if(res)res.style.display='none';
+  var cb=document.getElementById('crm-ig-copy-btn');if(cb)cb.style.display='none';
+  var gb=document.getElementById('crm-ig-go-btn');if(gb)gb.style.display='none';
+  var ctx=document.getElementById('crm-ig-context');if(ctx)ctx.value='';
+  var gen=document.getElementById('crm-ig-gen-btn');if(gen){gen.style.flex='1';gen.disabled=false;gen.textContent='Generar Mensaje';}
+  modal.style.display='flex';
+}
+
+function closeCrmModalIg(){var m=document.getElementById('crm-modal-ig');if(m)m.style.display='none';}
+
+function crmCleanEmojis(t){
+  return t.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g,'')
+    .replace(/[\u2600-\u27BF\uFE00-\uFE0F\u200D\u20E3]/g,'')
+    .replace(/[\u2300-\u23FF\u2B00-\u2BFF\u3000-\u303F\u200B-\u200F]/g,'').trim();
+}
+
+function crmGenIgMsg(){
+  var p=crmProspectos.find(function(x){return x.id===crmDetailId;});if(!p)return;
+  var ctx=document.getElementById('crm-ig-context');var ut=ctx?ctx.value.trim():'';
+  var btn=document.getElementById('crm-ig-gen-btn');if(btn){btn.disabled=true;btn.textContent='Generando...';}
+  var sp='Eres un experto en ventas de network marketing. Genera un mensaje directo (DM) para Instagram, corto y persuasivo. Tono natural, amigable y directo. NO uses emojis, solo texto plano y signos basicos como ! ? ... Maximo 3-4 lineas.';
+  var um='Prospecto: '+p.nombre+'. ';
+  if(p.instagram)um+='Instagram: @'+p.instagram.replace('@','')+'. ';
+  if(p.notas)um+='Notas: '+p.notas+'. ';
+  if(p.fuente)um+='Fuente: '+p.fuente+'. ';
+  if(p.etapa)um+='Etapa: '+p.etapa+'. ';
+  if(ut)um+='Contexto: '+ut;
+  fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(window.SKY_OAI_KEY||'')},
+    body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:sp},{role:'user',content:um}],max_tokens:150})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    var msg=d.choices&&d.choices[0]?d.choices[0].message.content:'';
+    var clean=crmCleanEmojis(msg);
+    window._crmIgLastMsg=clean;
+    var res=document.getElementById('crm-ig-result');var mt=document.getElementById('crm-ig-msg-text');
+    if(res)res.style.display='block';if(mt)mt.textContent=clean;
+    var cb=document.getElementById('crm-ig-copy-btn');var gb=document.getElementById('crm-ig-go-btn');
+    if(cb)cb.style.display='block';if(gb)gb.style.display='block';
+    if(btn){btn.disabled=false;btn.textContent='Regenerar';}
+  }).catch(function(e){
+    console.error('IG AI err:',e);crmToast('Error generando mensaje','error');
+    if(btn){btn.disabled=false;btn.textContent='Generar Mensaje';}
+  });
+}
+
+function crmCopyIgMsg(){
+  if(window._crmIgLastMsg){
+    navigator.clipboard.writeText(window._crmIgLastMsg).then(function(){
+      crmToast('Mensaje copiado!','success');
+      var b=document.getElementById('crm-ig-copy-btn');
+      if(b){b.textContent='Copiado!';setTimeout(function(){b.textContent='Copiar';},2000);}
+    });
+  }
+}
+
+function crmGoIg(){
+  var p=crmProspectos.find(function(x){return x.id===crmDetailId;});
+  if(!p||!p.instagram)return;
+  var ig=(p.instagram+'').replace('@','').trim();
+  window.open('https://instagram.com/'+ig,'_blank');
+  closeCrmModalIg();
+}
+
+/* --- Patch crmCard: IG button uses AI --- */
+var _origCrmCard=crmCard;
+crmCard=function(p){
+  var html=_origCrmCard(p);
+  var ig=p.instagram?(p.instagram+'').replace('@','').trim():'';
+  if(ig){
+    html=html.replace(
+      '<a href="https://instagram.com/'+crmEsc(ig)+'"',
+      '<button onclick="event.stopPropagation();crmQuickIG(\''+p.id+'\')"'
+    );
+    html=html.replace('text-decoration:none;"><svg width=\\"14\\" height=\\"14\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"#E1306C\\"','padding:0;"><svg width=\\"14\\" height=\\"14\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"#E1306C\\"');
+    html=html.replace('</svg></a>','</svg></button>');
+  }
+  return html;
+};
+
+/* --- Patch crmRenderList: WA+IG use AI --- */
+var _origCrmRenderList=crmRenderList;
+crmRenderList=function(){
+  _origCrmRenderList();
+  var tb=document.getElementById('crm-list-tbody');if(!tb)return;
+  tb.querySelectorAll('a[href*="wa.me"]').forEach(function(a){
+    var row=a.closest('tr');if(!row)return;
+    var oc=row.getAttribute('onclick')||'';
+    var m=oc.match(/crmOpenDetail\('([^']+)'\)/);if(!m)return;
+    var pid=m[1];var btn=document.createElement('button');
+    btn.onclick=function(e){e.stopPropagation();crmQuickWA(pid);};
+    btn.style.cssText='background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.3);color:#25D366;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;';
+    btn.innerHTML='\uD83D\uDCAC';btn.title='WhatsApp con IA';
+    a.parentNode.replaceChild(btn,a);
+  });
+  tb.querySelectorAll('a[href*="instagram.com"]').forEach(function(a){
+    var row=a.closest('tr');if(!row)return;
+    var oc=row.getAttribute('onclick')||'';
+    var m=oc.match(/crmOpenDetail\('([^']+)'\)/);if(!m)return;
+    var pid=m[1];var btn=document.createElement('button');
+    btn.onclick=function(e){e.stopPropagation();crmQuickIG(pid);};
+    btn.style.cssText='background:rgba(225,48,108,0.1);border:0.5px solid rgba(225,48,108,0.25);color:#E1306C;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;';
+    btn.innerHTML='\uD83D\uDCF7';btn.title='Instagram con IA';
+    a.parentNode.replaceChild(btn,a);
+  });
+};
+
+/* --- Agent IA Rating System --- */
+var agentRatings=JSON.parse(localStorage.getItem('skyAgentRatings')||'[]');
+var agentMsgCounter=0;
+
+var _origSendAgentMsg=sendAgentMsg;
+sendAgentMsg=function(){
+  var msgs=document.getElementById('agente-msgs');
+  var countBefore=msgs?msgs.querySelectorAll('.agente-msg.bot:not(.typing):not(.error)').length:0;
+  _origSendAgentMsg();
+  var ci=setInterval(function(){
+    if(!msgs){clearInterval(ci);return;}
+    var bots=msgs.querySelectorAll('.agente-msg.bot:not(.typing):not(.error)');
+    if(bots.length>countBefore){
+      clearInterval(ci);
+      var last=bots[bots.length-1];
+      if(!last.querySelector('.agent-rating-bar')){
+        agentMsgCounter++;
+        var rid='r-'+agentMsgCounter+'-'+Date.now();
+        var bar=document.createElement('div');bar.className='agent-rating-bar';
+        bar.style.cssText='display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.06);';
+        bar.innerHTML='<span style="font-size:10px;color:rgba(255,255,255,0.3);">Util?</span>'
+          +'<button class="arb" data-rid="'+rid+'" data-v="up" onclick="rateAgentMsg(this)" style="background:none;border:1px solid rgba(29,158,117,0.25);border-radius:6px;padding:2px 10px;cursor:pointer;font-size:12px;color:rgba(29,158,117,0.6);transition:all 0.2s;">Si</button>'
+          +'<button class="arb" data-rid="'+rid+'" data-v="down" onclick="rateAgentMsg(this)" style="background:none;border:1px solid rgba(226,75,74,0.25);border-radius:6px;padding:2px 10px;cursor:pointer;font-size:12px;color:rgba(226,75,74,0.6);transition:all 0.2s;">No</button>';
+        last.appendChild(bar);
+      }
+    }
+  },500);
+  setTimeout(function(){clearInterval(ci);},30000);
+};
+
+function rateAgentMsg(btn){
+  var rid=btn.getAttribute('data-rid');var vote=btn.getAttribute('data-v');
+  var bar=btn.closest('.agent-rating-bar');
+  var msgDiv=bar.parentElement;
+  var preview=msgDiv?msgDiv.textContent.replace(/Util\?SiNo/g,'').trim().substring(0,150):'';
+  agentRatings.push({id:rid,vote:vote,msg:preview,ts:new Date().toISOString()});
+  localStorage.setItem('skyAgentRatings',JSON.stringify(agentRatings.slice(-100)));
+  bar.querySelectorAll('.arb').forEach(function(b){b.style.opacity='0.3';b.disabled=true;});
+  btn.style.opacity='1';
+  if(vote==='up'){
+    btn.style.background='rgba(29,158,117,0.15)';btn.style.borderColor='#1D9E75';btn.style.color='#1D9E75';
+    bar.querySelector('span').textContent='Gracias!';
+  } else {
+    btn.style.background='rgba(226,75,74,0.15)';btn.style.borderColor='#E24B4A';btn.style.color='#E24B4A';
+    bar.querySelector('span').textContent='Mejoraremos';
+    var id='default';
+    if(typeof agentHistory!=='undefined'&&agentHistory[id]){
+      agentHistory[id].push({role:'user',content:'[FEEDBACK: La respuesta anterior no fue util. Mejora siendo mas preciso y practico.]'});
+    }
+  }
+  setTimeout(function(){bar.style.transition='opacity 0.5s';bar.style.opacity='0.5';},2000);
+}
+
 </script>
 <script src="sky-tv.js"></script>
 <script src="sky-voice.js"></script>
