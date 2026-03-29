@@ -3026,6 +3026,11 @@ function eliminarBloque(btn) {
   if(row) row.remove();
 }
 
+let planDiarioBlocks = [];
+let planDiarioWeekOffset = 0;
+let planDiarioRecording = false;
+let planDiarioRecognition = null;
+
 function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); if(t==='plandiario') loadPlanDiario(); }
 function getPlanDiarioWeekDates(offset) {
   var now = new Date(); now.setDate(now.getDate() + (offset||0)*7);
