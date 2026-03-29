@@ -618,10 +618,8 @@ function toggleLive(id, isLive, callback) {
 
 // --- INIT ---
 window.initSkyTv = function() {
-  // Determine admin status from existing page context
-  var adminBtn = document.querySelector('[onclick*="admin"]') || document.getElementById('nav-admin');
-  if (typeof skyTvState.userIsAdmin === 'undefined') {
-    skyTvState.userIsAdmin = !!adminBtn;
+  var adminBtn = document.getElementById('nav-admin-btn') || document.querySelector('[onclick*="admin"]');
+  skyTvState.userIsAdmin = !!adminBtn;
   }
   skyTvState.selectedWeek = new Date();
   loadEventos();
