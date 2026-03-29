@@ -2044,10 +2044,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <div class="crm-column" data-etapa="interesado"><div class="crm-column-header"><span class="crm-column-emoji">🔥</span><span class="crm-column-name">Interesado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentación</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔔</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
-      <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔔</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
-      <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div><div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔍</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
-      
-<div class="crm-column" data-etapa="cerrado_perdido"><div class="crm-column-header"><span class="crm-column-emoji">❌</span><span class="crm-column-name">Perdido</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
     </div>
     <div id="crm-list-view" class="crm-list-view" style="display:none;">
       <div class="crm-list-table-container"><table class="crm-list-table"><thead><tr>
@@ -7990,7 +7987,7 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
 function crmRenderKanban(){
   var kb=document.getElementById('crm-kanban');if(!kb)return;
   var filtered=crmFilter();
-  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],seguimiento:[],cerrado:[],seguimiento:[],cerrado_perdido:[]};
+  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],seguimiento:[],cerrado:[]};
   filtered.forEach(function(p){
     if(p.etapa==='cerrado_ganado'||p.etapa==='cerrado_perdido')groups.cerrado.push(p);
     else if(groups[p.etapa])groups[p.etapa].push(p);
