@@ -349,18 +349,24 @@ select option{background:#040f28;color:#F0EDE6;}
 .crm-kanban-board::-webkit-scrollbar{height:4px;}
 .crm-kanban-board::-webkit-scrollbar-track{background:transparent;}
 .crm-kanban-board::-webkit-scrollbar-thumb{background:rgba(28,232,255,0.2);border-radius:2px;}
-.crm-column{flex:0 0 260px;background:rgba(6,18,53,0.5);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;min-height:400px;display:flex;flex-direction:column;transition:all 0.2s;}
+.crm-column{flex:0 0 208px;background:rgba(6,18,53,0.5);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;min-height:400px;display:flex;flex-direction:column;transition:all 0.2s;}
 .crm-column:hover{border-color:rgba(28,232,255,0.12);}
 .crm-column.dragging-over{border-color:rgba(28,232,255,0.4);box-shadow:0 0 20px rgba(28,232,255,0.1);background:rgba(28,232,255,0.03);}
 .crm-column-header{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:10px;border-bottom:0.5px solid rgba(255,255,255,0.06);}
 .crm-column-emoji{font-size:16px;}
 .crm-column-name{font-size:13px;font-weight:800;color:#fff;flex:1;}
 .crm-column-count{font-size:11px;font-weight:800;min-width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(28,232,255,0.1);color:#1CE8FF;}
+.crm-kanban-wrap{overflow-x:auto;padding-bottom:12px;}
+.crm-kanban-wrap::-webkit-scrollbar{height:14px;}
+.crm-kanban-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:7px;}
+.crm-kanban-wrap::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#1CE8FF,#7F77DD);border-radius:7px;min-width:60px;}
+.crm-kanban-wrap::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,#1CE8FF,#25D366);}
 .crm-column[data-etapa="nuevo"] .crm-column-count{background:rgba(28,232,255,0.1);color:#1CE8FF;}
 .crm-column[data-etapa="contactado"] .crm-column-count{background:rgba(127,119,221,0.15);color:#7F77DD;}
 .crm-column[data-etapa="interesado"] .crm-column-count{background:rgba(255,215,0,0.1);color:#FFD700;}
 .crm-column[data-etapa="presentacion"] .crm-column-count{background:rgba(29,158,117,0.15);color:#1D9E75;}
 .crm-column[data-etapa="cerrado"] .crm-column-count{background:rgba(37,211,102,0.15);color:#25D366;}
+.crm-column[data-etapa="seguimiento"] .crm-column-count{background:rgba(255,165,0,0.15);color:#FFA500;}
 .crm-column-cards{flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:calc(100vh - 350px);}
 .crm-prospect-card{cursor:grab;transition:all 0.15s;}
 .crm-prospect-card:hover{transform:translateY(-2px);}
@@ -2029,16 +2035,17 @@ select option{background:#040f28;color:#F0EDE6;}
     </div>
     <div id="crm-metrics-bar" class="crm-metrics-bar"></div>
     <div id="crm-reminders-bar" class="crm-reminders-bar" style="display:none;"></div>
-    <div id="crm-kanban" class="crm-kanban-board">
+    <div id="crm-kanban" class="crm-kanban-board crm-kanban-wrap">
       <div class="crm-column" data-etapa="nuevo"><div class="crm-column-header"><span class="crm-column-emoji">🆕</span><span class="crm-column-name">Nuevo</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="contactado"><div class="crm-column-header"><span class="crm-column-emoji">📞</span><span class="crm-column-name">Contactado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="interesado"><div class="crm-column-header"><span class="crm-column-emoji">🔥</span><span class="crm-column-name">Interesado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentación</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔍</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
     </div>
     <div id="crm-list-view" class="crm-list-view" style="display:none;">
       <div class="crm-list-table-container"><table class="crm-list-table"><thead><tr>
-        <th>Nombre</th><th>Teléfono</th><th>Email</th><th>Etapa</th><th>Temp.</th><th>Fuente</th><th>Valor</th><th>Acciones</th>
+        <th>Nombre</th><th>Teléfono</th><th>Calificación</th><th>Redes</th><th>Temp.</th><th>Valor</th><th>Etapa</th><th>Acciones</th>
       </tr></thead><tbody id="crm-list-tbody"></tbody></table></div>
     </div>
     <div id="crm-metrics-view" class="crm-metrics-view" style="display:none;"><!-- SECTION: Gamification Hero -->
@@ -7900,7 +7907,7 @@ window.addEventListener('load', function() {
    SKY PROSPECTOS \u2014 CRM Module
    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
 var crmProspectos=[];var crmRecordatorios=[];var crmMetricas={};var crmCurrentView='kanban';var crmEditingId=null;var crmDetailId=null;var crmDragId=null;var crmLoading=false;var crmSearchTerm='';var crmReminderInterval=null;
-var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
+var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'},seguimiento:{label:'Seguimiento',emoji:'\uD83D\uDD0D',color:'#FFA500'}};
 var CRM_FUENTES={manual:'\u270D\uFE0F',landing:'\uD83C\uDF10',whatsapp:'\uD83D\uDCAC',instagram:'\uD83D\uDCF8',facebook:'\uD83D\uDCD8',referido:'\uD83E\uDD1D',otro:'\uD83D\uDCCC'};
 var CRM_TIPOS={llamada:'\uD83D\uDCDE',whatsapp:'\uD83D\uDCAC',reunion:'\uD83E\uDD1D',email:'\uD83D\uDCE7',nota:'\uD83D\uDCDD',presentacion:'\uD83C\uDFAF',seguimiento:'\uD83D\uDC41\uFE0F',cierre:'\u2705'};
 
@@ -7970,7 +7977,7 @@ function crmRenderRemindersBar(){
 function crmRenderKanban(){
   var kb=document.getElementById('crm-kanban');if(!kb)return;
   var filtered=crmFilter();
-  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],cerrado:[]};
+  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],seguimiento:[],cerrado:[]};
   filtered.forEach(function(p){
     if(p.etapa==='cerrado_ganado'||p.etapa==='cerrado_perdido')groups.cerrado.push(p);
     else if(groups[p.etapa])groups[p.etapa].push(p);
@@ -7986,9 +7993,7 @@ function crmRenderKanban(){
 
 function crmCard(p){
   var temp=p.temperatura||50;var tc=temp<=33?'#1CE8FF':temp<=66?'#FFD700':'#E24B4A';
-  var d=new Date(p.updated_at);var now=new Date();var isToday=d.toDateString()===now.toDateString();
-  var dl;if(isToday){dl='Hoy '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-  }else{var da=Math.floor((now-d)/86400000);dl=da===1?'Ayer':da<30?'Hace '+da+'d':d.getDate()+'/'+(d.getMonth()+1);}
+  var d=new Date(p.updated_at);var now=new Date();var hh=d.getHours();var ampm=hh>=12?'pm':'am';var h12=hh%12||12;var timeStr=String(h12).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+ampm;var isToday=d.toDateString()===now.toDateString();var yest=new Date(now);yest.setDate(yest.getDate()-1);var isYest=d.toDateString()===yest.toDateString();var dl;if(isToday){dl='hoy, '+timeStr;}else if(isYest){dl='ayer, '+timeStr;}else{var dias=['dom','lun','mar','mie','jue','vie','sab'];var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];dl=dias[d.getDay()]+' '+d.getDate()+' '+meses[d.getMonth()]+', '+timeStr;}
   var ig=p.instagram?(p.instagram+'').replace('@','').trim():'';
   var tel=p.telefono&&p.telefono!=='null'?p.telefono:'';
   var fuente=(p.fuente||'manual').toLowerCase();
@@ -8016,21 +8021,23 @@ function crmRenderList(){
   var tb=document.getElementById('crm-list-tbody');if(!tb)return;
   var filtered=crmFilter();
   if(!filtered.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(255,255,255,0.15);font-size:12px;">No hay prospectos</td></tr>';return;}
-  var h='';filtered.forEach(function(p){
-    var ei=CRM_ETAPAS[p.etapa]||CRM_ETAPAS.nuevo;var temp=p.temperatura||50;var tc=temp<=33?'#1CE8FF':temp<=66?'#FFD700':'#E24B4A';
-    h+='<tr style="cursor:pointer;" onclick="crmOpenDetail(\''+p.id+'\')">'
-      +'<td style="font-weight:700;color:#fff;">'+crmEsc(p.nombre)+'</td>'
-      +'<td style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.4);">'+crmEsc(p.telefono||'\u2014')+'</td>'
-      +'<td style="font-size:11px;color:rgba(255,255,255,0.35);">'+crmEsc(p.email||'\u2014')+'</td>'
-      +'<td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:'+ei.color+'15;border:0.5px solid '+ei.color+'30;color:'+ei.color+';">'+ei.emoji+' '+ei.label+'</span></td>'
-      +'<td><div style="display:flex;align-items:center;gap:4px;"><div style="width:40px;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;"><div style="width:'+temp+'%;height:100%;background:'+tc+';border-radius:2px;"></div></div><span style="font-size:10px;color:'+tc+';font-weight:700;">'+temp+'</span></div></td>'
-      +'<td style="font-size:11px;color:rgba(255,255,255,0.35);">'+crmEsc(p.fuente||'\u2014')+'</td>'
-      +'<td style="font-size:11px;color:#FFD700;font-weight:700;">$'+((parseFloat(p.valor_estimado)||0).toLocaleString())+'</td>'
-      +'<td><div style="display:flex;gap:3px;">'
-      +(p.telefono?'<button onclick="event.stopPropagation();crmQuickWA(\''+p.id+'\')" style="background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.3);color:#25D366;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;">\uD83D\uDCAC</button>':'')
-      +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" style="background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.18);color:#1CE8FF;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;">\u270F\uFE0F</button></div></td></tr>';});
-  tb.innerHTML=h;}
-
+  var html='';filtered.forEach(function(p){
+    var calif=Math.round(((p.calif_positivo||0)+(p.calif_emprendedor||0)+(p.calif_dinero||0)+(p.calif_lider||0))/4);
+    var stars='';for(var s=1;s<=5;s++){stars+=s<=calif?'\u2B50':'\u2606';}
+    var ig=p.instagram?'<a href="https://instagram.com/'+p.instagram+'" target="_blank" style="color:#E1306C;text-decoration:none;font-size:13px;">\uD83D\uDCF7 '+p.instagram+'</a>':'<span style="color:rgba(255,255,255,0.2);">-</span>';
+    var temp=p.temperatura||0;var tColor=temp>=70?'#25D366':temp>=40?'#FFD700':'#E24B4A';
+    var etapaInfo=CRM_ETAPAS[p.etapa]||{label:p.etapa||'-',color:'#888'};
+    html+='<tr style="cursor:pointer;" onclick="crmOpenDetail(\''+p.id+'\')">'
+      +'<td style="font-weight:700;">'+((p.nombre||p.username)||'-')+'</td>'
+      +'<td>'+(p.telefono||'-')+'</td>'
+      +'<td style="font-size:12px;letter-spacing:1px;">'+stars+'</td>'
+      +'<td>'+ig+'</td>'
+      +'<td><span style="color:'+tColor+';font-weight:800;">'+temp+'%</span></td>'
+      +'<td style="font-weight:700;">$'+((p.valor_estimado||0).toLocaleString())+'</td>'
+      +'<td><span style="background:'+etapaInfo.color+';color:#000;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;">'+etapaInfo.label+'</span></td>'
+      +'<td><button onclick="event.stopPropagation();crmOpenDetail(\''+p.id+'\')" style="background:rgba(28,232,255,0.1);color:#1CE8FF;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;">Ver</button></td></tr>';
+  });tb.innerHTML=html;
+}
 function crmRenderMetricsDashboard(){
   var el=document.getElementById('crm-metrics-view');if(!el)return;
   var m=crmMetricas;var pe=m.por_etapa||{};var total=m.total||1;
@@ -8219,7 +8226,7 @@ var pros=typeof crmProspectos!=='undefined'?crmProspectos:[];
 var total=pros.length;
 var ganados=pros.filter(function(p){return p.etapa==='cerrado_ganado';}).length;
 var tasa=total>0?Math.round((ganados/total)*100):0;
-var calientes=pros.filter(function(p){return p.etapa==='interesado'||p.etapa==='presentacion';}).length;
+var calientes=pros.filter(function(p){return (p.temperatura||0)>=70;}).length;
 var map={
 'crm-dash-kpi-total':{v:total,s:''},
 'crm-dash-kpi-cerrados':{v:ganados,s:''},
@@ -8275,7 +8282,7 @@ var pct=(c/total)*360;
 var info=CRM_ETAPAS[s];
 parts.push(info.color+' '+deg+'deg '+(deg+pct)+'deg');
 deg+=pct;
-legendH+='<div class="crm-dash-legend-item"><span class="crm-dash-legend-dot" style="background:'+info.color+'"></span>'+info.label+' <strong>'+c+'</strong></div>';
+legendH+='<div class="crm-dash-legend-item" style="color:'+info.color+'"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+info.color+';margin-right:6px;"></span>'+info.label+' <strong>'+c+'</strong></div>';
 });
 donut.style.background='conic-gradient('+parts.join(',')+')';
 if(center)center.textContent=total;
