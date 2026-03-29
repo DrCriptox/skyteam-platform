@@ -10056,10 +10056,10 @@ function renderSkyTvCalendar(eventos) {
               ${liveIndicator}
             </div>
             <div class="skytv-quick-actions">
-              <button class="skytv-quick-btn" onclick="openSkyTvEventDetail('${evento.id}')" title="Details">ð</button>
-              <button class="skytv-quick-btn" onclick="openSkyTvZoom('${evento.zoom_link || ''}')" title="Join Zoom">ð</button>
-              ${evento.grabacion_url ? `<button class="skytv-quick-btn" onclick="openSkyTvRecording('${evento.grabacion_url}')" title="Recording">ð¬</button>` : ''}
-              ${skyTvState.userIsAdmin ? `<button class="skytv-quick-btn" onclick="editSkyTvEvento('${evento.id}')" title="Edit">âï¸</button>` : ''}
+              <button class="skytv-quick-btn" onclick="openSkyTvEventDetail('${evento.id}')" title="Details">📋</button>
+              <button class="skytv-quick-btn" onclick="openSkyTvZoom('${evento.zoom_link || ''}')" title="Join Zoom">🔗</button>
+              ${evento.grabacion_url ? `<button class="skytv-quick-btn" onclick="openSkyTvRecording('${evento.grabacion_url}')" title="Recording">🎬</button>` : ''}
+              ${skyTvState.userIsAdmin ? `<button class="skytv-quick-btn" onclick="editSkyTvEvento('${evento.id}')" title="Edit">✏️</button>` : ''}
             </div>
           </div>
         `;
@@ -10110,7 +10110,7 @@ function renderSkyTvEnVivo(liveEventos) {
             <span style="font-size: 0.8rem; color: #aaaaaa;">Termina en ${endMinutes}min</span>
           </div>
           <button class="skytv-btn" style="width: 100%; margin-top: 1rem;" onclick="openSkyTvZoom('${evento.zoom_link || ''}')">
-            ð¹ Unirse a Zoom
+            📹 Unirse a Zoom
           </button>
         </div>
       </div>
@@ -10152,7 +10152,7 @@ function renderSkyTvCountdown(eventos) {
 
   const html = `
     <div class="skytv-countdown-box">
-      <div class="skytv-countdown-label">PRÃXIMO EVENTO EN</div>
+      <div class="skytv-countdown-label">PRÔXIMO EVENTO EN</div>
       <div class="skytv-countdown-timer">${countdownStr}</div>
       <div class="skytv-countdown-title">${nextEvento.titulo}</div>
       <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #aaaaaa;">
@@ -10217,7 +10217,7 @@ function showSkyTvAlert(message, type = 'info') {
 // ============ MODAL & ADMIN ============
 function openSkyTvAdmin() {
   if (!skyTvState.userIsAdmin) {
-    alert('No tienes permiso para acceder al panel de administraciÃ³n');
+    alert('No tienes permiso para acceder al panel de administración');
     return;
   }
 
@@ -10251,21 +10251,21 @@ function renderSkyTvAdminModal() {
 
   const html = `
     <div class="skytv-modal">
-      <button class="skytv-modal-close" onclick="closeSkyTvAdmin()">â</button>
+      <button class="skytv-modal-close" onclick="closeSkyTvAdmin()">✕</button>
       <h2>${modalTitle}</h2>
 
       <div class="skytv-form-group">
-        <label>TÃ­tulo</label>
-        <input type="text" id="skytv-form-titulo" placeholder="TÃ­tulo del evento" value="${evento?.titulo || ''}">
+        <label>Título</label>
+        <input type="text" id="skytv-form-titulo" placeholder="Título del evento" value="${evento?.titulo || ''}">
       </div>
 
       <div class="skytv-form-group">
-        <label>DescripciÃ³n</label>
-        <textarea id="skytv-form-descripcion" placeholder="DescripciÃ³n">${evento?.descripcion || ''}</textarea>
+        <label>Descripción</label>
+        <textarea id="skytv-form-descripcion" placeholder="Descripción">${evento?.descripcion || ''}</textarea>
       </div>
 
       <div class="skytv-form-group">
-        <label>CategorÃ­a</label>
+        <label>Categoría</label>
         <select id="skytv-form-categoria">
           ${categorias.map(cat => `
             <option value="${cat}" ${evento?.categoria === cat ? 'selected' : ''}>${cat}</option>
@@ -10301,7 +10301,7 @@ function renderSkyTvAdminModal() {
 
       <div class="skytv-form-group">
         <label>Zoom Password</label>
-        <input type="password" id="skytv-form-zoom-password" placeholder="ContraseÃ±a" value="${evento?.zoom_password || ''}">
+        <input type="password" id="skytv-form-zoom-password" placeholder="Contraseña" value="${evento?.zoom_password || ''}">
       </div>
 
       <div class="skytv-form-group">
@@ -10316,7 +10316,7 @@ function renderSkyTvAdminModal() {
 
       <div class="skytv-form-group">
         <label>Recording URL</label>
-        <input type="text" id="skytv-form-grabacion-url" placeholder="URL de la grabaciÃ³n" value="${evento?.grabacion_url || ''}">
+        <input type="text" id="skytv-form-grabacion-url" placeholder="URL de la grabación" value="${evento?.grabacion_url || ''}">
       </div>
 
       <div class="skytv-form-actions">
@@ -10391,7 +10391,7 @@ async function saveSkyTvEvento() {
 }
 
 async function deleteSkyTvEvento(eventoId) {
-  if (!confirm('Â¿EstÃ¡s seguro de que deseas eliminar este evento?')) return;
+  if (!confirm('¿Estás seguro de que deseas eliminar este evento?')) return;
 
   try {
     const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=delete&id=${eventoId}`, {
@@ -10423,35 +10423,35 @@ function openSkyTvEventDetail(eventoId) {
   };
 
   const live = isEventLive(evento);
-  const liveHtml = live ? '<div style="color: #FF6B6B; font-weight: 700; margin-bottom: 1rem;">ð´ EN VIVO AHORA</div>' : '';
+  const liveHtml = live ? '<div style="color: #FF6B6B; font-weight: 700; margin-bottom: 1rem;">🔴 EN VIVO AHORA</div>' : '';
 
   const html = `
     <div class="skytv-modal">
-      <button class="skytv-modal-close" onclick="document.getElementById('skytv-detail-overlay').remove()">â</button>
+      <button class="skytv-modal-close" onclick="document.getElementById('skytv-detail-overlay').remove()">✕</button>
       <h2>${evento.titulo}</h2>
       ${liveHtml}
-      <p><strong>CategorÃ­a:</strong> <span class="skytv-event-badge ${evento.categoria}">${evento.categoria}</span></p>
+      <p><strong>Categoría:</strong> <span class="skytv-event-badge ${evento.categoria}">${evento.categoria}</span></p>
       <p><strong>Host:</strong> ${evento.host_nombre}</p>
       <p><strong>Fecha:</strong> ${evento.fecha}</p>
       <p><strong>Hora:</strong> ${evento.hora_inicio} - ${evento.hora_fin}</p>
-      <p><strong>DescripciÃ³n:</strong></p>
-      <p>${evento.descripcion || 'No hay descripciÃ³n'}</p>
+      <p><strong>Descripción:</strong></p>
+      <p>${evento.descripcion || 'No hay descripción'}</p>
 
       ${evento.zoom_link ? `
         <button class="skytv-btn" style="width: 100%; margin: 1rem 0;" onclick="openSkyTvZoom('${evento.zoom_link}')">
-          ð¹ Unirse a Zoom
+          📹 Unirse a Zoom
         </button>
       ` : ''}
 
       ${evento.grabacion_url ? `
         <button class="skytv-btn skytv-btn-secondary" style="width: 100%; margin-bottom: 1rem;" onclick="openSkyTvRecording('${evento.grabacion_url}')">
-          ð¬ Ver GrabaciÃ³n
+          🎬 Ver Grabación
         </button>
       ` : ''}
 
       ${skyTvState.userIsAdmin ? `
         <button class="skytv-btn skytv-btn-secondary" style="width: 100%;" onclick="editSkyTvEvento('${evento.id}')">
-          âï¸ Editar
+          ✏️ Editar
         </button>
       ` : ''}
     </div>
@@ -10463,7 +10463,7 @@ function openSkyTvEventDetail(eventoId) {
 
 function openSkyTvZoom(zoomLink) {
   if (!zoomLink) {
-    alert('El enlace de Zoom no estÃ¡ disponible');
+    alert('El enlace de Zoom no está disponible');
     return;
   }
   window.open(zoomLink, '_blank');
@@ -10471,7 +10471,7 @@ function openSkyTvZoom(zoomLink) {
 
 function openSkyTvRecording(recordingUrl) {
   if (!recordingUrl) {
-    alert('El enlace de la grabaciÃ³n no estÃ¡ disponible');
+    alert('El enlace de la grabación no está disponible');
     return;
   }
   window.open(recordingUrl, '_blank');
@@ -10500,10 +10500,10 @@ function getSkyTvSectionHTML() {
   return `
     <div id="sky-tv-section">
       <div class="skytv-topbar">
-        <h1>â¡ SKY TV</h1>
+        <h1>� SKY TV</h1>
         <div class="skytv-topbar-controls">
           ${skyTvState.userIsAdmin ? `<button class="skytv-btn" onclick="openSkyTvAdmin()">+ Crear Evento</button>` : ''}
-          <button class="skytv-btn skytv-btn-secondary" onclick="loadSkyTvEventos()">ð Actualizar</button>
+          <button class="skytv-btn skytv-btn-secondary" onclick="loadSkyTvEventos()">= Actualizar</button>
         </div>
       </div>
 
@@ -10511,9 +10511,9 @@ function getSkyTvSectionHTML() {
       <div id="skytv-countdown-container"></div>
 
       <div class="skytv-week-nav">
-        <button onclick="prevSkyTvWeek()">â Semana Anterior</button>
+        <button onclick="prevSkyTvWeek()">� Semana Anterior</button>
         <span class="skytv-week-display" id="skytv-week-display"></span>
-        <button onclick="nextSkyTvWeek()">PrÃ³xima Semana â</button>
+        <button onclick="nextSkyTvWeek()">Pr�xima Semana �</button>
         <button onclick="goSkyTvToday()">Hoy</button>
       </div>
 
