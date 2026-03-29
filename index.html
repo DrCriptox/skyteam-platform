@@ -6548,11 +6548,8 @@ function navigate(sec) {
   if(sec==='perfil') renderPerfil();
   if(sec==='academia-liderazgo') renderAcadLid();
   if(sec==='agente') { if(typeof currentAgent!=='undefined'&&currentAgent) initAgentChat(currentAgent); }
-  if(sec==='agente') { if(currentAgent) initAgentChat(currentAgent); }
   if(sec==='skysales') renderSkySales();
   if(sec==='prospectos') initSkyProspectos();
-  if(sec==='skysales') renderSkySales();
-  if(sec==='calendario') renderCalendario();
   if(sec==='sky-tv') initSkyTv();
   closeSidebar();
 }
