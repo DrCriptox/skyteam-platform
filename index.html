@@ -8472,13 +8472,11 @@ else if(t.includes('trica'))crmSwitchView('metricas');
 
 
 /* ========================================
-   CRM MISSING FUNCTIONS - Sky Prospectos
+   CRM PROSPECTOS MODULE
    ======================================== */
 
-/* --- initSkyProspectos (called by navigate) --- */
-
 /* ========================================
-   CRM MISSING FUNCTIONS - Sky Team Platform
+   CRM PROSPECTOS - EXTENDED FUNCTIONS
    ======================================== */
 
 var crmRatingAnswers = {
@@ -8501,7 +8499,6 @@ function initSkyProspectos() {
   });
 }
 
-var _origSwitchView = typeof crmSwitchView === 'function' ? crmSwitchView : null;
 crmSwitchView = function(view) {
   crmCurrentView = view;
   var k = document.getElementById('crm-kanban');
