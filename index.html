@@ -361,12 +361,14 @@ select option{background:#040f28;color:#F0EDE6;}
 .crm-kanban-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:7px;}
 .crm-kanban-wrap::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#1CE8FF,#7F77DD);border-radius:7px;min-width:60px;}
 .crm-kanban-wrap::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,#1CE8FF,#25D366);}
+input[type='datetime-local']::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer;}
 .crm-column[data-etapa="nuevo"] .crm-column-count{background:rgba(28,232,255,0.1);color:#1CE8FF;}
 .crm-column[data-etapa="contactado"] .crm-column-count{background:rgba(127,119,221,0.15);color:#7F77DD;}
 .crm-column[data-etapa="interesado"] .crm-column-count{background:rgba(255,215,0,0.1);color:#FFD700;}
 .crm-column[data-etapa="presentacion"] .crm-column-count{background:rgba(29,158,117,0.15);color:#1D9E75;}
 .crm-column[data-etapa="cerrado"] .crm-column-count{background:rgba(37,211,102,0.15);color:#25D366;}
 .crm-column[data-etapa="seguimiento"] .crm-column-count{background:rgba(255,165,0,0.15);color:#FFA500;}
+.crm-column[data-etapa="cerrado_perdido"] .crm-column-count{background:rgba(226,75,74,0.15);color:#E24B4A;}
 .crm-column-cards{flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:calc(100vh - 350px);}
 .crm-prospect-card{cursor:grab;transition:all 0.15s;}
 .crm-prospect-card:hover{transform:translateY(-2px);}
@@ -2040,8 +2042,9 @@ select option{background:#040f28;color:#F0EDE6;}
       <div class="crm-column" data-etapa="contactado"><div class="crm-column-header"><span class="crm-column-emoji">📞</span><span class="crm-column-name">Contactado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="interesado"><div class="crm-column-header"><span class="crm-column-emoji">🔥</span><span class="crm-column-name">Interesado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentación</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
-      <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔍</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
-      <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      <div class="crm-column" data-etapa="cerrado"><div class="crm-column-header"><span class="crm-column-emoji">✅</span><span class="crm-column-name">Cerrado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div><div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔍</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      
+<div class="crm-column" data-etapa="cerrado_perdido"><div class="crm-column-header"><span class="crm-column-emoji">\u274C</span><span class="crm-column-name">Perdido</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
     </div>
     <div id="crm-list-view" class="crm-list-view" style="display:none;">
       <div class="crm-list-table-container"><table class="crm-list-table"><thead><tr>
@@ -7907,7 +7910,7 @@ window.addEventListener('load', function() {
    SKY PROSPECTOS \u2014 CRM Module
    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
 var crmProspectos=[];var crmRecordatorios=[];var crmMetricas={};var crmCurrentView='kanban';var crmEditingId=null;var crmDetailId=null;var crmDragId=null;var crmLoading=false;var crmSearchTerm='';var crmReminderInterval=null;
-var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'},seguimiento:{label:'Seguimiento',emoji:'\uD83D\uDD0D',color:'#FFA500'}};
+var CRM_ETAPAS={nuevo:{label:'Nuevo',emoji:'\uD83C\uDD95',color:'#1CE8FF'},contactado:{label:'Contactado',emoji:'\uD83D\uDCDE',color:'#7F77DD'},interesado:{label:'Interesado',emoji:'\uD83D\uDD25',color:'#FFD700'},presentacion:{label:'Presentaci\u00F3n',emoji:'\uD83C\uDFAF',color:'#1D9E75'},cerrado_ganado:{label:'Ganado',emoji:'\u2705',color:'#25D366'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'},seguimiento:{label:'Seguimiento',emoji:'\uD83D\uDD0D',color:'#FFA500'},cerrado_perdido:{label:'Perdido',emoji:'\u274C',color:'#E24B4A'}};
 var CRM_FUENTES={manual:'\u270D\uFE0F',landing:'\uD83C\uDF10',whatsapp:'\uD83D\uDCAC',instagram:'\uD83D\uDCF8',facebook:'\uD83D\uDCD8',referido:'\uD83E\uDD1D',otro:'\uD83D\uDCCC'};
 var CRM_TIPOS={llamada:'\uD83D\uDCDE',whatsapp:'\uD83D\uDCAC',reunion:'\uD83E\uDD1D',email:'\uD83D\uDCE7',nota:'\uD83D\uDCDD',presentacion:'\uD83C\uDFAF',seguimiento:'\uD83D\uDC41\uFE0F',cierre:'\u2705'};
 
@@ -7977,7 +7980,7 @@ function crmRenderRemindersBar(){
 function crmRenderKanban(){
   var kb=document.getElementById('crm-kanban');if(!kb)return;
   var filtered=crmFilter();
-  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],seguimiento:[],cerrado:[]};
+  var groups={nuevo:[],contactado:[],interesado:[],presentacion:[],cerrado:[],seguimiento:[],cerrado_perdido:[]};
   filtered.forEach(function(p){
     if(p.etapa==='cerrado_ganado'||p.etapa==='cerrado_perdido')groups.cerrado.push(p);
     else if(groups[p.etapa])groups[p.etapa].push(p);
@@ -8015,6 +8018,7 @@ function crmCard(p){
     +'</div>'
     +'<span style="color:rgba(255,255,255,0.25);font-size:10px;">'+dl+'</span>'
     +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" title="Editar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(28,232,255,0.08);border:0.5px solid rgba(28,232,255,0.18);color:#1CE8FF;cursor:pointer;font-size:12px;padding:0;">\u270F\uFE0F</button>'
+    +'<button onclick="event.stopPropagation();crmApi(\'moveStage\',{id:\''+p.id+'\',etapa:\'cerrado_perdido\'}).then(function(){crmLoadData().then(crmRenderKanban)})" title="Descartar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(226,75,74,0.1);border:0.5px solid rgba(226,75,74,0.25);color:#E24B4A;cursor:pointer;font-size:12px;padding:0;">\u274C</button>'
     +'</div></div>';}
 
 function crmRenderList(){
@@ -8024,7 +8028,9 @@ function crmRenderList(){
   var html='';filtered.forEach(function(p){
     var calif=Math.round(((p.calif_positivo||0)+(p.calif_emprendedor||0)+(p.calif_dinero||0)+(p.calif_lider||0))/4);
     var stars='';for(var s=1;s<=5;s++){stars+=s<=calif?'\u2B50':'\u2606';}
-    var ig=p.instagram?'<a href="https://instagram.com/'+p.instagram+'" target="_blank" style="color:#E1306C;text-decoration:none;font-size:13px;">\uD83D\uDCF7 '+p.instagram+'</a>':'<span style="color:rgba(255,255,255,0.2);">-</span>';
+    var igIcon=p.instagram?'<a href="https://instagram.com/'+p.instagram+'" target="_blank" style="text-decoration:none;font-size:16px;" title="@'+p.instagram+'">\uD83D\uDCF7</a>':'';
+    var waIcon=p.telefono?'<a href="https://wa.me/'+p.telefono.replace(/[^0-9]/g,'')+'" target="_blank" style="text-decoration:none;font-size:16px;" title="'+p.telefono+'">\uD83D\uDCAC</a>':'';
+    var ig=(igIcon||waIcon)?(igIcon+' '+waIcon).trim():'<span style="color:rgba(255,255,255,0.2);">-</span>';
     var temp=p.temperatura||0;var tColor=temp>=70?'#25D366':temp>=40?'#FFD700':'#E24B4A';
     var etapaInfo=CRM_ETAPAS[p.etapa]||{label:p.etapa||'-',color:'#888'};
     html+='<tr style="cursor:pointer;" onclick="crmOpenDetail(\''+p.id+'\')">'
@@ -8523,7 +8529,8 @@ crmSwitchView = function(view) {
         (view === 'metricas' && t.includes('tricas')))
       b.classList.add('crm-view-btn-active');
   });
-  if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
+  if (view === 'lista' && typeof crmRenderList === 'function') crmRenderList();
+      if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
 };
 
 /* ========================================
@@ -8947,16 +8954,43 @@ function openCrmDetail(id) {
   var notasDisplay = modal.querySelector('#crm-detail-notas');
   if (notasDisplay) notasDisplay.textContent = prospect.notas || 'Sin notas';
 
-  var timelineDisplay = modal.querySelector('#crm-detail-interactions-timeline');
-  if (timelineDisplay && prospect.interactions && prospect.interactions.length > 0) {
-    var timelineHtml = '';
-    prospect.interactions.forEach(function(inter) {
-      timelineHtml += '<div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05);">' +
-        '<div style="color: #aaa; font-size: 0.8rem;">' + (inter.fecha || 'N/A') + '</div>' +
-        '<div style="color: #F0EDE6;">' + (inter.texto || '') + '</div>' +
-        '</div>';
-    });
-    timelineDisplay.innerHTML = timelineHtml;
+  // ── ASYNC TIMELINE: interactions + reminders ──
+  var timelineEl = modal.querySelector('#crm-detail-interactions-timeline');
+  if (timelineEl) {
+    timelineEl.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:11px;padding:8px;">Cargando...</div>';
+    (async function(){
+      try {
+        var intRes = await crmApi('getInteracciones',{prospecto_id:id});
+        var ints = (intRes && intRes.interacciones) ? intRes.interacciones : [];
+        var tHtml = '';
+        if (!ints.length) {
+          tHtml = '<div style="color:rgba(255,255,255,0.2);font-size:11px;padding:8px;">Sin interacciones</div>';
+        } else {
+          var emojis = {llamada:'\u260E\uFE0F',whatsapp:'\uD83D\uDCAC',email:'\u2709\uFE0F',reunion:'\uD83E\uDD1D',nota:'\uD83D\uDCDD',otro:'\uD83D\uDD39'};
+          ints.forEach(function(it){
+            var d = new Date(it.created_at);
+            var hoy = new Date(); hoy.setHours(0,0,0,0);
+            var ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+            var ds = d >= hoy ? 'hoy' : d >= ayer ? 'ayer' : d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+            var ts = d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true});
+            var em = emojis[it.tipo] || emojis.otro;
+            tHtml += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);">' +'<span style="font-size:14px;">'+em+'</span>' +'<div style="flex:1;"><div style="font-size:10px;color:rgba(255,255,255,0.35);">'+ds+', '+ts+'</div>' +'<div style="font-size:12px;color:#F0EDE6;margin-top:2px;">'+crmEsc(it.contenido||'')+'</div></div></div>';
+          });
+        }
+        timelineEl.innerHTML = tHtml;
+      } catch(e){ timelineEl.innerHTML = '<div style="color:#E24B4A;font-size:11px;">Error</div>'; }
+      try {
+        var remRes = await crmApi('getRecordatorios',{prospecto_id:id});
+        var rems = (remRes && remRes.recordatorios) ? remRes.recordatorios : [];
+        if (rems.length) {
+          var rCont = modal.querySelector('#crm-detail-reminders-list');
+          if (!rCont) { rCont = document.createElement('div'); rCont.id = 'crm-detail-reminders-list'; rCont.style.cssText = 'margin-top:8px;padding:8px;background:rgba(255,165,0,0.05);border:0.5px solid rgba(255,165,0,0.15);border-radius:8px;'; timelineEl.parentNode.insertBefore(rCont, timelineEl.nextSibling); }
+          var rHtml = '<div style="font-size:10px;color:#FFA500;font-weight:700;margin-bottom:4px;">\uD83D\uDCC5 Recordatorios</div>';
+          rems.forEach(function(r){ var rd = new Date(r.fecha_recordatorio); var rds = rd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); var rts = rd.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true}); rHtml += '<div style="font-size:11px;color:#F0EDE6;padding:3px 0;border-bottom:0.5px solid rgba(255,165,0,0.08);"><span style="color:#FFA500;">'+rds+' '+rts+'</span> \u2014 '+crmEsc(r.mensaje||'')+'</div>'; });
+          rCont.innerHTML = rHtml;
+        }
+      } catch(e){}
+    })();
   }
 
   crmDetailId = id;
