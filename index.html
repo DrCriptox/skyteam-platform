@@ -10222,7 +10222,7 @@ function showSkyTvAlert(message, type = 'info') {
 // ============ MODAL & ADMIN ============
 function openSkyTvAdmin() {
   if (!skyTvState.userIsAdmin) {
-    alert('No tienes permiso para acceder al panel de administraci&#243;n');
+    showSkyTvAlert('No tienes permiso para acceder al panel de administraci&#243;n', 'error');
     return;
   }
 
@@ -10353,7 +10353,6 @@ function closeSkyTvAdmin() {
 
 async function saveSkyTvEvento() {
   const evento = {
-    id: skyTvState.editingEventoId || 'new_' + Date.now(),
     titulo: document.getElementById('skytv-form-titulo').value,
     descripcion: document.getElementById('skytv-form-descripcion').value,
     categoria: document.getElementById('skytv-form-categoria').value,
@@ -10365,11 +10364,15 @@ async function saveSkyTvEvento() {
     zoom_password: document.getElementById('skytv-form-zoom-password').value,
     zoom_link: document.getElementById('skytv-form-zoom-link').value,
     flyer_url: document.getElementById('skytv-form-flyer-url').value,
-    grabacion_url: document.getElementById('skytv-form-grabacion-url').value
+    grabacion_url: document.getElementById('skytv-form-grabacion-url').value,
+    created_by: (JSON.parse(localStorage.getItem('skyteam_u') || '{}').username || 'admin')
   };
 
+  // Add id only for updates
+  if (skyTvState.editingEventoId) evento.id = skyTvState.editingEventoId;
+
   if (!evento.titulo || !evento.fecha || !evento.hora_inicio || !evento.hora_fin) {
-    alert('Por favor completa los campos requeridos');
+    showSkyTvAlert('Por favor completa los campos requeridos', 'error');
     return;
   }
 
@@ -10391,7 +10394,7 @@ async function saveSkyTvEvento() {
 
   } catch (error) {
     console.error('Error saving evento:', error);
-    alert('Error al guardar el evento');
+    showSkyTvAlert('Error al guardar el evento', 'error');
   }
 }
 
@@ -10411,7 +10414,7 @@ async function deleteSkyTvEvento(eventoId) {
 
   } catch (error) {
     console.error('Error deleting evento:', error);
-    alert('Error al eliminar el evento');
+    showSkyTvAlert('Error al eliminar el evento', 'error');
   }
 }
 
@@ -10468,7 +10471,7 @@ function openSkyTvEventDetail(eventoId) {
 
 function openSkyTvZoom(zoomLink) {
   if (!zoomLink) {
-    alert('El enlace de Zoom no est&#225; disponible');
+    showSkyTvAlert('El enlace de Zoom no est&#225; disponible', 'error');
     return;
   }
   window.open(zoomLink, '_blank');
@@ -10476,7 +10479,7 @@ function openSkyTvZoom(zoomLink) {
 
 function openSkyTvRecording(recordingUrl) {
   if (!recordingUrl) {
-    alert('El enlace de la grabaci&#243;n no est&#225; disponible');
+    showSkyTvAlert('El enlace de la grabaci&#243;n no est&#225; disponible', 'error');
     return;
   }
   window.open(recordingUrl, '_blank');
