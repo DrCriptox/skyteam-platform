@@ -1733,7 +1733,23 @@ select option{background:#040f28;color:#F0EDE6;}
     border: 1px solid #ddd;
     page-break-inside: avoid;
   }
-}@media(max-width:768px){
+}
+/* === Dashboard UI Fixes (28 mar) === */
+.crm-dash-activity-bars{min-height:150px;padding-top:10px;}
+.crm-dash-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;height:130px;justify-content:flex-end;gap:4px;}
+.crm-dash-bar{width:100%;min-height:4px;background:linear-gradient(180deg,#1CE8FF,#1CE8FF66);border-radius:4px 4px 0 0;transition:height 0.8s ease;}
+.crm-dash-bar-val{font-size:0.75rem;color:#aaa;margin-top:2px;}
+.crm-dash-bar-label{font-size:0.8rem;color:#ccc;font-weight:600;}
+.crm-dash-speed-track{height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;flex:1;margin:0 12px;}
+.crm-dash-speed-bar{height:100%;border-radius:4px;transition:width 0.8s ease;min-width:4px;}
+.crm-dash-speed-row{display:flex;align-items:center;padding:8px 0;}
+.crm-dash-speed-label{min-width:140px;font-size:0.85rem;}
+.crm-dash-speed-val{min-width:45px;text-align:right;font-size:0.85rem;font-weight:600;color:#1CE8FF;}
+.crm-dash-day{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:#666;transition:all 0.3s;}
+.crm-dash-day.active{background:rgba(37,211,102,0.25);color:#25D366;box-shadow:0 0 8px rgba(37,211,102,0.3);}
+.crm-dash-kpi-trend.neutral{background:rgba(255,255,255,0.05);color:#666;}
+.crm-dash-kpi-trend.neutral::before{content:"\2014";}
+@media(max-width:768px){
 .crm-metrics-grid{grid-template-columns:1fr;}
 .crm-list-table{min-width:600px;}
 
@@ -8213,6 +8229,9 @@ var map={
 Object.keys(map).forEach(function(id){
 var el=document.getElementById(id);
 if(el)crmDashAnimateCount(el,map[id].v,map[id].s,1200);
+var kpi=el?el.closest('.crm-dash-kpi'):null;
+if(kpi){var trend=kpi.querySelector('.crm-dash-kpi-trend');
+if(trend){if(map[id].v===0){trend.className='crm-dash-kpi-trend neutral';}else{trend.className='crm-dash-kpi-trend';}}}
 });
 }
 
