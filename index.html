@@ -1875,6 +1875,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 
       <div class="nav-section-label" style="color:rgba(28,232,255,0.6);">Sky Sales IA</div>
       <button class="nav-item" data-sec="agenda" onclick="navigate('agenda')"><span class="nav-icon">📅</span>Mi Agenda</button>
+<button class="nav-item" data-sec="sky-tv" onclick="navigate('sky-tv')"><span class="nav-icon">📺</span>Sky TV</button>
       <button class="nav-item" data-sec="skysales" onclick="navigate('skysales')" style="color:rgba(28,232,255,0.7);"><span class="nav-icon">🚀</span>Sky Sales IA</button>
       <button class="nav-item" data-sec="prospectos" onclick="navigate('prospectos')" style="color:rgba(28,232,255,0.7);"><span class="nav-icon">👥</span>Sky Prospectos</button>
 
@@ -6548,6 +6549,7 @@ function navigate(sec) {
   if(sec==='prospectos') initSkyProspectos();
   if(sec==='skysales') renderSkySales();
   if(sec==='calendario') renderCalendario();
+  if(sec==='sky-tv') initSkyTv();
   closeSidebar();
 }
 
@@ -9291,6 +9293,1274 @@ function crmCleanupCards(){
     while(card.children.length>maxKids){card.removeChild(card.lastElementChild);}
   });
 }</script>
-<script src="/fix-aprobar.js"><</script>
+<script src="/fix-aprobar.js"><
+// ============ SKY TV MODULE ============
+// Self-contained Dark Theme Calendar + Event Management for SPA
+// Insert this entire block into your index.html script section
+
+const SKYTV_CONFIG = {
+  API_BASE: '/api/eventos.js',
+  COLORS: {
+    Capacitaciones: '#1CE8FF',
+    Trading: '#00E676',
+    Equipo: '#BB86FC',
+    Especiales: '#FFD700'
+  },
+  BG_PRIMARY: '#030c1f',
+  BG_SECONDARY: '#0a1428',
+  ACCENT: '#1CE8FF',
+  FONT: 'Nunito'
+};
+
+let skyTvState = {
+  currentDate: new Date(),
+  eventos: [],
+  liveEventos: [],
+  selectedWeek: getWeekStart(new Date()),
+  adminModalOpen: false,
+  editingEventoId: null,
+  userIsAdmin: currentUser && currentUser.rango >= 7
+};
+
+// ============ CSS INJECTION ============
+function injectSkyTvCSS() {
+  if (document.getElementById('skytv-styles')) return;
+
+  const styles = `
+    #sky-tv-section {
+      background: linear-gradient(135deg, ${SKYTV_CONFIG.BG_PRIMARY} 0%, ${SKYTV_CONFIG.BG_SECONDARY} 100%);
+      color: #ffffff;
+      font-family: ${SKYTV_CONFIG.FONT}, sans-serif;
+      padding: 2rem;
+      border-radius: 12px;
+      min-height: 100vh;
+    }
+
+    .skytv-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid ${SKYTV_CONFIG.ACCENT};
+    }
+
+    .skytv-topbar h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, ${SKYTV_CONFIG.ACCENT}, #ffffff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+      letter-spacing: 1px;
+    }
+
+    .skytv-topbar-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .skytv-btn {
+      background: linear-gradient(135deg, ${SKYTV_CONFIG.ACCENT}, #00d9ff);
+      border: none;
+      color: #030c1f;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: ${SKYTV_CONFIG.FONT}, sans-serif;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(28, 232, 255, 0.2);
+    }
+
+    .skytv-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(28, 232, 255, 0.4);
+    }
+
+    .skytv-btn:active {
+      transform: translateY(0);
+    }
+
+    .skytv-btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: ${SKYTV_CONFIG.ACCENT};
+      border: 1px solid ${SKYTV_CONFIG.ACCENT};
+    }
+
+    .skytv-btn-secondary:hover {
+      background: rgba(28, 232, 255, 0.1);
+    }
+
+    /* EN VIVO SECTION */
+    .skytv-envivo-container {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: rgba(255, 0, 0, 0.05);
+      border-radius: 10px;
+      border-left: 4px solid #ff0000;
+    }
+
+    .skytv-envivo-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ff0000;
+      margin: 0 0 1rem 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .skytv-envivo-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .skytv-envivo-card {
+      background: rgba(10, 20, 40, 0.8);
+      backdrop-filter: blur(10px);
+      border: 2px solid #ff0000;
+      border-radius: 8px;
+      padding: 1.5rem;
+      animation: envivo-pulse 2s infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .skytv-envivo-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,0,0,0.3) 0%, transparent 70%);
+      animation: envivo-glow 3s infinite;
+    }
+
+    @keyframes envivo-pulse {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.5), inset 0 0 20px rgba(255, 0, 0, 0.1);
+      }
+      50% {
+        box-shadow: 0 0 40px rgba(255, 0, 0, 0.8), inset 0 0 20px rgba(255, 0, 0, 0.2);
+      }
+    }
+
+    @keyframes envivo-glow {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .skytv-envivo-card-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .skytv-envivo-host {
+      font-size: 0.85rem;
+      color: #ff0000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .skytv-envivo-title-text {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .skytv-envivo-time {
+      font-size: 0.9rem;
+      color: #aaaaaa;
+      margin-bottom: 1rem;
+    }
+
+    .skytv-envivo-badge {
+      display: inline-block;
+      background: #ff0000;
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-right: 0.5rem;
+      animation: badge-pulse 1.5s infinite;
+    }
+
+    @keyframes badge-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* COUNTDOWN */
+    .skytv-countdown-box {
+      background: rgba(28, 232, 255, 0.05);
+      border: 1px solid ${SKYTV_CONFIG.ACCENT};
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .skytv-countdown-label {
+      font-size: 0.9rem;
+      color: #aaaaaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .skytv-countdown-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: ${SKYTV_CONFIG.ACCENT};
+      margin-bottom: 1rem;
+    }
+
+    .skytv-countdown-timer {
+      font-size: 2.5rem;
+      font-weight: 700;
+      font-family: 'Monaco', 'Courier New', monospace;
+      color: #00E676;
+      letter-spacing: 2px;
+      margin-bottom: 1rem;
+    }
+
+    /* WEEK NAVIGATION */
+    .skytv-week-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .skytv-week-nav button {
+      background: rgba(28, 232, 255, 0.1);
+      border: 1px solid ${SKYTV_CONFIG.ACCENT};
+      color: ${SKYTV_CONFIG.ACCENT};
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: ${SKYTV_CONFIG.FONT}, sans-serif;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .skytv-week-nav button:hover {
+      background: rgba(28, 232, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .skytv-week-display {
+      color: ${SKYTV_CONFIG.ACCENT};
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    /* CALENDAR GRID */
+    .skytv-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .skytv-day-header {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-bottom: 2px solid ${SKYTV_CONFIG.ACCENT};
+    }
+
+    .skytv-day-column {
+      background: rgba(10, 20, 40, 0.6);
+      border-radius: 8px;
+      padding: 1rem 0.5rem;
+      min-height: 600px;
+      border: 1px solid rgba(28, 232, 255, 0.1);
+    }
+
+    .skytv-time-slot {
+      font-size: 0.75rem;
+      color: #666666;
+      text-align: center;
+      padding: 0.3rem 0;
+      margin-bottom: 0.5rem;
+    }
+
+    /* EVENT CARDS */
+    .skytv-event-card {
+      background: rgba(20, 30, 60, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 6px;
+      padding: 0.8rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-left: 4px solid;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .skytv-event-card:hover {
+      transform: translateY(-4px);
+      backdrop-filter: blur(15px);
+      box-shadow: 0 8px 24px rgba(28, 232, 255, 0.3);
+    }
+
+    .skytv-event-card.Capacitaciones {
+      border-left-color: #1CE8FF;
+      background: rgba(28, 232, 255, 0.08);
+    }
+
+    .skytv-event-card.Trading {
+      border-left-color: #00E676;
+      background: rgba(0, 230, 118, 0.08);
+    }
+
+    .skytv-event-card.Equipo {
+      border-left-color: #BB86FC;
+      background: rgba(187, 134, 252, 0.08);
+    }
+
+    .skytv-event-card.Especiales {
+      border-left-color: #FFD700;
+      background: rgba(255, 215, 0, 0.08);
+    }
+
+    .skytv-event-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .skytv-event-time {
+      font-size: 0.7rem;
+      color: #aaaaaa;
+      margin-bottom: 0.4rem;
+    }
+
+    .skytv-event-host {
+      font-size: 0.7rem;
+      color: #888888;
+      margin-bottom: 0.4rem;
+    }
+
+    .skytv-event-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-right: 0.3rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .skytv-event-badge.Capacitaciones {
+      background: rgba(28, 232, 255, 0.3);
+      color: #1CE8FF;
+    }
+
+    .skytv-event-badge.Trading {
+      background: rgba(0, 230, 118, 0.3);
+      color: #00E676;
+    }
+
+    .skytv-event-badge.Equipo {
+      background: rgba(187, 134, 252, 0.3);
+      color: #BB86FC;
+    }
+
+    .skytv-event-badge.Especiales {
+      background: rgba(255, 215, 0, 0.3);
+      color: #FFD700;
+    }
+
+    .skytv-event-live {
+      animation: event-live-pulse 1s infinite;
+    }
+
+    @keyframes event-live-pulse {
+      0%, 100% {
+        border-left-color: #ff0000;
+      }
+      50% {
+        border-left-color: #ff6666;
+      }
+    }
+
+    /* ADMIN MODAL */
+    .skytv-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+
+    .skytv-modal {
+      background: linear-gradient(135deg, ${SKYTV_CONFIG.BG_PRIMARY}, ${SKYTV_CONFIG.BG_SECONDARY});
+      border: 1px solid ${SKYTV_CONFIG.ACCENT};
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    }
+
+    .skytv-modal h2 {
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: ${SKYTV_CONFIG.ACCENT};
+      font-size: 1.5rem;
+    }
+
+    .skytv-form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .skytv-form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+      font-size: 0.95rem;
+    }
+
+    .skytv-form-group input,
+    .skytv-form-group select,
+    .skytv-form-group textarea {
+      width: 100%;
+      padding: 0.8rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(28, 232, 255, 0.3);
+      border-radius: 6px;
+      color: #ffffff;
+      font-family: ${SKYTV_CONFIG.FONT}, sans-serif;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    .skytv-form-group input:focus,
+    .skytv-form-group select:focus,
+    .skytv-form-group textarea:focus {
+      outline: none;
+      border-color: ${SKYTV_CONFIG.ACCENT};
+      background: rgba(28, 232, 255, 0.1);
+      box-shadow: 0 0 10px rgba(28, 232, 255, 0.2);
+    }
+
+    .skytv-form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .skytv-form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .skytv-form-actions button {
+      flex: 1;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: ${SKYTV_CONFIG.FONT}, sans-serif;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    .skytv-form-actions .skytv-btn-primary {
+      background: linear-gradient(135deg, ${SKYTV_CONFIG.ACCENT}, #00d9ff);
+      color: ${SKYTV_CONFIG.BG_PRIMARY};
+    }
+
+    .skytv-form-actions .skytv-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(28, 232, 255, 0.4);
+    }
+
+    .skytv-form-actions .skytv-btn-cancel {
+      background: rgba(255, 255, 255, 0.1);
+      color: ${SKYTV_CONFIG.ACCENT};
+      border: 1px solid ${SKYTV_CONFIG.ACCENT};
+    }
+
+    .skytv-form-actions .skytv-btn-cancel:hover {
+      background: rgba(28, 232, 255, 0.1);
+    }
+
+    .skytv-form-actions .skytv-btn-delete {
+      background: rgba(255, 0, 0, 0.2);
+      color: #ff6666;
+      border: 1px solid #ff6666;
+    }
+
+    .skytv-form-actions .skytv-btn-delete:hover {
+      background: rgba(255, 0, 0, 0.3);
+    }
+
+    .skytv-modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: ${SKYTV_CONFIG.ACCENT};
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .skytv-modal-close:hover {
+      transform: rotate(90deg);
+      color: #ffffff;
+    }
+
+    /* QUICK ACTIONS */
+    .skytv-quick-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .skytv-quick-btn {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.7rem;
+      background: rgba(28, 232, 255, 0.2);
+      border: 1px solid ${SKYTV_CONFIG.ACCENT};
+      color: ${SKYTV_CONFIG.ACCENT};
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .skytv-quick-btn:hover {
+      background: rgba(28, 232, 255, 0.3);
+      transform: scale(1.05);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 1024px) {
+      .skytv-calendar {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      #sky-tv-section {
+        padding: 1rem;
+      }
+
+      .skytv-topbar {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .skytv-topbar h1 {
+        font-size: 1.8rem;
+      }
+
+      .skytv-calendar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .skytv-modal {
+        width: 95%;
+      }
+    }
+
+    .skytv-no-events {
+      text-align: center;
+      padding: 2rem;
+      color: #666666;
+      font-style: italic;
+    }
+  `;
+
+  const styleTag = document.createElement('style');
+  styleTag.id = 'skytv-styles';
+  styleTag.textContent = styles;
+  document.head.appendChild(styleTag);
+}
+
+// ============ UTILITY FUNCTIONS ============
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+
+function formatDate(date, format = 'DD/MM') {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  if (format === 'DD/MM') return `${day}/${month}`;
+  if (format === 'YYYY-MM-DD') return `${year}-${month}-${day}`;
+  return d.toLocaleDateString();
+}
+
+function formatTime(hour, minute = 0) {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function parseDateTime(dateStr, timeStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+function isEventLive(evento) {
+  const now = new Date();
+  const start = parseDateTime(evento.fecha, evento.hora_inicio);
+  const end = parseDateTime(evento.fecha, evento.hora_fin);
+  return now >= start && now <= end;
+}
+
+function timeUntilEvent(evento) {
+  const now = new Date();
+  const start = parseDateTime(evento.fecha, evento.hora_inicio);
+  const diff = start - now;
+
+  if (diff < 0) return null;
+
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  return { hours, minutes, totalMs: diff };
+}
+
+function formatCountdown(hours, minutes) {
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+// ============ DATA LOADING ============
+async function loadSkyTvEventos() {
+  try {
+    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=list`);
+    if (!response.ok) throw new Error('Failed to load eventos');
+
+    const data = await response.json();
+    skyTvState.eventos = Array.isArray(data) ? data : data.eventos || [];
+
+    // Update live eventos
+    skyTvState.liveEventos = skyTvState.eventos.filter(e => isEventLive(e));
+
+    renderSkyTvCalendar(skyTvState.eventos);
+    renderSkyTvEnVivo(skyTvState.liveEventos);
+    renderSkyTvCountdown(skyTvState.eventos);
+    checkSkyTvAlerts(skyTvState.eventos);
+
+  } catch (error) {
+    console.error('Error loading Sky TV eventos:', error);
+    const container = document.getElementById('skytv-calendar-container');
+    if (container) {
+      container.innerHTML = '<div class="skytv-no-events">Error loading events. Please try again.</div>';
+    }
+  }
+}
+
+// ============ RENDERING ============
+function renderSkyTvCalendar(eventos) {
+  const container = document.getElementById('skytv-calendar-container');
+  if (!container) return;
+
+  const weekStart = skyTvState.selectedWeek;
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + i);
+    return date;
+  });
+
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  let html = '<div class="skytv-calendar">';
+
+  // Headers
+  dayNames.forEach((name, i) => {
+    const date = days[i];
+    const dateStr = `${name} ${date.getDate()} ${monthNames[date.getMonth()]}`;
+    html += `<div class="skytv-day-header">${dateStr}</div>`;
+  });
+
+  // Columns
+  days.forEach((date, dayIndex) => {
+    const dateStr = formatDate(date, 'YYYY-MM-DD');
+    const dayEventos = eventos.filter(e => e.fecha === dateStr).sort((a, b) => {
+      return a.hora_inicio.localeCompare(b.hora_inicio);
+    });
+
+    html += '<div class="skytv-day-column">';
+
+    for (let hour = 7; hour < 22; hour++) {
+      html += `<div class="skytv-time-slot">${formatTime(hour)}</div>`;
+
+      const hourEventos = dayEventos.filter(e => {
+        const startHour = parseInt(e.hora_inicio.split(':')[0]);
+        return startHour === hour;
+      });
+
+      hourEventos.forEach(evento => {
+        const live = isEventLive(evento);
+        const liveClass = live ? 'skytv-event-live' : '';
+        const liveIndicator = live ? '<div class="skytv-envivo-badge">EN VIVO</div>' : '';
+
+        html += `
+          <div class="skytv-event-card ${evento.categoria} ${liveClass}" data-evento-id="${evento.id}">
+            <div class="skytv-event-title">${evento.titulo}</div>
+            <div class="skytv-event-time">${evento.hora_inicio} - ${evento.hora_fin}</div>
+            <div class="skytv-event-host">${evento.host_nombre}</div>
+            <div style="margin-bottom: 0.4rem;">
+              <span class="skytv-event-badge ${evento.categoria}">${evento.categoria}</span>
+              ${liveIndicator}
+            </div>
+            <div class="skytv-quick-actions">
+              <button class="skytv-quick-btn" onclick="openSkyTvEventDetail('${evento.id}')" title="Details">ð</button>
+              <button class="skytv-quick-btn" onclick="openSkyTvZoom('${evento.zoom_link || ''}')" title="Join Zoom">ð</button>
+              ${evento.grabacion_url ? `<button class="skytv-quick-btn" onclick="openSkyTvRecording('${evento.grabacion_url}')" title="Recording">ð¬</button>` : ''}
+              ${skyTvState.userIsAdmin ? `<button class="skytv-quick-btn" onclick="editSkyTvEvento('${evento.id}')" title="Edit">âï¸</button>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Add event listeners
+  document.querySelectorAll('.skytv-event-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (!e.target.closest('.skytv-quick-actions')) {
+        openSkyTvEventDetail(card.dataset.eventoId);
+      }
+    });
+  });
+}
+
+function renderSkyTvEnVivo(liveEventos) {
+  const container = document.getElementById('skytv-envivo-container');
+  if (!container) return;
+
+  if (liveEventos.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '<div class="skytv-envivo-container"><div class="skytv-envivo-title">EN VIVO AHORA</div><div class="skytv-envivo-list">';
+
+  liveEventos.forEach(evento => {
+    const timeRemaining = timeUntilEvent(evento);
+    const endTime = parseDateTime(evento.fecha, evento.hora_fin);
+    const remaining = endTime - new Date();
+    const endMinutes = Math.ceil(remaining / (1000 * 60));
+
+    html += `
+      <div class="skytv-envivo-card">
+        <div class="skytv-envivo-card-content">
+          <div class="skytv-envivo-host">${evento.host_nombre}</div>
+          <div class="skytv-envivo-title-text">${evento.titulo}</div>
+          <div class="skytv-envivo-time">${evento.hora_inicio} - ${evento.hora_fin}</div>
+          <div>
+            <span class="skytv-envivo-badge">EN VIVO</span>
+            <span style="font-size: 0.8rem; color: #aaaaaa;">Termina en ${endMinutes}min</span>
+          </div>
+          <button class="skytv-btn" style="width: 100%; margin-top: 1rem;" onclick="openSkyTvZoom('${evento.zoom_link || ''}')">
+            ð¹ Unirse a Zoom
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function renderSkyTvCountdown(eventos) {
+  const container = document.getElementById('skytv-countdown-container');
+  if (!container) return;
+
+  const now = new Date();
+  const futureEventos = eventos.filter(e => {
+    const start = parseDateTime(e.fecha, e.hora_inicio);
+    return start > now;
+  }).sort((a, b) => {
+    const aStart = parseDateTime(a.fecha, a.hora_inicio);
+    const bStart = parseDateTime(b.fecha, b.hora_inicio);
+    return aStart - bStart;
+  });
+
+  if (futureEventos.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const nextEvento = futureEventos[0];
+  const timeUntil = timeUntilEvent(nextEvento);
+
+  if (!timeUntil) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const countdownStr = formatCountdown(timeUntil.hours, timeUntil.minutes);
+
+  const html = `
+    <div class="skytv-countdown-box">
+      <div class="skytv-countdown-label">PRÃXIMO EVENTO EN</div>
+      <div class="skytv-countdown-timer">${countdownStr}</div>
+      <div class="skytv-countdown-title">${nextEvento.titulo}</div>
+      <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #aaaaaa;">
+        ${nextEvento.fecha} a las ${nextEvento.hora_inicio}
+      </p>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Update countdown every minute
+  setTimeout(() => renderSkyTvCountdown(eventos), 60000);
+}
+
+function checkSkyTvAlerts(eventos) {
+  const now = new Date();
+
+  eventos.forEach(evento => {
+    const start = parseDateTime(evento.fecha, evento.hora_inicio);
+    const minutesUntil = (start - now) / (1000 * 60);
+
+    // 30 minute alert
+    if (minutesUntil > 29.5 && minutesUntil <= 30) {
+      showSkyTvAlert(`${evento.titulo} starts in 30 minutes!`, 'info');
+    }
+
+    // 5 minute alert
+    if (minutesUntil > 4.5 && minutesUntil <= 5) {
+      showSkyTvAlert(`${evento.titulo} starts in 5 minutes!`, 'warning');
+    }
+  });
+}
+
+function showSkyTvAlert(message, type = 'info') {
+  // Simple console alert - you can enhance with toast notifications
+  console.log(`[Sky TV Alert - ${type}]:`, message);
+
+  // Create toast notification
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'warning' ? '#FF6B6B' : '#1CE8FF'};
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    z-index: 10001;
+    font-family: ${SKYTV_CONFIG.FONT}, sans-serif;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
+// ============ MODAL & ADMIN ============
+function openSkyTvAdmin() {
+  if (!skyTvState.userIsAdmin) {
+    alert('No tienes permiso para acceder al panel de administraciÃ³n');
+    return;
+  }
+
+  skyTvState.adminModalOpen = true;
+  skyTvState.editingEventoId = null;
+  renderSkyTvAdminModal();
+}
+
+function editSkyTvEvento(eventoId) {
+  if (!skyTvState.userIsAdmin) return;
+
+  skyTvState.adminModalOpen = true;
+  skyTvState.editingEventoId = eventoId;
+  renderSkyTvAdminModal();
+}
+
+function renderSkyTvAdminModal() {
+  const evento = skyTvState.editingEventoId
+    ? skyTvState.eventos.find(e => e.id === skyTvState.editingEventoId)
+    : null;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'skytv-modal-overlay';
+  overlay.id = 'skytv-modal-overlay';
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closeSkyTvAdmin();
+  };
+
+  const modalTitle = evento ? 'Editar Evento' : 'Crear Nuevo Evento';
+  const categorias = Object.keys(SKYTV_CONFIG.COLORS);
+
+  const html = `
+    <div class="skytv-modal">
+      <button class="skytv-modal-close" onclick="closeSkyTvAdmin()">â</button>
+      <h2>${modalTitle}</h2>
+
+      <div class="skytv-form-group">
+        <label>TÃ­tulo</label>
+        <input type="text" id="skytv-form-titulo" placeholder="TÃ­tulo del evento" value="${evento?.titulo || ''}">
+      </div>
+
+      <div class="skytv-form-group">
+        <label>DescripciÃ³n</label>
+        <textarea id="skytv-form-descripcion" placeholder="DescripciÃ³n">${evento?.descripcion || ''}</textarea>
+      </div>
+
+      <div class="skytv-form-group">
+        <label>CategorÃ­a</label>
+        <select id="skytv-form-categoria">
+          ${categorias.map(cat => `
+            <option value="${cat}" ${evento?.categoria === cat ? 'selected' : ''}>${cat}</option>
+          `).join('')}
+        </select>
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Fecha</label>
+        <input type="date" id="skytv-form-fecha" value="${evento?.fecha || ''}">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="skytv-form-group">
+          <label>Hora Inicio</label>
+          <input type="time" id="skytv-form-hora-inicio" value="${evento?.hora_inicio || ''}">
+        </div>
+        <div class="skytv-form-group">
+          <label>Hora Fin</label>
+          <input type="time" id="skytv-form-hora-fin" value="${evento?.hora_fin || ''}">
+        </div>
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Nombre del Host</label>
+        <input type="text" id="skytv-form-host-nombre" placeholder="Nombre del host" value="${evento?.host_nombre || ''}">
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Zoom Meeting ID</label>
+        <input type="text" id="skytv-form-zoom-meeting-id" placeholder="Meeting ID" value="${evento?.zoom_meeting_id || ''}">
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Zoom Password</label>
+        <input type="password" id="skytv-form-zoom-password" placeholder="ContraseÃ±a" value="${evento?.zoom_password || ''}">
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Zoom Link</label>
+        <input type="text" id="skytv-form-zoom-link" placeholder="https://zoom.us/j/..." value="${evento?.zoom_link || ''}">
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Flyer URL</label>
+        <input type="text" id="skytv-form-flyer-url" placeholder="URL de la imagen" value="${evento?.flyer_url || ''}">
+      </div>
+
+      <div class="skytv-form-group">
+        <label>Recording URL</label>
+        <input type="text" id="skytv-form-grabacion-url" placeholder="URL de la grabaciÃ³n" value="${evento?.grabacion_url || ''}">
+      </div>
+
+      <div class="skytv-form-actions">
+        <button class="skytv-form-actions skytv-btn-primary" onclick="saveSkyTvEvento()">
+          ${evento ? 'Actualizar' : 'Crear'} Evento
+        </button>
+        ${evento ? `
+          <button class="skytv-form-actions skytv-btn-delete" onclick="deleteSkyTvEvento('${evento.id}')">
+            Eliminar
+          </button>
+        ` : ''}
+        <button class="skytv-form-actions skytv-btn-cancel" onclick="closeSkyTvAdmin()">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+function closeSkyTvAdmin() {
+  const overlay = document.getElementById('skytv-modal-overlay');
+  if (overlay) overlay.remove();
+  skyTvState.adminModalOpen = false;
+  skyTvState.editingEventoId = null;
+}
+
+async function saveSkyTvEvento() {
+  const evento = {
+    id: skyTvState.editingEventoId || 'new_' + Date.now(),
+    titulo: document.getElementById('skytv-form-titulo').value,
+    descripcion: document.getElementById('skytv-form-descripcion').value,
+    categoria: document.getElementById('skytv-form-categoria').value,
+    fecha: document.getElementById('skytv-form-fecha').value,
+    hora_inicio: document.getElementById('skytv-form-hora-inicio').value,
+    hora_fin: document.getElementById('skytv-form-hora-fin').value,
+    host_nombre: document.getElementById('skytv-form-host-nombre').value,
+    zoom_meeting_id: document.getElementById('skytv-form-zoom-meeting-id').value,
+    zoom_password: document.getElementById('skytv-form-zoom-password').value,
+    zoom_link: document.getElementById('skytv-form-zoom-link').value,
+    flyer_url: document.getElementById('skytv-form-flyer-url').value,
+    grabacion_url: document.getElementById('skytv-form-grabacion-url').value
+  };
+
+  if (!evento.titulo || !evento.fecha || !evento.hora_inicio || !evento.hora_fin) {
+    alert('Por favor completa los campos requeridos');
+    return;
+  }
+
+  try {
+    const method = skyTvState.editingEventoId ? 'PUT' : 'POST';
+    const action = skyTvState.editingEventoId ? 'update' : 'create';
+
+    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=${action}`, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(evento)
+    });
+
+    if (!response.ok) throw new Error('Failed to save evento');
+
+    closeSkyTvAdmin();
+    await loadSkyTvEventos();
+    showSkyTvAlert('Evento guardado exitosamente', 'info');
+
+  } catch (error) {
+    console.error('Error saving evento:', error);
+    alert('Error al guardar el evento');
+  }
+}
+
+async function deleteSkyTvEvento(eventoId) {
+  if (!confirm('Â¿EstÃ¡s seguro de que deseas eliminar este evento?')) return;
+
+  try {
+    const response = await fetch(`${SKYTV_CONFIG.API_BASE}?action=delete&id=${eventoId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) throw new Error('Failed to delete evento');
+
+    closeSkyTvAdmin();
+    await loadSkyTvEventos();
+    showSkyTvAlert('Evento eliminado', 'info');
+
+  } catch (error) {
+    console.error('Error deleting evento:', error);
+    alert('Error al eliminar el evento');
+  }
+}
+
+// ============ EVENT DETAIL & ACTIONS ============
+function openSkyTvEventDetail(eventoId) {
+  const evento = skyTvState.eventos.find(e => e.id === eventoId);
+  if (!evento) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'skytv-modal-overlay';
+  overlay.id = 'skytv-detail-overlay';
+  overlay.onclick = (e) => {
+    if (e.target === overlay) overlay.remove();
+  };
+
+  const live = isEventLive(evento);
+  const liveHtml = live ? '<div style="color: #FF6B6B; font-weight: 700; margin-bottom: 1rem;">ð´ EN VIVO AHORA</div>' : '';
+
+  const html = `
+    <div class="skytv-modal">
+      <button class="skytv-modal-close" onclick="document.getElementById('skytv-detail-overlay').remove()">â</button>
+      <h2>${evento.titulo}</h2>
+      ${liveHtml}
+      <p><strong>CategorÃ­a:</strong> <span class="skytv-event-badge ${evento.categoria}">${evento.categoria}</span></p>
+      <p><strong>Host:</strong> ${evento.host_nombre}</p>
+      <p><strong>Fecha:</strong> ${evento.fecha}</p>
+      <p><strong>Hora:</strong> ${evento.hora_inicio} - ${evento.hora_fin}</p>
+      <p><strong>DescripciÃ³n:</strong></p>
+      <p>${evento.descripcion || 'No hay descripciÃ³n'}</p>
+
+      ${evento.zoom_link ? `
+        <button class="skytv-btn" style="width: 100%; margin: 1rem 0;" onclick="openSkyTvZoom('${evento.zoom_link}')">
+          ð¹ Unirse a Zoom
+        </button>
+      ` : ''}
+
+      ${evento.grabacion_url ? `
+        <button class="skytv-btn skytv-btn-secondary" style="width: 100%; margin-bottom: 1rem;" onclick="openSkyTvRecording('${evento.grabacion_url}')">
+          ð¬ Ver GrabaciÃ³n
+        </button>
+      ` : ''}
+
+      ${skyTvState.userIsAdmin ? `
+        <button class="skytv-btn skytv-btn-secondary" style="width: 100%;" onclick="editSkyTvEvento('${evento.id}')">
+          âï¸ Editar
+        </button>
+      ` : ''}
+    </div>
+  `;
+
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+function openSkyTvZoom(zoomLink) {
+  if (!zoomLink) {
+    alert('El enlace de Zoom no estÃ¡ disponible');
+    return;
+  }
+  window.open(zoomLink, '_blank');
+}
+
+function openSkyTvRecording(recordingUrl) {
+  if (!recordingUrl) {
+    alert('El enlace de la grabaciÃ³n no estÃ¡ disponible');
+    return;
+  }
+  window.open(recordingUrl, '_blank');
+}
+
+// ============ WEEK NAVIGATION ============
+function prevSkyTvWeek() {
+  skyTvState.selectedWeek = new Date(skyTvState.selectedWeek);
+  skyTvState.selectedWeek.setDate(skyTvState.selectedWeek.getDate() - 7);
+  renderSkyTvCalendar(skyTvState.eventos);
+}
+
+function nextSkyTvWeek() {
+  skyTvState.selectedWeek = new Date(skyTvState.selectedWeek);
+  skyTvState.selectedWeek.setDate(skyTvState.selectedWeek.getDate() + 7);
+  renderSkyTvCalendar(skyTvState.eventos);
+}
+
+function goSkyTvToday() {
+  skyTvState.selectedWeek = getWeekStart(new Date());
+  renderSkyTvCalendar(skyTvState.eventos);
+}
+
+// ============ SECTION HTML TEMPLATE ============
+function getSkyTvSectionHTML() {
+  return `
+    <div id="sky-tv-section">
+      <div class="skytv-topbar">
+        <h1>â¡ SKY TV</h1>
+        <div class="skytv-topbar-controls">
+          ${skyTvState.userIsAdmin ? `<button class="skytv-btn" onclick="openSkyTvAdmin()">+ Crear Evento</button>` : ''}
+          <button class="skytv-btn skytv-btn-secondary" onclick="loadSkyTvEventos()">ð Actualizar</button>
+        </div>
+      </div>
+
+      <div id="skytv-envivo-container"></div>
+      <div id="skytv-countdown-container"></div>
+
+      <div class="skytv-week-nav">
+        <button onclick="prevSkyTvWeek()">â Semana Anterior</button>
+        <span class="skytv-week-display" id="skytv-week-display"></span>
+        <button onclick="nextSkyTvWeek()">PrÃ³xima Semana â</button>
+        <button onclick="goSkyTvToday()">Hoy</button>
+      </div>
+
+      <div id="skytv-calendar-container"></div>
+    </div>
+  `;
+}
+
+// ============ INITIALIZATION ============
+function initSkyTv() {
+  // Inject CSS
+  injectSkyTvCSS();
+
+  // Insert HTML into page (assumes there's a container for this)
+  const container = document.getElementById('sky-tv-section');
+  if (!container) {
+    console.warn('Sky TV section container not found');
+    return;
+  }
+
+  // Update week display
+  const weekStart = skyTvState.selectedWeek;
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const weekDisplay = `${weekStart.getDate()} ${monthNames[weekStart.getMonth()]} - ${weekEnd.getDate()} ${monthNames[weekEnd.getMonth()]}`;
+
+  const weekDisplayEl = document.getElementById('skytv-week-display');
+  if (weekDisplayEl) {
+    weekDisplayEl.textContent = weekDisplay;
+  }
+
+  // Load data
+  loadSkyTvEventos();
+
+  // Refresh every 5 minutes
+  setInterval(() => {
+    loadSkyTvEventos();
+    checkSkyTvAlerts(skyTvState.eventos);
+  }, 5 * 60 * 1000);
+}
+
+// ============ EXPORT FUNCTIONS ============
+// Call initSkyTv() when you want to activate the section
+// Make sure there's a <div id="sky-tv-section"></div> in your HTML
+
+// ============ END SKY TV MODULE ============
+
+</script>
+<!-- SKY TV SECTION -->
+<div id="section-sky-tv" class="section">
+<div id="sky-tv-section"></div>
+</div>
 </body>
 </html>
