@@ -620,7 +620,6 @@ function toggleLive(id, isLive, callback) {
 window.initSkyTv = function() {
   var adminBtn = document.getElementById('nav-admin-btn') || document.querySelector('[onclick*="admin"]');
   skyTvState.userIsAdmin = !!adminBtn;
-  }
   skyTvState.selectedWeek = new Date();
   loadEventos();
 };
