@@ -720,14 +720,14 @@ function renderAntifraudeCardMini(r) {
 
   function renderRankingInAgenda(el) {
     // Build tab bar matching original style
-    var tabs = [
+    var agTabs = [
       {id: 'config', label: 'Configurar', icon: '\u2699\uFE0F'},
       {id: 'citas', label: 'Citas', icon: '\uD83D\uDCCB'},
       {id: 'plandiario', label: 'Mi Plan Diario', icon: '\uD83D\uDCC5'},
       {id: 'ranking', label: 'Ranking', icon: '\uD83C\uDFC6'}
     ];
     var html = '<div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">';
-    tabs.forEach(function(t) {
+    agTabs.forEach(function(t) {
       var isActive = t.id === 'ranking';
       var sty = isActive
         ? 'background:rgba(28,232,255,0.12);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-weight:700;'
@@ -735,25 +735,46 @@ function renderAntifraudeCardMini(r) {
       html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Nunito,sans-serif;' + sty + '">' + t.icon + ' ' + t.label + '</button>';
     });
     html += '</div>';
-    html += '<div id="agenda-ranking-box"></div>';
+    // Leaderboard sub-tabs
+    var subTabs = [
+      {id: 'weekly', label: 'Top 10 Semanal', icon: '\uD83C\uDFC6'},
+      {id: 'daily', label: 'Top 5 Diario', icon: '\uD83D\uDCCA'},
+      {id: 'tests', label: 'Mis Pruebas', icon: '\uD83D\uDCF8'},
+      {id: 'anticheat', label: 'Anti-Trampa', icon: '\uD83D\uDEE1\uFE0F'}
+    ];
+    html += '<div style="display:flex;gap:0;margin-bottom:12px;flex-wrap:wrap;">';
+    subTabs.forEach(function(t, i) {
+      var isA = i === 0;
+      var sty2 = isA
+        ? 'background:rgba(28,232,255,0.12);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-weight:700;'
+        : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-weight:500;';
+      html += '<button onclick="switchRankingSubTab(\'' + t.id + '\')" id="rsub-' + t.id + '" style="padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;margin:2px 3px;font-family:Nunito,sans-serif;' + sty2 + '">' + t.icon + ' ' + t.label + '</button>';
+    });
+    html += '</div>';
+    html += '<div id="agenda-ranking-subtab-content"></div>';
     el.innerHTML = html;
-    // Inject leaderboard UI via ID swap trick
-    setTimeout(function() {
-      var box = document.getElementById('agenda-ranking-box');
-      if (!box || typeof lbInjectRankingUI !== 'function') return;
-      var orig = document.getElementById('ranking-content');
-      if (orig) {
-        orig.id = '_rc_bak';
-        box.id = 'ranking-content';
-        lbInjectRankingUI();
-        box.id = 'agenda-ranking-box';
-        orig.id = 'ranking-content';
-      } else {
-        box.id = 'ranking-content';
-        lbInjectRankingUI();
-        box.id = 'agenda-ranking-box';
+    // Define sub-tab switcher
+    window.switchRankingSubTab = function(tab) {
+      var sBtns = el.querySelectorAll('[id^="rsub-"]');
+      for (var j = 0; j < sBtns.length; j++) {
+        var isA2 = sBtns[j].id === 'rsub-' + tab;
+        sBtns[j].style.background = isA2 ? 'rgba(28,232,255,0.12)' : 'rgba(255,255,255,0.04)';
+        sBtns[j].style.border = isA2 ? '1px solid rgba(28,232,255,0.4)' : '1px solid rgba(255,255,255,0.1)';
+        sBtns[j].style.color = isA2 ? '#1CE8FF' : 'rgba(255,255,255,0.5)';
+        sBtns[j].style.fontWeight = isA2 ? '700' : '500';
       }
-    }, 80);
+      var ct = document.getElementById('agenda-ranking-subtab-content');
+      if (!ct) return;
+      if (tab === 'weekly' && typeof lbRenderWeekly === 'function') lbRenderWeekly(ct);
+      else if (tab === 'daily' && typeof lbRenderDaily === 'function') lbRenderDaily(ct);
+      else if (tab === 'anticheat' && typeof lbRenderAntiCheat === 'function') lbRenderAntiCheat(ct);
+      else if (tab === 'tests') {
+        ct.innerHTML = '<div style="text-align:center;padding:30px 20px;"><div style="font-size:32px;margin-bottom:8px;">\uD83D\uDCF8</div><p style="color:rgba(255,255,255,0.4);font-size:13px;">Sube capturas de tus citas en Zoom como prueba</p></div>';
+      }
+    };
+    // Load first sub-tab
+    var ct = document.getElementById('agenda-ranking-subtab-content');
+    if (ct && typeof lbRenderWeekly === 'function') lbRenderWeekly(ct);
   }
 
   renderAgendaUI = function(el) {
