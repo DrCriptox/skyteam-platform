@@ -269,3 +269,332 @@ cambiarRango = function(username, newRank) {
   if (typeof renderAdminUsuarios === 'function') try { renderAdminUsuarios(); } catch(e) {}
   if (typeof showToast === 'function') showToast('Rango actualizado \u2192 ' + rk.icon + ' ' + rk.name);
 };
+// === PATCH v4: Top5 title fix, Anti-Trampa privacy + compact, Admin Agenda/Antifraude ===
+
+// --- 1. Patch lbRenderDaily: Yesterday's day name + anti-cheat deductions already applied by API ---
+lbRenderDaily = function(container) {
+  container.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.4);">Cargando...</div>';
+  lbApi('dailyTop', {}).then(function(data) {
+    if (!data.ok || !data.ranking || data.ranking.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;"><p style="color:rgba(255,255,255,0.4);">Sin datos del dia</p></div>';
+      return;
+    }
+    // Calculate yesterday's date for title
+    var now = new Date();
+    var yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    var dias = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+    var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var dayName = dias[yesterday.getDay()];
+    var dateStr = yesterday.getDate() + ' de ' + meses[yesterday.getMonth()];
+
+    var html = '<h3 style="text-align:center;font-size:16px;margin:16px 0 4px;">Top 5 del dia ' + dayName + '</h3>';
+    html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">' + dateStr + ' — Corte 11:00 PM</p>';
+
+    data.ranking.forEach(function(r, i) {
+      var isMe = r.username === CU.username;
+      var meBorder = isMe ? 'border:1px solid rgba(28,232,255,0.4);background:rgba(28,232,255,0.06);' : 'border:1px solid rgba(255,255,255,0.08);';
+      var ipBadge = '';
+      if (r.ipDupes && r.ipDupes > 0) {
+        ipBadge = ' <span style="background:rgba(255,60,60,0.2);color:#FF6B6B;font-size:9px;padding:1px 5px;border-radius:4px;">IP x' + r.ipDupes + '</span>';
+      }
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin:8px 0;' + meBorder + '">';
+      html += medalCircle(i + 1, '36px');
+      html += renderAvatar(r.username, r.name, '36px');
+      html += '<div style="flex:1;"><div style="font-weight:600;font-size:14px;">' + (r.name || r.username) + (isMe ? ' <span style="color:#1CE8FF;font-size:11px;">(Tu)</span>' : '') + ipBadge + '</div>';
+      html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas - ' + r.verificadas + ' verificadas</div></div>';
+      html += '<div style="font-size:20px;font-weight:900;color:#FFD700;">' + r.score + '<span style="font-size:10px;color:rgba(255,255,255,0.3);"> pts</span></div>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }).catch(function(e) {
+    container.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error: ' + e.message + '</p>';
+  });
+};
+
+// --- 2. Patch lbRenderAntiCheat: Non-admin only sees own card, compact cards ---
+lbRenderAntiCheat = function(container) {
+  var isAdmin = CU && (CU.isAdmin === true || CU.rank === 8);
+  container.innerHTML = '<div style="text-align:center;padding:20px 0;color:rgba(255,255,255,0.4);">Analizando...</div>';
+
+  if (!isAdmin) {
+    // Non-admin: only show own card
+    lbApi('antiCheat', { user: CU.username }).then(function(data) {
+      if (!data.ok) { container.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error</p>'; return; }
+      var html = '<h3 style="text-align:center;font-size:15px;margin:12px 0 4px;">Tu Integridad</h3>';
+      html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 12px;">Analisis de tu cuenta</p>';
+      html += renderAntiCheatCardCompact({user: CU.username, name: CU.name, data: data});
+      container.innerHTML = html;
+    }).catch(function(e) {
+      container.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error: ' + e.message + '</p>';
+    });
+  } else {
+    // Admin: show all but compact
+    var userKeys = Object.keys(USERS);
+    var results = [];
+    var completed = 0;
+    userKeys.forEach(function(uKey) {
+      lbApi('antiCheat', { user: uKey }).then(function(data) {
+        results.push({ user: uKey, name: USERS[uKey].name, data: data });
+        completed++;
+        if (completed === userKeys.length) {
+          var order = { blocked: 0, flagged: 1, suspicious: 2, clean: 3 };
+          results.sort(function(a, b) {
+            var oa = a.data.ok ? (order[a.data.classification] || 3) : 3;
+            var ob = b.data.ok ? (order[b.data.classification] || 3) : 3;
+            return oa - ob;
+          });
+          var html = '<h3 style="text-align:center;font-size:15px;margin:12px 0 4px;">Anti-Trampa IA</h3>';
+          html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 10px;">Integridad por usuario</p>';
+          results.forEach(function(r) {
+            if (r.data.ok) html += renderAntiCheatCardCompact(r);
+          });
+          container.innerHTML = html;
+        }
+      }).catch(function() {
+        results.push({ user: uKey, name: USERS[uKey].name, data: { ok: false } });
+        completed++;
+        if (completed === userKeys.length) {
+          container.innerHTML = '<p style="color:#FF6B6B;">Error cargando datos</p>';
+        }
+      });
+    });
+  }
+};
+
+// --- 3. Compact anti-cheat card renderer (40% smaller) ---
+function renderAntiCheatCardCompact(r) {
+  if (!r.data.ok) return '';
+  var d = r.data;
+  var colorMap = { clean: '#00E676', suspicious: '#FFD700', flagged: '#FF6B6B', blocked: '#FF1744' };
+  var labelMap = { clean: 'Limpio', suspicious: 'Revision', flagged: 'Alerta', blocked: 'Bloqueado' };
+  var bgMap = { clean: 'rgba(0,230,118,0.04)', suspicious: 'rgba(255,215,0,0.04)', flagged: 'rgba(255,107,107,0.05)', blocked: 'rgba(255,23,68,0.06)' };
+  var borderMap = { clean: 'rgba(0,230,118,0.15)', suspicious: 'rgba(255,215,0,0.2)', flagged: 'rgba(255,107,107,0.25)', blocked: 'rgba(255,23,68,0.3)' };
+  var cls = d.classification;
+  var color = colorMap[cls] || '#00E676';
+  var label = labelMap[cls] || 'Limpio';
+  var html = '<div style="background:' + bgMap[cls] + ';border:1px solid ' + borderMap[cls] + ';border-radius:10px;padding:10px 12px;margin:6px 0;">';
+  // Header row: avatar + name + badge + score
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += renderAvatar(r.user, r.name, '24px');
+  html += '<span style="font-size:13px;font-weight:600;">' + r.name + '</span></div>';
+  html += '<div style="display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:10px;background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:6px;font-weight:600;">' + label + '</span>';
+  html += '<span style="font-size:12px;font-weight:700;color:' + color + ';">' + d.suspicionScore + '</span>';
+  html += '</div></div>';
+  // Stats row - single line
+  html += '<div style="display:flex;gap:8px;margin-top:6px;font-size:10px;">';
+  html += '<span style="color:rgba(255,255,255,0.4);">Hoy <b style="color:var(--text);">' + d.stats.todayCitas + '</b></span>';
+  html += '<span style="color:rgba(255,255,255,0.4);">Sem <b style="color:var(--text);">' + d.stats.weDeactivate all tabs
+    var tabs = document.querySelectorAll('.admin-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    // Activate clicked tab
+    var activeTab = document.getElementById('atab-' + tab);
+    if (activeTab) activeTab.classList.add('active');
+    // Show panel
+    var panel = document.getElementById('admin-' + tab);
+    if (panel) panel.style.display = 'block';
+    // Render content for new tabs
+    if (tab === 'agenda-admin') renderAdminAgenda();
+    if (tab === 'antifraude-admin') renderAdminAntifraude();
+    // Call original for existing tabs
+    if (tab === 'solicitudes') { if (typeof renderSolicitudes === 'function') renderSolicitudes(); }
+    if (tab === 'usuarios') { if (typeof renderAdminUsuarios === 'function') renderAdminUsuarios(); }
+    if (tab === 'contenido') { if (typeof renderAdminContenido === 'function') renderAdminContenido(); }
+    if (tab === 'anuncios-admin') { if (typeof renderAdminAnuncios === 'function') renderAdminAnuncios(); }
+  };
+
+  // Inject new tabs and panels into admin section
+  var _origRenderAdmin = typeof renderAdminPanel === 'function' ? renderAdminPanel : null;
+  renderAdminPanel = function() {
+    if (_origRenderAdmin) _origRenderAdmin();
+    // Add tabs if not already there
+    if (!document.getElementById('atab-agenda-admin')) {
+      var tabRow = document.querySelector('.admin-tab')?.parentElement;
+      if (tabRow) {
+        var agendaBtn = document.createElement('button');
+        agendaBtn.className = 'admin-tab';
+        agendaBtn.id = 'atab-agenda-admin';
+        agendaBtn.onclick = function() { switchAdminTab('agenda-admin'); };
+        agendaBtn.textContent = 'Agenda';
+        tabRow.appendChild(agendaBtn);
+
+        var fraudBtn = document.createElement('button');
+        fraudBtn.className = 'admin-tab';
+        fraudBtn.id = 'atab-antifraude-admin';
+        fraudBtn.onclick = function() { switchAdminTab('antifraude-admin'); };
+        fraudBtn.textContent = 'Antifraude';
+        tabRow.appendChild(fraudBtn);
+      }
+      // Add panels
+      var adminSection = document.getElementById('admin-anuncios-admin');
+      if (adminSection && adminSection.parentElement) {
+        var agendaPanel = document.createElement('div');
+        agendaPanel.id = 'admin-agenda-admin';
+        agendaPanel.style.display = 'none';
+        adminSection.parentElement.appendChild(agendaPanel);
+
+        var fraudPanel = document.createElement('div');
+        fraudPanel.id = 'admin-antifraude-admin';
+        fraudPanel.style.display = 'none';
+        adminSection.parentElement.appendChild(fraudPanel);
+      }
+    }
+  };
+})();
+
+// --- 5. Admin Agenda: Daily real-time + click for weekly ---
+function renderAdminAgenda() {
+  var el = document.getElementById('admin-agenda-admin');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.4);">Cargando agenda diaria...</div>';
+
+  // Calculate yesterday label
+  var now = new Date();
+  var yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  var dias = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var dayLabel = dias[yesterday.getDay()] + ' ' + yesterday.getDate() + ' ' + meses[yesterday.getMonth()];
+
+  lbApi('dailyTop', {}).then(function(data) {
+    var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+    html += '<div><h3 style="font-size:16px;margin:0;">Agenda Diaria</h3>';
+    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Top del ' + dayLabel + ' — Corte 11PM</p></div>';
+    html += '<button onclick="loadAdminWeekly()" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.1);border:1px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:12px;font-weight:600;cursor:pointer;">Cargar Semanal</button>';
+    html += '</div>';
+    html += '<div id="admin-agenda-daily">';
+    if (data.ok && data.ranking && data.ranking.length > 0) {
+      data.ranking.forEach(function(r, i) {
+        var ipBadge = r.ipDupes > 0 ? ' <span style="color:#FF6B6B;font-size:10px;">IP x' + r.ipDupes + '</span>' : '';
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin:4px 0;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">';
+        html += medalCircle(i + 1, '28px');
+        html += renderAvatar(r.username, r.name, '30px');
+        html += '<div style="flex:1;"><div style="font-size:13px;font-weight:600;">' + (r.name || r.username) + ipBadge + '</div>';
+        html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas - ' + r.verificadas + ' verif.</div></div>';
+        html += '<div style="font-size:18px;font-weight:900;color:#FFD700;">' + r.score + '<span style="font-size:9px;color:rgba(255,255,255,0.3);"> pts</span></div>';
+        html += '</div>';
+      });
+    } else {
+      html += '<p style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">Sin datos del dia</p>';
+    }
+    html += '</div>';
+    html += '<div id="admin-agenda-weekly" style="margin-top:16px;"></div>';
+    el.innerHTML = html;
+  }).catch(function(e) {
+    el.innerHTML = '<p style="color:#FF6B6B;">Error: ' + e.message + '</p>';
+  });
+}
+
+function loadAdminWeekly() {
+  var container = document.getElementById('admin-agenda-weekly');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:16px;color:rgba(255,255,255,0.4);">Cargando semanal...</div>';
+  lbApi('weeklyTop', {}).then(function(data) {
+    if (!data.ok || !data.ranking || data.ranking.length === 0) {
+      container.innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4);">Sin datos semanales</p>';
+      return;
+    }
+    var html = '<h4 style="font-size:14px;margin:0 0 8px;color:rgba(255,255,255,0.7);">Top 10 Semanal</h4>';
+    // Podium top 3
+    html += lbRenderPodium(data.ranking);
+    // Rest as list
+    html += lbRenderList(data.ranking);
+    container.innerHTML = html;
+  }).catch(function(e) {
+    container.innerHTML = '<p style="color:#FF6B6B;">Error: ' + e.message + '</p>';
+  });
+}
+
+// --- 6. Admin Antifraude: Top defraudadores + compact detailed cards ---
+function renderAdminAntifraude() {
+  var el = document.getElementById('admin-antifraude-admin');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.4);">Escaneando usuarios...</div>';
+
+  var userKeys = Object.keys(USERS).filter(function(k) { return !USERS[k].isAdmin; });
+  var results = [];
+  var completed = 0;
+
+  if (userKeys.length === 0) {
+    el.innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4);">No hay usuarios para analizar</p>';
+    return;
+  }
+
+  userKeys.forEach(function(uKey) {
+    lbApi('antiCheat', { user: uKey }).then(function(data) {
+      results.push({ user: uKey, name: USERS[uKey].name, data: data });
+      completed++;
+      if (completed === userKeys.length) buildAntifraude(el, results);
+    }).catch(function() {
+      results.push({ user: uKey, name: USERS[uKey].name, data: { ok: false } });
+      completed++;
+      if (completed === userKeys.length) buildAntifraude(el, results);
+    });
+  });
+}
+
+function buildAntifraude(el, results) {
+  var valid = results.filter(function(r) { return r.data.ok; });
+  var order = { blocked: 0, flagged: 1, suspicious: 2, clean: 3 };
+  valid.sort(function(a, b) {
+    return (b.data.suspicionScore || 0) - (a.data.suspicionScore || 0);
+  });
+
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+  html += '<div><h3 style="font-size:16px;margin:0;">Antifraude IA</h3>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Analisis completo de integridad</p></div>';
+  html += '</div>';
+
+  // Top defraudadores cards (only those with score > 0)
+  var flagged = valid.filter(function(r) { return r.data.suspicionScore > 0; });
+  if (flagged.length > 0) {
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;">Alertas activas</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;">';
+    flagged.forEach(function(r) {
+      html += renderAntifraudeCardMini(r);
+    });
+    html += '</div></div>';
+  }
+
+  // All users detailed but compact
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;">Todos los usuarios</div>';
+  valid.forEach(function(r) {
+    html += renderAntiCheatCardCompact(r);
+  });
+
+  el.innerHTML = html;
+}
+
+// Mini card for top fraudsters (60% smaller than original)
+function renderAntifraudeCardMini(r) {
+  if (!r.data.ok) return '';
+  var d = r.data;
+  var colorMap = { clean: '#00E676', suspicious: '#FFD700', flagged: '#FF6B6B', blocked: '#FF1744' };
+  var bgMap = { clean: 'rgba(0,230,118,0.04)', suspicious: 'rgba(255,215,0,0.06)', flagged: 'rgba(255,107,107,0.07)', blocked: 'rgba(255,23,68,0.08)' };
+  var borderMap = { clean: 'rgba(0,230,118,0.15)', suspicious: 'rgba(255,215,0,0.25)', flagged: 'rgba(255,107,107,0.3)', blocked: 'rgba(255,23,68,0.35)' };
+  var labelMap = { clean: 'OK', suspicious: 'Rev', flagged: 'Alerta', blocked: 'Block' };
+  var cls = d.classification;
+  var color = colorMap[cls] || '#00E676';
+  var html = '<div style="background:' + bgMap[cls] + ';border:1px solid ' + borderMap[cls] + ';border-radius:8px;padding:8px 10px;">';
+  // Row 1: avatar + name + score
+  html += '<div style="display:flex;align-items:center;gap:6px;">';
+  html += renderAvatar(r.user, r.name, '20px');
+  html += '<span style="font-size:12px;font-weight:600;flex:1;">' + r.name + '</span>';
+  html += '<span style="font-size:9px;background:' + color + '22;color:' + color + ';padding:1px 6px;border-radius:4px;font-weight:700;">' + labelMap[cls] + '</span>';
+  html += '<span style="font-size:11px;font-weight:800;color:' + color + ';">' + d.suspicionScore + '</span>';
+  html += '</div>';
+  // Row 2: key stats
+  html += '<div style="display:flex;gap:6px;margin-top:4px;font-size:9px;color:rgba(255,255,255,0.4);">';
+  html += '<span>IPs:' + d.stats.uniqueIPs + '</span>';
+  html += '<span>Hoy:' + d.stats.todayCitas + '</span>';
+  html += '<span>30d:' + d.stats.totalLast30Days + '</span>';
+  if (d.flags.length > 0) html += '<span style="color:' + color + ';">' + d.flags.length + ' flags</span>';
+  html += '</div>';
+  // Score bar
+  html += '<div style="margin-top:3px;width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;"><div style="width:' + Math.min(d.suspicionScore,100) + '%;height:100%;background:' + color + ';border-radius:2px;"></div></div>';
+  html += '</div>';
+  return html;
+}
