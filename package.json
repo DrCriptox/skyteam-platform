@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "SKY TEAM - Franquicia Digital API and PWA",
   "private": true,
-  "engines": {
-    "node": "18.x"
-  },
   "dependencies": {
     "web-push": "^3.6.6"
   },
