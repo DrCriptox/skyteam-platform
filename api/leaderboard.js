@@ -1,4 +1,5 @@
-// Leaderboard + Anti-Cheat API — /api/leaderboard.js
+// Leaderboard + Anti-Cheat API v2 — /api/leaderboard.js
+// Added: IP analysis, data validation checks, enhanced scoring
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
@@ -21,51 +22,67 @@ module.exports = async (req, res) => {
     const action = body.action || req.query?.action || '';
     const user = body.user || req.query?.user || '';
 
-    // ===== GET WEEKLY TOP 10 =====
+    // ===== GET WEEKLY TOP 10 (with IP flags) =====
     if (action === 'weeklyTop') {
-      // Get Monday of current week (UTC)
       const now = new Date();
       const day = now.getUTCDay();
       const diff = day === 0 ? 6 : day - 1;
-      const monday = new Date(now);
-      monday.setUTCDate(now.getUTCDate() - diff);
-      monday.setUTCHours(0, 0, 0, 0);
+      const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - diff); monday.setUTCHours(0, 0, 0, 0);
       const mondayISO = monday.toISOString();
-
-      // Sunday end
-      const sunday = new Date(monday);
-      sunday.setUTCDate(monday.getUTCDate() + 7);
+      const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 7);
       const sundayISO = sunday.toISOString();
 
-      // Count bookings per user this week with verified/completada status
+      // Fetch bookings WITH ip_address
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso&fecha_iso=gte.' + mondayISO + '&fecha_iso=lt.' + sundayISO + '&status=in.(activa,completada,verificada)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + mondayISO + '&fecha_iso=lt.' + sundayISO + '&status=in.(activa,completada,verificada)'
       );
-
-      // Count proofs per user this week
       const proofs = await sb(
         'booking_proofs?select=username,status,created_at&created_at=gte.' + mondayISO + '&created_at=lt.' + sundayISO
       );
 
-      // Aggregate
       const userStats = {};
       (bookings || []).forEach(function(b) {
-        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, proofs: 0, score: 0 };
+        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, proofs: 0, score: 0, ips: {}, ipDupes: 0 };
         userStats[b.username].citas++;
         if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
+        // Track IPs
+        if (b.ip_address) {
+          if (!userStats[b.username].ips[b.ip_address]) userStats[b.username].ips[b.ip_address] = [];
+          userStats[b.username].ips[b.ip_address].push(b.nombre);
+        }
       });
+
       (proofs || []).forEach(function(p) {
-        if (!userStats[p.username]) userStats[p.username] = { citas: 0, verificadas: 0, proofs: 0, score: 0 };
+        if (!userStats[p.username]) userStats[p.username] = { citas: 0, verificadas: 0, proofs: 0, score: 0, ips: {}, ipDupes: 0 };
         if (p.status === 'approved') userStats[p.username].proofs++;
       });
 
-      // Calculate score: verified citas = 10pts, active citas = 3pts, proofs = 5pts bonus
+      // Calculate score + IP analysis
       Object.keys(userStats).forEach(function(u) {
         var s = userStats[u];
-        s.score = (s.verificadas * 10) + ((s.citas - s.verificadas) * 3) + (s.proofs * 5);
+        // Count IPs that have multiple different prospects
+        var ipDupes = 0;
+        Object.keys(s.ips).forEach(function(ip) {
+          var uniqueNames = [];
+          s.ips[ip].forEach(function(n) { if (uniqueNames.indexOf(n) === -1) uniqueNames.push(n); });
+          if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
+        });
+        s.ipDupes = ipDupes;
+        // Penalize score for IP dupes: -5 per duplicate IP booking
+        s.score = (s.verificadas * 10) + ((s.citas - s.verificadas) * 3) + (s.proofs * 5) - (ipDupes * 5);
+        if (s.score < 0) s.score = 0;
+        // Clean up ips object for response (just counts)
+        var ipSummary = {};
+        Object.keys(s.ips).forEach(function(ip) {
+          if (s.ips[ip].length > 1) {
+            var masked = ip.split('.').slice(0,2).join('.') + '.*.*';
+            ipSummary[masked] = s.ips[ip].length;
+          }
+        });
+        s.ipFlags = ipSummary;
+        delete s.ips;
       });
 
-      // Get user names
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
@@ -73,45 +90,52 @@ module.exports = async (req, res) => {
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
-      // Sort and return top 10
       const ranking = usernames.map(function(u) {
         return {
-          username: u,
-          name: usersMap[u] ? usersMap[u].name : u,
-          ref: usersMap[u] ? usersMap[u].ref : '',
-           citas: userStats[u].citas,
-          verificadas: userStats[u].verificadas,
-          proofs: userStats[u].proofs,
-          score: userStats[u].score
+          username: u, name: usersMap[u] ? usersMap[u].name : u, ref: usersMap[u] ? usersMap[u].ref : '',
+          citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].proofs,
+          score: userStats[u].score, ipDupes: userStats[u].ipDupes, ipFlags: userStats[u].ipFlags
         };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 10);
 
       return res.status(200).json({ ok: true, period: 'weekly', from: mondayISO, to: sundayISO, ranking: ranking });
     }
 
-    // ===== GET DAILY TOP 5 =====
+    // ===== GET DAILY TOP 5 (with IP flags) =====
     if (action === 'dailyTop') {
-      // Last 24 hours from 10pm cutoff
       const now = new Date();
-      const today10pm = new Date(now);
-      today10pm.setUTCHours(22, 0, 0, 0); // 10pm UTC (approx, timezone handled client-side)
+      const today10pm = new Date(now); today10pm.setUTCHours(22, 0, 0, 0);
       if (now < today10pm) today10pm.setUTCDate(today10pm.getUTCDate() - 1);
       const fromISO = new Date(today10pm.getTime() - 24 * 60 * 60 * 1000).toISOString();
       const toISO = today10pm.toISOString();
 
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso&created_at=gte.' + fromISO + '&created_at=lt.' + toISO + '&status=in.(activa,completada,verificada)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&created_at=gte.' + fromISO + '&created_at=lt.' + toISO + '&status=in.(activa,completada,verificada)'
       );
 
       const userStats = {};
       (bookings || []).forEach(function(b) {
-        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, score: 0 };
+        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, score: 0, ips: {}, ipDupes: 0 };
         userStats[b.username].citas++;
         if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
+        if (b.ip_address) {
+          if (!userStats[b.username].ips[b.ip_address]) userStats[b.username].ips[b.ip_address] = [];
+          userStats[b.username].ips[b.ip_address].push(b.nombre);
+        }
       });
+
       Object.keys(userStats).forEach(function(u) {
         var s = userStats[u];
-        s.score = (s.verificadas * 10) + ((s.citas - s.verificadas) * 3);
+        var ipDupes = 0;
+        Object.keys(s.ips).forEach(function(ip) {
+          var uniqueNames = [];
+          s.ips[ip].forEach(function(n) { if (uniqueNames.indexOf(n) === -1) uniqueNames.push(n); });
+          if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
+        });
+        s.ipDupes = ipDupes;
+        s.score = (s.verificadas * 10) + ((s.citas - s.verificadas) * 3) - (ipDupes * 5);
+        if (s.score < 0) s.score = 0;
+        delete s.ips;
       });
 
       const usernames = Object.keys(userStats);
@@ -122,65 +146,56 @@ module.exports = async (req, res) => {
       }
 
       const ranking = usernames.map(function(u) {
-        return { username: u, name: usersMap[u] ? usersMap[u].name : u, citas: userStats[u].citas, verificadas: userStats[u].verificadas, score: userStats[u].score };
+        return { username: u, name: usersMap[u] ? usersMap[u].name : u,
+          citas: userStats[u].citas, verificadas: userStats[u].verificadas,
+          score: userStats[u].score, ipDupes: userStats[u].ipDupes };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 5);
 
       return res.status(200).json({ ok: true, period: 'daily', from: fromISO, to: toISO, ranking: ranking });
     }
 
-    // ===== UPLOAD PROOF =====
+    // ===== UPLOAD PROOF ===== (unchanged)
     if (action === 'uploadProof') {
       const { booking_id, proof_data } = body;
       if (!user || !booking_id || !proof_data) return res.status(400).json({ ok: false, error: 'Missing fields' });
-
-      // Verify booking exists and belongs to user
       const booking = await sb('bookings?id=eq.' + booking_id + '&username=eq.' + user + '&select=*');
       if (!booking || booking.length === 0) return res.status(404).json({ ok: false, error: 'Booking not found' });
-
-      // Store proof (base64 data URL stored directly - for MVP; could use Supabase Storage later)
-      const proof = await sb('booking_proofs', {
-        method: 'POST',
-        body: JSON.stringify({
-         booking_id: booking_id,
-          username: user,
-          proof_url: proof_data.substring(0, 500000), // Limit size
-          proof_type: 'zoom_screenshot',
-          status: 'pending',
-          ai_score: 0
-        })
-      });
-
+      const proof = await sb('booking_proofs', { method: 'POST',
+        body: JSON.stringify({ booking_id: booking_id, username: user, proof_url: proof_data.substring(0, 500000), proof_type: 'zoom_screenshot', status: 'pending', ai_score: 0 }) });
       return res.status(200).json({ ok: true, proof: proof ? proof[0] : null });
     }
 
-    // ===== AI ANTI-CHEAT ANALYSIS =====
+    // ===== AI ANTI-CHEAT ANALYSIS v2 — with IP tracking =====
     if (action === 'antiCheat') {
       if (!user) return res.status(400).json({ ok: false, error: 'Missing user' });
 
       const flags = [];
       let suspicionScore = 0;
-
-      // 1. Check for too many bookings in short time (>5 in one day)
       const now = new Date();
-      const todayStart = new Date(now);
-      todayStart.setUTCHours(0, 0, 0, 0);
-      const todayBookings = await sb(
-        'bookings?username=eq.' + user + '&created_at=gte.' + todayStart.toISOString() + '&select=id,nombre,whatsapp,fecha_iso,created_at&order=created_at.asc'
+
+      // Get ALL bookings for this user (last 30 days for IP analysis)
+      const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const allBookings = await sb(
+        'bookings?username=eq.' + user + '&created_at=gte.' + thirtyDaysAgo.toISOString() + '&select=id,nombre,whatsapp,email,fecha_iso,created_at,ip_address,user_agent,status&order=created_at.asc'
       );
 
-      if (todayBookings && todayBookings.length > 5) {
+      // Today's bookings
+      const todayStart = new Date(now); todayStart.setUTCHours(0, 0, 0, 0);
+      const todayBookings = (allBookings || []).filter(function(b) { return new Date(b.created_at) >= todayStart; });
+
+      // 1. HIGH_VOLUME: >5 citas en un dia
+      if (todayBookings.length > 5) {
         flags.push({ type: 'HIGH_VOLUME', msg: 'Mas de 5 citas creadas hoy (' + todayBookings.length + ')', severity: 'high' });
         suspicionScore += 30;
       }
 
-      // 2. Check for back-to-back bookings (less than 15 min apart)
-      if (todayBookings && todayBookings.length > 1) {
+      // 2. BACK_TO_BACK: citas con menos de 15 min
+      if (todayBookings.length > 1) {
         let backToBack = 0;
         for (let i = 1; i < todayBookings.length; i++) {
           const prev = new Date(todayBookings[i - 1].fecha_iso);
           const curr = new Date(todayBookings[i].fecha_iso);
-          const diffMin = Math.abs(curr - prev) / 60000;
-          if (diffMin < 15) backToBack++;
+          if (Math.abs(curr - prev) / 60000 < 15) backToBack++;
         }
         if (backToBack > 0) {
           flags.push({ type: 'BACK_TO_BACK', msg: backToBack + ' citas con menos de 15 min de separacion', severity: 'medium' });
@@ -188,13 +203,10 @@ module.exports = async (req, res) => {
         }
       }
 
-      // 3. Check for repeated prospect names
-      if (todayBookings && todayBookings.length > 1) {
+      // 3. DUPLICATE_NAMES
+      if (allBookings && allBookings.length > 1) {
         const names = {};
-        todayBookings.forEach(function(b) {
-          const n = (b.nombre || '').toLowerCase().trim();
-          names[n] = (names[n] || 0) + 1;
-        });
+        allBookings.forEach(function(b) { var n = (b.nombre || '').toLowerCase().trim(); names[n] = (names[n] || 0) + 1; });
         const dupes = Object.keys(names).filter(function(n) { return names[n] > 1 && n; });
         if (dupes.length > 0) {
           flags.push({ type: 'DUPLICATE_NAMES', msg: 'Nombres repetidos: ' + dupes.join(', '), severity: 'high' });
@@ -202,13 +214,10 @@ module.exports = async (req, res) => {
         }
       }
 
-      // 4. Check for same WhatsApp numbers
-      if (todayBookings && todayBookings.length > 1) {
+      // 4. DUPLICATE_PHONES
+      if (allBookings && allBookings.length > 1) {
         const phones = {};
-        todayBookings.forEach(function(b) {
-          const p = (b.whatsapp || '').replace(/\D/g, '');
-          if (p) phones[p] = (phones[p] || 0) + 1;
-        });
+        allBookings.forEach(function(b) { var p = (b.whatsapp || '').replace(/\D/g, ''); if (p) phones[p] = (phones[p] || 0) + 1; });
         const dupePhones = Object.keys(phones).filter(function(p) { return phones[p] > 1; });
         if (dupePhones.length > 0) {
           flags.push({ type: 'DUPLICATE_PHONES', msg: dupePhones.length + ' numeros de telefono repetidos', severity: 'high' });
@@ -216,85 +225,175 @@ module.exports = async (req, res) => {
         }
       }
 
-      // 5. Check for bookings at impossible hours (before 7am or after 11pm)
-      if (todayBookings) {
+      // 5. ODD_HOURS
+      if (todayBookings.length > 0) {
         let impossibleHours = 0;
-        todayBookings.forEach(function(b) {
-          const h = new Date(b.fecha_iso).getUTCHours();
-          if (h < 7 || h > 23) impossibleHours++;
-        });
+        todayBookings.forEach(function(b) { var h = new Date(b.fecha_iso).getUTCHours(); if (h < 7 || h > 23) impossibleHours++; });
         if (impossibleHours > 0) {
           flags.push({ type: 'ODD_HOURS', msg: impossibleHours + ' citas en horarios inusuales (antes 7am o despues 11pm)', severity: 'medium' });
           suspicionScore += impossibleHours * 10;
         }
       }
 
-      // 6. Check proof rate (low proof rate = suspicious if many citas)
-      const weekStart = new Date(now);
-      const day = weekStart.getUTCDay();
-      const diff = day === 0 ? 6 : day - 1;
-      weekStart.setUTCDate(weekStart.getUTCDate() - diff);
-      weekStart.setUTCHours(0, 0, 0, 0);
-
+      // 6. LOW_PROOF_RATE
+      const weekStart = new Date(now); var dayW = weekStart.getUTCDay(); var diffW = dayW === 0 ? 6 : dayW - 1;
+      weekStart.setUTCDate(weekStart.getUTCDate() - diffW); weekStart.setUTCHours(0, 0, 0, 0);
       const weekBookings = await sb('bookings?username=eq.' + user + '&fecha_iso=gte.' + weekStart.toISOString() + '&select=id');
       const weekProofs = await sb('booking_proofs?username=eq.' + user + '&created_at=gte.' + weekStart.toISOString() + '&status=eq.approved&select=id');
-
       const totalWeekCitas = weekBookings ? weekBookings.length : 0;
       const totalWeekProofs = weekProofs ? weekProofs.length : 0;
       const proofRate = totalWeekCitas > 0 ? totalWeekProofs / totalWeekCitas : 0;
-
       if (totalWeekCitas > 3 && proofRate < 0.3) {
         flags.push({ type: 'LOW_PROOF_RATE', msg: 'Solo ' + Math.round(proofRate * 100) + '% de citas con prueba verificada', severity: 'medium' });
         suspicionScore += 20;
       }
 
+      // === 7. NEW: SAME_IP — Multiple different prospects from same IP ===
+      if (allBookings && allBookings.length > 1) {
+        var ipMap = {};
+        allBookings.forEach(function(b) {
+          if (b.ip_address && b.ip_address !== 'unknown') {
+            if (!ipMap[b.ip_address]) ipMap[b.ip_address] = { names: [], phones: [], count: 0 };
+            ipMap[b.ip_address].count++;
+            var n = (b.nombre || '').toLowerCase().trim();
+            if (ipMap[b.ip_address].names.indexOf(n) === -1) ipMap[b.ip_address].names.push(n);
+            var p = (b.whatsapp || '').replace(/\D/g, '');
+            if (p && ipMap[b.ip_address].phones.indexOf(p) === -1) ipMap[b.ip_address].phones.push(p);
+          }
+        });
+
+        var suspiciousIPs = [];
+        Object.keys(ipMap).forEach(function(ip) {
+          var data = ipMap[ip];
+          // Flag if same IP has 2+ different names or 2+ different phones
+          if (data.names.length >= 2 || data.phones.length >= 2) {
+            var masked = ip.split('.').slice(0,2).join('.') + '.*.*';
+            suspiciousIPs.push({
+              ip: masked,
+              totalBookings: data.count,
+              uniqueNames: data.names.length,
+              uniquePhones: data.phones.length,
+              names: data.names.slice(0, 5)
+            });
+          }
+        });
+
+        if (suspiciousIPs.length > 0) {
+          var totalDupeIPs = suspiciousIPs.reduce(function(sum, s) { return sum + s.totalBookings; }, 0);
+          flags.push({
+            type: 'SAME_IP',
+            msg: suspiciousIPs.length + ' IP(s) con multiples prospectos diferentes (' + totalDupeIPs + ' reservas)',
+            severity: 'critical',
+            details: suspiciousIPs
+          });
+          suspicionScore += suspiciousIPs.length * 30;
+        }
+      }
+
+      // === 8. NEW: SAME_USER_AGENT — Same browser fingerprint for "different" people ===
+      if (allBookings && allBookings.length > 3) {
+        var uaMap = {};
+        allBookings.forEach(function(b) {
+          if (b.user_agent && b.user_agent !== 'unknown') {
+            var shortUA = b.user_agent.substring(0, 100);
+            if (!uaMap[shortUA]) uaMap[shortUA] = 0;
+            uaMap[shortUA]++;
+          }
+        });
+        var dominantUA = Object.keys(uaMap).sort(function(a, b) { return uaMap[b] - uaMap[a]; })[0];
+        if (dominantUA && uaMap[dominantUA] >= 3 && uaMap[dominantUA] / allBookings.length > 0.7) {
+          flags.push({
+            type: 'SAME_DEVICE',
+            msg: Math.round(uaMap[dominantUA] / allBookings.length * 100) + '% de reservas desde el mismo navegador/dispositivo',
+            severity: 'high'
+          });
+          suspicionScore += 20;
+        }
+      }
+
+      // === 9. NEW: INVALID_DATA — Check for suspicious data patterns ===
+      if (allBookings && allBookings.length > 0) {
+        var invalidCount = 0;
+        var invalidDetails = [];
+        allBookings.forEach(function(b) {
+          var issues = [];
+          // Very short name
+          if (b.nombre && b.nombre.trim().length < 3) issues.push('nombre muy corto');
+          // Repeated characters in name
+          if (b.nombre && /^(.)\1+$/.test(b.nombre.replace(/\s/g, ''))) issues.push('nombre falso');
+          // Phone too short
+          var cleanPhone = (b.whatsapp || '').replace(/\D/g, '');
+          if (cleanPhone.length < 10) issues.push('telefono corto');
+          // All same digits
+          if (/^(\d)\1+$/.test(cleanPhone)) issues.push('telefono falso');
+          if (issues.length > 0) {
+            invalidCount++;
+            invalidDetails.push({ nombre: b.nombre, issues: issues });
+          }
+        });
+        if (invalidCount > 0) {
+          flags.push({
+            type: 'INVALID_DATA',
+            msg: invalidCount + ' reserva(s) con datos sospechosos',
+            severity: invalidCount > 2 ? 'high' : 'medium',
+            details: invalidDetails.slice(0, 10)
+          });
+          suspicionScore += invalidCount * 15;
+        }
+      }
+
       // Classification
       let classification = 'clean';
-      if (suspicionScore >= 50) classification = 'suspicious';
-      if (suspicionScore >= 80) classification = 'flagged';
+      if (suspicionScore >= 40) classification = 'suspicious';
+      if (suspicionScore >= 70) classification = 'flagged';
+      if (suspicionScore >= 100) classification = 'blocked';
 
-      return res.status(200).json({
-        ok: true,
-        user: user,
-        suspicionScore: Math.min(suspicionScore, 100),
-        classification: classification,
-        flags: flags,
-        stats: { todayCitas: todayBookings ? todayBookings.length : 0, weekCitas: totalWeekCitas, weekProofs: totalWeekProofs, proofRate: Math.round(proofRate * 100) }
-      });
-    }
-
-    // ===== MARK BOOKING AS COMPLETED =====
-    if (action === 'completeBooking') {
-      const { booking_id } = body;
-      if (!user || !booking_id) return res.status(400).json({ ok: false, error: 'Missing fields' });
-
-      const result = await sb('bookings?id=eq.' + booking_id + '&username=eq.' + user, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'completada' })
-      });
-
-      return res.status(200).json({ ok: true, booking: result ? result[0] : null });
-    }
-
-    // ===== VERIFY PROOF (admin only) =====
-    if (action === 'verifyProof') {
-      const { proof_id, approved } = body;
-      if (!proof_id) return res.status(400).json({ ok: false, error: 'Missing proof_id' });
-
-      const newStatus = approved ? 'approved' : 'rejected';
-      const result = await sb('booking_proofs?id=eq.' + proof_id, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: newStatus, reviewed_by: user, reviewed_at: new Date().toISOString() })
-      });
-
-      // If approved, update booking status to verificada
-      if (approved && result && result[0]) {
-        await sb('bookings?id=eq.' + result[0].booking_id, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'verificada' })
+      // IP summary for response
+      var ipSummary = {};
+      if (allBookings) {
+        allBookings.forEach(function(b) {
+          if (b.ip_address && b.ip_address !== 'unknown') {
+            var masked = b.ip_address.split('.').slice(0,2).join('.') + '.*.*';
+            ipSummary[masked] = (ipSummary[masked] || 0) + 1;
+          }
         });
       }
 
+      return res.status(200).json({
+        ok: true, user: user,
+        suspicionScore: Math.min(suspicionScore, 100),
+        classification: classification,
+        flags: flags,
+        stats: {
+          todayCitas: todayBookings.length,
+          weekCitas: totalWeekCitas,
+          weekProofs: totalWeekProofs,
+          proofRate: Math.round(proofRate * 100),
+          totalLast30Days: allBookings ? allBookings.length : 0,
+          uniqueIPs: Object.keys(ipSummary).length,
+          ipBreakdown: ipSummary
+        }
+      });
+    }
+
+    // ===== MARK BOOKING AS COMPLETED ===== (unchanged)
+    if (action === 'completeBooking') {
+      const { booking_id } = body;
+      if (!user || !booking_id) return res.status(400).json({ ok: false, error: 'Missing fields' });
+      const result = await sb('bookings?id=eq.' + booking_id + '&username=eq.' + user, { method: 'PATCH', body: JSON.stringify({ status: 'completada' }) });
+      return res.status(200).json({ ok: true, booking: result ? result[0] : null });
+    }
+
+    // ===== VERIFY PROOF (admin only) ===== (unchanged)
+    if (action === 'verifyProof') {
+      const { proof_id, approved } = body;
+      if (!proof_id) return res.status(400).json({ ok: false, error: 'Missing proof_id' });
+      const newStatus = approved ? 'approved' : 'rejected';
+      const result = await sb('booking_proofs?id=eq.' + proof_id, { method: 'PATCH',
+        body: JSON.stringify({ status: newStatus, reviewed_by: user, reviewed_at: new Date().toISOString() }) });
+      if (approved && result && result[0]) {
+        await sb('bookings?id=eq.' + result[0].booking_id, { method: 'PATCH', body: JSON.stringify({ status: 'verificada' }) });
+      }
       return res.status(200).json({ ok: true, proof: result ? result[0] : null });
     }
 
@@ -303,3 +402,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ ok: false, error: e.message });
   }
 };
+
