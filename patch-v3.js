@@ -269,6 +269,9 @@ cambiarRango = function(username, newRank) {
   if (typeof renderAdminUsuarios === 'function') try { renderAdminUsuarios(); } catch(e) {}
   if (typeof showToast === 'function') showToast('Rango actualizado \u2192 ' + rk.icon + ' ' + rk.name);
 };
+
+
+
 // === PATCH v4: Top5 title fix, Anti-Trampa privacy + compact, Admin Agenda/Antifraude ===
 
 // --- 1. Patch lbRenderDaily: Yesterday's day name + anti-cheat deductions already applied by API ---
@@ -289,7 +292,7 @@ lbRenderDaily = function(container) {
     var dateStr = yesterday.getDate() + ' de ' + meses[yesterday.getMonth()];
 
     var html = '<h3 style="text-align:center;font-size:16px;margin:16px 0 4px;">Top 5 del dia ' + dayName + '</h3>';
-    html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">' + dateStr + ' — Corte 11:00 PM</p>';
+    html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">' + dateStr + ' â Corte 11:00 PM</p>';
 
     data.ranking.forEach(function(r, i) {
       var isMe = r.username === CU.username;
@@ -386,7 +389,40 @@ function renderAntiCheatCardCompact(r) {
   // Stats row - single line
   html += '<div style="display:flex;gap:8px;margin-top:6px;font-size:10px;">';
   html += '<span style="color:rgba(255,255,255,0.4);">Hoy <b style="color:var(--text);">' + d.stats.todayCitas + '</b></span>';
-  html += '<span style="color:rgba(255,255,255,0.4);">Sem <b style="color:var(--text);">' + d.stats.weDeactivate all tabs
+  html += '<span style="color:rgba(255,255,255,0.4);">Sem <b style="color:var(--text);">' + d.stats.weekCitas + '</b></span>';
+  html += '<span style="color:rgba(255,255,255,0.4);">IPs <b style="color:var(--text);">' + d.stats.uniqueIPs + '</b></span>';
+  html += '<span style="color:rgba(255,255,255,0.4);">Pruebas <b style="color:var(--text);">' + d.stats.proofRate + '%</b></span>';
+  html += '<span style="color:rgba(255,255,255,0.4);">30d <b style="color:var(--text);">' + d.stats.totalLast30Days + '</b></span>';
+  html += '</div>';
+  // Score bar - thin
+  html += '<div style="margin-top:5px;"><div style="width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="width:' + Math.min(d.suspicionScore, 100) + '%;height:100%;background:' + color + ';border-radius:2px;"></div></div></div>';
+  // Flags summary - only if there are flags, single line each
+  if (d.flags.length > 0) {
+    html += '<div style="margin-top:5px;">';
+    d.flags.forEach(function(f) {
+      var fColor = f.severity === 'critical' ? '#FF1744' : f.severity === 'high' ? '#FF6B6B' : '#FFD700';
+      html += '<div style="font-size:9px;color:' + fColor + ';padding:2px 0;"><b>' + f.type.replace(/_/g,' ') + '</b>: ' + f.msg + '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// --- 4. Admin Panel: Add Agenda + Antifraude tabs ---
+(function() {
+  // Wait for DOM and admin panel to be available
+  var _origSwitchAdmin = typeof switchAdminTab === 'function' ? switchAdminTab : null;
+
+  // Override switchAdminTab to handle new tabs
+  switchAdminTab = function(tab) {
+    // Hide all admin panels
+    var panels = ['solicitudes','usuarios','contenido','anuncios-admin','agenda-admin','antifraude-admin'];
+    panels.forEach(function(p) {
+      var el = document.getElementById('admin-' + p);
+      if (el) el.style.display = 'none';
+    });
+    // Deactivate all tabs
     var tabs = document.querySelectorAll('.admin-tab');
     for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
     // Activate clicked tab
@@ -461,7 +497,7 @@ function renderAdminAgenda() {
   lbApi('dailyTop', {}).then(function(data) {
     var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
     html += '<div><h3 style="font-size:16px;margin:0;">Agenda Diaria</h3>';
-    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Top del ' + dayLabel + ' — Corte 11PM</p></div>';
+    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Top del ' + dayLabel + ' â Corte 11PM</p></div>';
     html += '<button onclick="loadAdminWeekly()" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.1);border:1px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:12px;font-weight:600;cursor:pointer;">Cargar Semanal</button>';
     html += '</div>';
     html += '<div id="admin-agenda-daily">';
