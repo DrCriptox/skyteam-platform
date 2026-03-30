@@ -10017,3 +10017,219 @@ navigate = function(section) {
 <script src="sky-voice.js"></script>
 </body>
 </html>
+<script>
+// === PATCH: Update gamification frontend to show IP flags in ranking ===
+// This patches lbRenderList, lbRenderWeekly, lbRenderDaily, and lbRenderAntiCheat
+
+// --- 1. Patch lbRenderList to show IP warning badge ---
+var _origLbRenderList = typeof lbRenderList === 'function' ? lbRenderList : null;
+lbRenderList = function(ranking) {
+  var rest = ranking.slice(3);
+  if (rest.length === 0) return '<p style="text-align:center;color:rgba(255,255,255,0.4);margin:16px 0;font-size:13px;">No hay mas participantes</p>';
+  var html = '';
+  rest.forEach(function(r, i) {
+    var pos = i + 4;
+    var initial = (r.name || '?')[0].toUpperCase();
+    var isMe = r.username === CU;
+    var meBg = isMe ? 'background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.3);' : 'border:1px solid rgba(255,255,255,0.06);';
+    // IP flag badge
+    var ipBadge = '';
+    if (r.ipDupes && r.ipDupes > 0) {
+      ipBadge = '<span style="display:inline-block;background:rgba(255,60,60,0.2);color:#FF6B6B;font-size:10px;padding:2px 6px;border-radius:6px;margin-left:6px;" title="' + r.ipDupes + ' reservas desde misma IP">⚠️ IP×' + r.ipDupes + '</span>';
+    }
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;margin:6px 0;' + meBg + '">';
+    html += '<span style="font-weight:700;color:rgba(255,255,255,0.4);width:24px;text-align:center;">' + pos + '</span>';
+    html += '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">' + initial + '</div>';
+    html += '<div style="flex:1;"><div style="font-weight:600;font-size:14px;">' + (r.name || r.username) + (isMe ? ' <span style="color:#1CE8FF;font-size:11px;">(Tu)</span>' : '') + ipBadge + '</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas · ' + r.verificadas + ' verificadas</div></div>';
+    html += '<div style="font-size:18px;font-weight:900;color:#FFD700;">' + r.score + '<span style="font-size:10px;color:rgba(255,255,255,0.4);"> pts</span></div>';
+    html += '</div>';
+  });
+  return html;
+};
+
+// --- 2. Patch lbRenderPodium to show IP warning on podium ---
+var _origLbRenderPodium = typeof lbRenderPodium === 'function' ? lbRenderPodium : null;
+lbRenderPodium = function(ranking) {
+  var top3 = ranking.slice(0, 3);
+  if (top3.length === 0) return '<p style="text-align:center;color:rgba(255,255,255,0.4);">Sin datos aun</p>';
+  var medals = ['7358,56647', '7358,56648', '7358,56649'];
+  var colors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+  var sizes = ['72px', '60px', '60px'];
+  var order = top3.length >= 3 ? [1, 0, 2] : (top3.length === 2 ? [1, 0] : [0]);
+  var html = '<div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:20px 0 24px;">';
+  order.forEach(function(idx) {
+    if (!top3[idx]) return;
+    var r = top3[idx];
+    var isFirst = idx === 0;
+    var initial = (r.name || '?')[0].toUpperCase();
+    var isMe = r.username === CU;
+    // IP flag
+    var ipBadge = '';
+    if (r.ipDupes && r.ipDupes > 0) {
+      ipBadge = '<div style="background:rgba(255,60,60,0.25);color:#FF6B6B;font-size:9px;padding:1px 5px;border-radius:4px;margin-top:2px;">⚠️ IP×' + r.ipDupes + '</div>';
+    }
+    html += '<div style="text-align:center;' + (isFirst ? 'margin-bottom:16px;' : '') + '">';
+    html += '<div style="font-size:' + (isFirst ? '28px' : '22px') + ';">' + medals[idx] + '</div>';
+    html += '<div style="width:' + sizes[idx] + ';height:' + sizes[idx] + ';border-radius:50%;background:linear-gradient(135deg,' + colors[idx] + ',rgba(255,255,255,0.2));display:flex;align-items:center;justify-content:center;font-size:' + (isFirst ? '28px' : '22px') + ';font-weight:900;margin:8px auto;border:3px solid ' + colors[idx] + ';">' + initial + '</div>';
+    html += '<div style="font-weight:700;font-size:13px;">' + (r.name || r.username) + '</div>';
+    if (isMe) html += '<div style="color:#1CE8FF;font-size:10px;">(Tu)</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas / ' + r.verificadas + ' verif.</div>';
+    html += ipBadge;
+    html += '<div style="font-size:20px;font-weight:900;color:' + colors[idx] + ';margin-top:4px;">' + r.score + '</div>';
+    html += '<div style="font-size:9px;color:rgba(255,255,255,0.3);">pts</div></div>';
+  });
+  html += '</div>';
+  return html;
+};
+
+// --- 3. Patch lbRenderDaily to show IP flags on daily cards ---
+var _origLbRenderDaily = typeof lbRenderDaily === 'function' ? lbRenderDaily : null;
+lbRenderDaily = function(container) {
+  container.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.4);">Cargando...</div>';
+  lbApi('dailyTop', {}).then(function(data) {
+    if (!data.ok || !data.ranking || data.ranking.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:40px 0;"><div style="font-size:40px;margin-bottom:12px;">7357,56522</div><p style="color:rgba(255,255,255,0.4);">Sin datos del dia</p></div>';
+      return;
+    }
+    var html = '<h3 style="text-align:center;font-size:16px;margin:16px 0 4px;">Top 5 del Dia</h3>';
+    html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">Se actualiza cada noche a las 10:00 PM</p>';
+    html += '<p style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2);margin:0 0 16px;">Ultimas 24 horas</p>';
+    var medals = ['7358,56647','7358,56648','7358,56649','4,65039,8419','5,65039,8419'];
+    data.ranking.forEach(function(r, i) {
+      var initial = (r.name || '?')[0].toUpperCase();
+      var isMe = r.username === CU;
+      var meBorder = isMe ? 'border:1px solid rgba(28,232,255,0.4);background:rgba(28,232,255,0.06);' : 'border:1px solid rgba(255,255,255,0.08);';
+      // IP flag
+      var ipBadge = '';
+      if (r.ipDupes && r.ipDupes > 0) {
+        ipBadge = ' <span style="background:rgba(255,60,60,0.2);color:#FF6B6B;font-size:9px;padding:1px 5px;border-radius:4px;">⚠️ IP×' + r.ipDupes + '</span>';
+      }
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin:8px 0;' + meBorder + '">';
+      html += '<div style="font-size:22px;">' + medals[i] + '</div>';
+      html += '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-weight:700;">' + initial + '</div>';
+      html += '<div style="flex:1;"><div style="font-weight:600;font-size:14px;">' + (r.name || r.username) + (isMe ? ' <span style="color:#1CE8FF;font-size:11px;">(Tu)</span>' : '') + ipBadge + '</div>';
+      html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas · ' + r.verificadas + ' verificadas hoy</div></div>';
+      html += '<div style="font-size:20px;font-weight:900;color:#FFD700;">' + r.score + '<span style="font-size:10px;color:rgba(255,255,255,0.3);"> pts</span></div>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }).catch(function(e) { container.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error: ' + e.message + '</p>'; });
+};
+
+// --- 4. Patch lbRenderAntiCheat with enhanced IP section ---
+var _origLbRenderAntiCheat = typeof lbRenderAntiCheat === 'function' ? lbRenderAntiCheat : null;
+lbRenderAntiCheat = function(container) {
+  container.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.4);">Anti-Trampa IA<br><br>Deteccion inteligente de patrones sospechosos<br><br><span style="font-size:11px;">Analizando usuarios...</span></div>';
+
+  // Analyze all users
+  var userKeys = Object.keys(USERS);
+  var results = [];
+  var completed = 0;
+
+  userKeys.forEach(function(uKey) {
+    lbApi('antiCheat', { user: uKey }).then(function(data) {
+      results.push({ user: uKey, name: USERS[uKey].name, data: data });
+      completed++;
+      if (completed === userKeys.length) renderAntiCheatResults(container, results);
+    }).catch(function() {
+      results.push({ user: uKey, name: USERS[uKey].name, data: { ok: false } });
+      completed++;
+      if (completed === userKeys.length) renderAntiCheatResults(container, results);
+    });
+  });
+};
+
+function renderAntiCheatResults(container, results) {
+  // Sort: flagged first, then suspicious, then clean
+  var order = { blocked: 0, flagged: 1, suspicious: 2, clean: 3 };
+  results.sort(function(a, b) {
+    var oa = a.data.ok ? (order[a.data.classification] || 3) : 3;
+    var ob = b.data.ok ? (order[b.data.classification] || 3) : 3;
+    return oa - ob;
+  });
+
+  var html = '<h3 style="text-align:center;font-size:16px;margin:16px 0 4px;">7357,57057,65039 Anti-Trampa IA v2</h3>';
+  html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">Deteccion inteligente con analisis de IP, datos y patrones</p>';
+
+  results.forEach(function(r) {
+    if (!r.data.ok) return;
+    var d = r.data;
+    var colorMap = { clean: '#00E676', suspicious: '#FFD700', flagged: '#FF6B6B', blocked: '#FF1744' };
+    var iconMap = { clean: '✅', suspicious: '⚠️', flagged: '7357,57001', blocked: '7357,57003' };
+    var bgMap = { clean: 'rgba(0,230,118,0.06)', suspicious: 'rgba(255,215,0,0.06)', flagged: 'rgba(255,107,107,0.08)', blocked: 'rgba(255,23,68,0.1)' };
+    var borderMap = { clean: 'rgba(0,230,118,0.2)', suspicious: 'rgba(255,215,0,0.3)', flagged: 'rgba(255,107,107,0.3)', blocked: 'rgba(255,23,68,0.4)' };
+    var cls = d.classification;
+    var color = colorMap[cls] || '#00E676';
+    var icon = iconMap[cls] || '✅';
+
+    html += '<div style="background:' + bgMap[cls] + ';border:1px solid ' + borderMap[cls] + ';border-radius:14px;padding:16px;margin:10px 0;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">' + icon + '</span><strong style="font-size:14px;">' + r.name + '</strong></div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<span style="font-size:11px;color:rgba(255,255,255,0.4);">Score: </span>';
+    html += '<div style="width:60px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;"><div style="width:' + d.suspicionScore + '%;height:100%;background:' + color + ';border-radius:4px;"></div></div>';
+    html += '<span style="font-size:12px;font-weight:700;color:' + color + ';">' + d.suspicionScore + '</span>';
+    html += '</div></div>';
+
+    // Stats row
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">';
+    html += '<span style="font-size:10px;background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px;">7357,56517 Hoy: ' + d.stats.todayCitas + '</span>';
+    html += '<span style="font-size:10px;background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px;">7357,56518 Semana: ' + d.stats.weekCitas + '</span>';
+    html += '<span style="font-size:10px;background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px;">7357,56567 Pruebas: ' + d.stats.weekProofs + ' (' + d.stats.proofRate + '%)</span>';
+    html += '<span style="font-size:10px;background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px;">7356,57104 IPs: ' + d.stats.uniqueIPs + '</span>';
+    html += '<span style="font-size:10px;background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px;">7357,56522 30d: ' + d.stats.totalLast30Days + '</span>';
+    html += '</div>';
+
+    // IP Breakdown
+    if (d.stats.ipBreakdown && Object.keys(d.stats.ipBreakdown).length > 0) {
+      html += '<div style="margin:8px 0;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;">';
+      html += '<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:4px;">7356,57104 Desglose por IP:</div>';
+      Object.keys(d.stats.ipBreakdown).forEach(function(ip) {
+        var count = d.stats.ipBreakdown[ip];
+        var barW = Math.min(count * 20, 100);
+        html += '<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">';
+        html += '<span style="font-size:10px;color:rgba(255,255,255,0.4);width:90px;font-family:monospace;">' + ip + '</span>';
+        html += '<div style="flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;"><div style="width:' + barW + '%;height:100%;background:' + (count > 2 ? '#FF6B6B' : '#1CE8FF') + ';border-radius:3px;"></div></div>';
+        html += '<span style="font-size:10px;color:rgba(255,255,255,0.5);">' + count + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Flags
+    if (d.flags.length > 0) {
+      html += '<div style="margin-top:8px;">';
+      d.flags.forEach(function(f) {
+        var fColor = f.severity === 'critical' ? '#FF1744' : f.severity === 'high' ? '#FF6B6B' : '#FFD700';
+        var fIcon = f.type === 'SAME_IP' ? '7356,57104' : f.type === 'SAME_DEVICE' ? '7357,56507' : f.type === 'INVALID_DATA' ? '10060' : f.type === 'HIGH_VOLUME' ? '7357,56520' : f.type === 'BACK_TO_BACK' ? '9201,65039' : f.type === 'DUPLICATE_NAMES' ? '7357,56421' : f.type === 'DUPLICATE_PHONES' ? '7357,56561' : f.type === 'ODD_HOURS' ? '7356,57113' : f.type === 'LOW_PROOF_RATE' ? '7357,56567' : '9889';
+        html += '<div style="display:flex;align-items:flex-start;gap:6px;margin:4px 0;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid ' + fColor + ';">';
+        html += '<span style="font-size:12px;">' + fIcon + '</span>';
+        html += '<div style="flex:1;"><div style="font-size:11px;color:' + fColor + ';font-weight:600;">' + f.type + '</div>';
+        html += '<div style="font-size:10px;color:rgba(255,255,255,0.5);">' + f.msg + '</div>';
+        // Show SAME_IP details
+        if (f.type === 'SAME_IP' && f.details) {
+          f.details.forEach(function(det) {
+            html += '<div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px;">  └ ' + det.ip + ': ' + det.totalBookings + ' reservas, ' + det.uniqueNames + ' nombres (' + det.names.join(', ') + ')</div>';
+          });
+        }
+        // Show INVALID_DATA details
+        if (f.type === 'INVALID_DATA' && f.details) {
+          f.details.slice(0, 3).forEach(function(det) {
+            html += '<div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px;">  └ "' + det.nombre + '": ' + det.issues.join(', ') + '</div>';
+          });
+        }
+        html += '</div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="text-align:center;font-size:11px;color:rgba(0,230,118,0.6);margin-top:8px;">Sin flags sospechosos</div>';
+    }
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+</script>
