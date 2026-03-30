@@ -16,5 +16,11 @@
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/send-email",
+      "schedule": "*/15 * * * *"
+    }
   ]
 }
