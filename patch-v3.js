@@ -273,6 +273,7 @@ cambiarRango = function(username, newRank) {
 
 
 
+
 // === PATCH v5: Admin fixes, Agenda real-time, RankingâMi Agenda, sort antifraude ===
 
 // --- 1. Patch lbRenderDaily: Yesterday's day name ---
@@ -690,82 +691,96 @@ function renderAntifraudeCardMini(r) {
   return html;
 }
 
-// --- 7. Move Ranking tabs into Mi Agenda section ---
+// --- 7. Add Ranking tab to Mi Agenda (MINIMAL â calls original, then injects tab) ---
 (function() {
-  var _origAgendaUI = typeof renderAgendaUI === 'function' ? renderAgendaUI : null;
+  var _origRenderAgenda = renderAgendaUI;
+  var _origSwitchAgenda = switchAgendaTab;
 
-  renderAgendaUI = function(el) {
-    if (!el) return;
-    // Determine current tab
-    var currentTab = agendaTab || 'config';
+  function injectRankingTabBtn(el) {
+    if (!el || el.querySelector('#agenda-ranking-btn')) return;
+    // Find the tab buttons - look for buttons that call switchAgendaTab
+    var btns = el.querySelectorAll('button');
+    var lastTab = null;
+    for (var i = 0; i < btns.length; i++) {
+      var oc = btns[i].getAttribute('onclick') || '';
+      if (oc.indexOf('switchAgendaTab') >= 0) lastTab = btns[i];
+    }
+    if (!lastTab) return;
+    var rankBtn = lastTab.cloneNode(false);
+    rankBtn.id = 'agenda-ranking-btn';
+    rankBtn.innerHTML = '\uD83C\uDFC6 Ranking';
+    rankBtn.style.background = 'rgba(255,255,255,0.04)';
+    rankBtn.style.border = '1px solid rgba(255,255,255,0.1)';
+    rankBtn.style.color = 'rgba(255,255,255,0.5)';
+    rankBtn.style.fontWeight = '500';
+    rankBtn.removeAttribute('onclick');
+    rankBtn.onclick = function() { switchAgendaTab('ranking'); };
+    lastTab.parentNode.insertBefore(rankBtn, lastTab.nextSibling);
+  }
 
-    var html = '<div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">';
+  function renderRankingInAgenda(el) {
+    // Build tab bar matching original style
     var tabs = [
       {id: 'config', label: 'Configurar', icon: '\u2699\uFE0F'},
       {id: 'citas', label: 'Citas', icon: '\uD83D\uDCCB'},
       {id: 'plandiario', label: 'Mi Plan Diario', icon: '\uD83D\uDCC5'},
       {id: 'ranking', label: 'Ranking', icon: '\uD83C\uDFC6'}
     ];
-
+    var html = '<div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">';
     tabs.forEach(function(t) {
-      var isActive = currentTab === t.id;
-      var style = isActive
+      var isActive = t.id === 'ranking';
+      var sty = isActive
         ? 'background:rgba(28,232,255,0.12);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-weight:700;'
         : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-weight:500;';
-      html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Nunito,sans-serif;' + style + '">' + t.icon + ' ' + t.label + '</button>';
+      html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Nunito,sans-serif;' + sty + '">' + t.icon + ' ' + t.label + '</button>';
     });
     html += '</div>';
+    html += '<div id="agenda-ranking-box"></div>';
+    el.innerHTML = html;
+    // Inject leaderboard UI via ID swap trick
+    setTimeout(function() {
+      var box = document.getElementById('agenda-ranking-box');
+      if (!box || typeof lbInjectRankingUI !== 'function') return;
+      var orig = document.getElementById('ranking-content');
+      if (orig) {
+        orig.id = '_rc_bak';
+        box.id = 'ranking-content';
+        lbInjectRankingUI();
+        box.id = 'agenda-ranking-box';
+        orig.id = 'ranking-content';
+      } else {
+        box.id = 'ranking-content';
+        lbInjectRankingUI();
+        box.id = 'agenda-ranking-box';
+      }
+    }, 80);
+  }
 
-    // Render appropriate content
-    if (currentTab === 'ranking') {
-      html += '<div id="agenda-ranking-container"></div>';
-      el.innerHTML = html;
-      // Use existing lbInjectRankingUI logic to render ranking tabs
-      setTimeout(function() {
-        var container = document.getElementById('agenda-ranking-container');
-        if (container && typeof lbInjectRankingUI === 'function') {
-          // Save original target, inject into our container
-          var origContent = document.getElementById('ranking-content');
-          if (origContent) {
-            // Temporarily swap ranking-content id
-            origContent.id = 'ranking-content-backup';
-            container.id = 'ranking-content';
-            lbInjectRankingUI();
-            container.id = 'agenda-ranking-container';
-            origContent.id = 'ranking-content';
-          } else {
-            // No original ranking content, just render directly
-            container.id = 'ranking-content';
-            lbInjectRankingUI();
-            container.id = 'agenda-ranking-container';
-          }
-        }
-      }, 50);
-    } else if (currentTab === 'config') {
-      html += renderAgendaConfigUI();
-      el.innerHTML = html;
-    } else if (currentTab === 'plandiario') {
-      html += renderPlanDiarioUI();
-      el.innerHTML = html;
+  renderAgendaUI = function(el) {
+    if (!el) return;
+    if (agendaTab === 'ranking') {
+      renderRankingInAgenda(el);
     } else {
-      // citas
-      html += renderAgendaCitasUI();
-      el.innerHTML = html;
+      _origRenderAgenda(el);
+      injectRankingTabBtn(el);
     }
   };
 
-  // Also patch switchAgendaTab to handle 'ranking'
-  var _origSwitchAgenda = typeof switchAgendaTab === 'function' ? switchAgendaTab : null;
   switchAgendaTab = function(t) {
-    agendaTab = t;
-    renderAgendaUI(document.getElementById('agenda-content'));
-    if (t === 'plandiario' && typeof loadPlanDiario === 'function') loadPlanDiario();
+    if (t === 'ranking') {
+      agendaTab = 'ranking';
+      renderAgendaUI(document.getElementById('agenda-content'));
+    } else {
+      agendaTab = t;
+      _origRenderAgenda(document.getElementById('agenda-content'));
+      injectRankingTabBtn(document.getElementById('agenda-content'));
+      if (t === 'plandiario' && typeof loadPlanDiario === 'function') loadPlanDiario();
+    }
   };
 })();
 
 // --- 8. Empty the Ranking sidebar section ---
 (function() {
-  var _origRenderRanking = typeof renderRanking === 'function' ? renderRanking : null;
   renderRanking = function() {
     var el = document.getElementById('ranking-content');
     if (!el) return;
