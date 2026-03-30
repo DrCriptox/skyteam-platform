@@ -1,0 +1,24 @@
+{
+  "name": "skyteam-api",
+  "version": "1.0.0",
+  "description": "SKY TEAM - Franquicia Digital API and PWA",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "web-push": "^3.6.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "skyteam",
+    "sales",
+    "pwa",
+    "push-notifications"
+  ],
+  "author": "SKY TEAM",
+  "license": "MIT"
+}
