@@ -1,7 +1,7 @@
-// SKY TEAM — Service Worker v1
-var CACHE_NAME = 'skyteam-v1';
+// SKY TEAM - Service Worker v2 (with push notification handlers)
+var CACHE_NAME = 'skyteam-v2';
 var OFFLINE_URL = '/';
- 
+
 // Install: cache the shell
 self.addEventListener('install', function(event) {
   event.waitUntil(
@@ -16,7 +16,7 @@ self.addEventListener('install', function(event) {
   );
   self.skipWaiting();
 });
- 
+
 // Activate: clean old caches
 self.addEventListener('activate', function(event) {
   event.waitUntil(
@@ -29,11 +29,11 @@ self.addEventListener('activate', function(event) {
   );
   self.clients.claim();
 });
- 
+
 // Fetch: network-first for API, cache-first for static
 self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
- 
+
   // API calls: always network
   if(url.pathname.startsWith('/api/')) {
     event.respondWith(
@@ -45,11 +45,10 @@ self.addEventListener('fetch', function(event) {
     );
     return;
   }
- 
+
   // Static assets: network first, fallback to cache
   event.respondWith(
     fetch(event.request).then(function(response) {
-      // Update cache with fresh response
       var clone = response.clone();
       caches.open(CACHE_NAME).then(function(cache) {
         cache.put(event.request, clone);
@@ -62,39 +61,75 @@ self.addEventListener('fetch', function(event) {
     })
   );
 });
- 
-// Push notifications (ready for future use with push server)
+
+// Push notifications (server-sent push)
 self.addEventListener('push', function(event) {
   var data = {};
-  try { data = event.data.json(); } catch(e) { data = {title: 'SKY TEAM', body: event.data ? event.data.text() : 'Nueva notificación'}; }
- 
+  try {
+    data = event.data.json();
+  } catch(e) {
+    data = {
+      title: 'SKY TEAM',
+      body: event.data ? event.data.text() : 'Nueva notificacion'
+    };
+  }
+
+  var title = data.title || 'SKY TEAM';
+  var body = data.body || 'Tienes una nueva notificacion';
+
   var options = {
-    body: data.body || 'Tienes una nueva notificación',
+    body: body,
     icon: '/logo-skyteam.png',
     badge: '/logo-skyteam.png',
     vibrate: [200, 100, 200],
-    tag: data.tag || 'skyteam-notif',
-    data: data.data || {},
-    actions: data.actions || []
+    tag: data.tag || 'skyteam-notif-' + Date.now(),
+    data: data.data || { url: data.url || '/' },
+    actions: data.actions || [],
+    requireInteraction: data.requireInteraction !== false,
+    image: data.image || null,
+    dir: 'ltr',
+    lang: 'es'
   };
- 
+
   event.waitUntil(
-    self.registration.showNotification(data.title || 'SKY TEAM', options)
+    self.registration.showNotification(title, options)
   );
 });
- 
-// Notification click
+
+// Notification click handler
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  var url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
+
+  var url = event.notification.data && event.notification.data.url
+    ? event.notification.data.url
+    : '/';
+
+  if (event.action && event.notification.data && event.notification.data.actions) {
+    var action = event.notification.data.actions.find(function(a) { return a.action === event.action; });
+    if (action && action.url) {
+      url = action.url;
+    }
+  }
+
   event.waitUntil(
-    clients.matchAll({type:'window'}).then(function(windowClients) {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
       for(var i = 0; i < windowClients.length; i++) {
         if(windowClients[i].url.indexOf(url) !== -1) {
-          return windowClients[i].focus();
+          windowClients[i].focus();
+          windowClients[i].postMessage({
+            type: 'NOTIFICATION_CLICKED',
+            url: url,
+            data: event.notification.data
+          });
+          return;
         }
       }
       return clients.openWindow(url);
     })
   );
+});
+
+// Notification close handler
+self.addEventListener('notificationclose', function(event) {
+  console.log('[SW] Notification dismissed:', event.notification.tag);
 });
