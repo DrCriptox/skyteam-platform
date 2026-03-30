@@ -632,4 +632,125 @@ function renderAntifraudeCardMini(r) {
       if (el) { el.style.display = "block"; el.style.height = "auto"; }
     }
   };
+
+// --- 10. Push Notifications: VAPID subscribe + UI toggle ---
+(function() {
+  var _pushSubActive = false;
+  var _vapidPubKey = null;
+
+  function fetchVapidKey() {
+    return fetch('/api/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getPublicKey' })
+    })
+    .then(function(r) { return r.ok ? r.json() : Promise.reject('no key'); })
+    .then(function(d) { _vapidPubKey = d.publicKey; return d.publicKey; })
+    .catch(function(e) { console.log('[Push] VAPID fetch error:', e); return null; });
+  }
+
+  function b64ToUint8(base64) {
+    var pad = '='.repeat((4 - base64.length % 4) % 4);
+    var b = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(b);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function tryPushSubscribe() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return Promise.resolve(null);
+    if (typeof CU === 'undefined' || !CU || !CU.user) return Promise.resolve(null);
+
+    return navigator.serviceWorker.ready.then(function(reg) {
+      return reg.pushManager.getSubscription().then(function(existing) {
+        if (existing) { _pushSubActive = true; return existing; }
+        return fetchVapidKey().then(function(pk) {
+          var opts = { userVisibleOnly: true };
+          if (pk) { try { opts.applicationServerKey = b64ToUint8(pk); } catch(e) {} }
+          return reg.pushManager.subscribe(opts);
+        });
+      });
+    }).then(function(sub) {
+      if (!sub) return null;
+      _pushSubActive = true;
+      var userKey = CU.ref || CU.user || '';
+      return fetch('/api/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'subscribe', user: userKey, subscription: sub.toJSON() })
+      }).then(function(r) {
+        if (r.ok) console.log('[Push] Subscription saved');
+        return sub;
+      }).catch(function() { return sub; });
+    }).catch(function(e) { console.log('[Push] Subscribe error:', e); return null; });
+  }
+
+  function unsubPush() {
+    if (typeof CU === 'undefined' || !CU || !CU.user) return Promise.resolve(null);
+    return navigator.serviceWorker.ready
+      .then(function(reg) { return reg.pushManager.getSubscription(); })
+      .then(function(sub) {
+        if (!sub) return null;
+        var userKey = CU.ref || CU.user || '';
+        sub.unsubscribe().catch(function() {});
+        fetch('/api/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unsubscribe', user: userKey, subscription: sub.toJSON() })
+        }).catch(function() {});
+        _pushSubActive = false;
+        return true;
+      }).catch(function() { return null; });
+  }
+
+  // Override requestNotifPermission to also subscribe to push
+  var _origReqNotif = typeof requestNotifPermission === 'function' ? requestNotifPermission : null;
+  window.requestNotifPermission = function(silent) {
+    if (typeof _nativeNotifEnabled !== 'undefined' && !_nativeNotifEnabled) {
+      if (!silent && typeof showToast === 'function') showToast('Tu navegador no soporta notificaciones');
+      return;
+    }
+    if (typeof _nativeNotifPermission !== 'undefined' && _nativeNotifPermission === 'granted') {
+      if (!silent && typeof showToast === 'function') showToast('Notificaciones ya activadas');
+      tryPushSubscribe();
+      return;
+    }
+    if (typeof _nativeNotifPermission !== 'undefined' && _nativeNotifPermission === 'denied') {
+      if (!silent && typeof showToast === 'function') showToast('Notificaciones bloqueadas. Activalas en ajustes.');
+      return;
+    }
+    Notification.requestPermission().then(function(p) {
+      if (typeof _nativeNotifPermission !== 'undefined') _nativeNotifPermission = p;
+      if (p === 'granted') {
+        localStorage.setItem('skyteam_notif_granted', 'true');
+        if (typeof showToast === 'function') showToast('Notificaciones activadas!');
+        if (typeof hideNotifBanner === 'function') hideNotifBanner();
+        tryPushSubscribe();
+      }
+    });
+  };
+
+  // Auto-subscribe on load if permission already granted
+  setTimeout(function() {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      tryPushSubscribe();
+    }
+  }, 3000);
+
+  // Expose for admin/settings use
+  window._pushToggle = function() {
+    if (_pushSubActive) {
+      unsubPush().then(function() { if (typeof showToast === 'function') showToast('Push desactivado'); });
+    } else {
+      if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+        window.requestNotifPermission();
+      } else {
+        tryPushSubscribe().then(function() { if (typeof showToast === 'function') showToast('Push activado!'); });
+      }
+    }
+  };
+
+  console.log('[Patch v3 Sec 10] Push notifications integration loaded');
+})();
 })();
