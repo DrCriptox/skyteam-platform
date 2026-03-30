@@ -272,9 +272,10 @@ cambiarRango = function(username, newRank) {
 
 
 
-// === PATCH v4: Top5 title fix, Anti-Trampa privacy + compact, Admin Agenda/Antifraude ===
 
-// --- 1. Patch lbRenderDaily: Yesterday's day name + anti-cheat deductions already applied by API ---
+// === PATCH v5: Admin fixes, Agenda real-time, RankingâMi Agenda, sort antifraude ===
+
+// --- 1. Patch lbRenderDaily: Yesterday's day name ---
 lbRenderDaily = function(container) {
   container.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.4);">Cargando...</div>';
   lbApi('dailyTop', {}).then(function(data) {
@@ -282,7 +283,6 @@ lbRenderDaily = function(container) {
       container.innerHTML = '<div style="text-align:center;padding:40px 0;"><p style="color:rgba(255,255,255,0.4);">Sin datos del dia</p></div>';
       return;
     }
-    // Calculate yesterday's date for title
     var now = new Date();
     var yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -292,7 +292,7 @@ lbRenderDaily = function(container) {
     var dateStr = yesterday.getDate() + ' de ' + meses[yesterday.getMonth()];
 
     var html = '<h3 style="text-align:center;font-size:16px;margin:16px 0 4px;">Top 5 del dia ' + dayName + '</h3>';
-    html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">' + dateStr + ' â Corte 11:00 PM</p>';
+    html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 16px;">' + dateStr + ' \u2014 Corte 11:00 PM</p>';
 
     data.ranking.forEach(function(r, i) {
       var isMe = r.username === CU.username;
@@ -321,7 +321,6 @@ lbRenderAntiCheat = function(container) {
   container.innerHTML = '<div style="text-align:center;padding:20px 0;color:rgba(255,255,255,0.4);">Analizando...</div>';
 
   if (!isAdmin) {
-    // Non-admin: only show own card
     lbApi('antiCheat', { user: CU.username }).then(function(data) {
       if (!data.ok) { container.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error</p>'; return; }
       var html = '<h3 style="text-align:center;font-size:15px;margin:12px 0 4px;">Tu Integridad</h3>';
@@ -332,7 +331,6 @@ lbRenderAntiCheat = function(container) {
       container.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error: ' + e.message + '</p>';
     });
   } else {
-    // Admin: show all but compact
     var userKeys = Object.keys(USERS);
     var results = [];
     var completed = 0;
@@ -341,11 +339,10 @@ lbRenderAntiCheat = function(container) {
         results.push({ user: uKey, name: USERS[uKey].name, data: data });
         completed++;
         if (completed === userKeys.length) {
-          var order = { blocked: 0, flagged: 1, suspicious: 2, clean: 3 };
           results.sort(function(a, b) {
-            var oa = a.data.ok ? (order[a.data.classification] || 3) : 3;
-            var ob = b.data.ok ? (order[b.data.classification] || 3) : 3;
-            return oa - ob;
+            var sa = a.data.ok ? (a.data.suspicionScore || 0) : -1;
+            var sb = b.data.ok ? (b.data.suspicionScore || 0) : -1;
+            return sb - sa;
           });
           var html = '<h3 style="text-align:center;font-size:15px;margin:12px 0 4px;">Anti-Trampa IA</h3>';
           html += '<p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 10px;">Integridad por usuario</p>';
@@ -377,7 +374,6 @@ function renderAntiCheatCardCompact(r) {
   var color = colorMap[cls] || '#00E676';
   var label = labelMap[cls] || 'Limpio';
   var html = '<div style="background:' + bgMap[cls] + ';border:1px solid ' + borderMap[cls] + ';border-radius:10px;padding:10px 12px;margin:6px 0;">';
-  // Header row: avatar + name + badge + score
   html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
   html += '<div style="display:flex;align-items:center;gap:8px;">';
   html += renderAvatar(r.user, r.name, '24px');
@@ -386,7 +382,6 @@ function renderAntiCheatCardCompact(r) {
   html += '<span style="font-size:10px;background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:6px;font-weight:600;">' + label + '</span>';
   html += '<span style="font-size:12px;font-weight:700;color:' + color + ';">' + d.suspicionScore + '</span>';
   html += '</div></div>';
-  // Stats row - single line
   html += '<div style="display:flex;gap:8px;margin-top:6px;font-size:10px;">';
   html += '<span style="color:rgba(255,255,255,0.4);">Hoy <b style="color:var(--text);">' + d.stats.todayCitas + '</b></span>';
   html += '<span style="color:rgba(255,255,255,0.4);">Sem <b style="color:var(--text);">' + d.stats.weekCitas + '</b></span>';
@@ -394,9 +389,7 @@ function renderAntiCheatCardCompact(r) {
   html += '<span style="color:rgba(255,255,255,0.4);">Pruebas <b style="color:var(--text);">' + d.stats.proofRate + '%</b></span>';
   html += '<span style="color:rgba(255,255,255,0.4);">30d <b style="color:var(--text);">' + d.stats.totalLast30Days + '</b></span>';
   html += '</div>';
-  // Score bar - thin
   html += '<div style="margin-top:5px;"><div style="width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="width:' + Math.min(d.suspicionScore, 100) + '%;height:100%;background:' + color + ';border-radius:2px;"></div></div></div>';
-  // Flags summary - only if there are flags, single line each
   if (d.flags.length > 0) {
     html += '<div style="margin-top:5px;">';
     d.flags.forEach(function(f) {
@@ -409,141 +402,209 @@ function renderAntiCheatCardCompact(r) {
   return html;
 }
 
-// --- 4. Admin Panel: Add Agenda + Antifraude tabs ---
+// --- 4. Admin Panel: Inject Agenda + Antifraude tabs (FIXED: immediate injection) ---
 (function() {
-  // Wait for DOM and admin panel to be available
   var _origSwitchAdmin = typeof switchAdminTab === 'function' ? switchAdminTab : null;
 
-  // Override switchAdminTab to handle new tabs
   switchAdminTab = function(tab) {
-    // Hide all admin panels
     var panels = ['solicitudes','usuarios','contenido','anuncios-admin','agenda-admin','antifraude-admin'];
     panels.forEach(function(p) {
       var el = document.getElementById('admin-' + p);
       if (el) el.style.display = 'none';
     });
-    // Deactivate all tabs
     var tabs = document.querySelectorAll('.admin-tab');
     for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
-    // Activate clicked tab
     var activeTab = document.getElementById('atab-' + tab);
     if (activeTab) activeTab.classList.add('active');
-    // Show panel
     var panel = document.getElementById('admin-' + tab);
     if (panel) panel.style.display = 'block';
-    // Render content for new tabs
     if (tab === 'agenda-admin') renderAdminAgenda();
     if (tab === 'antifraude-admin') renderAdminAntifraude();
-    // Call original for existing tabs
     if (tab === 'solicitudes') { if (typeof renderSolicitudes === 'function') renderSolicitudes(); }
     if (tab === 'usuarios') { if (typeof renderAdminUsuarios === 'function') renderAdminUsuarios(); }
     if (tab === 'contenido') { if (typeof renderAdminContenido === 'function') renderAdminContenido(); }
     if (tab === 'anuncios-admin') { if (typeof renderAdminAnuncios === 'function') renderAdminAnuncios(); }
   };
 
-  // Inject new tabs and panels into admin section
+  function injectAdminTabs() {
+    if (document.getElementById('atab-agenda-admin')) return;
+    var tabRow = document.querySelector('.admin-tab');
+    if (!tabRow) return;
+    tabRow = tabRow.parentElement;
+    if (!tabRow) return;
+
+    var agendaBtn = document.createElement('button');
+    agendaBtn.className = 'admin-tab';
+    agendaBtn.id = 'atab-agenda-admin';
+    agendaBtn.onclick = function() { switchAdminTab('agenda-admin'); };
+    agendaBtn.textContent = 'Agenda';
+    tabRow.appendChild(agendaBtn);
+
+    var fraudBtn = document.createElement('button');
+    fraudBtn.className = 'admin-tab';
+    fraudBtn.id = 'atab-antifraude-admin';
+    fraudBtn.onclick = function() { switchAdminTab('antifraude-admin'); };
+    fraudBtn.textContent = 'Antifraude';
+    tabRow.appendChild(fraudBtn);
+
+    var adminSection = document.getElementById('admin-anuncios-admin');
+    if (adminSection && adminSection.parentElement) {
+      var agendaPanel = document.createElement('div');
+      agendaPanel.id = 'admin-agenda-admin';
+      agendaPanel.style.display = 'none';
+      adminSection.parentElement.appendChild(agendaPanel);
+
+      var fraudPanel = document.createElement('div');
+      fraudPanel.id = 'admin-antifraude-admin';
+      fraudPanel.style.display = 'none';
+      adminSection.parentElement.appendChild(fraudPanel);
+    }
+  }
+
+  // Override renderAdminPanel to inject tabs after render
   var _origRenderAdmin = typeof renderAdminPanel === 'function' ? renderAdminPanel : null;
   renderAdminPanel = function() {
     if (_origRenderAdmin) _origRenderAdmin();
-    // Add tabs if not already there
-    if (!document.getElementById('atab-agenda-admin')) {
-      var tabRow = document.querySelector('.admin-tab')?.parentElement;
-      if (tabRow) {
-        var agendaBtn = document.createElement('button');
-        agendaBtn.className = 'admin-tab';
-        agendaBtn.id = 'atab-agenda-admin';
-        agendaBtn.onclick = function() { switchAdminTab('agenda-admin'); };
-        agendaBtn.textContent = 'Agenda';
-        tabRow.appendChild(agendaBtn);
-
-        var fraudBtn = document.createElement('button');
-        fraudBtn.className = 'admin-tab';
-        fraudBtn.id = 'atab-antifraude-admin';
-        fraudBtn.onclick = function() { switchAdminTab('antifraude-admin'); };
-        fraudBtn.textContent = 'Antifraude';
-        tabRow.appendChild(fraudBtn);
-      }
-      // Add panels
-      var adminSection = document.getElementById('admin-anuncios-admin');
-      if (adminSection && adminSection.parentElement) {
-        var agendaPanel = document.createElement('div');
-        agendaPanel.id = 'admin-agenda-admin';
-        agendaPanel.style.display = 'none';
-        adminSection.parentElement.appendChild(agendaPanel);
-
-        var fraudPanel = document.createElement('div');
-        fraudPanel.id = 'admin-antifraude-admin';
-        fraudPanel.style.display = 'none';
-        adminSection.parentElement.appendChild(fraudPanel);
-      }
-    }
+    injectAdminTabs();
   };
+
+  // ALSO: Try to inject immediately and retry with interval until admin DOM exists
+  function tryInject() {
+    if (document.getElementById('atab-agenda-admin')) return true;
+    if (document.querySelector('.admin-tab')) {
+      injectAdminTabs();
+      return true;
+    }
+    return false;
+  }
+  if (!tryInject()) {
+    var _injectInterval = setInterval(function() {
+      if (tryInject()) clearInterval(_injectInterval);
+    }, 500);
+    // Stop trying after 30 seconds
+    setTimeout(function() { clearInterval(_injectInterval); }, 30000);
+  }
 })();
 
-// --- 5. Admin Agenda: Daily real-time + click for weekly ---
+// --- 5. Admin Agenda: Real-time dashboard with scoring ---
+var _adminAgendaView = 'diaria';
+
 function renderAdminAgenda() {
   var el = document.getElementById('admin-agenda-admin');
   if (!el) return;
-  el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.4);">Cargando agenda diaria...</div>';
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.4);">Cargando agenda...</div>';
 
-  // Calculate yesterday label
   var now = new Date();
-  var yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
   var dias = ['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
   var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var dayLabel = dias[yesterday.getDay()] + ' ' + yesterday.getDate() + ' ' + meses[yesterday.getMonth()];
+  var todayLabel = dias[now.getDay()] + ' ' + now.getDate() + ' ' + meses[now.getMonth()];
+  var hours = now.getHours();
+  var mins = now.getMinutes();
+  var timeStr = (hours < 10 ? '0' : '') + hours + ':' + (mins < 10 ? '0' : '') + mins;
 
+  if (_adminAgendaView === 'semanal') {
+    renderAdminAgendaSemanal(el, todayLabel, timeStr);
+  } else {
+    renderAdminAgendaDiaria(el, todayLabel, timeStr);
+  }
+}
+
+function renderAdminAgendaDiaria(el, todayLabel, timeStr) {
   lbApi('dailyTop', {}).then(function(data) {
-    var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
-    html += '<div><h3 style="font-size:16px;margin:0;">Agenda Diaria</h3>';
-    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Top del ' + dayLabel + ' â Corte 11PM</p></div>';
-    html += '<button onclick="loadAdminWeekly()" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.1);border:1px solid rgba(28,232,255,0.3);color:#1CE8FF;font-size:12px;font-weight:600;cursor:pointer;">Cargar Semanal</button>';
+    var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+    html += '<div><h3 style="font-size:16px;margin:0;">Agenda en Tiempo Real</h3>';
+    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">' + todayLabel + ' \u2014 Actualizado ' + timeStr + '</p></div>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<button onclick="_adminAgendaView=\'diaria\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.15);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-size:12px;font-weight:700;cursor:pointer;">Diaria</button>';
+    html += '<button onclick="_adminAgendaView=\'semanal\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;cursor:pointer;">Semanal</button>';
+    html += '</div></div>';
+
+    // Scoring legend
+    html += '<div style="display:flex;gap:12px;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:10px;color:rgba(255,255,255,0.5);">';
+    html += '<span style="color:#00E676;">+3 pts agenda</span>';
+    html += '<span style="color:#FF6B6B;">-5 pts fraude</span>';
+    html += '<span style="color:#1CE8FF;">+3 pts prueba</span>';
+    html += '<span style="color:rgba(255,255,255,0.3);">Auto-update :00 y :30</span>';
     html += '</div>';
-    html += '<div id="admin-agenda-daily">';
+
     if (data.ok && data.ranking && data.ranking.length > 0) {
       data.ranking.forEach(function(r, i) {
-        var ipBadge = r.ipDupes > 0 ? ' <span style="color:#FF6B6B;font-size:10px;">IP x' + r.ipDupes + '</span>' : '';
-        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin:4px 0;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">';
+        var hasFraud = r.ipDupes && r.ipDupes > 0;
+        var borderColor = hasFraud ? 'rgba(255,60,60,0.3)' : 'rgba(255,255,255,0.06)';
+        var bgColor = hasFraud ? 'rgba(255,60,60,0.04)' : 'rgba(255,255,255,0.02)';
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin:4px 0;border:1px solid ' + borderColor + ';background:' + bgColor + ';">';
         html += medalCircle(i + 1, '28px');
         html += renderAvatar(r.username, r.name, '30px');
-        html += '<div style="flex:1;"><div style="font-size:13px;font-weight:600;">' + (r.name || r.username) + ipBadge + '</div>';
-        html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas - ' + r.verificadas + ' verif.</div></div>';
+        html += '<div style="flex:1;">';
+        html += '<div style="font-size:13px;font-weight:600;">' + (r.name || r.username);
+        if (hasFraud) html += ' <span style="background:rgba(255,60,60,0.2);color:#FF6B6B;font-size:9px;padding:1px 5px;border-radius:4px;">IP x' + r.ipDupes + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);display:flex;gap:8px;margin-top:2px;">';
+        html += '<span>' + r.citas + ' agendas</span>';
+        html += '<span>' + r.verificadas + ' verificadas</span>';
+        if (hasFraud) html += '<span style="color:#FF6B6B;">-' + (r.ipDupes * 5) + ' fraude</span>';
+        html += '</div></div>';
+        html += '<div style="text-align:right;">';
+        html += '<div style="font-size:18px;font-weight:900;color:#FFD700;">' + r.score + '</div>';
+        html += '<div style="font-size:9px;color:rgba(255,255,255,0.3);">pts</div>';
+        html += '</div></div>';
+      });
+    } else {
+      html += '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.3);">';
+      html += '<div style="font-size:32px;margin-bottom:8px;">&#128203;</div>';
+      html += '<p>Sin agendas confirmadas hoy</p>';
+      html += '<p style="font-size:11px;">Los puntos se acumulan cuando los socios confirman citas</p>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  }).catch(function(e) {
+    el.innerHTML = '<p style="color:#FF6B6B;text-align:center;">Error: ' + e.message + '</p>';
+  });
+}
+
+function renderAdminAgendaSemanal(el, todayLabel, timeStr) {
+  lbApi('weeklyTop', {}).then(function(data) {
+    var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+    html += '<div><h3 style="font-size:16px;margin:0;">Agenda Semanal</h3>';
+    html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Semana actual \u2014 Actualizado ' + timeStr + '</p></div>';
+    html += '<div style="display:flex;gap:6px;">';
+    html += '<button onclick="_adminAgendaView=\'diaria\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;cursor:pointer;">Diaria</button>';
+    html += '<button onclick="_adminAgendaView=\'semanal\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.15);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-size:12px;font-weight:700;cursor:pointer;">Semanal</button>';
+    html += '</div></div>';
+
+    html += '<div style="display:flex;gap:12px;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:10px;color:rgba(255,255,255,0.5);">';
+    html += '<span style="color:#00E676;">+3 pts agenda</span>';
+    html += '<span style="color:#FF6B6B;">-5 pts fraude</span>';
+    html += '<span style="color:#1CE8FF;">+3 pts prueba</span>';
+    html += '</div>';
+
+    if (data.ok && data.ranking && data.ranking.length > 0) {
+      // Podium for top 3
+      html += lbRenderPodium(data.ranking);
+      // List for rest
+      data.ranking.slice(3).forEach(function(r, i) {
+        var pos = i + 4;
+        var hasFraud = r.ipDupes && r.ipDupes > 0;
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin:4px 0;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);">';
+        html += '<span style="font-weight:700;color:rgba(255,255,255,0.4);width:24px;text-align:center;">' + pos + '</span>';
+        html += renderAvatar(r.username, r.name, '30px');
+        html += '<div style="flex:1;"><div style="font-size:13px;font-weight:600;">' + (r.name || r.username);
+        if (hasFraud) html += ' <span style="color:#FF6B6B;font-size:9px;">IP x' + r.ipDupes + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">' + r.citas + ' agendas - ' + r.verificadas + ' verif.</div></div>';
         html += '<div style="font-size:18px;font-weight:900;color:#FFD700;">' + r.score + '<span style="font-size:9px;color:rgba(255,255,255,0.3);"> pts</span></div>';
         html += '</div>';
       });
     } else {
-      html += '<p style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">Sin datos del dia</p>';
+      html += '<p style="text-align:center;color:rgba(255,255,255,0.4);padding:20px;">Sin datos semanales</p>';
     }
-    html += '</div>';
-    html += '<div id="admin-agenda-weekly" style="margin-top:16px;"></div>';
     el.innerHTML = html;
   }).catch(function(e) {
     el.innerHTML = '<p style="color:#FF6B6B;">Error: ' + e.message + '</p>';
   });
 }
 
-function loadAdminWeekly() {
-  var container = document.getElementById('admin-agenda-weekly');
-  if (!container) return;
-  container.innerHTML = '<div style="text-align:center;padding:16px;color:rgba(255,255,255,0.4);">Cargando semanal...</div>';
-  lbApi('weeklyTop', {}).then(function(data) {
-    if (!data.ok || !data.ranking || data.ranking.length === 0) {
-      container.innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4);">Sin datos semanales</p>';
-      return;
-    }
-    var html = '<h4 style="font-size:14px;margin:0 0 8px;color:rgba(255,255,255,0.7);">Top 10 Semanal</h4>';
-    // Podium top 3
-    html += lbRenderPodium(data.ranking);
-    // Rest as list
-    html += lbRenderList(data.ranking);
-    container.innerHTML = html;
-  }).catch(function(e) {
-    container.innerHTML = '<p style="color:#FF6B6B;">Error: ' + e.message + '</p>';
-  });
-}
-
-// --- 6. Admin Antifraude: Top defraudadores + compact detailed cards ---
+// --- 6. Admin Antifraude: Sorted by highest suspicion score first ---
 function renderAdminAntifraude() {
   var el = document.getElementById('admin-antifraude-admin');
   if (!el) return;
@@ -573,21 +634,20 @@ function renderAdminAntifraude() {
 
 function buildAntifraude(el, results) {
   var valid = results.filter(function(r) { return r.data.ok; });
-  var order = { blocked: 0, flagged: 1, suspicious: 2, clean: 3 };
+  // Sort by highest suspicion score first (most fraudulent at top)
   valid.sort(function(a, b) {
     return (b.data.suspicionScore || 0) - (a.data.suspicionScore || 0);
   });
 
   var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
   html += '<div><h3 style="font-size:16px;margin:0;">Antifraude IA</h3>';
-  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Analisis completo de integridad</p></div>';
+  html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Mayor fraude primero</p></div>';
   html += '</div>';
 
-  // Top defraudadores cards (only those with score > 0)
   var flagged = valid.filter(function(r) { return r.data.suspicionScore > 0; });
   if (flagged.length > 0) {
     html += '<div style="margin-bottom:16px;">';
-    html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;">Alertas activas</div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;">Alertas activas (' + flagged.length + ')</div>';
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;">';
     flagged.forEach(function(r) {
       html += renderAntifraudeCardMini(r);
@@ -595,8 +655,7 @@ function buildAntifraude(el, results) {
     html += '</div></div>';
   }
 
-  // All users detailed but compact
-  html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;">Todos los usuarios</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;font-weight:600;">Todos los usuarios (' + valid.length + ')</div>';
   valid.forEach(function(r) {
     html += renderAntiCheatCardCompact(r);
   });
@@ -604,7 +663,6 @@ function buildAntifraude(el, results) {
   el.innerHTML = html;
 }
 
-// Mini card for top fraudsters (60% smaller than original)
 function renderAntifraudeCardMini(r) {
   if (!r.data.ok) return '';
   var d = r.data;
@@ -615,22 +673,107 @@ function renderAntifraudeCardMini(r) {
   var cls = d.classification;
   var color = colorMap[cls] || '#00E676';
   var html = '<div style="background:' + bgMap[cls] + ';border:1px solid ' + borderMap[cls] + ';border-radius:8px;padding:8px 10px;">';
-  // Row 1: avatar + name + score
   html += '<div style="display:flex;align-items:center;gap:6px;">';
   html += renderAvatar(r.user, r.name, '20px');
   html += '<span style="font-size:12px;font-weight:600;flex:1;">' + r.name + '</span>';
   html += '<span style="font-size:9px;background:' + color + '22;color:' + color + ';padding:1px 6px;border-radius:4px;font-weight:700;">' + labelMap[cls] + '</span>';
   html += '<span style="font-size:11px;font-weight:800;color:' + color + ';">' + d.suspicionScore + '</span>';
   html += '</div>';
-  // Row 2: key stats
   html += '<div style="display:flex;gap:6px;margin-top:4px;font-size:9px;color:rgba(255,255,255,0.4);">';
   html += '<span>IPs:' + d.stats.uniqueIPs + '</span>';
   html += '<span>Hoy:' + d.stats.todayCitas + '</span>';
   html += '<span>30d:' + d.stats.totalLast30Days + '</span>';
   if (d.flags.length > 0) html += '<span style="color:' + color + ';">' + d.flags.length + ' flags</span>';
   html += '</div>';
-  // Score bar
   html += '<div style="margin-top:3px;width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;"><div style="width:' + Math.min(d.suspicionScore,100) + '%;height:100%;background:' + color + ';border-radius:2px;"></div></div>';
   html += '</div>';
   return html;
 }
+
+// --- 7. Move Ranking tabs into Mi Agenda section ---
+(function() {
+  var _origAgendaUI = typeof renderAgendaUI === 'function' ? renderAgendaUI : null;
+
+  renderAgendaUI = function(el) {
+    if (!el) return;
+    // Determine current tab
+    var currentTab = agendaTab || 'config';
+
+    var html = '<div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">';
+    var tabs = [
+      {id: 'config', label: 'Configurar', icon: '\u2699\uFE0F'},
+      {id: 'citas', label: 'Citas', icon: '\uD83D\uDCCB'},
+      {id: 'plandiario', label: 'Mi Plan Diario', icon: '\uD83D\uDCC5'},
+      {id: 'ranking', label: 'Ranking', icon: '\uD83C\uDFC6'}
+    ];
+
+    tabs.forEach(function(t) {
+      var isActive = currentTab === t.id;
+      var style = isActive
+        ? 'background:rgba(28,232,255,0.12);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-weight:700;'
+        : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-weight:500;';
+      html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Nunito,sans-serif;' + style + '">' + t.icon + ' ' + t.label + '</button>';
+    });
+    html += '</div>';
+
+    // Render appropriate content
+    if (currentTab === 'ranking') {
+      html += '<div id="agenda-ranking-container"></div>';
+      el.innerHTML = html;
+      // Use existing lbInjectRankingUI logic to render ranking tabs
+      setTimeout(function() {
+        var container = document.getElementById('agenda-ranking-container');
+        if (container && typeof lbInjectRankingUI === 'function') {
+          // Save original target, inject into our container
+          var origContent = document.getElementById('ranking-content');
+          if (origContent) {
+            // Temporarily swap ranking-content id
+            origContent.id = 'ranking-content-backup';
+            container.id = 'ranking-content';
+            lbInjectRankingUI();
+            container.id = 'agenda-ranking-container';
+            origContent.id = 'ranking-content';
+          } else {
+            // No original ranking content, just render directly
+            container.id = 'ranking-content';
+            lbInjectRankingUI();
+            container.id = 'agenda-ranking-container';
+          }
+        }
+      }, 50);
+    } else if (currentTab === 'config') {
+      html += renderAgendaConfigUI();
+      el.innerHTML = html;
+    } else if (currentTab === 'plandiario') {
+      html += renderPlanDiarioUI();
+      el.innerHTML = html;
+    } else {
+      // citas
+      html += renderAgendaCitasUI();
+      el.innerHTML = html;
+    }
+  };
+
+  // Also patch switchAgendaTab to handle 'ranking'
+  var _origSwitchAgenda = typeof switchAgendaTab === 'function' ? switchAgendaTab : null;
+  switchAgendaTab = function(t) {
+    agendaTab = t;
+    renderAgendaUI(document.getElementById('agenda-content'));
+    if (t === 'plandiario' && typeof loadPlanDiario === 'function') loadPlanDiario();
+  };
+})();
+
+// --- 8. Empty the Ranking sidebar section ---
+(function() {
+  var _origRenderRanking = typeof renderRanking === 'function' ? renderRanking : null;
+  renderRanking = function() {
+    var el = document.getElementById('ranking-content');
+    if (!el) return;
+    el.innerHTML = '<div style="text-align:center;padding:60px 20px;">' +
+      '<div style="font-size:40px;margin-bottom:12px;">\uD83C\uDFC6</div>' +
+      '<h3 style="font-size:16px;color:rgba(255,255,255,0.6);margin:0 0 8px;">Ranking del Equipo</h3>' +
+      '<p style="font-size:13px;color:rgba(255,255,255,0.35);max-width:300px;margin:0 auto;">El ranking ahora esta disponible en la seccion <b style="color:#1CE8FF;">Mi Agenda</b>.</p>' +
+      '<button onclick="navigate(\'agenda\');setTimeout(function(){switchAgendaTab(\'ranking\');},200);" style="margin-top:16px;padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">Ir a Ranking</button>' +
+      '</div>';
+  };
+})();
