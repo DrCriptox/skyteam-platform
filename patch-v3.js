@@ -237,3 +237,35 @@ function renderAntiCheatV3(container, results) {
   container.innerHTML = html;
 }
 
+
+// --- 5. Fix cambiarRango: persist rank everywhere ---
+cambiarRango = function(username, newRank) {
+  var r = +newRank;
+  // 1. Update USERS dict (source of truth for login)
+  if (typeof USERS !== 'undefined' && USERS[username]) {
+    USERS[username].rank = r;
+  }
+  // 2. Update ADMIN_USERS array
+  if (typeof ADMIN_USERS !== 'undefined') {
+    var au = ADMIN_USERS.find(function(x){ return x.user === username; });
+    if (au) au.rank = r;
+  }
+  // 3. Update CU if current user
+  if (typeof CU !== 'undefined' && CU && CU.username === username) {
+    CU.rank = r;
+    try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+  }
+  // 4. Update RANKING_DATA
+  if (typeof RANKING_DATA !== 'undefined') {
+    var rd = RANKING_DATA.find(function(x){ return x.name && USERS[username] && x.name === USERS[username].name; });
+    if (rd) rd.rank = r;
+  }
+  // 5. Re-render all affected sections
+  var rk = (typeof RANKS !== 'undefined' ? RANKS[r] : null) || {icon:'', name:'Rango ' + r};
+  if (typeof renderRanking === 'function') try { renderRanking(); } catch(e) {}
+  if (typeof renderSidebarUser === 'function') try { renderSidebarUser(); } catch(e) {}
+  if (typeof renderHome === 'function') try { renderHome(); } catch(e) {}
+  if (typeof renderPerfil === 'function') try { renderPerfil(); } catch(e) {}
+  if (typeof renderAdminUsuarios === 'function') try { renderAdminUsuarios(); } catch(e) {}
+  if (typeof showToast === 'function') showToast('Rango actualizado \u2192 ' + rk.icon + ' ' + rk.name);
+};
