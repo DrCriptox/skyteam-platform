@@ -6774,7 +6774,7 @@ function renderChat(msgs) {
         <div class="chat-meta">
           <span class="chat-sender">${m.user}</span>
           <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${mRk.bg};border:0.5px solid ${mRk.border};color:${mRk.color};font-weight:700;">${mRk.icon} ${mRk.name}</span>
-          <span class="chat-time">${m.time}</span>
+          <span class="chat-time">${m.time||(m.ts?new Date(m.ts).toLocaleDateString('es',{weekday:'short'})+' '+new Date(m.ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'')}</span>
         </div>
         <div class="chat-text">${m.text}</div>
       </div>
