@@ -3,6 +3,16 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
+// ── PHOTO GENERATION (merged from photo.js) ──
+const SUIT_PROMPTS = {
+  '#1a1a2e': 'dark navy blue formal business suit with white dress shirt and dark tie',
+  '#0a3d62': 'royal blue professional business suit with light blue dress shirt',
+  '#2d2d2d': 'charcoal gray formal business suit with white dress shirt and silver tie',
+  '#4a0e0e': 'deep burgundy/wine colored formal business suit with white dress shirt'
+};
+const DEFAULT_SUIT = 'dark navy blue formal business suit with white dress shirt and dark tie';
+
+
 async function sb(path, opts = {}) {
   const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: SB_HEADERS, ...opts });
   if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('Supabase ' + r.status + ': ' + t.substring(0, 200)); }
@@ -301,7 +311,13 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
-    const { action, username } = req.body || {};
+    // Route photo generation requests (from /api/photo rewrite)
+  const { image_base64, suit_color } = req.body || {};
+  if (image_base64) {
+    return handlePhotoGeneration(req, res, image_base64, suit_color);
+  }
+
+  const { action, username } = req.body || {};
     if (!action) return res.status(400).json({ error: 'Missing action' });
 
     // Setup (admin only)
@@ -375,3 +391,50 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+// ── Photo Generation Handler ──
+async function handlePhotoGeneration(req, res, image_base64, suit_color) {
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+
+  try {
+    const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, '');
+    const suitDesc = SUIT_PROMPTS[suit_color] || DEFAULT_SUIT;
+    const prompt = 'Transform this person photo into a professional corporate headshot. ' +
+      'The person should be wearing a ' + suitDesc + '. ' +
+      'Keep the person EXACT face, features, skin tone, and hair unchanged. ' +
+      'Professional studio lighting, clean solid light gray background. ' +
+      'Upper body portrait, slight smile, confident professional look. ' +
+      'High quality, photorealistic, suitable for LinkedIn or corporate website.';
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    const boundary = '----FormBoundary' + Date.now().toString(16);
+    const parts = [];
+    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="model"\r\n\r\ngpt-image-1');
+    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n' + prompt);
+    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="size"\r\n\r\n1024x1024');
+    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="quality"\r\n\r\nlow');
+    const fileHeader = '--' + boundary + '\r\nContent-Disposition: form-data; name="image"; filename="photo.png"\r\nContent-Type: image/png\r\n\r\n';
+    const fileFooter = '\r\n--' + boundary + '--\r\n';
+    const textParts = parts.join('\r\n') + '\r\n';
+    const textBuffer = Buffer.from(textParts, 'utf-8');
+    const headerBuffer = Buffer.from(fileHeader, 'utf-8');
+    const footerBuffer = Buffer.from(fileFooter, 'utf-8');
+    const body = Buffer.concat([textBuffer, headerBuffer, imageBuffer, footerBuffer]);
+    const response = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + OPENAI_KEY, 'Content-Type': 'multipart/form-data; boundary=' + boundary },
+      body: body
+    });
+    const data = await response.json();
+    if (data.data && data.data[0]) {
+      const img = data.data[0];
+      return res.status(200).json({ success: true, image_url: img.url || null, image_b64: img.b64_json || null });
+    }
+    return res.status(response.status).json({ success: false, error: data.error ? data.error.message : 'Unknown error from OpenAI', raw: data });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Error generating photo', details: error.message });
+  }
+}
+
+
+
