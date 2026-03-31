@@ -1,9 +1,9 @@
 
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// SKY TEAM V2 â ONBOARDING SYSTEM (Frontend)
-// Ruta de 7 DÃ­as, Logros, Coach IA, Dashboard, Script Bank
-// V2.1 â Integrado en Inicio con pestaÃ±as
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════════════════════════
+// SKY TEAM V2 — ONBOARDING SYSTEM (Frontend)
+// Ruta de 7 Días, Logros, Coach IA, Dashboard, Script Bank
+// V2.1 — Integrado en Inicio con pestañas
+// ═══════════════════════════════════════════════════════════════
 
 (function() {
 'use strict';
@@ -11,7 +11,7 @@
 var OB_API = '/api/onboarding';
 var CHAT_API = '/api/chat';
 
-// ââ Colores del sistema ââ
+// ── Colores del sistema ──
 var C = {
   bg: '#030c1f', bgCard: 'rgba(255,255,255,0.04)', bgCardHover: 'rgba(255,255,255,0.08)',
   accent: '#1CE8FF', gold: '#FFD700', green: '#00E676', red: '#FF5252',
@@ -19,7 +19,7 @@ var C = {
   border: 'rgba(255,255,255,0.08)', glow: 'rgba(28,232,255,0.25)'
 };
 
-// ââ Estado local ââ
+// ── Estado local ──
 var obState = {
   progress: null,
   achievements: [],
@@ -33,7 +33,7 @@ var obState = {
   homePatched: false
 };
 
-// ââ API Helper ââ
+// ── API Helper ──
 function obApi(action, data) {
   var body = Object.assign({ action: action, username: (typeof CU !== 'undefined' && CU) ? CU.username : '' }, data || {});
   return fetch(OB_API, {
@@ -44,15 +44,15 @@ function obApi(action, data) {
   }).then(function(r) { return r.json(); });
 }
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// 1. RUTA DE 7 DÃAS â Wizard paso a paso
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
+// 1. RUTA DE 7 DÍAS — Wizard paso a paso
+// ══════════════════════════════════════════════════════════
 
 var DAY_CONFIG = {
   1: {
     name: 'Conoce tu negocio',
-    icon: 'ð',
-    desc: 'Entiende quÃ© es Sky Team, cÃ³mo funciona y cuÃ¡l es tu oportunidad.',
+    icon: '🚀',
+    desc: 'Entiende qué es Sky Team, cómo funciona y cuál es tu oportunidad.',
     tasks: [
       { id: 'd1_tour', label: 'Haz el tour de la plataforma', action: 'startTour' },
       { id: 'd1_video', label: 'Ve el video de bienvenida (3 min)', action: 'autoCheck' },
@@ -62,47 +62,47 @@ var DAY_CONFIG = {
   },
   2: {
     name: 'Tu imagen profesional',
-    icon: 'ð¸',
+    icon: '📸',
     desc: 'Crea tu foto profesional y personaliza tu perfil para generar confianza.',
     tasks: [
       { id: 'd2_photo', label: 'Genera tu foto profesional con IA', action: 'openPhotoEditor' },
-      { id: 'd2_bio', label: 'Completa tu biografÃ­a y redes', action: 'autoCheck' },
+      { id: 'd2_bio', label: 'Completa tu biografía y redes', action: 'autoCheck' },
       { id: 'd2_push', label: 'Activa notificaciones push', action: 'activatePush' }
     ]
   },
   3: {
     name: 'Domina el mensaje',
-    icon: 'ð¬',
+    icon: '💬',
     desc: 'Aprende los scripts de contacto y practica tu primer mensaje.',
     tasks: [
       { id: 'd3_scripts', label: 'Lee los 7 scripts de primer contacto', action: 'autoCheck' },
       { id: 'd3_personaliza', label: 'Personaliza tu script favorito', action: 'autoCheck' },
-      { id: 'd3_practica', label: 'EnvÃ­a tu primer mensaje a un conocido', action: 'autoCheck' }
+      { id: 'd3_practica', label: 'Envía tu primer mensaje a un conocido', action: 'autoCheck' }
     ]
   },
   4: {
     name: 'Primeros contactos',
-    icon: 'ð¥',
-    desc: 'Haz tu lista de 20 contactos y envÃ­a tus primeros 3 mensajes.',
+    icon: '👥',
+    desc: 'Haz tu lista de 20 contactos y envía tus primeros 3 mensajes.',
     tasks: [
       { id: 'd4_lista', label: 'Crea tu lista de 20 prospectos en el CRM', action: 'openCRM' },
-      { id: 'd4_enviar', label: 'EnvÃ­a 3 mensajes de primer contacto', action: 'autoCheck' },
-      { id: 'd4_seguimiento', label: 'Programa seguimiento para maÃ±ana', action: 'autoCheck' }
+      { id: 'd4_enviar', label: 'Envía 3 mensajes de primer contacto', action: 'autoCheck' },
+      { id: 'd4_seguimiento', label: 'Programa seguimiento para mañana', action: 'autoCheck' }
     ]
   },
   5: {
-    name: 'Tu primera reuniÃ³n',
-    icon: 'ð',
-    desc: 'Agenda tu primera reuniÃ³n por Zoom y prepÃ¡rate con el guion.',
+    name: 'Tu primera reunión',
+    icon: '📅',
+    desc: 'Agenda tu primera reunión por Zoom y prepárate con el guion.',
     tasks: [
-      { id: 'd5_agenda', label: 'Agenda una reuniÃ³n en tu calendario', action: 'openAgenda' },
-      { id: 'd5_guion', label: 'Repasa el guion de presentaciÃ³n Zoom', action: 'autoCheck' },
-      { id: 'd5_seguimiento', label: 'Da seguimiento a prospectos del dÃ­a 4', action: 'openCRM' }
+      { id: 'd5_agenda', label: 'Agenda una reunión en tu calendario', action: 'openAgenda' },
+      { id: 'd5_guion', label: 'Repasa el guion de presentación Zoom', action: 'autoCheck' },
+      { id: 'd5_seguimiento', label: 'Da seguimiento a prospectos del día 4', action: 'openCRM' }
     ]
   },
   6: {
     name: 'Lanza tu negocio',
-    icon: 'ð¯',
+    icon: '🎯',
     desc: 'Comparte tu link personalizado y haz tu primer post de lanzamiento.',
     tasks: [
       { id: 'd6_landing', label: 'Personaliza tu landing page', action: 'openLanding' },
@@ -112,12 +112,12 @@ var DAY_CONFIG = {
   },
   7: {
     name: 'Cierra y crece',
-    icon: 'ð',
-    desc: 'Haz seguimiento final, cierra tu primera venta y prepÃ¡rate para escalar.',
+    icon: '🏆',
+    desc: 'Haz seguimiento final, cierra tu primera venta y prepárate para escalar.',
     tasks: [
       { id: 'd7_seguimiento', label: 'Seguimiento a todos los prospectos', action: 'openCRM' },
       { id: 'd7_cierre', label: 'Intenta tu primer cierre', action: 'autoCheck' },
-      { id: 'd7_plan', label: 'Crea tu plan de acciÃ³n semanal', action: 'autoCheck' }
+      { id: 'd7_plan', label: 'Crea tu plan de acción semanal', action: 'autoCheck' }
     ]
   }
 };
@@ -140,7 +140,7 @@ function renderOnboarding(container) {
 
     // Header
     html += '<div style="text-align:center;margin-bottom:20px;">';
-    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">ðºï¸ Tu Ruta de 7 DÃ­as</h2>';
+    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">🗺️ Tu Ruta de 7 Días</h2>';
     html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Sigue cada paso y lanza tu negocio como un profesional</p>';
     html += '</div>';
 
@@ -170,7 +170,7 @@ function renderOnboarding(container) {
       var dotColor = dayDone ? C.green : (isCurrent ? C.accent : 'rgba(255,255,255,0.15)');
       var dotBorder = isCurrent ? '2px solid ' + C.accent : 'none';
       var dotShadow = isCurrent ? '0 0 8px ' + C.glow : 'none';
-      html += '<div style="width:28px;height:28px;border-radius:50%;background:' + dotColor + ';border:' + dotBorder + ';box-shadow:' + dotShadow + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:' + (dayDone ? '#000' : '#fff') + ';flex-shrink:0;">' + (dayDone ? 'â' : dd) + '</div>';
+      html += '<div style="width:28px;height:28px;border-radius:50%;background:' + dotColor + ';border:' + dotBorder + ';box-shadow:' + dotShadow + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:' + (dayDone ? '#000' : '#fff') + ';flex-shrink:0;">' + (dayDone ? '✓' : dd) + '</div>';
     }
     html += '</div></div>';
 
@@ -195,9 +195,9 @@ function renderOnboarding(container) {
       html += '<div style="font-size:24px;flex-shrink:0;">' + cfg.icon + '</div>';
       html += '<div style="flex:1;min-width:0;">';
       html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
-      html += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:' + (dayComplete ? C.green : isActive ? C.accent : C.textSub) + ';letter-spacing:1px;">DÃ­a ' + day + '</span>';
-      if (dayComplete) html += '<span style="font-size:9px;background:rgba(0,230,118,0.15);color:' + C.green + ';padding:2px 6px;border-radius:8px;">â Listo</span>';
-      if (isActive) html += '<span style="font-size:9px;background:rgba(28,232,255,0.15);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">â AquÃ­</span>';
+      html += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:' + (dayComplete ? C.green : isActive ? C.accent : C.textSub) + ';letter-spacing:1px;">Día ' + day + '</span>';
+      if (dayComplete) html += '<span style="font-size:9px;background:rgba(0,230,118,0.15);color:' + C.green + ';padding:2px 6px;border-radius:8px;">✓ Listo</span>';
+      if (isActive) html += '<span style="font-size:9px;background:rgba(28,232,255,0.15);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">← Aquí</span>';
       html += '</div>';
       html += '<h3 style="font-size:14px;font-weight:700;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cfg.name + '</h3>';
       html += '</div>';
@@ -211,7 +211,7 @@ function renderOnboarding(container) {
         dayTaskList.forEach(function(task) {
           var done = tasks[task.id];
           html += '<div data-task="' + task.id + '" data-action="' + (task.action || '') + '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:' + (done ? 'rgba(0,230,118,0.06)' : 'rgba(255,255,255,0.02)') + ';border:1px solid ' + (done ? 'rgba(0,230,118,0.2)' : C.border) + ';border-radius:8px;margin-bottom:5px;cursor:' + (done || isLocked ? 'default' : 'pointer') + ';">';
-          html += '<div style="width:18px;height:18px;border-radius:50%;border:2px solid ' + (done ? C.green : 'rgba(255,255,255,0.2)') + ';background:' + (done ? C.green : 'transparent') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#000;">' + (done ? 'â' : '') + '</div>';
+          html += '<div style="width:18px;height:18px;border-radius:50%;border:2px solid ' + (done ? C.green : 'rgba(255,255,255,0.2)') + ';background:' + (done ? C.green : 'transparent') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#000;">' + (done ? '✓' : '') + '</div>';
           html += '<span style="font-size:12px;color:' + (done ? 'rgba(255,255,255,0.5)' : '#fff') + ';' + (done ? 'text-decoration:line-through;' : '') + 'line-height:1.3;">' + task.label + '</span>';
           html += '</div>';
         });
@@ -223,9 +223,9 @@ function renderOnboarding(container) {
     // Completed banner
     if (completedDays >= 7) {
       html += '<div style="text-align:center;padding:24px;background:linear-gradient(135deg,rgba(28,232,255,0.1),rgba(255,215,0,0.1));border:1px solid rgba(255,215,0,0.3);border-radius:14px;margin-top:12px;">';
-      html += '<div style="font-size:40px;margin-bottom:6px;">ð</div>';
-      html += '<h3 style="font-size:16px;color:' + C.gold + ';margin:0 0 4px;">Â¡RUTA COMPLETADA!</h3>';
-      html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Has completado los 7 dÃ­as. Â¡Ahora a crecer!</p>';
+      html += '<div style="font-size:40px;margin-bottom:6px;">🏆</div>';
+      html += '<h3 style="font-size:16px;color:' + C.gold + ';margin:0 0 4px;">¡RUTA COMPLETADA!</h3>';
+      html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Has completado los 7 días. ¡Ahora a crecer!</p>';
       html += '</div>';
     }
 
@@ -259,11 +259,11 @@ function handleTaskAction(taskId, action, container) {
     return;
   }
   if (action === 'openLanding') {
-    showToast('PrÃ³ximamente: PersonalizaciÃ³n de landing', 'info');
+    showToast('Próximamente: Personalización de landing', 'info');
     return;
   }
   if (action === 'startTour') {
-    showToast('PrÃ³ximamente: Tour guiado interactivo', 'info');
+    showToast('Próximamente: Tour guiado interactivo', 'info');
     return;
   }
   if (action === 'installPWA') {
@@ -280,7 +280,7 @@ function handleTaskAction(taskId, action, container) {
       window.subscribeToPush();
     } else if ('Notification' in window) {
       Notification.requestPermission().then(function(p) {
-        if (p === 'granted') showToast('Â¡Notificaciones activadas!', 'success');
+        if (p === 'granted') showToast('¡Notificaciones activadas!', 'success');
       });
     }
     markTaskComplete(taskId, container);
@@ -309,14 +309,14 @@ function markTaskComplete(taskId, container) {
       }
     });
     renderOnboarding(container);
-    showToast('Â¡Tarea completada! ð', 'success');
+    showToast('¡Tarea completada! 🎉', 'success');
   });
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 // 2. SISTEMA DE LOGROS Y CELEBRACIONES
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 
 function renderAchievements(container) {
   container.innerHTML = '<div style="text-align:center;padding:40px;color:' + C.textSub + '">Cargando logros...</div>';
@@ -329,12 +329,12 @@ function renderAchievements(container) {
 
     var html = '';
     html += '<div style="text-align:center;margin-bottom:20px;">';
-    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">ð Mis Logros</h2>';
-    html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Cada acciÃ³n te acerca a tu primera venta</p>';
+    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">🏆 Mis Logros</h2>';
+    html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Cada acción te acerca a tu primera venta</p>';
     html += '<div style="margin-top:10px;font-size:28px;font-weight:900;color:' + C.gold + '">' + obState.achievements.length + '<span style="font-size:14px;color:' + C.textSub + '">/' + Object.keys(obState.achievementDefs).length + '</span></div>';
     html += '</div>';
 
-    // Achievement grid â responsive 2 cols
+    // Achievement grid — responsive 2 cols
     var defKeys = Object.keys(obState.achievementDefs);
     html += '<div class="ob-ach-grid">';
     defKeys.forEach(function(key) {
@@ -349,9 +349,9 @@ function renderAchievements(container) {
       html += '<div style="font-size:12px;font-weight:700;margin-bottom:2px;line-height:1.3;">' + def.name + '</div>';
       if (isUnlocked) {
         var date = new Date(unlocked[key]);
-        html += '<div style="font-size:9px;color:' + C.green + '">â ' + date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + '</div>';
+        html += '<div style="font-size:9px;color:' + C.green + '">✓ ' + date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + '</div>';
       } else {
-        html += '<div style="font-size:9px;color:' + C.textSub + '">ð Bloqueado</div>';
+        html += '<div style="font-size:9px;color:' + C.textSub + '">🔒 Bloqueado</div>';
       }
       html += '</div>';
     });
@@ -369,10 +369,10 @@ function showCelebration(achievement) {
   overlay.innerHTML = '<div style="text-align:center;animation:obBounceIn 0.6s ease;">' +
     '<div id="ob-confetti-zone" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;"></div>' +
     '<div style="font-size:64px;margin-bottom:10px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.5));animation:obPulse 1s infinite;">' + achievement.icon + '</div>' +
-    '<h2 style="font-size:20px;font-weight:900;color:' + C.gold + ';margin:0 0 6px;text-shadow:0 0 20px rgba(255,215,0,0.3);">Â¡LOGRO DESBLOQUEADO!</h2>' +
+    '<h2 style="font-size:20px;font-weight:900;color:' + C.gold + ';margin:0 0 6px;text-shadow:0 0 20px rgba(255,215,0,0.3);">¡LOGRO DESBLOQUEADO!</h2>' +
     '<h3 style="font-size:16px;font-weight:700;color:#fff;margin:0 0 8px;">' + achievement.name + '</h3>' +
     '<p style="font-size:13px;color:' + C.textSub + ';margin:0 20px 20px;max-width:280px;">' + achievement.msg + '</p>' +
-    '<button onclick="this.closest(\'#ob-celebration\').remove()" style="padding:10px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,' + C.accent + ',' + C.green + ');color:#000;font-weight:700;font-size:13px;cursor:pointer;">Â¡Genial!</button>' +
+    '<button onclick="this.closest(\'#ob-celebration\').remove()" style="padding:10px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,' + C.accent + ',' + C.green + ');color:#000;font-weight:700;font-size:13px;cursor:pointer;">¡Genial!</button>' +
     '</div>';
 
   document.body.appendChild(overlay);
@@ -400,9 +400,9 @@ function launchConfetti() {
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// 3. DASHBOARD â "MI PROGRESO"
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
+// 3. DASHBOARD — "MI PROGRESO"
+// ══════════════════════════════════════════════════════════
 
 function renderDashboard(container) {
   container.innerHTML = '<div style="text-align:center;padding:40px;color:' + C.textSub + '">Cargando dashboard...</div>';
@@ -412,26 +412,26 @@ function renderDashboard(container) {
     var html = '';
 
     html += '<div style="text-align:center;margin-bottom:16px;">';
-    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">ð Mi Progreso</h2>';
+    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">📊 Mi Progreso</h2>';
     html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Tu resumen diario en un vistazo</p>';
     html += '</div>';
 
-    // 3 metric cards â responsive
+    // 3 metric cards — responsive
     var metrics = [
       {
-        label: 'Contactos hoy', value: data.contactsToday || 0, icon: 'ð¬',
+        label: 'Contactos hoy', value: data.contactsToday || 0, icon: '💬',
         color: data.contactsToday >= 3 ? C.green : data.contactsToday >= 1 ? C.orange : C.red,
-        target: 3, hint: data.contactsToday >= 3 ? 'Â¡Excelente!' : 'Meta: 3/dÃ­a'
+        target: 3, hint: data.contactsToday >= 3 ? '¡Excelente!' : 'Meta: 3/día'
       },
       {
-        label: 'Reuniones', value: data.meetingsThisWeek || 0, icon: 'ð',
+        label: 'Reuniones', value: data.meetingsThisWeek || 0, icon: '📅',
         color: data.meetingsThisWeek >= 2 ? C.green : data.meetingsThisWeek >= 1 ? C.orange : C.red,
-        target: 2, hint: data.meetingsThisWeek >= 2 ? 'Â¡Gran semana!' : 'Meta: 2/sem'
+        target: 2, hint: data.meetingsThisWeek >= 2 ? '¡Gran semana!' : 'Meta: 2/sem'
       },
       {
-        label: 'Cierres', value: data.closesThisMonth || 0, icon: 'ð°',
+        label: 'Cierres', value: data.closesThisMonth || 0, icon: '💰',
         color: data.closesThisMonth >= 1 ? C.green : C.red,
-        target: 3, hint: data.closesThisMonth >= 1 ? 'Â¡Ya cerraste!' : 'Meta: 3/mes'
+        target: 3, hint: data.closesThisMonth >= 1 ? '¡Ya cerraste!' : 'Meta: 3/mes'
       }
     ];
 
@@ -453,21 +453,21 @@ function renderDashboard(container) {
       var dayPct = Math.round(((ob.current_day - 1) / 7) * 100);
       html += '<div style="background:rgba(28,232,255,0.04);border:1px solid rgba(28,232,255,0.15);border-radius:12px;padding:14px;margin-bottom:12px;">';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
-      html += '<span style="font-size:12px;font-weight:700;">ðºï¸ Ruta de 7 DÃ­as</span>';
-      html += '<span style="font-size:11px;color:' + C.accent + ';font-weight:700;">DÃ­a ' + ob.current_day + '/7</span>';
+      html += '<span style="font-size:12px;font-weight:700;">🗺️ Ruta de 7 Días</span>';
+      html += '<span style="font-size:11px;color:' + C.accent + ';font-weight:700;">Día ' + ob.current_day + '/7</span>';
       html += '</div>';
       html += '<div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">';
       html += '<div style="height:100%;width:' + dayPct + '%;background:' + C.accent + ';border-radius:3px;"></div>';
       html += '</div>';
       html += '<div style="text-align:center;margin-top:8px;">';
-      html += '<button onclick="obSwitchTab(\'ruta\')" style="padding:7px 16px;border:none;border-radius:8px;background:' + C.accent + ';color:#000;font-weight:700;font-size:11px;cursor:pointer;">Continuar mi ruta â</button>';
+      html += '<button onclick="obSwitchTab(\'ruta\')" style="padding:7px 16px;border:none;border-radius:8px;background:' + C.accent + ';color:#000;font-weight:700;font-size:11px;cursor:pointer;">Continuar mi ruta →</button>';
       html += '</div></div>';
     }
 
     // Achievement progress
     html += '<div style="background:' + C.bgCard + ';border:1px solid ' + C.border + ';border-radius:12px;padding:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
-    html += '<span style="font-size:12px;font-weight:700;">ð Logros</span>';
+    html += '<span style="font-size:12px;font-weight:700;">🏆 Logros</span>';
     html += '<span style="font-size:11px;color:' + C.gold + ';font-weight:700;">' + (data.achievementCount || 0) + '/' + (data.totalAchievements || 12) + '</span>';
     html += '</div>';
     var achPct = Math.round(((data.achievementCount || 0) / (data.totalAchievements || 12)) * 100);
@@ -483,9 +483,9 @@ function renderDashboard(container) {
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 // 4. COACH IA FLOTANTE
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 
 function initCoachButton() {
   if (document.getElementById('ob-coach-btn')) return;
@@ -520,10 +520,10 @@ function createCoachPanel() {
   panel.style.cssText = 'position:fixed;bottom:82px;right:20px;width:320px;max-height:420px;background:' + C.bg + ';border:1px solid rgba(28,232,255,0.2);border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,0.6);z-index:9991;display:flex;flex-direction:column;overflow:hidden;animation:obSlideUp 0.3s ease;';
 
   var header = '<div style="padding:12px 14px;background:rgba(28,232,255,0.06);border-bottom:1px solid ' + C.border + ';display:flex;align-items:center;gap:8px;">';
-  header += '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,' + C.accent + ',#0a8f9e);display:flex;align-items:center;justify-content:center;font-size:16px;">ð¤</div>';
+  header += '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,' + C.accent + ',#0a8f9e);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>';
   header += '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">Coach IA</div>';
-  header += '<div style="font-size:9px;color:' + C.green + ';">â En lÃ­nea</div></div>';
-  header += '<div onclick="toggleCoachPanel()" style="cursor:pointer;color:' + C.textSub + ';font-size:18px;">â</div>';
+  header += '<div style="font-size:9px;color:' + C.green + ';">● En línea</div></div>';
+  header += '<div onclick="toggleCoachPanel()" style="cursor:pointer;color:' + C.textSub + ';font-size:18px;">✕</div>';
   header += '</div>';
 
   var messages = '<div id="ob-coach-messages" style="flex:1;overflow-y:auto;padding:12px;min-height:180px;">';
@@ -532,7 +532,7 @@ function createCoachPanel() {
 
   var input = '<div style="padding:8px 12px;border-top:1px solid ' + C.border + ';display:flex;gap:6px;">';
   input += '<input id="ob-coach-input" type="text" placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 12px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;font-family:Nunito,sans-serif;" />';
-  input += '<button id="ob-coach-send" style="padding:8px 12px;border:none;border-radius:8px;background:' + C.accent + ';color:#000;font-weight:700;font-size:12px;cursor:pointer;">â</button>';
+  input += '<button id="ob-coach-send" style="padding:8px 12px;border:none;border-radius:8px;background:' + C.accent + ';color:#000;font-weight:700;font-size:12px;cursor:pointer;">→</button>';
   input += '</div>';
 
   panel.innerHTML = header + messages + input;
@@ -553,21 +553,21 @@ function loadCoachContext() {
 
     var greeting = '';
     if (ctx.isNewUser) {
-      greeting = 'Â¡Hola! ð Soy tu Coach IA. Â¿Empezamos con tu Ruta de 7 DÃ­as?';
+      greeting = '¡Hola! 👋 Soy tu Coach IA. ¿Empezamos con tu Ruta de 7 Días?';
     } else if (ctx.onboardingDay <= 7) {
-      greeting = 'Â¡Hola! EstÃ¡s en el DÃ­a ' + ctx.onboardingDay + '. ';
+      greeting = '¡Hola! Estás en el Día ' + ctx.onboardingDay + '. ';
       if (ctx.staleProspects.length > 0) {
-        greeting += ctx.staleProspects[0] + ' lleva dÃ­as sin seguimiento. Â¿Te ayudo a escribirle?';
+        greeting += ctx.staleProspects[0] + ' lleva días sin seguimiento. ¿Te ayudo a escribirle?';
       } else {
-        greeting += 'Â¿En quÃ© te puedo ayudar?';
+        greeting += '¿En qué te puedo ayudar?';
       }
     } else {
       if (ctx.staleProspects.length > 0) {
-        greeting = 'Tienes ' + ctx.staleProspects.length + ' prospectos esperando. Â¿Empezamos?';
+        greeting = 'Tienes ' + ctx.staleProspects.length + ' prospectos esperando. ¿Empezamos?';
       } else if (ctx.hotProspects > 0) {
-        greeting = 'Â¡' + ctx.hotProspects + ' prospectos calientes! Â¿Te ayudo a agendar?';
+        greeting = '¡' + ctx.hotProspects + ' prospectos calientes! ¿Te ayudo a agendar?';
       } else {
-        greeting = 'Â¿En quÃ© te puedo ayudar hoy?';
+        greeting = '¿En qué te puedo ayudar hoy?';
       }
     }
 
@@ -602,13 +602,13 @@ function sendCoachMessage() {
 
   var ctx = obState.coachContext || {};
   var sysPrompt = 'Eres el Coach IA de Sky Team. Tu rol es guiar socios nuevos para lograr sus primeras ventas. ' +
-    'SÃ© motivador, conciso y prÃ¡ctico. Siempre da pasos concretos. ' +
-    'Contexto del usuario: DÃ­a de onboarding: ' + (ctx.onboardingDay || '?') +
+    'Sé motivador, conciso y práctico. Siempre da pasos concretos. ' +
+    'Contexto del usuario: Día de onboarding: ' + (ctx.onboardingDay || '?') +
     ', Prospectos: ' + (ctx.prospectCount || 0) +
     ', Prospectos calientes: ' + (ctx.hotProspects || 0) +
     ', Sin seguimiento: ' + (ctx.staleProspects ? ctx.staleProspects.join(', ') : 'ninguno') +
     ', Logros: ' + (ctx.achievementsUnlocked ? ctx.achievementsUnlocked.length : 0) + '/12.' +
-    ' Responde en espaÃ±ol, mÃ¡ximo 3 oraciones. Si el usuario necesita un script de mensaje, escrÃ­belo listo para copiar.';
+    ' Responde en español, máximo 3 oraciones. Si el usuario necesita un script de mensaje, escríbelo listo para copiar.';
 
   var messages = obState.coachMessages.map(function(m) {
     return { role: m.role, content: m.content };
@@ -632,44 +632,44 @@ function sendCoachMessage() {
     var typing = document.getElementById('ob-coach-typing');
     if (typing) typing.remove();
     if (msgArea) {
-      msgArea.innerHTML += renderCoachBubble('Error de conexiÃ³n. Intenta de nuevo.', 'bot');
+      msgArea.innerHTML += renderCoachBubble('Error de conexión. Intenta de nuevo.', 'bot');
     }
   });
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// 5. SCRIPT BANK â Mensajes Listos
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
+// 5. SCRIPT BANK — Mensajes Listos
+// ══════════════════════════════════════════════════════════
 
 var DEFAULT_SCRIPTS = [
-  { category: 'primer_contacto', title: 'Curiosidad', message: 'Hola [NOMBRE], Â¿cÃ³mo estÃ¡s? Oye, empecÃ© un proyecto digital que estÃ¡ creciendo mucho y pensÃ© en ti. Â¿Te puedo compartir una info rÃ¡pida? Sin compromiso ð' },
-  { category: 'primer_contacto', title: 'Directo', message: 'Hey [NOMBRE]! Estoy trabajando en algo interesante y creo que te puede beneficiar. Â¿Tienes 2 minutos para que te cuente?' },
-  { category: 'primer_contacto', title: 'Social', message: '[NOMBRE]! Vi tu historia y me acordÃ© de ti. Oye, arranquÃ© un proyecto nuevo y me encantarÃ­a tu opiniÃ³n. Â¿Te puedo enviar un video corto?' },
-  { category: 'de_que_se_trata', title: 'Â¿De quÃ© se trata?', message: 'Es una franquicia digital de turismo y bienestar. BÃ¡sicamente ayudas a personas a ahorrar en viajes y generas ingresos por eso. Lo padre es que todo es desde tu celular. Â¿Te mando un video de 3 minutos que lo explica mejor?' },
-  { category: 'de_que_se_trata', title: 'Â¿Es de ventas?', message: 'No es vender puerta a puerta ni nada asÃ­. Es mÃ¡s como recomendar una plataforma de turismo. Como cuando recomiendas un restaurante pero aquÃ­ te pagan por eso. Â¿Te interesa saber mÃ¡s?' },
-  { category: 'de_que_se_trata', title: 'Â¿Es pirÃ¡mide?', message: 'Excelente pregunta. No, es una franquicia real con productos de turismo. TÃº ganas por ventas reales, no por meter gente. Te puedo enseÃ±ar exactamente cÃ³mo funciona si quieres.' },
-  { category: 'seguimiento_2', title: 'DÃ­a 2', message: 'Hola [NOMBRE], Â¿pudiste ver la info que te compartÃ­? Me encantarÃ­a saber quÃ© opinas ð' },
-  { category: 'seguimiento_2', title: 'Visto sin respuesta', message: 'Hey [NOMBRE]! SÃ© que estÃ¡s ocupado(a). Solo querÃ­a saber si tienes alguna duda. Estoy aquÃ­ para cualquier pregunta ð' },
-  { category: 'seguimiento_5', title: 'DÃ­a 5', message: 'Hola [NOMBRE], pasando a saludar. Tengo novedades del proyecto que creo te van a interesar. Â¿CuÃ¡ndo tienes 5 minutos para platicar?' },
-  { category: 'seguimiento_5', title: 'ReactivaciÃ³n', message: '[NOMBRE], Â¿recuerdas el proyecto que te comentÃ©? Acaba de salir algo nuevo que estÃ¡ dando muy buenos resultados. Â¿Te cuento rÃ¡pido?' },
-  { category: 'invitar_zoom', title: 'Casual', message: 'Â¿QuÃ© te parece si nos conectamos 15 minutos por Zoom? Te muestro todo con pantalla compartida. Â¿Te va bien maÃ±ana a las [HORA]?' },
-  { category: 'invitar_zoom', title: 'Urgencia', message: '[NOMBRE], esta semana estamos con una promo especial. Si quieres aprovecharla, Â¿nos conectamos hoy o maÃ±ana 15 min por Zoom?' },
-  { category: 'invitar_zoom', title: 'Profesional', message: 'Te agendo una reuniÃ³n corta de 15 min donde te muestro el plan completo con nÃºmeros reales. Â¿Prefieres por la maÃ±ana o por la tarde?' },
-  { category: 'post_zoom', title: 'Cierre suave', message: 'Â¡Gracias por tu tiempo [NOMBRE]! Como viste, el plan es claro y los resultados son reales. Â¿QuÃ© es lo que mÃ¡s te llamÃ³ la atenciÃ³n?' },
-  { category: 'post_zoom', title: 'Cierre directo', message: '[NOMBRE], ya viste toda la info y los resultados del equipo. La pregunta es: Â¿estÃ¡s listo(a) para empezar? Te acompaÃ±o paso a paso desde el dÃ­a uno.' },
-  { category: 'reactivacion', title: 'Prospecto frÃ­o', message: 'Hola [NOMBRE], Â¿cÃ³mo has estado? Han pasado unas semanas. El equipo ha crecido mucho desde entonces. Â¿Te gustarÃ­a saber quÃ© hay de nuevo?' },
-  { category: 'reactivacion', title: 'Testimonio', message: '[NOMBRE]! QuerÃ­a compartirte algo: [TESTIMONIO] acaba de hacer su primera venta esta semana. EmpezÃ³ igual que tÃº. Â¿Te animas a retomarlo?' }
+  { category: 'primer_contacto', title: 'Curiosidad', message: 'Hola [NOMBRE], ¿cómo estás? Oye, empecé un proyecto digital que está creciendo mucho y pensé en ti. ¿Te puedo compartir una info rápida? Sin compromiso 😊' },
+  { category: 'primer_contacto', title: 'Directo', message: 'Hey [NOMBRE]! Estoy trabajando en algo interesante y creo que te puede beneficiar. ¿Tienes 2 minutos para que te cuente?' },
+  { category: 'primer_contacto', title: 'Social', message: '[NOMBRE]! Vi tu historia y me acordé de ti. Oye, arranqué un proyecto nuevo y me encantaría tu opinión. ¿Te puedo enviar un video corto?' },
+  { category: 'de_que_se_trata', title: '¿De qué se trata?', message: 'Es una franquicia digital de turismo y bienestar. Básicamente ayudas a personas a ahorrar en viajes y generas ingresos por eso. Lo padre es que todo es desde tu celular. ¿Te mando un video de 3 minutos que lo explica mejor?' },
+  { category: 'de_que_se_trata', title: '¿Es de ventas?', message: 'No es vender puerta a puerta ni nada así. Es más como recomendar una plataforma de turismo. Como cuando recomiendas un restaurante pero aquí te pagan por eso. ¿Te interesa saber más?' },
+  { category: 'de_que_se_trata', title: '¿Es pirámide?', message: 'Excelente pregunta. No, es una franquicia real con productos de turismo. Tú ganas por ventas reales, no por meter gente. Te puedo enseñar exactamente cómo funciona si quieres.' },
+  { category: 'seguimiento_2', title: 'Día 2', message: 'Hola [NOMBRE], ¿pudiste ver la info que te compartí? Me encantaría saber qué opinas 😊' },
+  { category: 'seguimiento_2', title: 'Visto sin respuesta', message: 'Hey [NOMBRE]! Sé que estás ocupado(a). Solo quería saber si tienes alguna duda. Estoy aquí para cualquier pregunta 🙌' },
+  { category: 'seguimiento_5', title: 'Día 5', message: 'Hola [NOMBRE], pasando a saludar. Tengo novedades del proyecto que creo te van a interesar. ¿Cuándo tienes 5 minutos para platicar?' },
+  { category: 'seguimiento_5', title: 'Reactivación', message: '[NOMBRE], ¿recuerdas el proyecto que te comenté? Acaba de salir algo nuevo que está dando muy buenos resultados. ¿Te cuento rápido?' },
+  { category: 'invitar_zoom', title: 'Casual', message: '¿Qué te parece si nos conectamos 15 minutos por Zoom? Te muestro todo con pantalla compartida. ¿Te va bien mañana a las [HORA]?' },
+  { category: 'invitar_zoom', title: 'Urgencia', message: '[NOMBRE], esta semana estamos con una promo especial. Si quieres aprovecharla, ¿nos conectamos hoy o mañana 15 min por Zoom?' },
+  { category: 'invitar_zoom', title: 'Profesional', message: 'Te agendo una reunión corta de 15 min donde te muestro el plan completo con números reales. ¿Prefieres por la mañana o por la tarde?' },
+  { category: 'post_zoom', title: 'Cierre suave', message: '¡Gracias por tu tiempo [NOMBRE]! Como viste, el plan es claro y los resultados son reales. ¿Qué es lo que más te llamó la atención?' },
+  { category: 'post_zoom', title: 'Cierre directo', message: '[NOMBRE], ya viste toda la info y los resultados del equipo. La pregunta es: ¿estás listo(a) para empezar? Te acompaño paso a paso desde el día uno.' },
+  { category: 'reactivacion', title: 'Prospecto frío', message: 'Hola [NOMBRE], ¿cómo has estado? Han pasado unas semanas. El equipo ha crecido mucho desde entonces. ¿Te gustaría saber qué hay de nuevo?' },
+  { category: 'reactivacion', title: 'Testimonio', message: '[NOMBRE]! Quería compartirte algo: [TESTIMONIO] acaba de hacer su primera venta esta semana. Empezó igual que tú. ¿Te animas a retomarlo?' }
 ];
 
 var CATEGORY_LABELS = {
-  primer_contacto: { label: 'Primer contacto', icon: 'ð', color: C.accent },
-  de_que_se_trata: { label: 'Â¿De quÃ© se trata?', icon: 'â', color: '#E040FB' },
-  seguimiento_2: { label: 'Seguimiento â DÃ­a 2', icon: 'ð©', color: C.orange },
-  seguimiento_5: { label: 'Seguimiento â DÃ­a 5+', icon: 'ð', color: '#FF6B6B' },
-  invitar_zoom: { label: 'InvitaciÃ³n a Zoom', icon: 'ð¹', color: C.green },
-  post_zoom: { label: 'Post-Zoom cierre', icon: 'ð¯', color: C.gold },
-  reactivacion: { label: 'ReactivaciÃ³n', icon: 'ð§', color: '#90CAF9' }
+  primer_contacto: { label: 'Primer contacto', icon: '👋', color: C.accent },
+  de_que_se_trata: { label: '¿De qué se trata?', icon: '❓', color: '#E040FB' },
+  seguimiento_2: { label: 'Seguimiento — Día 2', icon: '📩', color: C.orange },
+  seguimiento_5: { label: 'Seguimiento — Día 5+', icon: '🔄', color: '#FF6B6B' },
+  invitar_zoom: { label: 'Invitación a Zoom', icon: '📹', color: C.green },
+  post_zoom: { label: 'Post-Zoom cierre', icon: '🎯', color: C.gold },
+  reactivacion: { label: 'Reactivación', icon: '🧊', color: '#90CAF9' }
 };
 
 function renderScriptBank(container) {
@@ -677,7 +677,7 @@ function renderScriptBank(container) {
 
   var html = '';
   html += '<div style="text-align:center;margin-bottom:16px;">';
-  html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">ð Banco de Scripts</h2>';
+  html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">📝 Banco de Scripts</h2>';
   html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Mensajes listos para copiar y personalizar</p>';
   html += '</div>';
 
@@ -695,7 +695,7 @@ function renderScriptBank(container) {
   });
 
   Object.keys(categories).forEach(function(cat) {
-    var catInfo = CATEGORY_LABELS[cat] || { label: cat, icon: 'ð', color: C.accent };
+    var catInfo = CATEGORY_LABELS[cat] || { label: cat, icon: '📄', color: C.accent };
     html += '<div style="margin-bottom:14px;">';
     html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">';
     html += '<span style="font-size:16px;">' + catInfo.icon + '</span>';
@@ -730,7 +730,7 @@ function renderScriptBank(container) {
 
       if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(function() {
-          btn.textContent = 'â Copiado';
+          btn.textContent = '✓ Copiado';
           btn.style.color = C.green;
           btn.style.borderColor = C.green;
           setTimeout(function() { btn.textContent = 'Copiar'; btn.style.color = C.accent; btn.style.borderColor = 'rgba(28,232,255,0.2)'; }, 2000);
@@ -753,9 +753,9 @@ function renderScriptBank(container) {
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 // 6. PHOTO EDITOR MODAL
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 
 function openPhotoEditorModal() {
   var modal = document.createElement('div');
@@ -765,14 +765,14 @@ function openPhotoEditorModal() {
   var content = '<div style="background:' + C.bg + ';border:1px solid ' + C.border + ';border-radius:18px;padding:20px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">';
 
   content += '<div style="text-align:center;margin-bottom:16px;">';
-  content += '<div style="font-size:40px;margin-bottom:6px;">ð¸</div>';
+  content += '<div style="font-size:40px;margin-bottom:6px;">📸</div>';
   content += '<h3 style="font-size:18px;font-weight:800;margin:0 0 4px;">Tu Imagen Profesional</h3>';
-  content += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Sube tu foto y generamos una versiÃ³n profesional con IA</p>';
+  content += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Sube tu foto y generamos una versión profesional con IA</p>';
   content += '</div>';
 
   // Upload area
   content += '<div id="ob-photo-upload" style="border:2px dashed rgba(28,232,255,0.3);border-radius:14px;padding:30px;text-align:center;cursor:pointer;transition:all 0.3s;" onclick="document.getElementById(\'ob-photo-input\').click()">';
-  content += '<div style="font-size:36px;margin-bottom:8px;opacity:0.5;">ð·</div>';
+  content += '<div style="font-size:36px;margin-bottom:8px;opacity:0.5;">📷</div>';
   content += '<div style="color:' + C.textSub + ';font-size:12px;">Toca para subir tu foto</div>';
   content += '<input id="ob-photo-input" type="file" accept="image/*" style="display:none;" />';
   content += '</div>';
@@ -787,7 +787,7 @@ function openPhotoEditorModal() {
   content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:6px;">Estilo del traje</div>';
   content += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
   ['#1a1a2e', '#0a3d62', '#2d2d2d', '#4a0e0e'].forEach(function(color, i) {
-    var names = ['Azul oscuro', 'Azul', 'Gris', 'BorgoÃ±a'];
+    var names = ['Azul oscuro', 'Azul', 'Gris', 'Borgoña'];
     content += '<div data-suit="' + color + '" class="ob-suit-opt" style="width:36px;height:36px;border-radius:50%;background:' + color + ';border:2px solid transparent;cursor:pointer;" title="' + names[i] + '"></div>';
   });
   content += '</div>';
@@ -796,7 +796,7 @@ function openPhotoEditorModal() {
 
   // Result
   content += '<div id="ob-photo-result" style="display:none;text-align:center;margin-top:14px;">';
-  content += '<p style="color:' + C.green + ';font-size:12px;">Â¡Foto generada!</p>';
+  content += '<p style="color:' + C.green + ';font-size:12px;">¡Foto generada!</p>';
   content += '</div>';
 
   content += '<button onclick="document.getElementById(\'ob-photo-modal\').remove()" style="width:100%;margin-top:14px;padding:10px;border:1px solid ' + C.border + ';border-radius:10px;background:transparent;color:' + C.textSub + ';font-size:12px;cursor:pointer;">Cerrar</button>';
@@ -841,7 +841,7 @@ function openPhotoEditorModal() {
           return;
         }
 
-        genBtn.textContent = 'â³ Generando con IA...';
+        genBtn.textContent = '⏳ Generando con IA...';
         genBtn.style.opacity = '0.7';
 
         // Get image as base64
@@ -865,8 +865,8 @@ function openPhotoEditorModal() {
             imgEl.src = resultSrc;
             document.getElementById('ob-photo-result').style.display = 'block';
             document.getElementById('ob-photo-options').style.display = 'none';
-            genBtn.textContent = 'â Â¡Foto lista!';
-            showToast('Â¡Tu foto profesional estÃ¡ lista!', 'success');
+            genBtn.textContent = '✅ ¡Foto lista!';
+            showToast('¡Tu foto profesional está lista!', 'success');
 
             // Save to profile if available
             if (typeof CU !== 'undefined' && CU && CU.username) {
@@ -876,8 +876,8 @@ function openPhotoEditorModal() {
             // Add download button
             var resultDiv = document.getElementById('ob-photo-result');
             if (resultDiv) {
-              resultDiv.innerHTML = '<p style="color:' + C.green + ';font-size:12px;margin-bottom:8px;">Â¡Foto profesional generada!</p>';
-              resultDiv.innerHTML += '<a href="' + resultSrc + '" download="mi-foto-profesional.jpg" style="display:inline-block;padding:8px 16px;background:' + C.accent + ';color:#000;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">ð¥ Descargar foto</a>';
+              resultDiv.innerHTML = '<p style="color:' + C.green + ';font-size:12px;margin-bottom:8px;">¡Foto profesional generada!</p>';
+              resultDiv.innerHTML += '<a href="' + resultSrc + '" download="mi-foto-profesional.jpg" style="display:inline-block;padding:8px 16px;background:' + C.accent + ';color:#000;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📥 Descargar foto</a>';
             }
           } else {
             genBtn.textContent = 'Generar foto profesional';
@@ -890,7 +890,7 @@ function openPhotoEditorModal() {
           genBtn.textContent = 'Generar foto profesional';
           genBtn.disabled = false;
           genBtn.style.opacity = '1';
-          showToast('Error de conexiÃ³n: ' + err.message, 'error');
+          showToast('Error de conexión: ' + err.message, 'error');
         });
       });
     }
@@ -898,19 +898,19 @@ function openPhotoEditorModal() {
 }
 
 function openFlyerGenerator() {
-  showToast('PrÃ³ximamente: Generador de flyers', 'info');
+  showToast('Próximamente: Generador de flyers', 'info');
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// 7. HOME TABS â IntegraciÃ³n en Inicio
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
+// 7. HOME TABS — Integración en Inicio
+// ══════════════════════════════════════════════════════════
 
 var TAB_CONFIG = [
-  { id: 'ruta', label: 'Mi Ruta', icon: 'ðºï¸', color: C.accent, render: renderOnboarding },
-  { id: 'progreso', label: 'Progreso', icon: 'ð', color: C.green, render: renderDashboard },
-  { id: 'logros', label: 'Logros', icon: 'ð', color: C.gold, render: renderAchievements },
-  { id: 'scripts', label: 'Scripts', icon: 'ð', color: '#E040FB', render: renderScriptBank }
+  { id: 'ruta', label: 'Mi Ruta', icon: '🗺️', color: C.accent, render: renderOnboarding },
+  { id: 'progreso', label: 'Progreso', icon: '📊', color: C.green, render: renderDashboard },
+  { id: 'logros', label: 'Logros', icon: '🏆', color: C.gold, render: renderAchievements },
+  { id: 'scripts', label: 'Scripts', icon: '📝', color: '#E040FB', render: renderScriptBank }
 ];
 
 // Global tab switch function
@@ -924,13 +924,13 @@ window.obSwitchTab = function(tabId) {
 function renderHomeTabs(homeEl) {
   if (!CU) return;
 
-  var rk = (typeof RANKS !== 'undefined') ? (RANKS[CU.rank] || RANKS[0]) : { icon: 'â­', name: 'Inicio' };
+  var rk = (typeof RANKS !== 'undefined') ? (RANKS[CU.rank] || RANKS[0]) : { icon: '⭐', name: 'Inicio' };
 
   var html = '';
 
-  // Welcome header â compact
+  // Welcome header — compact
   html += '<div style="margin-bottom:14px;">';
-  html += '<div style="font-family:Nunito,sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:2px;">Bienvenido, ' + CU.name.split(' ')[0] + ' ð</div>';
+  html += '<div style="font-family:Nunito,sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:2px;">Bienvenido, ' + CU.name.split(' ')[0] + ' 👋</div>';
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);">' + rk.icon + ' ' + rk.name + '</div>';
   html += '</div>';
 
@@ -982,9 +982,9 @@ function renderHomeTabs(homeEl) {
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// 8. NAVIGATION â obNavigate (legacy support)
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
+// 8. NAVIGATION — obNavigate (legacy support)
+// ══════════════════════════════════════════════════════════
 
 window.obNavigate = function(view) {
   // Map view names to tab IDs
@@ -1004,9 +1004,9 @@ window.obNavigate = function(view) {
 };
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 // 9. CSS STYLES & RESPONSIVE
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
 
 function injectStyles() {
   if (document.getElementById('ob-styles')) return;
@@ -1037,7 +1037,7 @@ function injectStyles() {
     '.ob-metrics-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }',
     '.ob-ach-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }',
 
-    // ââ RESPONSIVE: Mobile ââ
+    // ── RESPONSIVE: Mobile ──
     '@media (max-width:480px) {',
     '  #ob-coach-panel { width:calc(100% - 32px)!important; right:16px!important; bottom:76px!important; max-height:60vh!important; }',
     '  #ob-coach-btn { bottom:16px!important; right:16px!important; width:48px!important; height:48px!important; }',
@@ -1047,7 +1047,7 @@ function injectStyles() {
     '  .ob-tab-btn { padding:7px 10px!important; font-size:11px!important; }',
     '}',
 
-    // ââ Extra small screens ââ
+    // ── Extra small screens ──
     '@media (max-width:360px) {',
     '  .ob-metrics-grid { grid-template-columns:1fr 1fr; }',
     '  .ob-tab-btn { padding:6px 8px!important; font-size:10px!important; }',
@@ -1065,9 +1065,9 @@ function injectStyles() {
 }
 
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// 10. INIT â Patch renderHome + auto-check onboarding
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ══════════════════════════════════════════════════════════
+// 10. INIT — Patch renderHome + auto-check onboarding
+// ══════════════════════════════════════════════════════════
 
 function showToast(msg, type) {
   var existing = document.getElementById('ob-toast');
@@ -1137,14 +1137,14 @@ function obPostLogin() {
   // Check onboarding status (for banner/prompt)
   obApi('getProgress').then(function(data) {
     if (!data.progress || !data.progress.completed_at) {
-      // User hasn't completed onboarding â default to ruta tab
+      // User hasn't completed onboarding — default to ruta tab
       obState.currentTab = 'ruta';
     }
     obApi('checkAchievements').catch(function() {});
   }).catch(function() {});
 }
 
-// ââ Launch ââ
+// ── Launch ──
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', obInit);
 } else {
