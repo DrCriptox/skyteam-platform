@@ -11,3 +11,4 @@ Deploy trigger: photo editor V2 redesign
 Deploy trigger: tie hide + ultra-specific prompt v2
 Deploy trigger: tie hide + prompt v2
 Deploy: v2.1 tie-hide + photo prompt
+Webhook reset: git reconnected
