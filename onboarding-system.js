@@ -13,7 +13,7 @@ var CHAT_API = '/api/chat';
 
 // ── Colores del sistema ──
 var C = {
-  bg: '#030c1f', bgCard: 'rgba(255,255,255,0.04)', bgCardHover: 'rgba(255,255,255,0.08)',
+  bg: '#030c1f', bgCard: 'rgba(255,255,255,0.04)', bgCardHover: 'rgba(255,255,255,0.08)'h,
   accent: '#1CE8FF', gold: '#FFD700', green: '#00E676', red: '#FF5252',
   orange: '#FF9800', textMain: '#FFFFFF', textSub: 'rgba(255,255,255,0.5)',
   border: 'rgba(255,255,255,0.08)', glow: 'rgba(28,232,255,0.25)'
@@ -222,7 +222,7 @@ function renderOnboarding(container) {
     // Completed banner
     if (completedDays >= 7) {
       html += '<div style="text-align:center;padding:24px;background:linear-gradient(135deg,rgba(28,232,255,0.1),rgba(255,215,0,0.1));border:1px solid rgba(255,215,0,0.3);border-radius:14px;margin-top:12px;">';
-      html += '<div style="font-size:40px;margin-bottom:6px;">🎆‍</div>';
+      html += '<div style="font-size:40px;margin-bottom:6px;">🏆</div>';
       html += '<h3 style="font-size:16px;color:' + C.gold + ';margin:0 0 4px;">¡RUTA COMPLETADA!</h3>';
       html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Has completado los 7 días. ¡Ahora a crecer!</p>';
       html += '</div>';
@@ -818,18 +818,79 @@ function openPhotoEditorModal() {
     reader.readAsDataURL(file);
   });
 
-  // Generate handler
+  // Suit selection handler
+    var suitOpts = document.querySelectorAll('.ob-suit-opt');
+    var selectedSuit = '#1a1a2e'; // default navy
+    suitOpts.forEach(function(opt) {
+      opt.addEventListener('click', function() {
+        suitOpts.forEach(function(o) { o.style.borderColor = 'transparent'; });
+        opt.style.borderColor = C.accent;
+        selectedSuit = opt.getAttribute('data-suit');
+      });
+    });
+    // Select first by default
+    if (suitOpts[0]) suitOpts[0].style.borderColor = C.accent;
   setTimeout(function() {
     var genBtn = document.getElementById('ob-photo-gen');
     if (genBtn) {
       genBtn.addEventListener('click', function() {
-        genBtn.textContent = 'Generando...';
-        genBtn.disabled = true;
-        // TODO: Connect to AI photo generation API
-        setTimeout(function() {
-          genBtn.textContent = 'Próximamente';
-          showToast('La generación con IA estará disponible pronto', 'info');
-        }, 2000);
+        var imgEl = document.getElementById('ob-photo-img');
+        if (!imgEl || !imgEl.src) {
+          showToast('Primero sube tu foto', 'error');
+          return;
+        }
+
+        genBtn.textContent = '⏳ Generando con IA...';
+        genBtn.style.opacity = '0.7';
+
+        // Get image as base64
+        var canvas = document.createElement('canvas');
+        var img = imgEl;
+        canvas.width = Math.min(img.naturalWidth || 512, 1024);
+        canvas.height = Math.min(img.naturalHeight || 512, 1024);
+        var ctx2d = canvas.getContext('2d');
+        ctx2d.drawImage(img, 0, 0, canvas.width, canvas.height);
+        var base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+        fetch('/api/photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.success && (data.image_url || data.image_b64)) {
+            var resultSrc = data.image_url || ('data:image/jpeg;base64,' + data.image_b64);
+            imgEl.src = resultSrc;
+            document.getElementById('ob-photo-result').style.display = 'block';
+            document.getElementById('ob-photo-options').style.display = 'none';
+            genBtn.textContent = '✅ ¡Foto lista!';
+            showToast('¡Tu foto profesional está lista!', 'success');
+
+            // Save to profile if available
+            if (typeof CU !== 'undefined' && CU && CU.username) {
+              obApi('savePhoto', { photo_url: resultSrc }).catch(function() {});
+            }
+
+            // Add download button
+            var resultDiv = document.getElementById('ob-photo-result');
+            if (resultDiv) {
+              resultDiv.innerHTML = '<p style="color:' + C.green + ';font-size:12px;margin-bottom:8px;">¡Foto profesional generada!</p>';
+              resultDiv.innerHTML += '<a href="' + resultSrc + '" download="mi-foto-profesional.jpg" style="display:inline-block;padding:8px 16px;background:' + C.accent + ';color:#000;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📥 Descargar foto</a>';
+            }
+          } else {
+            genBtn.textContent = 'Generar foto profesional';
+            genBtn.disabled = false;
+            genBtn.style.opacity = '1';
+            showToast(data.error || 'Error al generar la foto. Intenta de nuevo.', 'error');
+          }
+        })
+        .catch(function(err) {
+          genBtn.textContent = 'Generar foto profesional';
+          genBtn.disabled = false;
+          genBtn.style.opacity = '1';
+          showToast('Error de conexión: ' + err.message, 'error');
+        });
       });
     }
   }, 100);
