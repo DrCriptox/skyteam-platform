@@ -762,36 +762,78 @@ function openPhotoEditorModal() {
   modal.id = 'ob-photo-modal';
   modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99998;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;animation:obFadeIn 0.3s;';
 
-  var content = '<div style="background:' + C.bg + ';border:1px solid ' + C.border + ';border-radius:18px;padding:20px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">';
+  var suitColors = [
+    { hex: '#1a1a2e', name: 'Azul marino' }, { hex: '#0a3d62', name: 'Azul royal' },
+    { hex: '#2d2d2d', name: 'Gris' }, { hex: '#4a0e0e', name: 'Borgoña' },
+    { hex: '#0d0d0d', name: 'Negro' }, { hex: '#1b4332', name: 'Verde oscuro' },
+    { hex: '#3d2b1f', name: 'Marrón' }, { hex: '#c4a35a', name: 'Beige dorado' }
+  ];
+  var shirtColors = [
+    { hex: '#FFFFFF', name: 'Blanca' }, { hex: '#D6EAF8', name: 'Azul claro' },
+    { hex: '#FADBD8', name: 'Rosa pálido' }, { hex: '#F9E79F', name: 'Amarillo suave' },
+    { hex: '#D5F5E3', name: 'Verde menta' }, { hex: '#E8DAEF', name: 'Lavanda' },
+    { hex: '#F0F0F0', name: 'Gris claro' }, { hex: '#1a1a2e', name: 'Negra' }
+  ];
 
-  content += '<div style="text-align:center;margin-bottom:16px;">';
-  content += '<div style="font-size:40px;margin-bottom:6px;">📸</div>';
-  content += '<h3 style="font-size:18px;font-weight:800;margin:0 0 4px;">Tu Imagen Profesional</h3>';
-  content += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Sube tu foto y generamos una versión profesional con IA</p>';
+  var content = '<div style="background:' + C.bg + ';border:1px solid ' + C.border + ';border-radius:18px;padding:20px;max-width:420px;width:92%;max-height:85vh;overflow-y:auto;">';
+  content += '<div style="text-align:center;margin-bottom:14px;">';
+  content += '<div style="font-size:36px;margin-bottom:4px;">📸</div>';
+  content += '<h3 style="font-size:17px;font-weight:800;margin:0 0 3px;">Tu Imagen Profesional</h3>';
+  content += '<p style="color:' + C.textSub + ';font-size:11px;margin:0;">Sube tu selfie y elige tu look ejecutivo</p>';
   content += '</div>';
 
-  // Upload area
-  content += '<div id="ob-photo-upload" style="border:2px dashed rgba(28,232,255,0.3);border-radius:14px;padding:30px;text-align:center;cursor:pointer;transition:all 0.3s;" onclick="document.getElementById(\'ob-photo-input\').click()">';
-  content += '<div style="font-size:36px;margin-bottom:8px;opacity:0.5;">📷</div>';
-  content += '<div style="color:' + C.textSub + ';font-size:12px;">Toca para subir tu foto</div>';
+  // Upload
+  content += '<div id="ob-photo-upload" style="border:2px dashed rgba(28,232,255,0.3);border-radius:14px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById(\'ob-photo-input\').click()">';
+  content += '<div style="font-size:32px;margin-bottom:6px;opacity:0.5;">📷</div>';
+  content += '<div style="color:' + C.textSub + ';font-size:11px;">Toca para subir tu selfie</div>';
   content += '<input id="ob-photo-input" type="file" accept="image/*" style="display:none;" />';
   content += '</div>';
 
-  // Preview (hidden)
-  content += '<div id="ob-photo-preview" style="display:none;text-align:center;margin-top:12px;">';
-  content += '<img id="ob-photo-img" style="max-width:100%;max-height:200px;border-radius:12px;border:1px solid ' + C.border + ';" />';
+  // Preview
+  content += '<div id="ob-photo-preview" style="display:none;text-align:center;margin-top:10px;">';
+  content += '<img id="ob-photo-img" style="max-width:100%;max-height:180px;border-radius:12px;border:1px solid ' + C.border + ';" />';
+  content += '<div style="margin-top:6px;"><a href="#" id="ob-photo-change" style="color:' + C.accent + ';font-size:11px;">Cambiar foto</a></div>';
   content += '</div>';
 
-  // Options (hidden)
-  content += '<div id="ob-photo-options" style="display:none;margin-top:14px;">';
-  content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:6px;">Estilo del traje</div>';
+  // Options
+  content += '<div id="ob-photo-options" style="display:none;margin-top:12px;">';
+
+  // Gender
+  content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Género</div>';
   content += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
-  ['#1a1a2e', '#0a3d62', '#2d2d2d', '#4a0e0e'].forEach(function(color, i) {
-    var names = ['Azul oscuro', 'Azul', 'Gris', 'Borgoña'];
-    content += '<div data-suit="' + color + '" class="ob-suit-opt" style="width:36px;height:36px;border-radius:50%;background:' + color + ';border:2px solid transparent;cursor:pointer;" title="' + names[i] + '"></div>';
+  content += '<button data-gender="male" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(28,232,255,0.1);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">👨 Hombre</button>';
+  content += '<button data-gender="female" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:11px;font-weight:700;cursor:pointer;">👩 Mujer</button>';
+  content += '</div>';
+
+  // Suit colors
+  content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Color del traje</div>';
+  content += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
+  suitColors.forEach(function(sc, i) {
+    var bd = i === 0 ? C.accent : 'transparent';
+    content += '<div data-suit="' + sc.hex + '" class="ob-suit-opt" style="width:34px;height:34px;border-radius:50%;background:' + sc.hex + ';border:2px solid ' + bd + ';cursor:pointer;" title="' + sc.name + '"></div>';
   });
   content += '</div>';
-  content += '<button id="ob-photo-gen" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,' + C.accent + ',' + C.green + ');color:#000;font-weight:700;font-size:13px;cursor:pointer;">Generar foto profesional</button>';
+
+  // Shirt colors
+  content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Color de camisa</div>';
+  content += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
+  shirtColors.forEach(function(sc, i) {
+    var bd = i === 0 ? C.accent : 'transparent';
+    var ring = (sc.hex === '#FFFFFF' || sc.hex === '#F0F0F0' || sc.hex === '#F9E79F' || sc.hex === '#D5F5E3' || sc.hex === '#FADBD8' || sc.hex === '#D6EAF8' || sc.hex === '#E8DAEF') ? 'box-shadow:inset 0 0 0 1px rgba(255,255,255,0.2);' : '';
+    content += '<div data-shirt="' + sc.hex + '" class="ob-shirt-opt" style="width:34px;height:34px;border-radius:50%;background:' + sc.hex + ';border:2px solid ' + bd + ';cursor:pointer;' + ring + '" title="' + sc.name + '"></div>';
+  });
+  content += '</div>';
+
+  // Tie
+  content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Corbata</div>';
+  content += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
+  content += '<button data-tie="yes" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(28,232,255,0.1);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Con corbata</button>';
+  content += '<button data-tie="no" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:11px;font-weight:700;cursor:pointer;">Sin corbata</button>';
+  content += '</div>';
+
+  // Generate
+  content += '<button id="ob-photo-gen" style="width:100%;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,' + C.accent + ',' + C.green + ');color:#000;font-weight:700;font-size:13px;cursor:pointer;">📸 Generar foto profesional</button>';
+  content += '<p style="color:' + C.textSub + ';font-size:10px;text-align:center;margin:6px 0 0;">~$0.04 por foto · Tu cara no se modifica</p>';
   content += '</div>';
 
   // Result
@@ -799,13 +841,19 @@ function openPhotoEditorModal() {
   content += '<p style="color:' + C.green + ';font-size:12px;">¡Foto generada!</p>';
   content += '</div>';
 
-  content += '<button onclick="document.getElementById(\'ob-photo-modal\').remove()" style="width:100%;margin-top:14px;padding:10px;border:1px solid ' + C.border + ';border-radius:10px;background:transparent;color:' + C.textSub + ';font-size:12px;cursor:pointer;">Cerrar</button>';
+  content += '<button onclick="document.getElementById(\'ob-photo-modal\').remove()" style="width:100%;margin-top:12px;padding:9px;border:1px solid ' + C.border + ';border-radius:10px;background:transparent;color:' + C.textSub + ';font-size:11px;cursor:pointer;">Cerrar</button>';
   content += '</div>';
 
   modal.innerHTML = content;
   document.body.appendChild(modal);
 
-  // File input handler
+  // ── State ──
+  var selectedGender = 'male';
+  var selectedSuit = '#1a1a2e';
+  var selectedShirt = '#FFFFFF';
+  var selectedTie = 'yes';
+
+  // File input
   document.getElementById('ob-photo-input').addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
@@ -819,32 +867,52 @@ function openPhotoEditorModal() {
     reader.readAsDataURL(file);
   });
 
-  // Suit selection handler
-    var suitOpts = document.querySelectorAll('.ob-suit-opt');
-    var selectedSuit = '#1a1a2e'; // default navy
-    suitOpts.forEach(function(opt) {
-      opt.addEventListener('click', function() {
-        suitOpts.forEach(function(o) { o.style.borderColor = 'transparent'; });
-        opt.style.borderColor = C.accent;
-        selectedSuit = opt.getAttribute('data-suit');
+  // Change photo
+  var changeLink = document.getElementById('ob-photo-change');
+  if (changeLink) changeLink.addEventListener('click', function(e) { e.preventDefault(); document.getElementById('ob-photo-input').click(); });
+
+  // Toggle helper
+  function setupToggle(selector, stateKey, activeColor) {
+    document.querySelectorAll(selector).forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var val = btn.getAttribute('data-' + stateKey);
+        if (stateKey === 'gender') selectedGender = val;
+        else if (stateKey === 'tie') selectedTie = val;
+        document.querySelectorAll(selector).forEach(function(b) {
+          b.style.borderColor = 'transparent'; b.style.background = 'rgba(255,255,255,0.04)'; b.style.color = C.textSub;
+        });
+        btn.style.borderColor = C.accent; btn.style.background = 'rgba(28,232,255,0.1)'; btn.style.color = '#fff';
       });
     });
-    // Select first by default
-    if (suitOpts[0]) suitOpts[0].style.borderColor = C.accent;
+  }
+  setupToggle('.ob-gender-opt', 'gender');
+  setupToggle('.ob-tie-opt', 'tie');
+
+  // Color circle helper
+  function setupCircles(selector, onSelect) {
+    document.querySelectorAll(selector).forEach(function(opt) {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll(selector).forEach(function(o) { o.style.borderColor = 'transparent'; });
+        opt.style.borderColor = C.accent;
+        onSelect(opt);
+      });
+    });
+  }
+  setupCircles('.ob-suit-opt', function(o) { selectedSuit = o.getAttribute('data-suit'); });
+  setupCircles('.ob-shirt-opt', function(o) { selectedShirt = o.getAttribute('data-shirt'); });
+
+  // Generate button
   setTimeout(function() {
     var genBtn = document.getElementById('ob-photo-gen');
     if (genBtn) {
       genBtn.addEventListener('click', function() {
         var imgEl = document.getElementById('ob-photo-img');
-        if (!imgEl || !imgEl.src) {
-          showToast('Primero sube tu foto', 'error');
-          return;
-        }
+        if (!imgEl || !imgEl.src) { showToast('Primero sube tu foto', 'error'); return; }
 
-        genBtn.textContent = '⏳ Generando con IA...';
+        genBtn.textContent = '⌛ Generando con IA... (30-60 seg)';
         genBtn.style.opacity = '0.7';
+        genBtn.disabled = true;
 
-        // Get image as base64
         var canvas = document.createElement('canvas');
         var img = imgEl;
         canvas.width = Math.min(img.naturalWidth || 512, 1024);
@@ -856,7 +924,7 @@ function openPhotoEditorModal() {
         fetch('/api/photo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit })
+          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit, shirt_color: selectedShirt, tie_option: selectedTie, gender: selectedGender })
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -867,27 +935,24 @@ function openPhotoEditorModal() {
             document.getElementById('ob-photo-options').style.display = 'none';
             genBtn.textContent = '✅ ¡Foto lista!';
             showToast('¡Tu foto profesional está lista!', 'success');
-
-            // Save to profile if available
             if (typeof CU !== 'undefined' && CU && CU.username) {
               obApi('savePhoto', { photo_url: resultSrc }).catch(function() {});
             }
-
-            // Add download button
             var resultDiv = document.getElementById('ob-photo-result');
             if (resultDiv) {
               resultDiv.innerHTML = '<p style="color:' + C.green + ';font-size:12px;margin-bottom:8px;">¡Foto profesional generada!</p>';
               resultDiv.innerHTML += '<a href="' + resultSrc + '" download="mi-foto-profesional.jpg" style="display:inline-block;padding:8px 16px;background:' + C.accent + ';color:#000;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📥 Descargar foto</a>';
+              resultDiv.innerHTML += '<div style="margin-top:8px;"><button onclick="document.getElementById(\'ob-photo-result\').style.display=\'none\';document.getElementById(\'ob-photo-options\').style.display=\'block\';document.getElementById(\'ob-photo-gen\').textContent=\'📸 Generar otra versión\';document.getElementById(\'ob-photo-gen\').disabled=false;document.getElementById(\'ob-photo-gen\').style.opacity=\'1\';" style="padding:6px 14px;border:1px solid ' + C.border + ';border-radius:8px;background:transparent;color:' + C.accent + ';font-size:11px;cursor:pointer;">🔄 Probar otro estilo</button></div>';
             }
           } else {
-            genBtn.textContent = 'Generar foto profesional';
+            genBtn.textContent = '📸 Generar foto profesional';
             genBtn.disabled = false;
             genBtn.style.opacity = '1';
             showToast(data.error || 'Error al generar la foto. Intenta de nuevo.', 'error');
           }
         })
         .catch(function(err) {
-          genBtn.textContent = 'Generar foto profesional';
+          genBtn.textContent = '📸 Generar foto profesional';
           genBtn.disabled = false;
           genBtn.style.opacity = '1';
           showToast('Error de conexión: ' + err.message, 'error');
@@ -896,7 +961,6 @@ function openPhotoEditorModal() {
     }
   }, 100);
 }
-
 function openFlyerGenerator() {
   showToast('Próximamente: Generador de flyers', 'info');
 }
