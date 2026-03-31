@@ -432,7 +432,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
         {
           type: 'image_generation',
           quality: 'high',
-          input_image_fidelity: 'high',
+          input_fidelity: 'high',
           size: '1024x1024'
         }
       ]
