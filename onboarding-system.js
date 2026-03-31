@@ -835,7 +835,7 @@ function openPhotoEditorModal() {
 
   // Generate
   content += '<button id="ob-photo-gen" style="width:100%;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,' + C.accent + ',' + C.green + ');color:#000;font-weight:700;font-size:13px;cursor:pointer;">📸 Generar foto profesional</button>';
-  content += '<p style="color:' + C.textSub + ';font-size:10px;text-align:center;margin:6px 0 0;">~$0.04 por foto · Tu cara no se modifica</p>';
+  content += '<p style="color:' + C.textSub + ';font-size:10px;text-align:center;margin:6px 0 0;">(En un estudio fotográfico, una imagen profesional cuesta más de $20)</p>';
   content += '</div>';
 
   // Result
@@ -925,6 +925,11 @@ function openPhotoEditorModal() {
         var imgEl = document.getElementById('ob-photo-img');
         if (!imgEl || !imgEl.src) { showToast('Primero sube tu foto', 'error'); return; }
 
+        // Límite de 3 fotos por usuario
+        var photoKey = 'skyteam_photo_count_' + (typeof CU !== 'undefined' && CU ? CU.username : 'guest');
+        var photoCount = parseInt(localStorage.getItem(photoKey) || '0', 10);
+        if (photoCount >= 3) { showToast('Ya usaste tus 3 generaciones disponibles', 'error'); return; }
+
         genBtn.textContent = '⌛ Generando con IA... (30-60 seg)';
         genBtn.style.opacity = '0.7';
         genBtn.disabled = true;
@@ -950,6 +955,8 @@ function openPhotoEditorModal() {
             document.getElementById('ob-photo-result').style.display = 'block';
             document.getElementById('ob-photo-options').style.display = 'none';
             genBtn.textContent = '✅ ¡Foto lista!';
+            var pk = 'skyteam_photo_count_' + (typeof CU !== 'undefined' && CU ? CU.username : 'guest');
+            localStorage.setItem(pk, (parseInt(localStorage.getItem(pk) || '0', 10) + 1).toString());
             showToast('¡Tu foto profesional está lista!', 'success');
             if (typeof CU !== 'undefined' && CU && CU.username) {
               obApi('savePhoto', { photo_url: resultSrc }).catch(function() {});
