@@ -13,7 +13,7 @@ var CHAT_API = '/api/chat';
 
 // ── Colores del sistema ──
 var C = {
-  bg: '#030c1f', bgCard: 'rgba(255,255,255,0.04)', bgCardHover: 'rgba(255,255,255,0.08)'h,
+  bg: '#030c1f', bgCard: 'rgba(255,255,255,0.04)', bgCardHover: 'rgba(255,255,255,0.08)',
   accent: '#1CE8FF', gold: '#FFD700', green: '#00E676', red: '#FF5252',
   orange: '#FF9800', textMain: '#FFFFFF', textSub: 'rgba(255,255,255,0.5)',
   border: 'rgba(255,255,255,0.08)', glow: 'rgba(28,232,255,0.25)'
