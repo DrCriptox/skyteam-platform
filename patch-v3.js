@@ -602,7 +602,7 @@ function renderAntifraudeCardMini(r) {
   var _redirectHTML = '<div style="text-align:center;padding:60px 20px;">' +
     '<div style="font-size:40px;margin-bottom:12px;">\uD83C\uDFC6</div>' +
     '<h3 style="font-size:16px;color:rgba(255,255,255,0.6);margin:0 0 8px;">Ranking del Equipo</h3>' +
-    '<p style="font-size:13px;color:rgba(255,255,255,0.35);max-width:300px;margin:0 auto;">El ranking ahora esta disponible en la seccion <b style="color:#1CE8FF;">Mi Agenda</b>.</p>' +
+    '<p style="font-size:13px;color:rgba(255,255,255,0.35);max-width:300px;margin:0 auto;">El ranking ahora está disponible en la sección <b style="color:#1CE8FF;">Mi Agenda</b>.</p>' +
     '<button onclick="navigate(\'agenda\');setTimeout(function(){switchAgendaTab(\'ranking\');},200);" style="margin-top:16px;padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">Ir a Ranking</button>' +
     '</div>';
 
