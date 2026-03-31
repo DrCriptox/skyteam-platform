@@ -626,6 +626,7 @@ function renderAntifraudeCardMini(r) {
   var _origNavigate = typeof navigate === "function" ? navigate : null;
   if (!_origNavigate) return;
   navigate = function(section) {
+    document.querySelectorAll(".section").forEach(function(s){s.style.display="";s.style.height="";});
     _origNavigate(section);
     if (section === "skysales" || section === "agente") {
       var el = document.getElementById("section-" + section);
