@@ -825,10 +825,12 @@ function openPhotoEditorModal() {
   content += '</div>';
 
   // Tie
+  content += '<div id="ob-tie-section">';
   content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Corbata</div>';
   content += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
   content += '<button data-tie="yes" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(28,232,255,0.1);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Con corbata</button>';
   content += '<button data-tie="no" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:11px;font-weight:700;cursor:pointer;">Sin corbata</button>';
+  content += '</div>';
   content += '</div>';
 
   // Generate
@@ -887,6 +889,20 @@ function openPhotoEditorModal() {
   }
   setupToggle('.ob-gender-opt', 'gender');
   setupToggle('.ob-tie-opt', 'tie');
+
+  // Hide tie section when female is selected
+  document.querySelectorAll('.ob-gender-opt').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var g = btn.getAttribute('data-gender');
+      var tieSection = document.getElementById('ob-tie-section');
+      if (g === 'female') {
+        if (tieSection) tieSection.style.display = 'none';
+        selectedTie = 'no';
+      } else {
+        if (tieSection) tieSection.style.display = 'block';
+      }
+    });
+  });
 
   // Color circle helper
   function setupCircles(selector, onSelect) {
