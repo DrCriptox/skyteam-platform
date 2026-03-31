@@ -4,13 +4,16 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
 // ── PHOTO GENERATION (merged from photo.js) ──
-const SUIT_PROMPTS = {
-  '#1a1a2e': 'dark navy blue formal business suit with white dress shirt and dark tie',
-  '#0a3d62': 'royal blue professional business suit with light blue dress shirt',
-  '#2d2d2d': 'charcoal gray formal business suit with white dress shirt and silver tie',
-  '#4a0e0e': 'deep burgundy/wine colored formal business suit with white dress shirt'
+const SUIT_COLORS = {
+  '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
+  '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
+  '#3d2b1f': 'dark brown chocolate', '#c4a35a': 'beige golden tan'
 };
-const DEFAULT_SUIT = 'dark navy blue formal business suit with white dress shirt and dark tie';
+const SHIRT_COLORS = {
+  '#FFFFFF': 'white', '#D6EAF8': 'light blue', '#FADBD8': 'pale pink',
+  '#F9E79F': 'soft yellow', '#D5F5E3': 'mint green', '#E8DAEF': 'lavender',
+  '#F0F0F0': 'light gray', '#1a1a2e': 'black'
+};
 
 
 async function sb(path, opts = {}) {
@@ -312,9 +315,9 @@ export default async function handler(req, res) {
 
   try {
     // Route photo generation requests (from /api/photo rewrite)
-  const { image_base64, suit_color } = req.body || {};
+  const { image_base64, suit_color, shirt_color, tie_option, gender } = req.body || {};
   if (image_base64) {
-    return handlePhotoGeneration(req, res, image_base64, suit_color);
+    return handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender);
   }
 
   const { action, username } = req.body || {};
@@ -393,19 +396,29 @@ export default async function handler(req, res) {
 }
 
 // ── Photo Generation Handler ──
-async function handlePhotoGeneration(req, res, image_base64, suit_color) {
+async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
   try {
     const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, '');
-    const suitDesc = SUIT_PROMPTS[suit_color] || DEFAULT_SUIT;
-    const prompt = 'Transform this person photo into a professional corporate headshot. ' +
-      'The person should be wearing a ' + suitDesc + '. ' +
-      'Keep the person EXACT face, features, skin tone, and hair unchanged. ' +
-      'Professional studio lighting, clean solid light gray background. ' +
-      'Upper body portrait, slight smile, confident professional look. ' +
-      'High quality, photorealistic, suitable for LinkedIn or corporate website.';
+    const suitName = SUIT_COLORS[suit_color] || 'dark navy blue';
+    const shirtName = SHIRT_COLORS[shirt_color] || 'white';
+    const isFemale = gender === 'female';
+    const wantsTie = tie_option === 'yes' && !isFemale;
+    let clothingDesc;
+    if (isFemale) {
+      clothingDesc = 'a ' + suitName + ' professional executive blazer with a ' + shirtName + ' blouse underneath, elegant and corporate style';
+    } else {
+      clothingDesc = 'a ' + suitName + ' formal business suit jacket with a ' + shirtName + ' dress shirt' + (wantsTie ? ' and a matching tie' : ', open collar without tie');
+    }
+    const prompt = 'CRITICAL INSTRUCTION: DO NOT modify, alter, reshape, or change the person\'s face in ANY way whatsoever. ' +
+      'The face, eyes, nose, mouth, ears, jawline, facial structure, skin tone, skin texture, freckles, wrinkles, facial hair, eyebrows, and hairstyle must remain EXACTLY identical to the original photo. ' +
+      'ONLY change the clothing: replace the current clothing with ' + clothingDesc + '. ' +
+      'The clothing must fit naturally matching the person\'s shoulder width and body proportions from the original photo. ' +
+      'Professional studio lighting, clean solid light gray gradient background. ' +
+      'Upper body corporate portrait, photorealistic, high quality, suitable for LinkedIn or business website. ' +
+      'DO NOT change the face. DO NOT change the hair. DO NOT change skin tone. ONLY change the outfit.';
     const imageBuffer = Buffer.from(base64Data, 'base64');
     const boundary = '----FormBoundary' + Date.now().toString(16);
     const parts = [];
