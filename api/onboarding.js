@@ -3,7 +3,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
-// ── PHOTO GENERATION (merged from photo.js) ──
+// ── PHOTO GENERATION V2: Face-protection mask + high quality ──
+const zlib = require('zlib');
 const SUIT_COLORS = {
   '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
   '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
@@ -15,6 +16,32 @@ const SHIRT_COLORS = {
   '#F0F0F0': 'light gray', '#1a1a2e': 'black'
 };
 
+// ── Minimal PNG encoder for face mask (no external deps) ──
+function _crc32(buf) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) { c ^= buf[i]; for (let j = 0; j < 8; j++) c = (c >>> 1) ^ (c & 1 ? 0xEDB88320 : 0); }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function _pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
+  const t = Buffer.from(type, 'ascii');
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(_crc32(Buffer.concat([t, data])), 0);
+  return Buffer.concat([len, t, data, crc]);
+}
+function createFaceMask(w, h, faceRatio, gradRatio) {
+  w = w || 1024; h = h || 1024; faceRatio = faceRatio || 0.35; gradRatio = gradRatio || 0.12;
+  var fEnd = Math.floor(h * faceRatio), gEnd = Math.floor(h * (faceRatio + gradRatio));
+  var rowB = w * 4 + 1, raw = Buffer.alloc(rowB * h);
+  for (var y = 0; y < h; y++) {
+    var rs = y * rowB; raw[rs] = 0;
+    var a = y < fEnd ? 255 : y < gEnd ? Math.round(255 * (1 - (y - fEnd) / (gEnd - fEnd))) : 0;
+    for (var x = 0; x < w; x++) { var i = rs + 1 + x * 4; raw[i] = 255; raw[i+1] = 255; raw[i+2] = 255; raw[i+3] = a; }
+  }
+  var comp = zlib.deflateSync(raw, { level: 9 });
+  var sig = Buffer.from([137,80,78,71,13,10,26,10]);
+  var ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w,0); ihdr.writeUInt32BE(h,4); ihdr[8]=8; ihdr[9]=6;
+  return Buffer.concat([sig, _pngChunk('IHDR', ihdr), _pngChunk('IDAT', comp), _pngChunk('IEND', Buffer.alloc(0))]);
+}
 
 async function sb(path, opts = {}) {
   const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: SB_HEADERS, ...opts });
@@ -28,7 +55,6 @@ async function handleSetup(req, res) {
   const { adminKey } = req.body || {};
   if (adminKey !== process.env.ADMIN_PUSH_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-  // Create tables via Supabase SQL API
   const sqlStatements = [
     `CREATE TABLE IF NOT EXISTS onboarding_progress (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -107,12 +133,10 @@ async function completeTask(username, taskId) {
   if (!progress) progress = await initProgress(username);
 
   const tasks = progress.tasks || {};
-  if (tasks[taskId]) return { progress, alreadyDone: true }; // Already completed
+  if (tasks[taskId]) return { progress, alreadyDone: true };
 
   tasks[taskId] = new Date().toISOString();
 
-  // Calculate current day based on completed tasks
-  // Day 5 = Launch Day (moved from day 6 per Yonfer's request)
   const dayTasks = {
     1: ['day1_photo', 'day1_profile', 'day1_landing'],
     2: ['day2_tour', 'day2_pwa', 'day2_push'],
@@ -182,7 +206,6 @@ async function getAchievements(username) {
 async function unlockAchievement(username, achievementId) {
   if (!ACHIEVEMENT_DEFS[achievementId]) return { error: 'Unknown achievement' };
 
-  // Check if already unlocked
   const existing = await sb('achievements?username=eq.' + encodeURIComponent(username) + '&achievement_id=eq.' + encodeURIComponent(achievementId) + '&limit=1');
   if (existing && existing.length > 0) return { alreadyUnlocked: true };
 
@@ -199,7 +222,6 @@ async function unlockAchievement(username, achievementId) {
 async function checkAutoAchievements(username) {
   const newAchievements = [];
 
-  // Check prospect count
   try {
     const prospects = await sb('prospectos?username=eq.' + encodeURIComponent(username) + '&select=id');
     if (prospects) {
@@ -213,28 +235,24 @@ async function checkAutoAchievements(username) {
       }
     }
 
-    // Check hot pipeline (temp >= 70)
     const hot = await sb('prospectos?username=eq.' + encodeURIComponent(username) + '&temperatura=gte.70&etapa=not.in.(cerrado_ganado,cerrado_perdido)&select=id');
     if (hot && hot.length >= 5) {
       const r = await unlockAchievement(username, 'hot_pipeline');
       if (r.unlocked) newAchievements.push(r.achievement);
     }
 
-    // Check first close
     const closes = await sb('prospectos?username=eq.' + encodeURIComponent(username) + '&etapa=eq.cerrado_ganado&select=id&limit=1');
     if (closes && closes.length > 0) {
       const r = await unlockAchievement(username, 'first_close');
       if (r.unlocked) newAchievements.push(r.achievement);
     }
 
-    // Check first meeting (booking)
     const bookings = await sb('bookings?username=eq.' + encodeURIComponent(username) + '&select=id&limit=1');
     if (bookings && bookings.length > 0) {
       const r = await unlockAchievement(username, 'first_meeting');
       if (r.unlocked) newAchievements.push(r.achievement);
     }
 
-    // Check interactions (first message)
     const interactions = await sb('interacciones?username=eq.' + encodeURIComponent(username) + '&select=id&limit=1');
     if (interactions && interactions.length > 0) {
       const r = await unlockAchievement(username, 'first_message');
@@ -323,13 +341,10 @@ export default async function handler(req, res) {
   const { action, username } = req.body || {};
     if (!action) return res.status(400).json({ error: 'Missing action' });
 
-    // Setup (admin only)
     if (action === 'setup') return handleSetup(req, res);
 
-    // All other actions require username
     if (!username) return res.status(400).json({ error: 'Missing username' });
 
-    // Onboarding
     if (action === 'getProgress') {
       const progress = await getProgress(username);
       if (!progress) {
@@ -352,7 +367,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, progress: result });
     }
 
-    // Achievements
     if (action === 'getAchievements') {
       const achs = await getAchievements(username);
       const defs = ACHIEVEMENT_DEFS;
@@ -371,19 +385,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ newAchievements: newOnes });
     }
 
-    // Dashboard
     if (action === 'getDashboard') {
       const data = await getDashboardData(username);
       return res.status(200).json(data);
     }
 
-    // Coach context
     if (action === 'getCoachContext') {
       const ctx = await getCoachContext(username);
       return res.status(200).json(ctx);
     }
 
-    // Scripts
     if (action === 'getScripts') {
       const scripts = await getScripts();
       return res.status(200).json({ scripts });
@@ -395,7 +406,7 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler ──
+// ── Photo Generation Handler V2: Face mask + high quality + minimal prompt ──
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
@@ -407,38 +418,44 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     const isFemale = gender === 'female';
     const wantsTie = tie_option === 'yes' && !isFemale;
 
+    // V2: Shorter clothing descriptions
     let clothingDesc;
     if (isFemale) {
-      clothingDesc = 'a tailored ' + suitName + ' women\'s executive blazer, closed with one button at the waist, with visible lapels and padded shoulders. Underneath the blazer, a ' + shirtName + ' silk blouse with a small V-neckline, neatly tucked. No tie. No necklace. No accessories on the neck area.';
+      clothingDesc = suitName + ' women\'s executive blazer with ' + shirtName + ' blouse, V-neckline, no accessories';
     } else if (wantsTie) {
-      clothingDesc = 'a tailored ' + suitName + ' men\'s suit jacket with notch lapels, closed with two buttons. Underneath, a crisp ' + shirtName + ' dress shirt with a stiff spread collar, fully buttoned up to the neck. A solid dark ' + suitName + ' necktie, knotted in a neat Windsor knot, centered between the collar points.';
+      clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt buttoned to neck, ' + suitName + ' tie in Windsor knot';
     } else {
-      clothingDesc = 'a tailored ' + suitName + ' men\'s suit jacket with notch lapels, closed with two buttons. Underneath, a crisp ' + shirtName + ' dress shirt with the top button open, showing a relaxed open collar. No tie. No accessories on the neck area.';
+      clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    const prompt = 'You are a clothing replacement tool. Your ONLY job is to change the outfit on this person from the NECK DOWN. ' +
-      'ABSOLUTE RULE: The face, head, hair, ears, forehead, eyebrows, eyes, nose, mouth, chin, jawline, cheeks, skin tone, skin texture, facial hair, and expression must remain PIXEL-PERFECT IDENTICAL to the input photo. Do NOT regenerate, smooth, reshape, relight, or alter the face in any way. Copy the face exactly as-is from the original. ' +
-      'CLOTHING TO APPLY (from neck down only): ' + clothingDesc + ' ' +
-      'The clothing must match the person\'s exact shoulder width and body proportions visible in the original photo. ' +
-      'BACKGROUND: Clean solid light gray studio gradient, softly lit. ' +
-      'FRAMING: Upper body corporate portrait, cropped from mid-chest up. ' +
-      'LIGHTING: Soft professional studio lighting on the clothing and background only. Do NOT change the lighting on the face. ' +
-      'OUTPUT: Photorealistic, high resolution, suitable for LinkedIn profile photo.';
+    // V2: Minimal prompt — does NOT mention face (mentioning it causes the model to alter it)
+    const prompt = 'Replace the clothing from the neck down with: ' + clothingDesc + '. ' +
+      'Clean solid light gray studio background. Upper body corporate portrait, photorealistic.';
 
     const imageBuffer = Buffer.from(base64Data, 'base64');
+
+    // V2: Generate face-protection mask (top 35% protected, 12% gradient, bottom 53% editable)
+    const maskBuffer = createFaceMask(1024, 1024, 0.35, 0.12);
+
+    // Build multipart form-data with mask
     const boundary = '----FormBoundary' + Date.now().toString(16);
-    const parts = [];
-    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="model"\r\n\r\ngpt-image-1');
-    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n' + prompt);
-    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="size"\r\n\r\n1024x1024');
-    parts.push('--' + boundary + '\r\nContent-Disposition: form-data; name="quality"\r\n\r\nlow');
-    const fileHeader = '--' + boundary + '\r\nContent-Disposition: form-data; name="image"; filename="photo.png"\r\nContent-Type: image/png\r\n\r\n';
-    const fileFooter = '\r\n--' + boundary + '--\r\n';
-    const textParts = parts.join('\r\n') + '\r\n';
-    const textBuffer = Buffer.from(textParts, 'utf-8');
-    const headerBuffer = Buffer.from(fileHeader, 'utf-8');
-    const footerBuffer = Buffer.from(fileFooter, 'utf-8');
-    const body = Buffer.concat([textBuffer, headerBuffer, imageBuffer, footerBuffer]);
+
+    function tp(name, value) {
+      return '--' + boundary + '\r\nContent-Disposition: form-data; name="' + name + '"\r\n\r\n' + value;
+    }
+    function fp(name, filename, buf) {
+      var h = '--' + boundary + '\r\nContent-Disposition: form-data; name="' + name + '"; filename="' + filename + '"\r\nContent-Type: image/png\r\n\r\n';
+      return Buffer.concat([Buffer.from(h, 'utf-8'), buf, Buffer.from('\r\n', 'utf-8')]);
+    }
+
+    var textParts = [tp('model', 'gpt-image-1'), tp('prompt', prompt), tp('size', '1024x1024'), tp('quality', 'high')].join('\r\n') + '\r\n';
+    var body = Buffer.concat([
+      Buffer.from(textParts, 'utf-8'),
+      fp('image', 'photo.png', imageBuffer),
+      fp('mask', 'mask.png', maskBuffer),
+      Buffer.from('--' + boundary + '--\r\n', 'utf-8')
+    ]);
+
     const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + OPENAI_KEY, 'Content-Type': 'multipart/form-data; boundary=' + boundary },
@@ -454,6 +471,4 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     return res.status(500).json({ success: false, error: 'Error generating photo', details: error.message });
   }
 }
-
-
 
