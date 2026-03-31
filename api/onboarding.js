@@ -3,45 +3,21 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
-// ── PHOTO GENERATION V2: Face-protection mask + high quality ──
-const zlib = require('zlib');
+// ── PHOTO GENERATION V3: sharp composite — face pixels are NEVER modified by AI ──
+const sharp = require('sharp');
+
 const SUIT_COLORS = {
-  '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
-  '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
+  '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue',
+  '#2d2d2d': 'charcoal gray', '#4a0e0e': 'deep burgundy wine',
+  '#0d0d0d': 'black', '#1b4332': 'dark forest green',
   '#3d2b1f': 'dark brown chocolate', '#c4a35a': 'beige golden tan'
 };
 const SHIRT_COLORS = {
-  '#FFFFFF': 'white', '#D6EAF8': 'light blue', '#FADBD8': 'pale pink',
-  '#F9E79F': 'soft yellow', '#D5F5E3': 'mint green', '#E8DAEF': 'lavender',
+  '#FFFFFF': 'white', '#D6EAF8': 'light blue',
+  '#FADBD8': 'pale pink', '#F9E79F': 'soft yellow',
+  '#D5F5E3': 'mint green', '#E8DAEF': 'lavender',
   '#F0F0F0': 'light gray', '#1a1a2e': 'black'
 };
-
-// ── Minimal PNG encoder for face mask (no external deps) ──
-function _crc32(buf) {
-  let c = 0xFFFFFFFF;
-  for (let i = 0; i < buf.length; i++) { c ^= buf[i]; for (let j = 0; j < 8; j++) c = (c >>> 1) ^ (c & 1 ? 0xEDB88320 : 0); }
-  return (c ^ 0xFFFFFFFF) >>> 0;
-}
-function _pngChunk(type, data) {
-  const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
-  const t = Buffer.from(type, 'ascii');
-  const crc = Buffer.alloc(4); crc.writeUInt32BE(_crc32(Buffer.concat([t, data])), 0);
-  return Buffer.concat([len, t, data, crc]);
-}
-function createFaceMask(w, h, faceRatio, gradRatio) {
-  w = w || 1024; h = h || 1024; faceRatio = faceRatio || 0.35; gradRatio = gradRatio || 0.12;
-  var fEnd = Math.floor(h * faceRatio), gEnd = Math.floor(h * (faceRatio + gradRatio));
-  var rowB = w * 4 + 1, raw = Buffer.alloc(rowB * h);
-  for (var y = 0; y < h; y++) {
-    var rs = y * rowB; raw[rs] = 0;
-    var a = y < fEnd ? 255 : y < gEnd ? Math.round(255 * (1 - (y - fEnd) / (gEnd - fEnd))) : 0;
-    for (var x = 0; x < w; x++) { var i = rs + 1 + x * 4; raw[i] = 255; raw[i+1] = 255; raw[i+2] = 255; raw[i+3] = a; }
-  }
-  var comp = zlib.deflateSync(raw, { level: 9 });
-  var sig = Buffer.from([137,80,78,71,13,10,26,10]);
-  var ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w,0); ihdr.writeUInt32BE(h,4); ihdr[8]=8; ihdr[9]=6;
-  return Buffer.concat([sig, _pngChunk('IHDR', ihdr), _pngChunk('IDAT', comp), _pngChunk('IEND', Buffer.alloc(0))]);
-}
 
 async function sb(path, opts = {}) {
   const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: SB_HEADERS, ...opts });
@@ -216,65 +192,127 @@ export default async function handler(req, res) {
   } catch (error) { return res.status(500).json({ error: error.message }); }
 }
 
-// ── Detect image dimensions from raw buffer (PNG or JPEG) ──
-function getImageDimensions(buf) {
-  if (buf[0] === 137 && buf[1] === 80 && buf[2] === 78 && buf[3] === 71) {
-    return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
-  }
-  if (buf[0] === 0xFF && buf[1] === 0xD8) {
-    var i = 2;
-    while (i < buf.length - 9) {
-      if (buf[i] !== 0xFF) { i++; continue; }
-      var marker = buf[i + 1];
-      if (marker === 0xC0 || marker === 0xC1 || marker === 0xC2) {
-        return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) };
-      }
-      var segLen = buf.readUInt16BE(i + 2);
-      i += 2 + segLen;
-    }
-  }
-  return null;
-}
-
-// ── Photo Generation V2: Face mask + quality high + minimal prompt ──
+// ── PHOTO GENERATION V3: Face is MECHANICALLY preserved, NEVER processed by AI ──
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender) {
-  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+  var OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+
   try {
-    const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, '');
-    const suitName = SUIT_COLORS[suit_color] || 'dark navy blue';
-    const shirtName = SHIRT_COLORS[shirt_color] || 'white';
-    const isFemale = gender === 'female';
-    const wantsTie = tie_option === 'yes' && !isFemale;
-    let clothingDesc;
-    if (isFemale) clothingDesc = suitName + ' women\'s executive blazer with ' + shirtName + ' blouse, V-neckline, no accessories';
-    else if (wantsTie) clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt buttoned to neck, ' + suitName + ' tie in Windsor knot';
-    else clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt with open collar, no tie';
-    const prompt = 'Replace the clothing from the neck down with: ' + clothingDesc + '. Clean solid light gray studio background. Upper body corporate portrait, photorealistic.';
-    const imageBuffer = Buffer.from(base64Data, 'base64');
-    const dims = getImageDimensions(imageBuffer);
-    const useMask = dims && (dims.w * dims.h <= 4096 * 4096);
-    const boundary = '----FormBoundary' + Date.now().toString(16);
+    var base64Data = image_base64.replace(/^data:image\/\w+;base64,/, '');
+    var imageBuffer = Buffer.from(base64Data, 'base64');
+
+    var suitName = SUIT_COLORS[suit_color] || 'dark navy blue';
+    var shirtName = SHIRT_COLORS[shirt_color] || 'white';
+    var isFemale = gender === 'female';
+    var wantsTie = tie_option === 'yes' && !isFemale;
+
+    var clothingDesc;
+    if (isFemale) clothingDesc = suitName + " women's executive blazer with " + shirtName + ' blouse';
+    else if (wantsTie) clothingDesc = suitName + " men's suit jacket, " + shirtName + ' dress shirt, matching tie in Windsor knot';
+    else clothingDesc = suitName + " men's suit jacket, " + shirtName + ' dress shirt with open collar, no tie';
+
+    var SIZE = 1024;
+
+    // ── Step 1: Resize user photo to 1024×1024, get raw RGBA pixels ──
+    var userRaw = await sharp(imageBuffer)
+      .resize(SIZE, SIZE, { fit: 'cover', position: 'top' })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    var userPixels = Buffer.from(userRaw.data);
+
+    // ── Step 2: Create PNG with face opaque + body transparent ──
+    var FACE_END = Math.round(SIZE * 0.50);
+    var GRAD = 40;
+
+    var editPixels = Buffer.from(userPixels);
+    for (var y = 0; y < SIZE; y++) {
+      for (var x = 0; x < SIZE; x++) {
+        var aIdx = (y * SIZE + x) * 4 + 3;
+        if (y > FACE_END + GRAD) {
+          editPixels[aIdx] = 0;
+        } else if (y > FACE_END) {
+          editPixels[aIdx] = Math.round(255 * (1 - (y - FACE_END) / GRAD));
+        }
+      }
+    }
+
+    var pngBuffer = await sharp(editPixels, {
+      raw: { width: SIZE, height: SIZE, channels: 4 }
+    }).png().toBuffer();
+
+    // ── Step 3: Send to OpenAI edit (image carries its own alpha mask) ──
+    var prompt = clothingDesc + '. Solid clean light gray studio background. Professional corporate portrait, photorealistic, studio lighting.';
+
+    var boundary = '----FB' + Date.now().toString(16);
     function tp(n, v) { return '--' + boundary + '\r\nContent-Disposition: form-data; name="' + n + '"\r\n\r\n' + v; }
-    function fp(n, fn, buf) { var h = '--' + boundary + '\r\nContent-Disposition: form-data; name="' + n + '"; filename="' + fn + '"\r\nContent-Type: image/png\r\n\r\n'; return Buffer.concat([Buffer.from(h, 'utf-8'), buf, Buffer.from('\r\n', 'utf-8')]); }
+    function fp(n, fn, buf, ct) {
+      var h = '--' + boundary + '\r\nContent-Disposition: form-data; name="' + n + '"; filename="' + fn + '"\r\nContent-Type: ' + (ct || 'image/png') + '\r\n\r\n';
+      return Buffer.concat([Buffer.from(h, 'utf-8'), buf, Buffer.from('\r\n', 'utf-8')]);
+    }
+
     var textParts = [tp('model', 'gpt-image-1'), tp('prompt', prompt), tp('size', '1024x1024'), tp('quality', 'high')].join('\r\n') + '\r\n';
-    var bodyParts = [Buffer.from(textParts, 'utf-8'), fp('image', 'photo.png', imageBuffer)];
-    if (useMask) bodyParts.push(fp('mask', 'mask.png', createFaceMask(dims.w, dims.h, 0.35, 0.12)));
+    var bodyParts = [Buffer.from(textParts, 'utf-8'), fp('image', 'photo.png', pngBuffer, 'image/png')];
     bodyParts.push(Buffer.from('--' + boundary + '--\r\n', 'utf-8'));
-    var body = Buffer.concat(bodyParts);
-    const response = await fetch('https://api.openai.com/v1/images/edits', {
+
+    var response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + OPENAI_KEY, 'Content-Type': 'multipart/form-data; boundary=' + boundary },
-      body: body
+      body: Buffer.concat(bodyParts)
     });
-    const data = await response.json();
-    if (data.data && data.data[0]) {
-      const img = data.data[0];
-      return res.status(200).json({ success: true, image_url: img.url || null, image_b64: img.b64_json || null });
+
+    var aiData = await response.json();
+    if (!aiData.data || !aiData.data[0]) {
+      return res.status(response.status).json({ success: false, error: aiData.error ? aiData.error.message : 'OpenAI returned no image', raw: aiData });
     }
-    return res.status(response.status).json({ success: false, error: data.error ? data.error.message : 'Unknown error from OpenAI', raw: data });
+
+    var aiImgBuf;
+    if (aiData.data[0].b64_json) {
+      aiImgBuf = Buffer.from(aiData.data[0].b64_json, 'base64');
+    } else if (aiData.data[0].url) {
+      var dl = await fetch(aiData.data[0].url);
+      aiImgBuf = Buffer.from(await dl.arrayBuffer());
+    } else {
+      return res.status(500).json({ success: false, error: 'No image data in AI response' });
+    }
+
+    // ── Step 4: FORCE original face onto AI result (pixel-level guarantee) ──
+    var aiRaw = await sharp(aiImgBuf)
+      .resize(SIZE, SIZE, { fit: 'cover' })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    var aiPixels = Buffer.from(aiRaw.data);
+
+    var BLEND_START = FACE_END - 10;
+    var BLEND_END = FACE_END + 60;
+
+    for (var y2 = 0; y2 < SIZE; y2++) {
+      for (var x2 = 0; x2 < SIZE; x2++) {
+        var idx = (y2 * SIZE + x2) * 4;
+        if (y2 < BLEND_START) {
+          aiPixels[idx]     = userPixels[idx];
+          aiPixels[idx + 1] = userPixels[idx + 1];
+          aiPixels[idx + 2] = userPixels[idx + 2];
+          aiPixels[idx + 3] = 255;
+        } else if (y2 < BLEND_END) {
+          var t = (y2 - BLEND_START) / (BLEND_END - BLEND_START);
+          aiPixels[idx]     = Math.round(userPixels[idx] * (1 - t) + aiPixels[idx] * t);
+          aiPixels[idx + 1] = Math.round(userPixels[idx + 1] * (1 - t) + aiPixels[idx + 1] * t);
+          aiPixels[idx + 2] = Math.round(userPixels[idx + 2] * (1 - t) + aiPixels[idx + 2] * t);
+          aiPixels[idx + 3] = 255;
+        }
+      }
+    }
+
+    // ── Step 5: Encode final composited image ──
+    var finalImage = await sharp(aiPixels, { raw: { width: SIZE, height: SIZE, channels: 4 } })
+      .jpeg({ quality: 92 })
+      .toBuffer();
+
+    return res.status(200).json({ success: true, image_b64: finalImage.toString('base64'), image_url: null });
+
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Error generating photo', details: error.message });
   }
 }
-
