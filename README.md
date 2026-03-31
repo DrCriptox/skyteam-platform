@@ -8,3 +8,5 @@ Launch: April 2, 2026
 
 Deploy trigger: UTF-8 fix v2
 Deploy trigger: photo editor V2 redesign
+Deploy trigger: tie hide + ultra-specific prompt v2
+Deploy trigger: tie hide + prompt v2
