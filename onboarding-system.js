@@ -926,10 +926,7 @@ function openPhotoEditorModal() {
         if (!imgEl || !imgEl.src) { showToast('Primero sube tu foto', 'error'); return; }
 
         // Límite de 3 fotos por usuario
-        var photoKey = 'skyteam_photo_count_' + (typeof CU !== 'undefined' && CU ? CU.username : 'guest');
-        var photoCount = parseInt(localStorage.getItem(photoKey) || '0', 10);
-        if (photoCount >= 3) { showToast('Ya usaste tus 3 generaciones disponibles', 'error'); return; }
-
+        
         genBtn.textContent = '⌛ Generando con IA... (30-60 seg)';
         genBtn.style.opacity = '0.7';
         genBtn.disabled = true;
@@ -955,9 +952,7 @@ function openPhotoEditorModal() {
             document.getElementById('ob-photo-result').style.display = 'block';
             document.getElementById('ob-photo-options').style.display = 'none';
             genBtn.textContent = '✅ ¡Foto lista!';
-            var pk = 'skyteam_photo_count_' + (typeof CU !== 'undefined' && CU ? CU.username : 'guest');
-            localStorage.setItem(pk, (parseInt(localStorage.getItem(pk) || '0', 10) + 1).toString());
-            showToast('¡Tu foto profesional está lista!', 'success');
+                        showToast('¡Tu foto profesional está lista!', 'success');
             if (typeof CU !== 'undefined' && CU && CU.username) {
               obApi('savePhoto', { photo_url: resultSrc }).catch(function() {});
             }
