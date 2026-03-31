@@ -406,19 +406,25 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     const shirtName = SHIRT_COLORS[shirt_color] || 'white';
     const isFemale = gender === 'female';
     const wantsTie = tie_option === 'yes' && !isFemale;
+
     let clothingDesc;
     if (isFemale) {
-      clothingDesc = 'a ' + suitName + ' professional executive blazer with a ' + shirtName + ' blouse underneath, elegant and corporate style';
+      clothingDesc = 'a tailored ' + suitName + ' women\'s executive blazer, closed with one button at the waist, with visible lapels and padded shoulders. Underneath the blazer, a ' + shirtName + ' silk blouse with a small V-neckline, neatly tucked. No tie. No necklace. No accessories on the neck area.';
+    } else if (wantsTie) {
+      clothingDesc = 'a tailored ' + suitName + ' men\'s suit jacket with notch lapels, closed with two buttons. Underneath, a crisp ' + shirtName + ' dress shirt with a stiff spread collar, fully buttoned up to the neck. A solid dark ' + suitName + ' necktie, knotted in a neat Windsor knot, centered between the collar points.';
     } else {
-      clothingDesc = 'a ' + suitName + ' formal business suit jacket with a ' + shirtName + ' dress shirt' + (wantsTie ? ' and a matching tie' : ', open collar without tie');
+      clothingDesc = 'a tailored ' + suitName + ' men\'s suit jacket with notch lapels, closed with two buttons. Underneath, a crisp ' + shirtName + ' dress shirt with the top button open, showing a relaxed open collar. No tie. No accessories on the neck area.';
     }
-    const prompt = 'CRITICAL INSTRUCTION: DO NOT modify, alter, reshape, or change the person\'s face in ANY way whatsoever. ' +
-      'The face, eyes, nose, mouth, ears, jawline, facial structure, skin tone, skin texture, freckles, wrinkles, facial hair, eyebrows, and hairstyle must remain EXACTLY identical to the original photo. ' +
-      'ONLY change the clothing: replace the current clothing with ' + clothingDesc + '. ' +
-      'The clothing must fit naturally matching the person\'s shoulder width and body proportions from the original photo. ' +
-      'Professional studio lighting, clean solid light gray gradient background. ' +
-      'Upper body corporate portrait, photorealistic, high quality, suitable for LinkedIn or business website. ' +
-      'DO NOT change the face. DO NOT change the hair. DO NOT change skin tone. ONLY change the outfit.';
+
+    const prompt = 'You are a clothing replacement tool. Your ONLY job is to change the outfit on this person from the NECK DOWN. ' +
+      'ABSOLUTE RULE: The face, head, hair, ears, forehead, eyebrows, eyes, nose, mouth, chin, jawline, cheeks, skin tone, skin texture, facial hair, and expression must remain PIXEL-PERFECT IDENTICAL to the input photo. Do NOT regenerate, smooth, reshape, relight, or alter the face in any way. Copy the face exactly as-is from the original. ' +
+      'CLOTHING TO APPLY (from neck down only): ' + clothingDesc + ' ' +
+      'The clothing must match the person\'s exact shoulder width and body proportions visible in the original photo. ' +
+      'BACKGROUND: Clean solid light gray studio gradient, softly lit. ' +
+      'FRAMING: Upper body corporate portrait, cropped from mid-chest up. ' +
+      'LIGHTING: Soft professional studio lighting on the clothing and background only. Do NOT change the lighting on the face. ' +
+      'OUTPUT: Photorealistic, high resolution, suitable for LinkedIn profile photo.';
+
     const imageBuffer = Buffer.from(base64Data, 'base64');
     const boundary = '----FormBoundary' + Date.now().toString(16);
     const parts = [];
