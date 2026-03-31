@@ -755,3 +755,21 @@ function renderAntifraudeCardMini(r) {
   console.log('[Patch v3 Sec 10] Push notifications integration loaded');
 })();
 })();
+
+
+// --- 9. Fix renderChat: correct rank badge per user ---
+(function() {
+    var _origRenderChat = typeof renderChat === 'function' ? renderChat : null;
+    if (!_origRenderChat) return;
+    window.renderChat = function(msgs) {
+          if (typeof USERS !== 'undefined' && msgs && msgs.length) {
+                  msgs.forEach(function(m) {
+                            if (m.rank == null || m.rank === undefined) {
+                                        var uKey = Object.keys(USERS).find(function(u) { return USERS[u].name === m.user; });
+                                        if (uKey && USERS[uKey]) { m.rank = USERS[uKey].rank; }
+                            }
+                  });
+          }
+          _origRenderChat(msgs);
+    };
+})();
