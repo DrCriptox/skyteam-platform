@@ -766,7 +766,8 @@ function openPhotoEditorModal() {
     { hex: '#1a1a2e', name: 'Azul marino' }, { hex: '#0a3d62', name: 'Azul royal' },
     { hex: '#2d2d2d', name: 'Gris' }, { hex: '#4a0e0e', name: 'Borgoña' },
     { hex: '#0d0d0d', name: 'Negro' }, { hex: '#1b4332', name: 'Verde oscuro' },
-    { hex: '#3d2b1f', name: 'Marrón' }, { hex: '#c4a35a', name: 'Beige dorado' }
+    { hex: '#3d2b1f', name: 'Marrón' }, { hex: '#c4a35a', name: 'Beige dorado' },
+    { hex: '#c2185b', name: 'Fucsia' }, { hex: '#e91e90', name: 'Rosa' }
   ];
   var shirtColors = [
     { hex: '#FFFFFF', name: 'Blanca' }, { hex: '#D6EAF8', name: 'Azul claro' },
@@ -803,6 +804,14 @@ function openPhotoEditorModal() {
   content += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
   content += '<button data-gender="male" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(28,232,255,0.1);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">👨 Hombre</button>';
   content += '<button data-gender="female" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:11px;font-weight:700;cursor:pointer;">👩 Mujer</button>';
+  content += '</div>';
+
+  // Style selector (juvenil/elegante/cl\u00e1sico)
+  content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Estilo</div>';
+  content += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
+  content += '<button data-style="clasico" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(28,232,255,0.1);color:#fff;font-size:10px;font-weight:700;cursor:pointer;">\ud83c\udfdb Cl\u00e1sico</button>';
+  content += '<button data-style="elegante" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:10px;font-weight:700;cursor:pointer;">\u2728 Elegante</button>';
+  content += '<button data-style="juvenil" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:10px;font-weight:700;cursor:pointer;">\ud83d\udd25 Juvenil</button>';
   content += '</div>';
 
   // Suit colors
@@ -854,6 +863,7 @@ function openPhotoEditorModal() {
   var selectedSuit = '#1a1a2e';
   var selectedShirt = '#FFFFFF';
   var selectedTie = 'yes';
+  var selectedStyle = 'clasico';
 
   // File input
   document.getElementById('ob-photo-input').addEventListener('change', function(e) {
@@ -880,6 +890,7 @@ function openPhotoEditorModal() {
         var val = btn.getAttribute('data-' + stateKey);
         if (stateKey === 'gender') selectedGender = val;
         else if (stateKey === 'tie') selectedTie = val;
+        else if (stateKey === 'style') selectedStyle = val;
         document.querySelectorAll(selector).forEach(function(b) {
           b.style.borderColor = 'transparent'; b.style.background = 'rgba(255,255,255,0.04)'; b.style.color = C.textSub;
         });
@@ -888,6 +899,7 @@ function openPhotoEditorModal() {
     });
   }
   setupToggle('.ob-gender-opt', 'gender');
+  setupToggle('.ob-style-opt', 'style');
   setupToggle('.ob-tie-opt', 'tie');
 
   // Hide tie section when female is selected
@@ -942,7 +954,7 @@ function openPhotoEditorModal() {
         fetch('/api/photo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit, shirt_color: selectedShirt, tie_option: selectedTie, gender: selectedGender })
+          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit, shirt_color: selectedShirt, tie_option: selectedTie, gender: selectedGender, style: selectedStyle })
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
