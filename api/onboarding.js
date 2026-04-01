@@ -3,11 +3,31 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
-// ── PHOTO GENERATION V5c: Images Edit API + gpt-image-1.5 — framing + dark bg fix ──
+// ── PHOTO GENERATION V5d: Images Edit API + gpt-image-1.5 — styles + fuchsia colors ──
 const SUIT_COLORS = {
   '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
   '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
-  '#3d2b1f': 'dark brown chocolate', '#c4a35a': 'beige golden tan'
+  '#3d2b1f': 'dark brown chocolate', '#c4a35a': 'beige golden tan',
+  '#c2185b': 'fuchsia pink', '#e91e90': 'hot pink rose'
+};
+
+// ── ESTILOS DE TRAJE ──
+const SUIT_STYLES = {
+  'clasico': {
+    label: 'Cl\u00e1sico',
+    desc_m: 'traditional corporate suit, conservative fit, classic lapels',
+    desc_f: 'traditional corporate blazer, conservative fit, classic lapels'
+  },
+  'elegante': {
+    label: 'Elegante',
+    desc_m: 'premium executive suit, tailored fit, peak lapels, luxury fabric texture',
+    desc_f: 'premium executive blazer, tailored fit, structured shoulders, luxury fabric texture'
+  },
+  'juvenil': {
+    label: 'Juvenil',
+    desc_m: 'modern slim-fit Dior-style suit, narrow lapels, fitted silhouette, fashion-forward contemporary design',
+    desc_f: 'modern slim-fit Dior-style blazer, cropped cut, fashion-forward contemporary design, trendy silhouette'
+  }
 };
 const SHIRT_COLORS = {
   '#FFFFFF': 'white', '#D6EAF8': 'light blue', '#FADBD8': 'pale pink',
@@ -316,9 +336,9 @@ export default async function handler(req, res) {
 
   try {
     // Route photo generation requests (from /api/photo rewrite)
-  const { image_base64, suit_color, shirt_color, tie_option, gender } = req.body || {};
+  const { image_base64, suit_color, shirt_color, tie_option, gender, style } = req.body || {};
   if (image_base64) {
-    return handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender);
+    return handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style || 'clasico');
   }
 
   const { action, username } = req.body || {};
@@ -399,7 +419,7 @@ export default async function handler(req, res) {
 // ── Photo Generation Handler V5c: Images Edit API + gpt-image-1.5 ──
 // Fixes: fondo gris oscuro, encuadre más amplio (menos zoom),
 // espacio generoso arriba/lados/abajo, tamaño portrait 1024x1536.
-async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender) {
+async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
@@ -413,13 +433,17 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     const isFemale = gender === 'female';
     const wantsTie = tie_option === 'yes' && !isFemale;
 
+    // V5d: Estilo de traje (juvenil/elegante/cl\u00e1sico)
+    const suitStyle = SUIT_STYLES[style] || SUIT_STYLES['clasico'];
+    const styleDesc = isFemale ? suitStyle.desc_f : suitStyle.desc_m;
+
     let clothingDesc;
     if (isFemale) {
-      clothingDesc = suitName + ' women\'s executive blazer with ' + shirtName + ' blouse, V-neckline, no accessories';
+      clothingDesc = suitName + ' ' + styleDesc + ' with ' + shirtName + ' blouse, V-neckline, no accessories';
     } else if (wantsTie) {
-      clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt buttoned to neck, ' + suitName + ' tie in Windsor knot';
+      clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt buttoned to neck, ' + suitName + ' tie in Windsor knot';
     } else {
-      clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt with open collar, no tie';
+      clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
     // V5c: Prompt con encuadre amplio + fondo gris oscuro + preservación facial
@@ -542,7 +566,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error generating photo V5c',
+      error: 'Error generating photo V5d',
       details: error.message
     });
   }
