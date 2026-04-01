@@ -475,7 +475,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       'Professional studio lighting, sharp focus, high quality corporate portrait.';
 
     // Llamar a Flux Kontext Max via fal.ai REST API
-    const response = await fetch('https://queue.fal.run/fal-ai/flux-pro/kontext/max', {
+    const response = await fetch('https://fal.run/fal-ai/flux-pro/kontext/max', {
       method: 'POST',
       headers: {
         'Authorization': 'Key ' + FAL_KEY,
