@@ -336,9 +336,25 @@ export default async function handler(req, res) {
 
   try {
     // Route photo generation requests (from /api/photo rewrite)
-  const { image_base64, suit_color, shirt_color, tie_option, gender, style } = req.body || {};
+  const { image_base64, suit_color, shirt_color, tie_option, gender, style, username: photoUser } = req.body || {};
   if (image_base64) {
-    return handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style || 'clasico');
+    // \u2500\u2500 L\u00edmite de 3 fotos por usuario \u2500\u2500
+    const MAX_PHOTOS = 3;
+    if (photoUser) {
+      try {
+        const progress = await getProgress(photoUser);
+        const count = (progress && progress.tasks && progress.tasks._photo_gen_count) || 0;
+        if (count >= MAX_PHOTOS) {
+          return res.status(429).json({
+            success: false,
+            error: 'Has alcanzado el l\u00edmite de ' + MAX_PHOTOS + ' fotos profesionales.',
+            photo_count: count,
+            max: MAX_PHOTOS
+          });
+        }
+      } catch (e) { /* Si falla la verificaci\u00f3n, dejamos pasar */ }
+    }
+    return handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style || 'clasico', photoUser);
   }
 
   const { action, username } = req.body || {};
@@ -419,7 +435,7 @@ export default async function handler(req, res) {
 // ── Photo Generation Handler V5c: Images Edit API + gpt-image-1.5 ──
 // Fixes: fondo gris oscuro, encuadre más amplio (menos zoom),
 // espacio generoso arriba/lados/abajo, tamaño portrait 1024x1536.
-async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style) {
+async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style, photoUser) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
@@ -542,10 +558,28 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
 
     // Respuesta exitosa: data.data[0].b64_json
     if (data.data && data.data[0] && data.data[0].b64_json) {
+      // Incrementar contador de fotos generadas
+      let newCount = 1;
+      if (photoUser) {
+        try {
+          const prog = await getProgress(photoUser);
+          if (prog) {
+            const tasks = prog.tasks || {};
+            newCount = (tasks._photo_gen_count || 0) + 1;
+            tasks._photo_gen_count = newCount;
+            await sb('onboarding_progress?username=eq.' + encodeURIComponent(photoUser), {
+              method: 'PATCH',
+              body: JSON.stringify({ tasks })
+            });
+          }
+        } catch (e) { /* Non-critical */ }
+      }
       return res.status(200).json({
         success: true,
         image_b64: data.data[0].b64_json,
-        image_url: data.data[0].url || null
+        image_url: data.data[0].url || null,
+        photo_count: newCount,
+        max_photos: 3
       });
     }
 
