@@ -432,19 +432,19 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler V7: Flux Kontext Max via fal.ai ──
-// Migración de OpenAI ($1.12/img) → Flux Kontext Max ($0.05/img) = 95% ahorro
-// V7: guidance_scale 3.5→2.0 + prompt reescrito para preservación facial máxima
-// AuraFace embeddings integrados, prompt con rostro como prioridad dominante.
+// ── Photo Generation Handler V8: OpenAI /v1/images/edits directo ──
+// V8: OpenAI endpoint directo (~$0.07/img calidad media) con input_fidelity=high
+// Preservación facial REAL — mucho mejor que Flux Kontext Max
+// multipart/form-data con Buffer → Blob, sin dependencias externas
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style, photoUser) {
-  const FAL_KEY = process.env.FAL_KEY;
-  if (!FAL_KEY) return res.status(500).json({ error: 'FAL_KEY not configured' });
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
   try {
-    // Preparar data URI para fal.ai (acepta base64 data URI directamente)
-    let imageDataUri = image_base64;
-    if (!imageDataUri.startsWith('data:')) {
-      imageDataUri = 'data:image/jpeg;base64,' + imageDataUri;
+    // Extraer base64 puro (quitar data URI prefix si existe)
+    let rawBase64 = image_base64;
+    if (rawBase64.startsWith('data:')) {
+      rawBase64 = rawBase64.split(',')[1];
     }
 
     const suitName = SUIT_COLORS[suit_color] || 'dark navy blue';
@@ -452,7 +452,6 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     const isFemale = gender === 'female';
     const wantsTie = tie_option === 'yes' && !isFemale;
 
-    // V5d: Estilo de traje (juvenil/elégante/clásico)
     const suitStyle = SUIT_STYLES[style] || SUIT_STYLES['clasico'];
     const styleDesc = isFemale ? suitStyle.desc_f : suitStyle.desc_m;
 
@@ -465,45 +464,43 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    // Prompt V7: Face preservation priority + AuraFace optimized
-    // guidance_scale bajo (2.0) + prompt con rostro como instruccion dominante
-    const editPrompt = 'CRITICAL: Do NOT alter the person\'s face in any way. The face, eyes, nose, mouth, jawline, skin texture, skin tone, facial hair, expression, and hairstyle must remain EXACTLY identical to the input photo \u2014 pixel-perfect face preservation is the top priority. ' +
-      'Only change the clothing and background: dress the person in ' + clothingDesc + '. ' +
-      'Set a clean solid dark charcoal gray studio backdrop behind them. ' +
-      'Half-body portrait from waist up, person centered at 60-70% of frame height. ' +
-      'Professional studio lighting, sharp focus. ' +
-      'Remember: the face must be completely untouched and identical to the original photo.';
+    // Prompt V8: Optimizado para OpenAI image edit con input_fidelity high
+    const editPrompt = 'Transform this photo into a professional corporate headshot. ' +
+      'Keep the EXACT same person — preserve their face, facial features, skin tone, expression, hairstyle, and body shape completely unchanged. The person must be 100% recognizable. ' +
+      'Replace their current clothing with: ' + clothingDesc + '. ' +
+      'Set the background to a clean solid dark charcoal gray studio backdrop. ' +
+      'Frame as a half-body portrait from waist up, with generous space above the head and on both sides. ' +
+      'The person should occupy about 60-70% of the frame height, centered. ' +
+      'Professional studio lighting, sharp focus, high quality corporate portrait.';
 
-    // Llamar a Flux Kontext Max via fal.ai REST API
-    const response = await fetch('https://fal.run/fal-ai/flux-pro/kontext/max', {
+    // Convertir base64 a Blob para multipart/form-data
+    const imageBuffer = Buffer.from(rawBase64, 'base64');
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
+
+    // Construir FormData para OpenAI /v1/images/edits
+    const formData = new FormData();
+    formData.append('model', 'gpt-image-1');
+    formData.append('image', imageBlob, 'photo.jpg');
+    formData.append('prompt', editPrompt);
+    formData.append('quality', 'medium');
+    formData.append('size', '1024x1536');
+    formData.append('n', '1');
+    formData.append('response_format', 'b64_json');
+
+    // Llamar a OpenAI /v1/images/edits (endpoint directo, NO via GPT-4.1 chat)
+    const response = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: {
-        'Authorization': 'Key ' + FAL_KEY,
-        'Content-Type': 'application/json'
+        'Authorization': 'Bearer ' + OPENAI_KEY
       },
-      body: JSON.stringify({
-        prompt: editPrompt,
-        image_url: imageDataUri,
-        guidance_scale: 2.0,
-        num_images: 1,
-        output_format: 'jpeg',
-        safety_tolerance: '3',
-        aspect_ratio: '2:3'
-      })
+      body: formData
     });
 
     const data = await response.json();
 
-    // Respuesta exitosa: data.images[0].url
-    if (data.images && data.images[0] && data.images[0].url) {
-      // Descargar imagen y convertir a base64 para compatibilidad con frontend
-      let imageB64 = null;
-      let imageUrl = data.images[0].url;
-      try {
-        const imgResp = await fetch(imageUrl);
-        const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
-        imageB64 = imgBuffer.toString('base64');
-      } catch (e) { /* Si falla descarga, frontend usa URL directa */ }
+    // Respuesta exitosa: data.data[0].b64_json
+    if (data.data && data.data[0] && data.data[0].b64_json) {
+      const imageB64 = data.data[0].b64_json;
 
       // Incrementar contador de fotos generadas
       let newCount = 1;
@@ -524,30 +521,30 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       return res.status(200).json({
         success: true,
         image_b64: imageB64,
-        image_url: imageUrl,
+        image_url: null,
         photo_count: newCount,
-        max_photos: 3
+        max_photos: 9999
       });
     }
 
-    // Error de fal.ai
-    if (data.detail || data.error) {
+    // Error de OpenAI
+    if (data.error) {
       return res.status(response.status || 500).json({
         success: false,
-        error: data.detail || data.error || 'Error from Flux Kontext Max API',
+        error: data.error.message || data.error || 'Error from OpenAI Image Edit API',
         raw: data
       });
     }
 
     return res.status(500).json({
       success: false,
-      error: 'No image in response from Flux Kontext Max',
+      error: 'No image in response from OpenAI',
       raw: data
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error generating photo V7 (Flux Kontext Max)',
+      error: 'Error generating photo V8 (OpenAI Image Edit)',
       details: error.message
     });
   }
