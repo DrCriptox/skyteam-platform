@@ -954,7 +954,7 @@ function openPhotoEditorModal() {
         fetch('/api/photo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit, shirt_color: selectedShirt, tie_option: selectedTie, gender: selectedGender, style: selectedStyle })
+          body: JSON.stringify({ image_base64: base64Data, suit_color: selectedSuit, shirt_color: selectedShirt, tie_option: selectedTie, gender: selectedGender, style: selectedStyle, username: (typeof CU !== 'undefined' && CU && CU.username) ? CU.username : '' })
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -974,6 +974,20 @@ function openPhotoEditorModal() {
               resultDiv.innerHTML += '<a href="' + resultSrc + '" download="mi-foto-profesional.jpg" style="display:inline-block;padding:8px 16px;background:' + C.accent + ';color:#000;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📥 Descargar foto</a>';
               resultDiv.innerHTML += '<div style="margin-top:8px;"><button onclick="document.getElementById(\'ob-photo-result\').style.display=\'none\';document.getElementById(\'ob-photo-options\').style.display=\'block\';document.getElementById(\'ob-photo-gen\').textContent=\'📸 Generar otra versión\';document.getElementById(\'ob-photo-gen\').disabled=false;document.getElementById(\'ob-photo-gen\').style.opacity=\'1\';" style="padding:6px 14px;border:1px solid ' + C.border + ';border-radius:8px;background:transparent;color:' + C.accent + ';font-size:11px;cursor:pointer;">🔄 Probar otro estilo</button></div>';
             }
+            // Mostrar fotos restantes
+            if (data.photo_count && data.max_photos) {
+              var remaining = data.max_photos - data.photo_count;
+              if (remaining > 0) {
+                showToast('Te quedan ' + remaining + ' foto(s) gratis', 'info');
+              } else {
+                showToast('Usaste tus 3 fotos profesionales gratis', 'info');
+              }
+            }
+          } else if (data.error && data.photo_count >= data.max) {
+            genBtn.textContent = '\ud83d\udeab L\u00edmite alcanzado (3/3)';
+            genBtn.disabled = true;
+            genBtn.style.opacity = '0.5';
+            showToast('Ya usaste tus 3 fotos profesionales gratuitas', 'error');
           } else {
             genBtn.textContent = '📸 Generar foto profesional';
             genBtn.disabled = false;
