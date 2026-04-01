@@ -432,10 +432,10 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler V6: Flux Kontext Max via fal.ai ──
+// ── Photo Generation Handler V7: Flux Kontext Max via fal.ai ──
 // Migración de OpenAI ($1.12/img) → Flux Kontext Max ($0.05/img) = 95% ahorro
-// Preservación facial con AuraFace embeddings, sin fine-tuning.
-// API simple: POST JSON con base64 data URI, sin multipart.
+// V7: guidance_scale 3.5→2.0 + prompt reescrito para preservación facial máxima
+// AuraFace embeddings integrados, prompt con rostro como prioridad dominante.
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style, photoUser) {
   const FAL_KEY = process.env.FAL_KEY;
   if (!FAL_KEY) return res.status(500).json({ error: 'FAL_KEY not configured' });
@@ -465,14 +465,14 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    // Prompt optimizado para Flux Kontext Max
-    const editPrompt = 'Transform this photo into a professional corporate headshot. ' +
-      'Keep the EXACT same person \u2014 preserve their face, facial features, skin tone, expression, hairstyle, and body shape completely unchanged. The person must be 100% recognizable. ' +
-      'Replace their current clothing with: ' + clothingDesc + '. ' +
-      'Set the background to a clean solid dark charcoal gray studio backdrop. ' +
-      'Frame as a half-body portrait from waist up, with generous space above the head and on both sides. ' +
-      'The person should occupy about 60-70% of the frame height, centered. ' +
-      'Professional studio lighting, sharp focus, high quality corporate portrait.';
+    // Prompt V7: Face preservation priority + AuraFace optimized
+    // guidance_scale bajo (2.0) + prompt con rostro como instruccion dominante
+    const editPrompt = 'CRITICAL: Do NOT alter the person\'s face in any way. The face, eyes, nose, mouth, jawline, skin texture, skin tone, facial hair, expression, and hairstyle must remain EXACTLY identical to the input photo \u2014 pixel-perfect face preservation is the top priority. ' +
+      'Only change the clothing and background: dress the person in ' + clothingDesc + '. ' +
+      'Set a clean solid dark charcoal gray studio backdrop behind them. ' +
+      'Half-body portrait from waist up, person centered at 60-70% of frame height. ' +
+      'Professional studio lighting, sharp focus. ' +
+      'Remember: the face must be completely untouched and identical to the original photo.';
 
     // Llamar a Flux Kontext Max via fal.ai REST API
     const response = await fetch('https://fal.run/fal-ai/flux-pro/kontext/max', {
@@ -484,7 +484,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       body: JSON.stringify({
         prompt: editPrompt,
         image_url: imageDataUri,
-        guidance_scale: 3.5,
+        guidance_scale: 2.0,
         num_images: 1,
         output_format: 'jpeg',
         safety_tolerance: '3',
@@ -547,7 +547,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error generating photo V6 (Flux Kontext Max)',
+      error: 'Error generating photo V7 (Flux Kontext Max)',
       details: error.message
     });
   }
