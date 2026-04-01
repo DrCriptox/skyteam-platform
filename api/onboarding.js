@@ -432,16 +432,15 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler V8: OpenAI /v1/images/edits directo ──
-// V8: OpenAI endpoint directo (~$0.07/img calidad media) con input_fidelity=high
-// Preservación facial REAL — mucho mejor que Flux Kontext Max
-// multipart/form-data con Buffer → Blob, sin dependencias externas
+// ── Photo Generation Handler V9: OpenAI Responses API + gpt-4.1-mini ──
+// V9: Responses API con image_generation tool, calidad media ~$0.07/img
+// gpt-4.1-mini = 5x más barato que gpt-4.1, misma calidad de imagen
+// Preservación facial real con gpt-image-1 backend
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style, photoUser) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
   try {
-    // Extraer base64 puro (quitar data URI prefix si existe)
     let rawBase64 = image_base64;
     if (rawBase64.startsWith('data:')) {
       rawBase64 = rawBase64.split(',')[1];
@@ -464,7 +463,6 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    // Prompt V8: Optimizado para OpenAI image edit con input_fidelity high
     const editPrompt = 'Transform this photo into a professional corporate headshot. ' +
       'Keep the EXACT same person — preserve their face, facial features, skin tone, expression, hairstyle, and body shape completely unchanged. The person must be 100% recognizable. ' +
       'Replace their current clothing with: ' + clothingDesc + '. ' +
@@ -473,77 +471,85 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       'The person should occupy about 60-70% of the frame height, centered. ' +
       'Professional studio lighting, sharp focus, high quality corporate portrait.';
 
-    // Convertir base64 a Blob para multipart/form-data
-    const imageBuffer = Buffer.from(rawBase64, 'base64');
-    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
-
-    // Construir FormData para OpenAI /v1/images/edits
-    const formData = new FormData();
-    formData.append('model', 'gpt-image-1');
-    formData.append('image', imageBlob, 'photo.jpg');
-    formData.append('prompt', editPrompt);
-    formData.append('size', '1024x1536');
-    formData.append('n', '1');
-    formData.append('response_format', 'b64_json');
-
-    // Llamar a OpenAI /v1/images/edits (endpoint directo, NO via GPT-4.1 chat)
-    const response = await fetch('https://api.openai.com/v1/images/edits', {
+    // Llamar a OpenAI Responses API con image_generation tool
+    const imageDataUri = 'data:image/jpeg;base64,' + rawBase64;
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + OPENAI_KEY
+        'Authorization': 'Bearer ' + OPENAI_KEY,
+        'Content-Type': 'application/json'
       },
-      body: formData
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        input: [
+          {
+            role: 'user',
+            content: [
+              { type: 'input_image', image_url: imageDataUri },
+              { type: 'input_text', text: editPrompt }
+            ]
+          }
+        ],
+        tools: [{
+          type: 'image_generation',
+          quality: 'medium',
+          size: '1024x1536'
+        }]
+      })
     });
 
     const data = await response.json();
 
-    // Respuesta exitosa: data.data[0].b64_json
-    if (data.data && data.data[0] && data.data[0].b64_json) {
-      const imageB64 = data.data[0].b64_json;
+    // Extraer imagen generada del response
+    if (data.output) {
+      const imageGen = data.output.find(function(o) { return o.type === 'image_generation_call'; });
+      if (imageGen && imageGen.result) {
+        const imageB64 = imageGen.result;
 
-      // Incrementar contador de fotos generadas
-      let newCount = 1;
-      if (photoUser) {
-        try {
-          const prog = await getProgress(photoUser);
-          if (prog) {
-            const tasks = prog.tasks || {};
-            newCount = (tasks._photo_gen_count || 0) + 1;
-            tasks._photo_gen_count = newCount;
-            await sb('onboarding_progress?username=eq.' + encodeURIComponent(photoUser), {
-              method: 'PATCH',
-              body: JSON.stringify({ tasks })
-            });
-          }
-        } catch (e) { /* Non-critical */ }
+        // Incrementar contador de fotos generadas
+        let newCount = 1;
+        if (photoUser) {
+          try {
+            const prog = await getProgress(photoUser);
+            if (prog) {
+              const tasks = prog.tasks || {};
+              newCount = (tasks._photo_gen_count || 0) + 1;
+              tasks._photo_gen_count = newCount;
+              await sb('onboarding_progress?username=eq.' + encodeURIComponent(photoUser), {
+                method: 'PATCH',
+                body: JSON.stringify({ tasks })
+              });
+            }
+          } catch (e) { /* Non-critical */ }
+        }
+        return res.status(200).json({
+          success: true,
+          image_b64: imageB64,
+          image_url: null,
+          photo_count: newCount,
+          max_photos: 9999
+        });
       }
-      return res.status(200).json({
-        success: true,
-        image_b64: imageB64,
-        image_url: null,
-        photo_count: newCount,
-        max_photos: 9999
-      });
     }
 
     // Error de OpenAI
     if (data.error) {
       return res.status(response.status || 500).json({
         success: false,
-        error: data.error.message || data.error || 'Error from OpenAI Image Edit API',
+        error: data.error.message || data.error || 'Error from OpenAI Responses API',
         raw: data
       });
     }
 
     return res.status(500).json({
       success: false,
-      error: 'No image in response from OpenAI',
+      error: 'No image in response from OpenAI Responses API',
       raw: data
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error generating photo V8 (OpenAI Image Edit)',
+      error: 'Error generating photo V9 (OpenAI Responses API)',
       details: error.message
     });
   }
