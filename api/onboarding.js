@@ -482,7 +482,6 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     formData.append('model', 'gpt-image-1');
     formData.append('image', imageBlob, 'photo.jpg');
     formData.append('prompt', editPrompt);
-    formData.append('quality', 'medium');
     formData.append('size', '1024x1536');
     formData.append('n', '1');
     formData.append('response_format', 'b64_json');
