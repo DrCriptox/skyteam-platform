@@ -3,7 +3,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
-// ── PHOTO GENERATION V5: Images Edit API + gpt-image-1 + input_fidelity high ──
+// ── PHOTO GENERATION V5b: Images Edit API + gpt-image-1.5 + input_fidelity high ──
 const SUIT_COLORS = {
   '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
   '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
@@ -396,10 +396,10 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler V5: Images Edit API + gpt-image-1 + input_fidelity high ──
+// ── Photo Generation Handler V5b: Images Edit API + gpt-image-1.5 + input_fidelity high ──
 // Usa el endpoint DIRECTO /v1/images/edits (NO Responses API).
-// gpt-image-1 con input_fidelity="high" está diseñado específicamente para
-// preservar caras, rasgos faciales y detalles de identidad en la edición.
+// gpt-image-1.5 tiene la MEJOR preservación facial disponible,
+// combinado con input_fidelity="high" para máxima fidelidad de identidad.
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
@@ -423,14 +423,12 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    // V5: Prompt para images/edits — enfocado en preservar identidad
-    const editPrompt = 'Edit this photo: preserve the person\'s face, facial features, skin tone, ' +
-      'expression, head shape, hairline, and identity EXACTLY as they are. ' +
-      'Do NOT alter, smooth, reshape, or beautify the face in any way. ' +
-      'Keep the EXACT same framing, camera angle, distance, and composition. ' +
-      'Change ONLY the clothing to: ' + clothingDesc + '. ' +
-      'Set background to a clean solid light gray studio backdrop. ' +
-      'Maintain the same body proportions and pose.';
+    // V5b: Prompt optimizado para gpt-image-1.5 — preservar identidad al máximo
+    const editPrompt = 'Edit this photo while preserving face, facial features, skin tone, body shape, ' +
+      'pose, hairstyle, and identity. Change ONLY the clothing and background. ' +
+      'New clothing: ' + clothingDesc + '. ' +
+      'New background: clean solid light gray studio backdrop. ' +
+      'CRITICAL: The person must remain 100% recognizable — same face, same expression, same everything except clothes and background.';
 
     // Construir multipart/form-data manualmente (sin dependencias externas)
     const boundary = '----FormBoundary' + Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -465,7 +463,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     parts.push(
       '--' + boundary + '\r\n' +
       'Content-Disposition: form-data; name="model"\r\n\r\n' +
-      'gpt-image-1\r\n'
+      'gpt-image-1.5\r\n'
     );
 
     // prompt
@@ -547,4 +545,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     });
   }
 }
+
+
+
 
