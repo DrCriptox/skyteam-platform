@@ -3,7 +3,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
-// ── PHOTO GENERATION V5b: Images Edit API + gpt-image-1.5 + input_fidelity high ──
+// ── PHOTO GENERATION V5c: Images Edit API + gpt-image-1.5 — framing + dark bg fix ──
 const SUIT_COLORS = {
   '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
   '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
@@ -396,10 +396,9 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler V5b: Images Edit API + gpt-image-1.5 + input_fidelity high ──
-// Usa el endpoint DIRECTO /v1/images/edits (NO Responses API).
-// gpt-image-1.5 tiene la MEJOR preservación facial disponible,
-// combinado con input_fidelity="high" para máxima fidelidad de identidad.
+// ── Photo Generation Handler V5c: Images Edit API + gpt-image-1.5 ──
+// Fixes: fondo gris oscuro, encuadre más amplio (menos zoom),
+// espacio generoso arriba/lados/abajo, tamaño portrait 1024x1536.
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
@@ -423,12 +422,15 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       clothingDesc = suitName + ' men\'s suit jacket, ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    // V5b: Prompt optimizado para gpt-image-1.5 — preservar identidad al máximo
-    const editPrompt = 'Edit this photo while preserving face, facial features, skin tone, body shape, ' +
-      'pose, hairstyle, and identity. Change ONLY the clothing and background. ' +
-      'New clothing: ' + clothingDesc + '. ' +
-      'New background: clean solid light gray studio backdrop. ' +
-      'CRITICAL: The person must remain 100% recognizable — same face, same expression, same everything except clothes and background.';
+    // V5c: Prompt con encuadre amplio + fondo gris oscuro + preservación facial
+    const editPrompt = 'Create a professional corporate headshot from this photo. ' +
+      'FRAMING: Half-body portrait from waist up. DO NOT zoom in or crop tightly. ' +
+      'Leave generous empty space above the head, on both sides, and below the waist. ' +
+      'The person should occupy about 60-70% of the frame height, centered. ' +
+      'IDENTITY: Preserve the exact face, facial features, skin tone, expression, hairstyle, and body shape — the person must be 100% recognizable. ' +
+      'CLOTHING: Replace current clothing with ' + clothingDesc + '. ' +
+      'BACKGROUND: Clean solid dark charcoal gray studio backdrop (#3a3a3a). ' +
+      'Change ONLY clothing and background. Keep everything else identical to the original photo.';
 
     // Construir multipart/form-data manualmente (sin dependencias externas)
     const boundary = '----FormBoundary' + Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -487,11 +489,11 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       'high\r\n'
     );
 
-    // size — auto para respetar proporción original
+    // size — portrait 1024x1536 para dar espacio vertical generoso
     parts.push(
       '--' + boundary + '\r\n' +
       'Content-Disposition: form-data; name="size"\r\n\r\n' +
-      'auto\r\n'
+      '1024x1536\r\n'
     );
 
     // closing boundary
@@ -540,12 +542,11 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error generating photo V5',
+      error: 'Error generating photo V5c',
       details: error.message
     });
   }
 }
-
 
 
 
