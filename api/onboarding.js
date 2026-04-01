@@ -339,7 +339,7 @@ export default async function handler(req, res) {
   const { image_base64, suit_color, shirt_color, tie_option, gender, style, username: photoUser } = req.body || {};
   if (image_base64) {
     // \u2500\u2500 L\u00edmite de 3 fotos por usuario \u2500\u2500
-    const MAX_PHOTOS = 3;
+    const MAX_PHOTOS = 9999; // TODO: Volver a poner 3 para produccion
     if (photoUser) {
       try {
         const progress = await getProgress(photoUser);
