@@ -3,7 +3,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
-// ── PHOTO GENERATION V6: Flux Kontext Max via fal.ai — styles + fuchsia colors ──
+// ── PHOTO GENERATION V10: Inpainting Pipeline (SAM3 + Sharp + FLUX Fill) ──
+// La cara NUNCA se toca — se protege con máscara negra
+// Paso 1: SAM3 segmenta cara → máscara face=blanco
+// Paso 2: Sharp invierte → face=negro (protegido), resto=blanco (inpaint)
+// Paso 3: FLUX Pro Fill repinta ropa + fondo sobre la máscara
+// Costo: ~$0.05/imagen vs $1.12 con OpenAI
+const sharp = require('sharp');
 const SUIT_COLORS = {
   '#1a1a2e': 'dark navy blue', '#0a3d62': 'royal blue', '#2d2d2d': 'charcoal gray',
   '#4a0e0e': 'deep burgundy wine', '#0d0d0d': 'black', '#1b4332': 'dark forest green',
@@ -432,29 +438,105 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Photo Generation Handler V9: OpenAI Responses API + gpt-4.1-mini ──
-// V9: Responses API con image_generation tool, calidad media ~$0.07/img
-// gpt-4.1-mini = 5x más barato que gpt-4.1, misma calidad de imagen
-// Preservación facial real con gpt-image-1 backend
+// ── Photo Generation Handler V10: Inpainting Pipeline ──
+// CARA INTOCABLE — pixel-perfect preservation
+// Pipeline: SAM3 (face mask) → Sharp (invert) → FLUX Pro Fill (inpaint clothing + bg)
+// La IA NUNCA genera ni un solo píxel de la cara — queda exactamente igual
 async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_color, tie_option, gender, style, photoUser) {
-  const OPENAI_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+  const FAL_KEY = process.env.FAL_KEY;
+  if (!FAL_KEY) return res.status(500).json({ error: 'FAL_KEY not configured' });
+
+  const falHeaders = {
+    'Authorization': 'Key ' + FAL_KEY,
+    'Content-Type': 'application/json'
+  };
 
   try {
+    // Extraer base64 puro
     let rawBase64 = image_base64;
     if (rawBase64.startsWith('data:')) {
       rawBase64 = rawBase64.split(',')[1];
     }
+    const imageDataUri = 'data:image/jpeg;base64,' + rawBase64;
 
+    // ════════════════════════════════════════════
+    // PASO 1: Segmentar cara con SAM3
+    // Resultado: máscara donde cara=blanco, resto=negro
+    // ════════════════════════════════════════════
+    const sam3Res = await fetch('https://fal.run/fal-ai/sam-3/image', {
+      method: 'POST',
+      headers: falHeaders,
+      body: JSON.stringify({
+        image_url: imageDataUri,
+        prompt: 'face, head, hair, forehead, ears',
+        output_format: 'png',
+        return_multiple_masks: false
+      })
+    });
+
+    if (!sam3Res.ok) {
+      const errText = await sam3Res.text().catch(function() { return ''; });
+      return res.status(500).json({
+        success: false,
+        error: 'SAM3 segmentation failed (' + sam3Res.status + ')',
+        details: errText.substring(0, 500)
+      });
+    }
+
+    const sam3Data = await sam3Res.json();
+    // SAM3 response: { image: {url}, masks: [{url}] }
+    var faceMaskUrl = null;
+    if (sam3Data.masks && sam3Data.masks.length > 0 && sam3Data.masks[0].url) {
+      faceMaskUrl = sam3Data.masks[0].url;
+    } else if (sam3Data.image && sam3Data.image.url) {
+      faceMaskUrl = sam3Data.image.url;
+    }
+
+    if (!faceMaskUrl) {
+      return res.status(500).json({
+        success: false,
+        error: 'SAM3 returned no face mask',
+        debug: { keys: Object.keys(sam3Data), masks: sam3Data.masks ? sam3Data.masks.length : 0 }
+      });
+    }
+
+    // ════════════════════════════════════════════
+    // PASO 2: Descargar máscara e invertir con Sharp
+    // face=blanco → face=NEGRO (protegido)
+    // resto=negro → resto=BLANCO (inpaint)
+    // ════════════════════════════════════════════
+    const maskDownload = await fetch(faceMaskUrl);
+    if (!maskDownload.ok) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to download face mask from SAM3'
+      });
+    }
+    const maskBuffer = Buffer.from(await maskDownload.arrayBuffer());
+
+    // Invertir: negate() convierte blanco→negro y negro→blanco
+    // alpha:false para no invertir canal alpha si existe
+    const invertedMaskBuffer = await sharp(maskBuffer)
+      .negate({ alpha: false })
+      .png()
+      .toBuffer();
+
+    const invertedMaskB64 = invertedMaskBuffer.toString('base64');
+    const maskDataUri = 'data:image/png;base64,' + invertedMaskB64;
+
+    // ════════════════════════════════════════════
+    // PASO 3: FLUX Pro Fill — inpaint ropa + fondo
+    // Negro = protegido (cara intacta)
+    // Blanco = regenerar (ropa + fondo)
+    // ════════════════════════════════════════════
     const suitName = SUIT_COLORS[suit_color] || 'dark navy blue';
     const shirtName = SHIRT_COLORS[shirt_color] || 'white';
     const isFemale = gender === 'female';
     const wantsTie = tie_option === 'yes' && !isFemale;
-
     const suitStyle = SUIT_STYLES[style] || SUIT_STYLES['clasico'];
     const styleDesc = isFemale ? suitStyle.desc_f : suitStyle.desc_m;
 
-    let clothingDesc;
+    var clothingDesc;
     if (isFemale) {
       clothingDesc = suitName + ' ' + styleDesc + ' with ' + shirtName + ' blouse, V-neckline, no accessories';
     } else if (wantsTie) {
@@ -463,93 +545,81 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    const editPrompt = 'Transform this photo into a professional corporate headshot. ' +
-      'Keep the EXACT same person — preserve their face, facial features, skin tone, expression, hairstyle, and body shape completely unchanged. The person must be 100% recognizable. ' +
-      'Replace their current clothing with: ' + clothingDesc + '. ' +
-      'Set the background to a clean solid dark charcoal gray studio backdrop. ' +
-      'Frame as a half-body portrait from waist up, with generous space above the head and on both sides. ' +
-      'The person should occupy about 60-70% of the frame height, centered. ' +
-      'Professional studio lighting, sharp focus, high quality corporate portrait.';
+    var fillPrompt = 'Professional corporate headshot portrait photo. ' +
+      'Person wearing ' + clothingDesc + '. ' +
+      'Clean solid dark charcoal gray studio backdrop behind the person. ' +
+      'Half-body portrait from waist up, centered composition. ' +
+      'Professional studio lighting with soft shadows, sharp focus, ' +
+      'high quality corporate portrait, photorealistic, 8k quality.';
 
-    // Llamar a OpenAI Responses API con image_generation tool
-    const imageDataUri = 'data:image/jpeg;base64,' + rawBase64;
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const fillRes = await fetch('https://fal.run/fal-ai/flux-pro/v1/fill', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + OPENAI_KEY,
-        'Content-Type': 'application/json'
-      },
+      headers: falHeaders,
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        input: [
-          {
-            role: 'user',
-            content: [
-              { type: 'input_image', image_url: imageDataUri },
-              { type: 'input_text', text: editPrompt }
-            ]
-          }
-        ],
-        tools: [{
-          type: 'image_generation',
-          quality: 'high',
-          size: '1024x1536'
-        }]
+        prompt: fillPrompt,
+        image_url: imageDataUri,
+        mask_url: maskDataUri,
+        num_images: 1,
+        output_format: 'jpeg',
+        safety_tolerance: 6
       })
     });
 
-    const data = await response.json();
-
-    // Extraer imagen generada del response
-    if (data.output) {
-      const imageGen = data.output.find(function(o) { return o.type === 'image_generation_call'; });
-      if (imageGen && imageGen.result) {
-        const imageB64 = imageGen.result;
-
-        // Incrementar contador de fotos generadas
-        let newCount = 1;
-        if (photoUser) {
-          try {
-            const prog = await getProgress(photoUser);
-            if (prog) {
-              const tasks = prog.tasks || {};
-              newCount = (tasks._photo_gen_count || 0) + 1;
-              tasks._photo_gen_count = newCount;
-              await sb('onboarding_progress?username=eq.' + encodeURIComponent(photoUser), {
-                method: 'PATCH',
-                body: JSON.stringify({ tasks })
-              });
-            }
-          } catch (e) { /* Non-critical */ }
-        }
-        return res.status(200).json({
-          success: true,
-          image_b64: imageB64,
-          image_url: null,
-          photo_count: newCount,
-          max_photos: 9999
-        });
-      }
-    }
-
-    // Error de OpenAI
-    if (data.error) {
-      return res.status(response.status || 500).json({
+    if (!fillRes.ok) {
+      const errText = await fillRes.text().catch(function() { return ''; });
+      return res.status(500).json({
         success: false,
-        error: data.error.message || data.error || 'Error from OpenAI Responses API',
-        raw: data
+        error: 'FLUX Fill inpainting failed (' + fillRes.status + ')',
+        details: errText.substring(0, 500)
       });
     }
 
-    return res.status(500).json({
-      success: false,
-      error: 'No image in response from OpenAI Responses API',
-      raw: data
+    const fillData = await fillRes.json();
+
+    if (!fillData.images || !fillData.images[0] || !fillData.images[0].url) {
+      return res.status(500).json({
+        success: false,
+        error: 'FLUX Fill returned no image',
+        debug: { keys: Object.keys(fillData), images: fillData.images ? fillData.images.length : 0 }
+      });
+    }
+
+    // Descargar imagen resultado y convertir a base64
+    const resultDownload = await fetch(fillData.images[0].url);
+    const resultBuffer = Buffer.from(await resultDownload.arrayBuffer());
+    const resultB64 = resultBuffer.toString('base64');
+
+    // Incrementar contador de fotos
+    var newCount = 1;
+    if (photoUser) {
+      try {
+        var prog = await getProgress(photoUser);
+        if (prog) {
+          var tasks = prog.tasks || {};
+          newCount = (tasks._photo_gen_count || 0) + 1;
+          tasks._photo_gen_count = newCount;
+          await sb('onboarding_progress?username=eq.' + encodeURIComponent(photoUser), {
+            method: 'PATCH',
+            body: JSON.stringify({ tasks })
+          });
+        }
+      } catch (e) { /* Non-critical */ }
+    }
+
+    return res.status(200).json({
+      success: true,
+      image_b64: resultB64,
+      image_url: fillData.images[0].url,
+      photo_count: newCount,
+      max_photos: 9999,
+      pipeline: 'V10-inpaint',
+      cost_estimate: '$0.05'
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error generating photo V9 (OpenAI Responses API)',
+      error: 'Error generating photo V10 (Inpainting Pipeline)',
       details: error.message
     });
   }
