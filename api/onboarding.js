@@ -345,7 +345,7 @@ export default async function handler(req, res) {
   const { image_base64, suit_color, shirt_color, tie_option, gender, style, username: photoUser } = req.body || {};
   if (image_base64) {
     // \u2500\u2500 L\u00edmite de 3 fotos por usuario \u2500\u2500
-    const MAX_PHOTOS = 9999; // TODO: Volver a poner 3 para produccion
+    const MAX_PHOTOS = 3; // TODO: Volver a poner 3 para produccion
     if (photoUser) {
       try {
         const progress = await getProgress(photoUser);
@@ -468,7 +468,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       headers: falHeaders,
       body: JSON.stringify({
         image_url: imageDataUri,
-        prompt: 'face',
+        prompt: 'face, mouth, chin, jaw, neck, head, hair',
         output_format: 'png',
         apply_mask: false,
         return_multiple_masks: false
@@ -517,7 +517,11 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
 
     // Invertir: negate() convierte blanco→negro y negro→blanco
     // alpha:false para no invertir canal alpha si existe
+    // Dilatar máscara: expandir zona de cara ~25px para proteger bordes (boca, mentón)
+    // blur() expande la zona blanca, threshold() la re-binariza
     const invertedMaskBuffer = await sharp(maskBuffer)
+      .blur(25)
+      .threshold(30)
       .negate({ alpha: false })
       .png()
       .toBuffer();
