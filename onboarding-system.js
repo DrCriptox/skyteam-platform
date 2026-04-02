@@ -1031,6 +1031,27 @@ window.obSwitchTab = function(tabId) {
 
 function renderHomeTabs(homeEl) {
   if (!CU) return;
+  // Guard: only re-render tab bar if tab changed
+  if (homeEl._lastTab === obState.currentTab && document.getElementById('ob-tab-content')) {
+    var activeTab = TAB_CONFIG.find(function(t) { return t.id === obState.currentTab; });
+    var contentEl = document.getElementById('ob-tab-content');
+    if (activeTab && contentEl) {
+      // Update tab button styles without full re-render
+      homeEl.querySelectorAll('.ob-tab-btn').forEach(function(btn) {
+        var isActive = btn.getAttribute('data-tab') === obState.currentTab;
+        var tab = TAB_CONFIG.find(function(t) { return t.id === btn.getAttribute('data-tab'); });
+        if (tab) {
+          btn.style.background = isActive ? tab.color : 'transparent';
+          btn.style.color = isActive ? '#000' : 'rgba(255,255,255,0.5)';
+          btn.style.borderColor = isActive ? tab.color : 'rgba(255,255,255,0.08)';
+          btn.style.fontWeight = isActive ? '800' : '600';
+        }
+      });
+      activeTab.render(contentEl);
+    }
+    return;
+  }
+  homeEl._lastTab = obState.currentTab;
 
   var rk = (typeof RANKS !== 'undefined') ? (RANKS[CU.rank] || RANKS[0]) : { icon: '⭐', name: 'Inicio' };
 

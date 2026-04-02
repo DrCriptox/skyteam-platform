@@ -618,6 +618,10 @@ function toggleLive(id, isLive, callback) {
 
 // --- INIT ---
 window.initSkyTv = function() {
+  var container = document.getElementById('sky-tv-content') || document.querySelector('#section-sky-tv .sc');
+  if (container && !container.querySelector('.sky-tv-loaded')) {
+    container.insertAdjacentHTML('afterbegin', '<div class="sky-tv-loading" style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.4);font-size:14px;">Cargando Sky TV...</div>');
+  }
   var adminBtn = document.getElementById('nav-admin-btn') || document.querySelector('[onclick*="admin"]');
   skyTvState.userIsAdmin = !!adminBtn;
   skyTvState.selectedWeek = new Date();
