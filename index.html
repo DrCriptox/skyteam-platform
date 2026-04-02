@@ -2190,11 +2190,13 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
           <button class="admin-tab" id="atab-usuarios" onclick="switchAdminTab('usuarios')">Gestión de usuarios</button>
           <button class="admin-tab" id="atab-contenido" onclick="switchAdminTab('contenido')">Contenido</button>
           <button class="admin-tab" id="atab-anuncios" onclick="switchAdminTab('anuncios-admin')">Anuncios</button>
+          <button class="admin-tab" id="atab-config" onclick="switchAdminTab('config')">Configuracion</button>
         </div>
         <div id="admin-solicitudes"></div>
         <div id="admin-usuarios" style="display:none;"></div>
         <div id="admin-contenido" style="display:none;"></div>
         <div id="admin-anuncios-admin" style="display:none;"></div>
+        <div id="admin-config" style="display:none;"></div>
       </div>
     </div>
 
@@ -2676,6 +2678,8 @@ function showApp() {
     renderAnuncios();
     loadChat();
     startNotifEngine();
+    // Apply platform config (feature toggles, maintenance mode)
+    if(typeof applyPlatformConfig === 'function') applyPlatformConfig();
     // Only show admin if truly admin
     if(CU && (CU.isAdmin === true || CU.rank === 8)) {
       if(al) al.style.display='block';
@@ -7229,15 +7233,15 @@ function enviarRecordatorio() {
 }
 
 function switchAdminTab(tab) {
-  ['solicitudes','usuarios','contenido','anuncios-admin'].forEach(t=>{
+  ['solicitudes','usuarios','contenido','anuncios-admin','config'].forEach(t=>{
     var panel = document.getElementById('admin-'+t);
-    var btn   = document.getElementById('atab-'+t) || document.getElementById('atab-anuncios');
     if(panel) panel.style.display = t===tab?'block':'none';
-    // map anuncios-admin tab button to 'anuncios'
     var btnId = t === 'anuncios-admin' ? 'atab-anuncios' : 'atab-'+t;
     var tabBtn = document.getElementById(btnId);
     if(tabBtn) tabBtn.classList.toggle('active', t===tab);
   });
+  // Render config tab on demand
+  if(tab === 'config') renderAdminConfig();
 }
 
 function renderSolicitudes() {
@@ -7469,27 +7473,7 @@ function rechazarSolicitud(id) {
 }
 
 
-function aprobarSolicitud(id) {
-  const s = PENDING.find(x=>x.id===id);
-  if(!s) return;
-  const user = prompt(`Crear acceso para ${s.name}\n\nEscribe el nombre de usuario (sin espacios, minúsculas):`, s.name.split(' ')[0].toLowerCase());
-  if(!user) return;
-  const pass = prompt(`Contraseña para ${user}:`,'sky2024');
-  if(!pass) return;
-  const ref = prompt(`Código de referido para ${user}:`, user+'01');
-  if(!ref) return;
-  ADMIN_USERS.push({id:Date.now(),name:s.name,user,rank:1,ref,ventas:0,wa:s.wa,email:s.email,status:'activo',fecha:new Date().toLocaleDateString()});
-  PENDING = PENDING.filter(x=>x.id!==id);
-  document.getElementById('sol-'+id).style.opacity='0.5';
-  setTimeout(()=>{ renderSolicitudes(); renderAdminUsuarios(); }, 400);
-  alert(`✅ Acceso creado:\nUsuario: ${user}\nContraseña: ${pass}\nRef: ${ref}\n\nComparte estos datos con ${s.name} por WhatsApp.`);
-}
-
-function rechazarSolicitud(id) {
-  if(!confirm('¿Rechazar esta solicitud?')) return;
-  PENDING = PENDING.filter(x=>x.id!==id);
-  renderSolicitudes();
-}
+// Legacy duplicate aprobarSolicitud/rechazarSolicitud removed — using server-based versions above
 
 function renderAdminUsuarios() {
   var el = document.getElementById('admin-usuarios');
@@ -7510,12 +7494,32 @@ function renderAdminUsuarios() {
     };
   });
 
-  var html = '<div class="admin-info-box">Cambia el rango con el selector. Los cambios se guardan en la sesión actual.</div>';
-  html += '<div style="overflow-x:auto;"><table class="admin-table">';
+  var totalUsers = userList.filter(function(u){ return !u.isAdmin; }).length;
+  var activeUsers = userList.filter(function(u){ return !u.isAdmin && (!u.expiry || Date.now() <= u.expiry); }).length;
+  var expiredUsers = totalUsers - activeUsers;
+
+  var html = '';
+  // Stats row
+  html += '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">';
+  html += '<div style="flex:1;min-width:120px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.2);border-radius:10px;padding:12px 16px;text-align:center;">';
+  html += '<div style="font-size:22px;font-weight:900;color:#1D9E75;">' + activeUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Activos</div></div>';
+  html += '<div style="flex:1;min-width:120px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:10px;padding:12px 16px;text-align:center;">';
+  html += '<div style="font-size:22px;font-weight:900;color:#E24B4A;">' + expiredUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Expirados</div></div>';
+  html += '<div style="flex:1;min-width:120px;background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:10px;padding:12px 16px;text-align:center;">';
+  html += '<div style="font-size:22px;font-weight:900;color:#1CE8FF;">' + totalUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Total</div></div>';
+  html += '</div>';
+
+  // Search bar
+  html += '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">';
+  html += '<input type="text" id="admin-user-search" placeholder="Buscar por nombre, usuario o WhatsApp..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:10px;color:var(--text);font-size:13px;padding:10px 14px;outline:none;font-family:Nunito,sans-serif;">';
+  html += '<button onclick="addUserPrompt()" style="padding:10px 16px;border-radius:10px;background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">+ Nuevo Usuario</button>';
+  html += '</div>';
+
+  html += '<div style="overflow-x:auto;"><table class="admin-table" id="admin-users-table">';
   html += '<thead><tr><th>Usuario</th><th>Nombre</th><th>WhatsApp</th><th>Ref</th><th>Ventas</th><th>Rango</th><th>Estado</th></tr></thead><tbody>';
 
   userList.forEach(function(u) {
-    if(u.isAdmin) return; // Skip admin from list
+    if(u.isAdmin) return;
     var rk = RANKS[u.rank] || RANKS[0];
     var isMe = u.user === CU.username;
     var opts = Object.entries(RANKS).filter(function(e){ return +e[0] <= 7; })
@@ -7524,8 +7528,8 @@ function renderAdminUsuarios() {
     var statusColor = expired ? '#E24B4A' : '#1D9E75';
     var statusLabel = expired ? '⏰ Expirado' : '● Activo';
 
-    html += '<tr' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
-    html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + u.user + (isMe?' (tú)':'') + '</td>';
+    html += '<tr data-search="' + (u.user + ' ' + u.name + ' ' + u.wa + ' ' + u.ref).toLowerCase() + '"' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
+    html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + u.user + (isMe?' (tu)':'') + '</td>';
     html += '<td style="font-weight:600;">' + u.name + '</td>';
     html += '<td style="font-size:12px;color:rgba(255,255,255,0.5);">' + u.wa + '</td>';
     html += '<td style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + u.ref + '</td>';
@@ -7547,24 +7551,43 @@ function cambiarRango(username, newRank) {
       CU.rank = +newRank;
       try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
     }
-    showToast('Rango actualizado → ' + (RANKS[+newRank]||RANKS[0]).name);
+    // Sync to Supabase
+    if(typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_KEY !== 'undefined') {
+      fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username), {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+        body: JSON.stringify({rank: +newRank})
+      }).catch(function(e){ console.warn('Rank sync error:', e); });
+    }
+    var rk = RANKS[+newRank]||RANKS[0];
+    showToast('Rango actualizado → ' + rk.icon + ' ' + rk.name);
+    if(typeof renderRanking === 'function') renderRanking();
   }
 }
 
-
-function cambiarRango(username, newRank) {
-  const u = ADMIN_USERS.find(x=>x.user===username);
-  if(u) { u.rank=+newRank; renderRanking(); }
-  const rk = RANKS[+newRank]||RANKS[1];
-  const badge = document.querySelector(`[data-rank-user="${username}"]`);
-  showToast(`Rango actualizado: ${rk.icon} ${rk.name}`);
+function toggleStatus(username) {
+  if(USERS[username]) {
+    var expired = USERS[username].expiry && Date.now() > USERS[username].expiry;
+    if(expired) {
+      // Reactivate: extend 30 days
+      USERS[username].expiry = Date.now() + (30 * 24 * 60 * 60 * 1000);
+      showToast('Usuario reactivado por 30 dias');
+    } else {
+      // Expire immediately
+      USERS[username].expiry = Date.now() - 1000;
+      showToast('Usuario suspendido');
+    }
+    renderAdminUsuarios();
+  }
 }
 
-function toggleStatus(username) {
-  const u = ADMIN_USERS.find(x=>x.user===username);
-  if(!u) return;
-  u.status = u.status==='activo'?'suspendido':'activo';
-  renderAdminUsuarios();
+function filterAdminUsers() {
+  var query = (document.getElementById('admin-user-search').value || '').toLowerCase().trim();
+  var rows = document.querySelectorAll('#admin-users-table tbody tr');
+  rows.forEach(function(row) {
+    var data = row.getAttribute('data-search') || '';
+    row.style.display = (!query || data.indexOf(query) !== -1) ? '' : 'none';
+  });
 }
 
 function addUserPrompt() {
@@ -7756,8 +7779,175 @@ function showToast(msg, type) {
   setTimeout(()=>t.remove(), 2800);
 }
 
-/* ── ADMIN PANEL ── */
+/* ── ADMIN PANEL — CONFIG TAB ── */
+function renderAdminConfig() {
+  var el = document.getElementById('admin-config');
+  if(!el) return;
 
+  // Load saved config from localStorage
+  var cfg = JSON.parse(localStorage.getItem('skyteam_platform_config') || '{}');
+  var platformName = cfg.platformName || 'SKY TEAM';
+  var platformSub = cfg.platformSub || 'Franquicia Digital';
+  var defaultPass = cfg.defaultPass || 'skyteam2026';
+  var maxPhotos = cfg.maxPhotos || 3;
+  var chatEnabled = cfg.chatEnabled !== false;
+  var crmEnabled = cfg.crmEnabled !== false;
+  var agendaEnabled = cfg.agendaEnabled !== false;
+  var skyTvEnabled = cfg.skyTvEnabled !== false;
+  var prospectsEnabled = cfg.prospectsEnabled !== false;
+  var iaEnabled = cfg.iaEnabled !== false;
+  var registroAbierto = cfg.registroAbierto !== false;
+  var maintenanceMode = cfg.maintenanceMode === true;
+  var welcomeMsg = cfg.welcomeMsg || '';
+  var contactWA = cfg.contactWA || '';
+  var contactEmail = cfg.contactEmail || '';
+
+  var html = '';
+
+  // Header
+  html += '<div style="margin-bottom:24px;">';
+  html += '<div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:4px;">Configuracion de la Plataforma</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.35);">Modifica estos ajustes sin tocar codigo. Los cambios se aplican inmediatamente.</div>';
+  html += '</div>';
+
+  // General settings
+  html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;margin-bottom:16px;">';
+  html += '<div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:14px;letter-spacing:0.5px;">GENERAL</div>';
+
+  html += _cfgField('Nombre de la plataforma', 'cfg-name', platformName, 'text');
+  html += _cfgField('Subtitulo', 'cfg-sub', platformSub, 'text');
+  html += _cfgField('Contrasena por defecto (nuevos usuarios)', 'cfg-pass', defaultPass, 'text');
+  html += _cfgField('WhatsApp de soporte', 'cfg-wa', contactWA, 'text', '+57 300 1234567');
+  html += _cfgField('Email de soporte', 'cfg-email', contactEmail, 'text', 'soporte@skyteam.global');
+  html += _cfgField('Mensaje de bienvenida (aparece en login)', 'cfg-welcome', welcomeMsg, 'text', 'Bienvenido a Sky Team!');
+  html += '</div>';
+
+  // Feature toggles
+  html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;margin-bottom:16px;">';
+  html += '<div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:14px;letter-spacing:0.5px;">MODULOS ACTIVOS</div>';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:12px;">Activa o desactiva secciones de la plataforma para todos los usuarios.</div>';
+
+  html += _cfgToggle('Chat de Comunidad', 'cfg-chat', chatEnabled);
+  html += _cfgToggle('CRM de Prospectos', 'cfg-crm', crmEnabled);
+  html += _cfgToggle('Agenda de Cierres', 'cfg-agenda', agendaEnabled);
+  html += _cfgToggle('Sky TV', 'cfg-skytv', skyTvEnabled);
+  html += _cfgToggle('Agentes IA', 'cfg-ia', iaEnabled);
+  html += '</div>';
+
+  // Access control
+  html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;margin-bottom:16px;">';
+  html += '<div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:14px;letter-spacing:0.5px;">CONTROL DE ACCESO</div>';
+
+  html += _cfgToggle('Registro abierto (solicitudes de acceso)', 'cfg-registro', registroAbierto);
+  html += _cfgToggle('Modo mantenimiento (bloquea login)', 'cfg-maintenance', maintenanceMode);
+  html += _cfgField('Max fotos por usuario', 'cfg-maxphotos', maxPhotos, 'number');
+  html += '</div>';
+
+  // Platform stats
+  var totalUsers = Object.keys(USERS).filter(function(u){ return !USERS[u].isAdmin; }).length;
+  html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;margin-bottom:16px;">';
+  html += '<div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:14px;letter-spacing:0.5px;">ESTADO DE LA PLATAFORMA</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">';
+  html += '<div style="text-align:center;padding:12px;background:rgba(28,232,255,0.05);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#1CE8FF;">' + totalUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Usuarios</div></div>';
+  html += '<div style="text-align:center;padding:12px;background:rgba(255,215,0,0.05);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:var(--gold);">' + Object.keys(RANKS).length + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Rangos</div></div>';
+  html += '<div style="text-align:center;padding:12px;background:rgba(29,158,117,0.05);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#1D9E75;">' + (typeof ANUNCIOS !== 'undefined' ? ANUNCIOS.length : 0) + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Anuncios</div></div>';
+  html += '</div></div>';
+
+  // Save button
+  html += '<div style="display:flex;gap:10px;justify-content:flex-end;">';
+  html += '<button onclick="resetAdminConfig()" style="padding:12px 24px;border-radius:10px;background:rgba(226,75,74,0.1);border:0.5px solid rgba(226,75,74,0.3);color:#E24B4A;font-size:13px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">Restaurar Valores</button>';
+  html += '<button onclick="saveAdminConfig()" style="padding:12px 32px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">Guardar Cambios</button>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+function _cfgField(label, id, value, type, placeholder) {
+  var ph = placeholder ? ' placeholder="' + placeholder + '"' : '';
+  return '<div style="margin-bottom:12px;"><label style="display:block;font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;font-weight:600;">' + label + '</label>' +
+    '<input type="' + type + '" id="' + id + '" value="' + (value||'') + '"' + ph + ' style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:Nunito,sans-serif;"></div>';
+}
+
+function _cfgToggle(label, id, checked) {
+  var bg = checked ? 'rgba(29,158,117,0.2)' : 'rgba(255,255,255,0.05)';
+  var border = checked ? 'rgba(29,158,117,0.4)' : 'rgba(255,255,255,0.08)';
+  var dotPos = checked ? 'translateX(20px)' : 'translateX(0)';
+  var dotColor = checked ? '#1D9E75' : 'rgba(255,255,255,0.3)';
+  var statusText = checked ? 'Activo' : 'Inactivo';
+  var statusColor = checked ? '#1D9E75' : 'rgba(255,255,255,0.3)';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);">' +
+    '<span style="font-size:13px;color:var(--text);font-weight:600;">' + label + '</span>' +
+    '<div style="display:flex;align-items:center;gap:8px;">' +
+    '<span style="font-size:11px;color:' + statusColor + ';font-weight:600;">' + statusText + '</span>' +
+    '<div id="' + id + '" data-on="' + (checked?'1':'0') + '" onclick="toggleCfg(this)" style="width:42px;height:22px;border-radius:11px;background:' + bg + ';border:0.5px solid ' + border + ';cursor:pointer;position:relative;transition:all 0.2s;">' +
+    '<div style="width:16px;height:16px;border-radius:50%;background:' + dotColor + ';position:absolute;top:2.5px;left:2.5px;transform:' + dotPos + ';transition:all 0.2s;"></div>' +
+    '</div></div></div>';
+}
+
+function toggleCfg(el) {
+  var isOn = el.getAttribute('data-on') === '1';
+  var newState = !isOn;
+  el.setAttribute('data-on', newState ? '1' : '0');
+  el.style.background = newState ? 'rgba(29,158,117,0.2)' : 'rgba(255,255,255,0.05)';
+  el.style.borderColor = newState ? 'rgba(29,158,117,0.4)' : 'rgba(255,255,255,0.08)';
+  var dot = el.children[0];
+  dot.style.transform = newState ? 'translateX(20px)' : 'translateX(0)';
+  dot.style.background = newState ? '#1D9E75' : 'rgba(255,255,255,0.3)';
+  var statusSpan = el.parentElement.querySelector('span');
+  if(statusSpan) { statusSpan.textContent = newState ? 'Activo' : 'Inactivo'; statusSpan.style.color = newState ? '#1D9E75' : 'rgba(255,255,255,0.3)'; }
+}
+
+function saveAdminConfig() {
+  var cfg = {
+    platformName: document.getElementById('cfg-name').value,
+    platformSub: document.getElementById('cfg-sub').value,
+    defaultPass: document.getElementById('cfg-pass').value,
+    contactWA: document.getElementById('cfg-wa').value,
+    contactEmail: document.getElementById('cfg-email').value,
+    welcomeMsg: document.getElementById('cfg-welcome').value,
+    maxPhotos: +document.getElementById('cfg-maxphotos').value || 3,
+    chatEnabled: document.getElementById('cfg-chat').getAttribute('data-on') === '1',
+    crmEnabled: document.getElementById('cfg-crm').getAttribute('data-on') === '1',
+    agendaEnabled: document.getElementById('cfg-agenda').getAttribute('data-on') === '1',
+    skyTvEnabled: document.getElementById('cfg-skytv').getAttribute('data-on') === '1',
+    iaEnabled: document.getElementById('cfg-ia').getAttribute('data-on') === '1',
+    registroAbierto: document.getElementById('cfg-registro').getAttribute('data-on') === '1',
+    maintenanceMode: document.getElementById('cfg-maintenance').getAttribute('data-on') === '1'
+  };
+  localStorage.setItem('skyteam_platform_config', JSON.stringify(cfg));
+  // Apply config to nav items visibility
+  applyPlatformConfig(cfg);
+  showToast('Configuracion guardada correctamente');
+}
+
+function resetAdminConfig() {
+  if(!confirm('Restaurar toda la configuracion a valores por defecto?')) return;
+  localStorage.removeItem('skyteam_platform_config');
+  renderAdminConfig();
+  showToast('Configuracion restaurada');
+}
+
+function applyPlatformConfig(cfg) {
+  if(!cfg) cfg = JSON.parse(localStorage.getItem('skyteam_platform_config') || '{}');
+  // Toggle nav items based on config
+  var navMap = {
+    'comunidad': cfg.chatEnabled,
+    'prospectos': cfg.crmEnabled !== false && cfg.prospectsEnabled !== false,
+    'agenda': cfg.agendaEnabled,
+    'sky-tv': cfg.skyTvEnabled,
+    'skysales': cfg.iaEnabled
+  };
+  Object.keys(navMap).forEach(function(sec) {
+    if(navMap[sec] === false) {
+      var navBtn = document.querySelector('.nav-item[data-sec="' + sec + '"]');
+      if(navBtn) navBtn.style.display = 'none';
+    }
+  });
+  // Maintenance mode
+  if(cfg.maintenanceMode && (!CU || !CU.isAdmin)) {
+    showToast('Plataforma en mantenimiento. Vuelve pronto.', 'err');
+  }
+}
 
 /* ── LOGIN EXTRA ── */
 function toggleBox(id) {
