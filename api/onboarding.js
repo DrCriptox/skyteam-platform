@@ -468,8 +468,9 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       headers: falHeaders,
       body: JSON.stringify({
         image_url: imageDataUri,
-        prompt: 'face, head, hair, forehead, ears',
+        prompt: 'face',
         output_format: 'png',
+        apply_mask: false,
         return_multiple_masks: false
       })
     });
@@ -496,7 +497,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       return res.status(500).json({
         success: false,
         error: 'SAM3 returned no face mask',
-        debug: { keys: Object.keys(sam3Data), masks: sam3Data.masks ? sam3Data.masks.length : 0 }
+        debug: { keys: Object.keys(sam3Data), masksLen: sam3Data.masks ? sam3Data.masks.length : -1, hasImage: !!(sam3Data.image), imageKeys: sam3Data.image ? Object.keys(sam3Data.image) : [], raw: JSON.stringify(sam3Data).substring(0, 1000) }
       });
     }
 
