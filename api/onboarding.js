@@ -457,7 +457,15 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     if (rawBase64.startsWith('data:')) {
       rawBase64 = rawBase64.split(',')[1];
     }
-    const imageDataUri = 'data:image/jpeg;base64,' + rawBase64;
+    // ── PRE-PROCESO: Redimensionar para que SAM3 y FLUX trabajen bien ──
+    // Selfies de celular llegan en 3000-4000px, SAM3 falla con imágenes muy grandes
+    const imgBuffer = Buffer.from(rawBase64, 'base64');
+    const resized = await sharp(imgBuffer)
+      .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 92 })
+      .toBuffer();
+    const resizedB64 = resized.toString('base64');
+    const imageDataUri = 'data:image/jpeg;base64,' + resizedB64;
 
     // ════════════════════════════════════════════
     // PASO 1: Segmentar cara con SAM3
@@ -485,19 +493,53 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     }
 
     const sam3Data = await sam3Res.json();
-    // SAM3 response: { image: {url}, masks: [{url}] }
+    // SAM3 response format varía: { image: {url}, masks: [{url}] } o variantes
     var faceMaskUrl = null;
-    if (sam3Data.masks && sam3Data.masks.length > 0 && sam3Data.masks[0].url) {
-      faceMaskUrl = sam3Data.masks[0].url;
-    } else if (sam3Data.image && sam3Data.image.url) {
-      faceMaskUrl = sam3Data.image.url;
+    if (sam3Data.masks && sam3Data.masks.length > 0) {
+      faceMaskUrl = sam3Data.masks[0].url || (typeof sam3Data.masks[0] === 'string' ? sam3Data.masks[0] : null);
+    }
+    if (!faceMaskUrl && sam3Data.image) {
+      faceMaskUrl = sam3Data.image.url || (typeof sam3Data.image === 'string' ? sam3Data.image : null);
+    }
+    if (!faceMaskUrl && sam3Data.output) {
+      faceMaskUrl = sam3Data.output.url || (typeof sam3Data.output === 'string' ? sam3Data.output : null);
+    }
+    if (!faceMaskUrl && sam3Data.result) {
+      faceMaskUrl = sam3Data.result.url || (typeof sam3Data.result === 'string' ? sam3Data.result : null);
+    }
+
+    if (!faceMaskUrl) {
+      // ── FALLBACK: Reintentar SAM3 con prompt más simple ──
+      const sam3Retry = await fetch('https://fal.run/fal-ai/sam-3/image', {
+        method: 'POST',
+        headers: falHeaders,
+        body: JSON.stringify({
+          image_url: imageDataUri,
+          prompt: 'person face',
+          output_format: 'png',
+          return_multiple_masks: false
+        })
+      });
+      if (sam3Retry.ok) {
+        const retryData = await sam3Retry.json();
+        if (retryData.masks && retryData.masks.length > 0) {
+          faceMaskUrl = retryData.masks[0].url || retryData.masks[0];
+        } else if (retryData.image) {
+          faceMaskUrl = retryData.image.url || retryData.image;
+        }
+      }
     }
 
     if (!faceMaskUrl) {
       return res.status(500).json({
         success: false,
         error: 'SAM3 returned no face mask',
-        debug: { keys: Object.keys(sam3Data), masksLen: sam3Data.masks ? sam3Data.masks.length : -1, hasImage: !!(sam3Data.image), imageKeys: sam3Data.image ? Object.keys(sam3Data.image) : [], raw: JSON.stringify(sam3Data).substring(0, 1000) }
+        debug: {
+          keys: Object.keys(sam3Data),
+          masks: sam3Data.masks ? sam3Data.masks.length : 0,
+          hasImage: !!sam3Data.image,
+          sample: JSON.stringify(sam3Data).substring(0, 300)
+        }
       });
     }
 
@@ -616,7 +658,7 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
       image_b64: resultB64,
       image_url: fillData.images[0].url,
       photo_count: newCount,
-      max_photos: 9999,
+      max_photos: 3,
       pipeline: 'V10-inpaint',
       cost_estimate: '$0.05'
     });
