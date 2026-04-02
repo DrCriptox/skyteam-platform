@@ -557,14 +557,14 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
     }
     const maskBuffer = Buffer.from(await maskDownload.arrayBuffer());
 
-    // Invertir: negate() convierte blanco→negro y negro→blanco
-    // alpha:false para no invertir canal alpha si existe
-    // Dilatar máscara: expandir zona de cara ~25px para proteger bordes (boca, mentón)
-    // blur() expande la zona blanca, threshold() la re-binariza
+    // Invertir + DILATAR: expandir máscara 30px para cubrir bordes cuello/hombros
+    // Evita artefactos del fondo original en los bordes de la cara
+    const dilateKernel = 30;
     const invertedMaskBuffer = await sharp(maskBuffer)
-      .blur(25)
-      .threshold(30)
       .negate({ alpha: false })
+      .threshold(128)
+      .blur(dilateKernel)
+      .threshold(20)
       .png()
       .toBuffer();
 
@@ -585,19 +585,19 @@ async function handlePhotoGeneration(req, res, image_base64, suit_color, shirt_c
 
     var clothingDesc;
     if (isFemale) {
-      clothingDesc = suitName + ' ' + styleDesc + ' with ' + shirtName + ' blouse, V-neckline, no accessories';
+      clothingDesc = suitName + ' ' + styleDesc + ' fully buttoned, worn over ' + shirtName + ' silk blouse with high neckline, formal and conservative business attire';
     } else if (wantsTie) {
       clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt buttoned to neck, ' + suitName + ' tie in Windsor knot';
     } else {
       clothingDesc = suitName + ' ' + styleDesc + ', ' + shirtName + ' dress shirt with open collar, no tie';
     }
 
-    var fillPrompt = 'Professional corporate headshot portrait photo. ' +
+    var fillPrompt = 'Professional corporate headshot photograph, studio portrait. ' +
       'Person wearing ' + clothingDesc + '. ' +
-      'Clean solid dark charcoal gray studio backdrop behind the person. ' +
-      'Half-body portrait from waist up, centered composition. ' +
-      'Professional studio lighting with soft shadows, sharp focus, ' +
-      'high quality corporate portrait, photorealistic, 8k quality.';
+      'Clean solid uniform dark charcoal gray backdrop, no patterns, no objects, no text. ' +
+      'Half-body portrait from waist up, centered composition, arms naturally posed. ' +
+      'Professional studio lighting, soft key light, subtle fill light, sharp focus. ' +
+      'No watermarks, no logos, no text, no words, no letters, no captions, no overlay graphics.';
 
     const fillRes = await fetch('https://fal.run/fal-ai/flux-pro/v1/fill', {
       method: 'POST',
