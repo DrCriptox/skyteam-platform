@@ -12,17 +12,16 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?select=username,password,name,rank,ref,sponsor,ventas,equipo,expiry,is_admin&limit=1000',
+      SUPABASE_URL + '/rest/v1/users?select=username,name,rank,ref,sponsor,ventas,equipo,expiry,is_admin&limit=1000',
       { headers: HEADERS }
     );
     if (!r.ok) throw new Error('Supabase GET failed: ' + r.status);
     const rows = await r.json();
 
-    // Convert array to keyed object matching frontend USERS format
+    // Convert array to keyed object — NO passwords sent to frontend
     const users = {};
     for (const row of rows) {
       users[row.username] = {
-        pass: row.password || 'skyteam2026',
         name: row.name || row.username,
         rank: row.rank || 0,
         ref: row.ref || row.username,

@@ -2,10 +2,31 @@
 <html lang="es">
 <head> 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Sky Team</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Sky Team — Franquicia Digital Global</title>
+<meta name="description" content="Sky Team es la franquicia digital #1 en Latinoamérica. Educación, tecnología e inteligencia artificial para construir tu negocio global. Únete a +500 emprendedores.">
+<meta name="keywords" content="Sky Team, franquicia digital, negocio online, emprendimiento, network marketing, ingresos pasivos, Latinoamérica">
+<link rel="canonical" href="https://skyteam.global/">
+<!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://skyteam.global/">
+<meta property="og:title" content="Sky Team — Franquicia Digital Global">
+<meta property="og:description" content="Una visión. Un equipo. Un legado. Únete a la franquicia digital #1 con IA, educación y comunidad global.">
+<meta property="og:image" content="https://skyteam.global/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_LA">
+<meta property="og:site_name" content="Sky Team">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sky Team — Franquicia Digital Global">
+<meta name="twitter:description" content="Una visión. Un equipo. Un legado. Únete a la franquicia digital #1 con IA, educación y comunidad global.">
+<meta name="twitter:image" content="https://skyteam.global/og-image.png">
+<!-- Favicon & PWA -->
+<link rel="icon" type="image/png" sizes="32x32" href="/logo-skyteam.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/logo-skyteam.png">
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1CE8FF">
+<meta name="theme-color" content="#0a0a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SKY TEAM">
@@ -14,8 +35,97 @@
 <script>if(window.navigator.standalone===true)document.documentElement.classList.add('ios-standalone');</script>
 <style>
 html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}
-:root{--gold:#FFD700;--gold2:#C9A84C;--gold-d:rgba(255,215,0,0.08);--gold-b:rgba(255,215,0,0.25);--gold-1:#FFE55A;--bg:#030c1f;--bg2:#040f28;--bg3:#061235;--bg4:#08173e;--border:rgba(255,255,255,0.07);--border2:rgba(28,232,255,0.15);--text:#F0EDE6;--muted:rgba(255,255,255,0.45);--muted2:rgba(255,255,255,0.25);--blue:#1CE8FF;--blue-d:rgba(28,232,255,0.07);--blue-b:rgba(28,232,255,0.18);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;}
+:root{--gold:#FFD700;--gold2:#C9A84C;--gold-d:rgba(255,215,0,0.08);--gold-b:rgba(255,215,0,0.25);--gold-1:#FFE55A;--bg:#030c1f;--bg2:#040f28;--bg3:#061235;--bg4:#08173e;--border:rgba(255,255,255,0.07);--border2:rgba(28,232,255,0.15);--text:#F0EDE6;--muted:rgba(255,255,255,0.45);--muted2:rgba(255,255,255,0.25);--blue:#1CE8FF;--blue-d:rgba(28,232,255,0.07);--blue-b:rgba(28,232,255,0.18);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;
+/* Design tokens — spacing */
+--sp-xs:4px;--sp-sm:8px;--sp-md:14px;--sp-lg:20px;--sp-xl:28px;--sp-2xl:40px;
+/* Design tokens — typography */
+--fs-xs:10px;--fs-sm:12px;--fs-base:14px;--fs-md:16px;--fs-lg:20px;--fs-xl:24px;--fs-2xl:32px;
+/* Design tokens — radius */
+--r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;--r-full:9999px;
+/* Design tokens — transitions */
+--tr-fast:0.15s cubic-bezier(0.22,1,0.36,1);--tr-normal:0.25s cubic-bezier(0.22,1,0.36,1);--tr-slow:0.4s cubic-bezier(0.22,1,0.36,1);
+}
 *{box-sizing:border-box;margin:0;padding:0;}
+
+/* ══════════════════════════════════════════════════════
+   PREMIUM UX — Animations, Micro-interactions, Skeletons
+   ══════════════════════════════════════════════════════ */
+
+/* ── Section entry animations ── */
+@keyframes skyFadeInUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes skyFadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes skyScaleIn{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
+@keyframes skySlideRight{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:translateX(0);}}
+
+.section.active{animation:skyFadeInUp 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.section.active .sc>*{animation:skyFadeIn 0.5s cubic-bezier(0.22,1,0.36,1) both;}
+.section.active .sc>*:nth-child(1){animation-delay:0.05s;}
+.section.active .sc>*:nth-child(2){animation-delay:0.1s;}
+.section.active .sc>*:nth-child(3){animation-delay:0.15s;}
+.section.active .sc>*:nth-child(4){animation-delay:0.2s;}
+.section.active .sc>*:nth-child(5){animation-delay:0.25s;}
+.section.active .sc>*:nth-child(6){animation-delay:0.3s;}
+.section.active .sc>*:nth-child(7){animation-delay:0.35s;}
+.section.active .sc>*:nth-child(8){animation-delay:0.4s;}
+
+/* ── Card entry animation ── */
+@keyframes skyCardIn{from{opacity:0;transform:translateY(16px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.sky-animate-card{animation:skyCardIn 0.35s cubic-bezier(0.22,1,0.36,1) both;}
+
+/* ── Micro-interactions — buttons ── */
+button, .btn, [onclick]{transition:transform 0.15s cubic-bezier(0.22,1,0.36,1),box-shadow 0.15s ease,filter 0.15s ease;}
+button:active:not(:disabled), .btn:active:not(:disabled){transform:scale(0.96);}
+.nav-item:active{transform:scale(0.92);}
+
+/* ── Micro-interactions — cards & interactive elements ── */
+.card, .video-card, .mat-card, .viaje-card, .anuncio-card, .agent-card,
+[style*="border-radius"][style*="background"]{transition:transform 0.2s cubic-bezier(0.22,1,0.36,1),box-shadow 0.2s ease,border-color 0.2s ease;}
+
+/* ── Ripple effect for buttons ── */
+@keyframes skyRipple{0%{transform:scale(0);opacity:0.5;}100%{transform:scale(4);opacity:0;}}
+.sky-ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);pointer-events:none;animation:skyRipple 0.6s ease-out forwards;}
+
+/* ── Hover glow for primary actions ── */
+button:hover:not(:disabled){filter:brightness(1.08);box-shadow:0 0 20px rgba(28,232,255,0.12);}
+
+/* ── Focus visible for accessibility ── */
+*:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px;}
+
+/* ── Skeleton loading screens ── */
+@keyframes skyShimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.sky-skeleton{background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.03) 75%);background-size:200% 100%;animation:skyShimmer 1.5s ease-in-out infinite;border-radius:8px;min-height:20px;}
+.sky-skeleton-card{height:120px;border-radius:14px;margin-bottom:12px;}
+.sky-skeleton-line{height:14px;border-radius:6px;margin-bottom:10px;}
+.sky-skeleton-line.short{width:60%;}
+.sky-skeleton-line.medium{width:80%;}
+.sky-skeleton-avatar{width:48px;height:48px;border-radius:50%;}
+.sky-skeleton-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sky-skeleton-stat{height:80px;border-radius:12px;}
+
+/* ── Count-up animation for numbers ── */
+@keyframes skyCountPulse{0%{transform:scale(1);}50%{transform:scale(1.12);}100%{transform:scale(1);}}
+.sky-count-up{animation:skyCountPulse 0.4s cubic-bezier(0.22,1,0.36,1);}
+
+/* ── Smooth page transitions ── */
+.section{opacity:0;transition:opacity 0.15s ease;}
+.section.active{opacity:1;}
+
+/* ── Toast stack improvements ── */
+@keyframes skyToastIn{from{opacity:0;transform:translateX(100%) scale(0.8);}to{opacity:1;transform:translateX(0) scale(1);}}
+@keyframes skyToastOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(100%);}}
+
+/* ── Notification badge pulse ── */
+@keyframes skyBadgePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+.notif-badge{animation:skyBadgePulse 2s ease-in-out infinite;}
+
+/* ── Respect reduced motion ── */
+@media(prefers-reduced-motion:reduce){
+  *, *::before, *::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}
+  .section.active{animation:none;}
+  .sky-skeleton{animation:none;background:rgba(255,255,255,0.05);}
+  .notif-badge{animation:none;}
+}
+
 /* ── PWA SAFE AREA — prevent content under status bar ── */
 @media all and (display-mode: standalone){
   .topbar{padding-top:max(env(safe-area-inset-top,44px),44px);height:calc(64px + max(env(safe-area-inset-top,44px),44px));}
@@ -353,7 +463,8 @@ select option{background:#040f28;color:#F0EDE6;}
 .admin-info-box{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.6;}
 .admin-info-box strong{color:var(--gold);}
 
-/* ── ANUNCIOS ── */border:0.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;}
+/* ── ANUNCIOS ── */
+.anuncio-card{background:rgba(255,255,255,0.02);border:0.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;}
 .anuncio-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:10px;}
 .anuncio-icon{width:44px;height:44px;border-radius:12px;background:var(--gold-d);border:0.5px solid var(--gold-b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
 .anuncio-meta{flex:1;}
@@ -2511,24 +2622,37 @@ const RANKS = {
   8:{name:'Admin',     icon:'🔧',color:'#FFD700',bg:'rgba(201,168,76,0.15)',border:'rgba(201,168,76,0.3)'}
 };
 
-var USERS = {
-  'angel':   {pass:'sky2024',   name:'Angel',   rank:7, ref:'angel2026', ventas:47, equipo:23},
-  'genesis': {pass:'genesis22', name:'Genesis', rank:3, ref:'genesis22', ventas:12, equipo:5},
-  'carlos':  {pass:'demo',      name:'Carlos',  rank:2, ref:'carlos01',  ventas:3,  equipo:0},
-  'maria':   {pass:'demo',      name:'María',   rank:1, ref:'maria01',   ventas:0,  equipo:0},
-  'admin':   {pass:'skyadmin',  name:'Admin',   rank:8, ref:'admin',     ventas:0,  equipo:0, isAdmin:true},
-  'cliente':  {pass:'demo',      name:'Cliente Demo', rank:0, ref:'cliente01', ventas:0,  equipo:0},
-  'demo2025':  {pass:'skyteam2025', name:'Líder Demo',   rank:3, ref:'demo2025',   ventas:5,  equipo:2, expiry:1742889437000},
-  'prueba3h':  {pass:'sky3h2026',   name:'Usuario Prueba',  rank:1, ref:'prueba01', ventas:0, equipo:0, expiry:1774414925020},
-  'genesis22': {pass:'genesis22',   name:'Genesis Rivera',  rank:3, ref:'genesis22', ventas:0, equipo:0, expiry:null},
-  'yonfer':    {pass:'skyadmin2026',name:'Yonfer Rojas',    rank:7, ref:'angel2026', ventas:47, equipo:15, expiry:null},
-  'billonarios':{pass:'billonarios26',name:'Johan Gonzalez', rank:1, ref:'billonarios', ventas:0, equipo:0, expiry:null},
+var USERS = {};
+
+// ── GLOBAL ERROR BOUNDARY ──
+window.onerror = function(msg, src, line, col, err) {
+  console.error('[SKY ERROR]', msg, 'at', src, line + ':' + col, err);
+  return false;
 };
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('[SKY PROMISE]', e.reason);
+});
+
+// ── HTML SANITIZER — prevents XSS in user-generated content ──
+function _safe(str) {
+  if(typeof str !== 'string') return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── FETCH WITH TIMEOUT ──
+function _skyFetch(url, opts, timeoutMs) {
+  timeoutMs = timeoutMs || 15000;
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, timeoutMs);
+  opts = opts || {};
+  opts.signal = controller.signal;
+  return fetch(url, opts).finally(function(){ clearTimeout(timer); });
+}
 
 // ── DYNAMIC USER LOADING FROM SUPABASE ──
 var _usersLoaded = false;
 function loadUsersFromServer(callback) {
-  fetch('/api/users')
+  _skyFetch('/api/users', null, 10000)
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.users) {
@@ -2632,39 +2756,42 @@ function showLanding() {
 
 function doLogin() {
   try {
-    const u = document.getElementById('lu').value.trim().toLowerCase();
-    const p = document.getElementById('lp').value;
-    const err = document.getElementById('login-error');
+    var u = document.getElementById('lu').value.trim().toLowerCase();
+    var p = document.getElementById('lp').value;
+    var err = document.getElementById('login-error');
+    var btn = document.querySelector('#login-screen button[onclick*="doLogin"]') || document.querySelector('#login-screen button');
     if(!u || !p) { err.textContent = 'Ingresa usuario y contraseña'; return; }
 
-    // Try local USERS first (includes server-loaded users if already fetched)
-    if(USERS[u] && USERS[u].pass === p) {
-      if(USERS[u].expiry && Date.now() > USERS[u].expiry) { err.textContent = '⏰ Este usuario demo ha expirado'; return; }
-      CU = Object.assign({}, USERS[u], {username: u});
-      try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-      err.textContent = '';
-      showApp();
-      return;
-    }
+    // Show loading state
+    err.textContent = '';
+    if(btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
 
-    // If not found locally, try loading fresh from server (user may have been approved recently)
-    if(!_usersLoaded) {
-      err.textContent = 'Verificando credenciales...';
-      loadUsersFromServer(function(ok) {
-        if(ok && USERS[u] && USERS[u].pass === p) {
-          if(USERS[u].expiry && Date.now() > USERS[u].expiry) { err.textContent = '⏰ Este usuario demo ha expirado'; return; }
-          CU = Object.assign({}, USERS[u], {username: u});
-          try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-          err.textContent = '';
-          showApp();
-        } else {
-          err.textContent = 'Usuario o contraseña incorrectos';
-        }
-      });
-      return;
-    }
-
-    err.textContent = 'Usuario o contraseña incorrectos';
+    // Authenticate via server (passwords never stored in frontend)
+    _skyFetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: u, password: p})
+    }, 12000)
+    .then(function(r) { return r.json().then(function(d) { return {ok:r.ok, data:d}; }); })
+    .then(function(res) {
+      if(btn) { btn.disabled = false; btn.textContent = 'Iniciar Sesión'; }
+      if(res.ok && res.data.user) {
+        CU = res.data.user;
+        // Store session WITHOUT password
+        try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+        // Also merge into USERS for local lookups (no password)
+        USERS[CU.username] = {name:CU.name, rank:CU.rank, ref:CU.ref, ventas:CU.ventas, equipo:CU.equipo, expiry:CU.expiry, isAdmin:CU.isAdmin};
+        err.textContent = '';
+        showApp();
+      } else {
+        err.textContent = res.data.error || 'Usuario o contraseña incorrectos';
+      }
+    })
+    .catch(function(e) {
+      if(btn) { btn.disabled = false; btn.textContent = 'Iniciar Sesión'; }
+      console.error('doLogin error:', e);
+      err.textContent = 'Error de conexión. Intenta de nuevo.';
+    });
   } catch(e) {
     console.error('doLogin error:', e);
     document.getElementById('login-error').textContent = 'Error al iniciar sesión: ' + e.message;
@@ -2674,6 +2801,13 @@ function doLogin() {
 function doLogout() {
   localStorage.removeItem('skyteam_u');
   CU = null;
+
+  // Clear all active intervals to prevent memory leaks
+  if(typeof _chatPollInterval !== 'undefined' && _chatPollInterval) { clearInterval(_chatPollInterval); _chatPollInterval = null; }
+  if(typeof _notifInterval !== 'undefined' && _notifInterval) { clearInterval(_notifInterval); _notifInterval = null; }
+  if(typeof _pbViewerInterval !== 'undefined' && _pbViewerInterval) { clearInterval(_pbViewerInterval); _pbViewerInterval = null; }
+  if(typeof stopChatPolling === 'function') stopChatPolling();
+
   // Reset admin nav buttons
   var al = document.getElementById('nav-admin-label');
   var ab = document.getElementById('nav-admin-btn');
@@ -2700,40 +2834,42 @@ function doLogout() {
 document.getElementById('lp').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
 function showApp() {
-  try {
-    // Hide landing page and login
-    var landingEl = document.getElementById('landing-page');
-    if(landingEl) landingEl.style.display='none';
+  // Hide landing page and login
+  var landingEl = document.getElementById('landing-page');
+  if(landingEl) landingEl.style.display='none';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 
-    // Reset admin nav — ALWAYS hide first
-    var al = document.getElementById('nav-admin-label');
-    var ab = document.getElementById('nav-admin-btn');
-    if(al) al.style.display='none';
-    if(ab) ab.style.display='none';
+  // Reset admin nav — ALWAYS hide first
+  var al = document.getElementById('nav-admin-label');
+  var ab = document.getElementById('nav-admin-btn');
+  if(al) al.style.display='none';
+  if(ab) ab.style.display='none';
 
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    renderSidebarUser();
-    renderHome();
-    renderSkySales();
-    syncLocksFromServer();
-    renderAcademia();
-    renderMateriales();
-    renderRanking();
-    renderViajes();
-    renderAnuncios();
-    loadChat();
-    startNotifEngine();
-    // Apply platform config (feature toggles, maintenance mode)
-    if(typeof applyPlatformConfig === 'function') applyPlatformConfig();
-    // Only show admin if truly admin
-    if(CU && (CU.isAdmin === true || CU.rank === 8)) {
-      if(al) al.style.display='block';
-      if(ab) ab.style.display='flex';
-      renderAdminPanel();
-    }
-  } catch(e) {
-    console.error('showApp error:', e);
+  // Each section loads independently — one failure doesn't break others
+  var initTasks = [
+    ['Sidebar', renderSidebarUser],
+    ['Home', renderHome],
+    ['SkySales', typeof renderSkySales==='function' ? renderSkySales : null],
+    ['Locks', typeof syncLocksFromServer==='function' ? syncLocksFromServer : null],
+    ['Academia', typeof renderAcademia==='function' ? renderAcademia : null],
+    ['Materiales', renderMateriales],
+    ['Ranking', renderRanking],
+    ['Viajes', renderViajes],
+    ['Anuncios', renderAnuncios],
+    ['Chat', loadChat],
+    ['Notifs', typeof startNotifEngine==='function' ? startNotifEngine : null],
+    ['Config', typeof applyPlatformConfig==='function' ? applyPlatformConfig : null]
+  ];
+  initTasks.forEach(function(task) {
+    if(task[1]) { try { task[1](); } catch(e) { console.error('[SKY] ' + task[0] + ' init failed:', e); } }
+  });
+
+  // Only show admin if truly admin
+  if(CU && (CU.isAdmin === true || CU.rank === 8)) {
+    if(al) al.style.display='block';
+    if(ab) ab.style.display='flex';
+    try { renderAdminPanel(); } catch(e) { console.error('[SKY] Admin init failed:', e); }
   }
 }
 
@@ -6844,6 +6980,26 @@ function closeSidebar() {
 }
 
 /* ── HOME ── */
+function _skyGreeting() {
+  var h = new Date().getHours();
+  if(h >= 5 && h < 12) return {text:'Buenos días', emoji:'☀️'};
+  if(h >= 12 && h < 18) return {text:'Buenas tardes', emoji:'🌤️'};
+  return {text:'Buenas noches', emoji:'🌙'};
+}
+
+function _skyCountUp(el, target) {
+  var start = 0, duration = 800, startTime = null;
+  function step(ts) {
+    if(!startTime) startTime = ts;
+    var progress = Math.min((ts - startTime) / duration, 1);
+    var ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.floor(ease * target);
+    if(progress < 1) requestAnimationFrame(step);
+    else { el.textContent = target; el.classList.add('sky-count-up'); }
+  }
+  if(target > 0) requestAnimationFrame(step); else el.textContent = '0';
+}
+
 function renderHome() {
   if(!CU) return;
   var rk = RANKS[CU.rank] || RANKS[0];
@@ -6851,23 +7007,60 @@ function renderHome() {
   var landingLink = 'https://innovaia.app?ref=' + CU.ref;
   var downline = getDownline(CU.ref, 8);
   var directCount = getDownline(CU.ref, 1).length;
+  var greet = _skyGreeting();
 
-  var html = '<div class="sc-title">Bienvenido, ' + CU.name.split(' ')[0] + ' 👋</div>'
-    + '<div class="sc-sub">' + rk.icon + ' ' + rk.name + ' — Tu equipo está creciendo</div>'
+  var html = '<div class="sc-title" style="font-size:22px;font-weight:800;margin-bottom:2px;">' + greet.emoji + ' ' + greet.text + ', ' + CU.name.split(' ')[0] + '</div>'
+    + '<div class="sc-sub" style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">' + rk.icon + ' ' + rk.name + ' <span style="color:var(--muted2);font-size:11px;">—</span> <span style="color:var(--muted);font-size:12px;">Tu equipo está creciendo</span></div>'
 
-    // Stats cards
+    // Premium stat cards with gradients and icons
     + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;">'
-    + '<div class="stat-card"><div class="stat-num">' + (CU.ventas || 0) + '</div><div class="stat-label">Ventas totales</div></div>'
-    + '<div class="stat-card"><div class="stat-num" style="color:#FFD700;">' + downline.length + '</div><div class="stat-label">Red total</div></div>'
-    + '<div class="stat-card"><div class="stat-num" style="color:#1D9E75;">' + directCount + '</div><div class="stat-label">Directos</div></div>'
-    + '<div class="stat-card"><div class="stat-num" style="color:#7F77DD;">' + CU.rank + '</div><div class="stat-label">Nivel de rango</div></div>'
+
+    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(28,232,255,0.08),rgba(0,119,255,0.04));border:0.5px solid rgba(28,232,255,0.15);backdrop-filter:blur(10px);">'
+    + '<div style="position:absolute;top:-8px;right:-8px;font-size:40px;opacity:0.08;">📊</div>'
+    + '<div style="font-size:11px;font-weight:700;color:rgba(28,232,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Ventas</div>'
+    + '<div class="sky-count-num" data-target="' + (CU.ventas||0) + '" style="font-size:28px;font-weight:900;color:#1CE8FF;line-height:1;">0</div>'
+    + '<div style="font-size:10px;color:var(--muted2);margin-top:4px;">totales acumuladas</div>'
     + '</div>'
 
-    // My link
-    + '<div class="card" style="background:rgba(28,232,255,0.04);border-color:rgba(28,232,255,0.15);margin-bottom:14px;">'
+    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04));border:0.5px solid rgba(255,215,0,0.15);backdrop-filter:blur(10px);">'
+    + '<div style="position:absolute;top:-8px;right:-8px;font-size:40px;opacity:0.08;">🌐</div>'
+    + '<div style="font-size:11px;font-weight:700;color:rgba(255,215,0,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Red Total</div>'
+    + '<div class="sky-count-num" data-target="' + downline.length + '" style="font-size:28px;font-weight:900;color:#FFD700;line-height:1;">0</div>'
+    + '<div style="font-size:10px;color:var(--muted2);margin-top:4px;">personas en tu red</div>'
+    + '</div>'
+
+    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(29,158,117,0.08),rgba(29,158,117,0.03));border:0.5px solid rgba(29,158,117,0.15);backdrop-filter:blur(10px);">'
+    + '<div style="position:absolute;top:-8px;right:-8px;font-size:40px;opacity:0.08;">👥</div>'
+    + '<div style="font-size:11px;font-weight:700;color:rgba(29,158,117,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Directos</div>'
+    + '<div class="sky-count-num" data-target="' + directCount + '" style="font-size:28px;font-weight:900;color:#1D9E75;line-height:1;">0</div>'
+    + '<div style="font-size:10px;color:var(--muted2);margin-top:4px;">referidos directos</div>'
+    + '</div>'
+
+    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(127,119,221,0.08),rgba(127,119,221,0.03));border:0.5px solid rgba(127,119,221,0.15);backdrop-filter:blur(10px);">'
+    + '<div style="position:absolute;top:-8px;right:-8px;font-size:40px;opacity:0.08;">⭐</div>'
+    + '<div style="font-size:11px;font-weight:700;color:rgba(127,119,221,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Rango</div>'
+    + '<div style="font-size:28px;font-weight:900;color:#7F77DD;line-height:1;">' + rk.icon + '</div>'
+    + '<div style="font-size:10px;color:var(--muted2);margin-top:4px;">' + rk.name + '</div>'
+    + '</div>'
+
+    + '</div>'
+
+    // Next rank progress
+    + (CU.rank < 7 ? '<div style="padding:12px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:0.5px solid var(--border);margin-bottom:16px;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+    + '<span style="font-size:11px;color:var(--muted);font-weight:600;">Siguiente rango</span>'
+    + '<span style="font-size:11px;font-weight:700;color:' + nextRk.color + ';">' + nextRk.icon + ' ' + nextRk.name + '</span>'
+    + '</div>'
+    + '<div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;">'
+    + '<div style="height:100%;width:' + Math.min(100, Math.round(((CU.ventas||0) / Math.max(1,(CU.rank+1)*5)) * 100)) + '%;background:linear-gradient(90deg,' + rk.color + ',' + nextRk.color + ');border-radius:3px;transition:width 1s ease;"></div>'
+    + '</div>'
+    + '</div>' : '')
+
+    // My link card
+    + '<div style="position:relative;overflow:hidden;padding:18px;border-radius:14px;background:linear-gradient(135deg,rgba(28,232,255,0.06),rgba(0,119,255,0.03));border:0.5px solid rgba(28,232,255,0.15);margin-bottom:14px;">'
     + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.5);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>'
     + '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px;line-height:1.6;">Genera tu link personalizado con tu usuario y WhatsApp para empezar a duplicar.</p>'
-    + '<button onclick="navigate(\'skysales\')" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">⚡ Generar mi link de ventas →</button>'
+    + '<button onclick="navigate(\'skysales\')" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;letter-spacing:0.5px;">⚡ Generar mi link de ventas →</button>'
     + '</div>'
 
     // Downline tree
@@ -6879,6 +7072,11 @@ function renderHome() {
   var homeEl = document.getElementById('home-content');
   if(homeEl) {
     homeEl.innerHTML = html;
+    // Trigger count-up animations
+    homeEl.querySelectorAll('.sky-count-num').forEach(function(el) {
+      var target = parseInt(el.getAttribute('data-target')) || 0;
+      _skyCountUp(el, target);
+    });
     var btn = document.getElementById('home-copy-btn');
     if(btn) btn.addEventListener('click', function() {
       navigator.clipboard.writeText(landingLink).then(function() { showToast('Link copiado ✓'); });
@@ -6912,48 +7110,117 @@ function renderMateriales() {
 
 /* ── RANKING ── */
 function renderRanking() {
-  let rows = '';
-  RANKING_DATA.forEach((m,i)=>{
-    const rk = RANKS[m.rank]||RANKS[1];
-    const isMe = m.name.includes(CU.name);
-    rows += `<tr style="${isMe?'background:var(--gold-d);':i%2===0?'':'background:rgba(255,255,255,0.01);'}">
-      <td class="rank-pos${i<3?' top':''}"><b>${i+1}</b></td>
-      <td><div class="rank-name-cell">
-        <div class="rank-avatar" style="background:${rk.bg};color:${rk.color};">${m.initials}</div>
-        <div><div style="font-size:14px;font-weight:${isMe?'500':'400'};color:var(--text);">${m.name}${isMe?' (tú)':''}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${rankBadge(m.rank,true)}</div></div>
-      </div></td>
-      <td style="font-family:'Nunito',sans-serif;font-weight:600;color:var(--gold);">${m.ventas}</td>
-      <td style="color:var(--muted);">${m.equipo}</td>
-    </tr>`;
+  var top3 = RANKING_DATA.slice(0, 3);
+  var rest = RANKING_DATA.slice(3);
+  var medals = ['🥇','🥈','🥉'];
+  var podiumColors = ['linear-gradient(135deg,#FFD700,#C9A84C)','linear-gradient(135deg,#C0C0C0,#A0A0A0)','linear-gradient(135deg,#CD7F32,#A0522D)'];
+  var podiumHeights = ['140px','110px','90px'];
+  var podiumOrder = [1,0,2]; // silver, gold, bronze display order
+
+  // Podium section
+  var podiumHtml = '<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:20px 0 24px;padding:0 10px;">';
+  podiumOrder.forEach(function(pi) {
+    var m = top3[pi];
+    if(!m) return;
+    var rk = RANKS[m.rank]||RANKS[1];
+    var isMe = m.name.includes(CU.name);
+    podiumHtml += '<div style="flex:1;max-width:130px;text-align:center;animation:skyFadeInUp 0.5s cubic-bezier(0.22,1,0.36,1) ' + (pi*0.15) + 's both;">'
+      + '<div style="width:' + (pi===0?'64px':'52px') + ';height:' + (pi===0?'64px':'52px') + ';margin:0 auto 8px;border-radius:50%;background:' + rk.bg + ';border:2px solid ' + rk.color + ';display:flex;align-items:center;justify-content:center;font-weight:800;color:' + rk.color + ';font-size:' + (pi===0?'18px':'15px') + ';box-shadow:0 0 20px ' + rk.color + '30;'+(isMe?'outline:2px solid var(--gold);outline-offset:3px;':'') + '">' + m.initials + '</div>'
+      + '<div style="font-size:' + (pi===0?'13px':'11px') + ';font-weight:700;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + (isMe?' (tú)':'') + '</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px;">' + rk.icon + ' ' + m.ventas + ' ventas</div>'
+      + '<div style="height:' + podiumHeights[pi] + ';background:' + podiumColors[pi] + ';border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:12px;">'
+      + '<span style="font-size:' + (pi===0?'28px':'22px') + ';">' + medals[pi] + '</span>'
+      + '</div>'
+      + '</div>';
   });
-  document.getElementById('ranking-content').innerHTML = `
-    <p class="sc-sub">Posiciones actuales del equipo. Se actualiza mensualmente.</p>
-    <div class="card" style="overflow-x:auto;">
-      <table class="rank-table" style="min-width:400px;">
-        <thead><tr><th>#</th><th>Socio</th><th>Ventas</th><th>Equipo</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  podiumHtml += '</div>';
+
+  // Rest of the ranking
+  var rows = '';
+  rest.forEach(function(m, i) {
+    var rk = RANKS[m.rank]||RANKS[1];
+    var isMe = m.name.includes(CU.name);
+    var pos = i + 4;
+    rows += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;margin-bottom:4px;' + (isMe?'background:var(--gold-d);border:0.5px solid var(--gold-b);':'background:rgba(255,255,255,0.02);') + 'transition:background 0.2s;">'
+      + '<div style="width:28px;font-size:14px;font-weight:800;color:var(--muted);text-align:center;">' + pos + '</div>'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:' + rk.bg + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:' + rk.color + ';border:1px solid ' + rk.border + ';">' + m.initials + '</div>'
+      + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:' + (isMe?'700':'500') + ';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + (isMe?' (tú)':'') + '</div>'
+      + '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + rk.icon + ' ' + rk.name + '</div></div>'
+      + '<div style="text-align:right;"><div style="font-size:14px;font-weight:800;color:var(--gold);">' + m.ventas + '</div><div style="font-size:9px;color:var(--muted2);">ventas</div></div>'
+      + '<div style="text-align:right;width:40px;"><div style="font-size:13px;font-weight:600;color:var(--muted);">' + m.equipo + '</div><div style="font-size:9px;color:var(--muted2);">equipo</div></div>'
+      + '</div>';
+  });
+
+  document.getElementById('ranking-content').innerHTML = '<p class="sc-sub">Posiciones actuales del equipo. Se actualiza mensualmente.</p>'
+    + podiumHtml
+    + '<div class="card" style="padding:8px;">' + rows + '</div>';
 }
 
 /* ── VIAJES ── */
+function _tripCountdown(dateStr) {
+  var months = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11,
+    january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11};
+  var parts = dateStr.toLowerCase().replace(/[^a-záéíóúñ0-9\s]/g,'').trim().split(/\s+/);
+  var month = -1, year = new Date().getFullYear();
+  parts.forEach(function(p){ if(months[p]!==undefined) month=months[p]; if(/^\d{4}$/.test(p)) year=parseInt(p); });
+  if(month === -1) return null;
+  var target = new Date(year, month, 15);
+  var now = new Date();
+  var diff = target - now;
+  if(diff <= 0) return {days:0, label:'En curso'};
+  var days = Math.ceil(diff / 86400000);
+  return {days:days, label: days + ' días restantes'};
+}
+
+var _tripImages = {
+  'crucero': 'linear-gradient(135deg,#0077B6,#00B4D8,#0096C7)',
+  'miami': 'linear-gradient(135deg,#FF6B35,#F7C948,#FF8C42)',
+  'cartagena': 'linear-gradient(135deg,#2D6A4F,#40916C,#52B788)',
+  'yate': 'linear-gradient(135deg,#2D6A4F,#40916C,#52B788)'
+};
+var _tripEmojis = {'crucero':'🚢','miami':'🌴','cartagena':'⛵','yate':'⛵','retiro':'🏝️'};
+
 function renderViajes() {
-  let html = `<p class="sc-sub">Eventos exclusivos del equipo. Califica cumpliendo las metas.</p>`;
-  TRIPS.forEach(t=>{
-    const prog = Math.min(100, Math.round((CU.ventas/t.req)*100));
-    const califica = CU.ventas >= t.req;
-    html += `<div class="trip-card">
-      <div class="trip-header">
-        <div><div class="trip-dest">${t.dest}</div><div class="trip-date">${t.date}</div></div>
-        <span class="trip-badge tag" style="background:rgba(0,0,0,0.3);color:${t.badgeColor};border:0.5px solid ${t.badgeColor}40;">${t.badge}</span>
-      </div>
-      <div class="trip-desc">${t.desc}</div>
-      <div class="trip-req"><span class="trip-req-label">Requisito:</span><span class="trip-req-val" style="color:var(--text);">${t.reqLabel}</span></div>
-      <div class="qual-bar-wrap">
-        <div class="qual-text"><span>Tu progreso</span><span style="color:${califica?'var(--success)':'var(--gold)'};">${califica?'✓ Clasificado':''+CU.ventas+' / '+t.req+' ventas'}</span></div>
-        <div class="prog-wrap"><div class="prog-bar" style="width:${prog}%;background:${califica?'var(--success)':'var(--gold)'};"></div></div>
-      </div>
-    </div>`;
+  var html = '<p class="sc-sub">Eventos exclusivos del equipo. Califica cumpliendo las metas.</p>';
+  TRIPS.forEach(function(t, idx) {
+    var prog = Math.min(100, Math.round((CU.ventas/t.req)*100));
+    var califica = CU.ventas >= t.req;
+    var cd = _tripCountdown(t.date);
+    var destLower = t.dest.toLowerCase();
+    var bgGrad = _tripImages['crucero'];
+    Object.keys(_tripImages).forEach(function(k){ if(destLower.indexOf(k)!==-1) bgGrad = _tripImages[k]; });
+
+    html += '<div style="border-radius:16px;overflow:hidden;border:0.5px solid var(--border);margin-bottom:16px;background:rgba(255,255,255,0.02);animation:skyCardIn 0.4s cubic-bezier(0.22,1,0.36,1) ' + (idx*0.1) + 's both;">'
+
+      // Hero banner
+      + '<div style="position:relative;height:100px;' + bgGrad + ';display:flex;align-items:center;justify-content:space-between;padding:0 20px;overflow:hidden;">'
+      + '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.2);"></div>'
+      + '<div style="position:relative;z-index:1;">'
+      + '<div style="font-size:20px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.3);">' + t.dest + '</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.8);font-weight:600;margin-top:2px;">' + t.date + '</div>'
+      + '</div>'
+      + '<div style="position:relative;z-index:1;text-align:right;">'
+      + '<span style="display:inline-block;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,0.4);backdrop-filter:blur(10px);color:' + t.badgeColor + ';font-size:11px;font-weight:800;border:1px solid ' + t.badgeColor + '50;">' + t.badge + '</span>'
+      + (cd ? '<div style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:4px;font-weight:600;">' + (cd.days > 0 ? '⏱ ' + cd.label : '🔴 ' + cd.label) + '</div>' : '')
+      + '</div>'
+      + '</div>'
+
+      // Content
+      + '<div style="padding:14px 18px;">'
+      + '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;">' + t.desc + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+      + '<span style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Requisito:</span>'
+      + '<span style="font-size:11px;color:var(--text);font-weight:600;">' + t.reqLabel + '</span>'
+      + '</div>'
+      + '<div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<span style="font-size:11px;color:var(--muted);font-weight:600;">Tu progreso</span>'
+      + '<span style="font-size:11px;font-weight:700;color:' + (califica?'var(--success)':'var(--gold)') + ';">' + (califica ? '✓ Clasificado' : CU.ventas + ' / ' + t.req + ' ventas') + '</span>'
+      + '</div>'
+      + '<div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;">'
+      + '<div style="height:100%;width:' + prog + '%;background:' + (califica?'linear-gradient(90deg,#1D9E75,#2ECC71)':'linear-gradient(90deg,#FFD700,#FF8C00)') + ';border-radius:4px;transition:width 1s cubic-bezier(0.22,1,0.36,1);"></div>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
   });
   document.getElementById('viajes-content').innerHTML = html;
 }
@@ -6963,10 +7230,10 @@ function renderAnuncios() {
   document.getElementById('anuncios-content').innerHTML = `<p class="sc-sub">Novedades y comunicados del equipo Sky Team.</p>`+
     ANUNCIOS.map(a=>`<div class="anuncio-card">
       <div class="anuncio-header">
-        <div class="anuncio-icon">${a.icon}</div>
-        <div class="anuncio-meta"><div class="anuncio-title">${a.title}</div><div class="anuncio-date">${a.date}</div></div>
+        <div class="anuncio-icon">${_safe(a.icon)}</div>
+        <div class="anuncio-meta"><div class="anuncio-title">${_safe(a.title)}</div><div class="anuncio-date">${_safe(a.date)}</div></div>
       </div>
-      <div class="anuncio-body">${a.body}</div>
+      <div class="anuncio-body">${_safe(a.body)}</div>
     </div>`).join('');
 }
 
@@ -6984,7 +7251,7 @@ function saveMessages(m) {
 }
 
 function syncChatFromServer(cb) {
-  fetch('/api/chat-messages')
+  _skyFetch('/api/chat-messages', null, 8000)
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(data && Array.isArray(data.messages)) {
@@ -7041,24 +7308,32 @@ function loadChat() {
 }
 
 function renderChat(msgs) {
-  const rk = RANKS[CU.rank]||RANKS[1];
-  const container = document.getElementById('chat-msgs');
-  container.innerHTML = msgs.map(m=>{
-    const mRk = RANKS[m.rank]||RANKS[1];
-    const own = m.user===CU.name;
-    return `<div class="chat-msg${own?' own':''}">
-      <div class="chat-avatar" style="background:${mRk.bg};color:${mRk.color};border:0.5px solid ${mRk.border};overflow:hidden;">
-      ${(()=>{ const k=Object.keys(USERS).find(u=>USERS[u].name===m.user)||''; const p=localStorage.getItem('skyteam_photo_'+k)||''; return p ? '<img src="'+p+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : m.user.substring(0,2).toUpperCase(); })()}
-      </div>
-      <div class="chat-bubble">
-        <div class="chat-meta">
-          <span class="chat-sender">${m.user}</span>
-          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${mRk.bg};border:0.5px solid ${mRk.border};color:${mRk.color};font-weight:700;">${mRk.icon} ${mRk.name}</span>
-          <span class="chat-time">${m.time||(m.ts?new Date(m.ts).toLocaleDateString('es',{weekday:'short'})+' '+new Date(m.ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'')}</span>
-        </div>
-        <div class="chat-text">${m.text}</div>
-      </div>
-    </div>`;
+  var container = document.getElementById('chat-msgs');
+  if(!container) return;
+  container.innerHTML = msgs.map(function(m) {
+    var mRk = RANKS[m.rank]||RANKS[1];
+    var own = m.user === CU.name;
+    var uKey = Object.keys(USERS).find(function(u){return USERS[u].name===m.user;}) || '';
+    var photo = localStorage.getItem('skyteam_photo_'+uKey) || '';
+    var avatarContent = photo ? '<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">' : m.user.substring(0,2).toUpperCase();
+    var timeStr = m.time || (m.ts ? new Date(m.ts).toLocaleDateString('es',{weekday:'short'})+' '+new Date(m.ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '');
+
+    // Own messages: blue gradient, aligned right. Others: dark, aligned left
+    var bubbleBg = own ? 'background:linear-gradient(135deg,rgba(28,232,255,0.12),rgba(0,119,255,0.08));border:0.5px solid rgba(28,232,255,0.2);' : 'background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.06);';
+    var bubbleRadius = own ? 'border-radius:14px 14px 4px 14px;' : 'border-radius:14px 14px 14px 4px;';
+
+    return '<div class="chat-msg' + (own?' own':'') + '" style="' + (own?'flex-direction:row-reverse;':'') + '">'
+      + '<div class="chat-avatar" style="background:' + mRk.bg + ';color:' + mRk.color + ';border:' + (own?'2px':'0.5px') + ' solid ' + (own?'rgba(28,232,255,0.4)':mRk.border) + ';overflow:hidden;flex-shrink:0;">' + avatarContent + '</div>'
+      + '<div class="chat-bubble" style="' + bubbleBg + bubbleRadius + 'max-width:75%;padding:10px 14px;">'
+      + '<div class="chat-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
+      + '<span class="chat-sender" style="font-weight:700;font-size:12px;color:' + (own?'#1CE8FF':mRk.color) + ';">' + _safe(m.user) + '</span>'
+      + '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:' + mRk.bg + ';border:0.5px solid ' + mRk.border + ';color:' + mRk.color + ';font-weight:700;">' + mRk.icon + ' ' + mRk.name + '</span>'
+      + '<span class="chat-time" style="font-size:10px;color:var(--muted2);margin-left:auto;">' + timeStr + '</span>'
+      + '</div>'
+      + '<div class="chat-text" style="font-size:13px;line-height:1.5;color:' + (own?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.7)') + ';">' + _safe(m.text) + '</div>'
+      + (own ? '<div style="text-align:right;margin-top:2px;font-size:9px;color:rgba(28,232,255,0.4);">✓✓</div>' : '')
+      + '</div>'
+      + '</div>';
   }).join('');
   scrollChat();
 }
@@ -7561,11 +7836,19 @@ function renderAdminUsuarios() {
   html += '<button onclick="addUserPrompt()" style="padding:10px 16px;border-radius:10px;background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">+ Nuevo Usuario</button>';
   html += '</div>';
 
+  // Pagination setup
+  var PAGE_SIZE = 25;
+  window._adminUserPage = window._adminUserPage || 0;
+  var nonAdminList = userList.filter(function(u){ return !u.isAdmin; });
+  var totalPages = Math.max(1, Math.ceil(nonAdminList.length / PAGE_SIZE));
+  if(window._adminUserPage >= totalPages) window._adminUserPage = totalPages - 1;
+  var start = window._adminUserPage * PAGE_SIZE;
+  var pageUsers = nonAdminList.slice(start, start + PAGE_SIZE);
+
   html += '<div style="overflow-x:auto;"><table class="admin-table" id="admin-users-table">';
   html += '<thead><tr><th>Usuario</th><th>Nombre</th><th>WhatsApp</th><th>Ref</th><th>Ventas</th><th>Rango</th><th>Estado</th></tr></thead><tbody>';
 
-  userList.forEach(function(u) {
-    if(u.isAdmin) return;
+  pageUsers.forEach(function(u) {
     var rk = RANKS[u.rank] || RANKS[0];
     var isMe = u.user === CU.username;
     var opts = Object.entries(RANKS).filter(function(e){ return +e[0] <= 7; })
@@ -7574,18 +7857,31 @@ function renderAdminUsuarios() {
     var statusColor = expired ? '#E24B4A' : '#1D9E75';
     var statusLabel = expired ? '⏰ Expirado' : '● Activo';
 
-    html += '<tr data-search="' + (u.user + ' ' + u.name + ' ' + u.wa + ' ' + u.ref).toLowerCase() + '"' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
-    html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + u.user + (isMe?' (tu)':'') + '</td>';
-    html += '<td style="font-weight:600;">' + u.name + '</td>';
-    html += '<td style="font-size:12px;color:rgba(255,255,255,0.5);">' + u.wa + '</td>';
-    html += '<td style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + u.ref + '</td>';
-    html += '<td style="text-align:center;">' + u.ventas + '</td>';
-    html += '<td><select class="rank-select" data-uname="' + u.user + '" onchange="cambiarRango(this.dataset.uname,this.value)">' + opts + '</select></td>';
+    html += '<tr data-search="' + _safe(u.user + ' ' + u.name + ' ' + u.wa + ' ' + u.ref).toLowerCase() + '"' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
+    html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + _safe(u.user) + (isMe?' (tu)':'') + '</td>';
+    html += '<td style="font-weight:600;">' + _safe(u.name) + '</td>';
+    html += '<td style="font-size:12px;color:rgba(255,255,255,0.5);">' + _safe(u.wa) + '</td>';
+    html += '<td style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + _safe(u.ref) + '</td>';
+    html += '<td style="text-align:center;">' + (u.ventas||0) + '</td>';
+    html += '<td><select class="rank-select" data-uname="' + _safe(u.user) + '" onchange="cambiarRango(this.dataset.uname,this.value)">' + opts + '</select></td>';
     html += '<td><span style="font-size:11px;font-weight:700;color:' + statusColor + ';">' + statusLabel + '</span></td>';
     html += '</tr>';
   });
 
   html += '</tbody></table></div>';
+
+  // Pagination controls
+  if(totalPages > 1) {
+    html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;">';
+    html += '<button onclick="window._adminUserPage=0;renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;" ' + (window._adminUserPage===0?'disabled':'') + '>«</button>';
+    html += '<button onclick="window._adminUserPage=Math.max(0,window._adminUserPage-1);renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;" ' + (window._adminUserPage===0?'disabled':'') + '>‹ Anterior</button>';
+    html += '<span style="font-size:12px;color:var(--text);font-weight:700;padding:0 8px;">' + (window._adminUserPage+1) + ' / ' + totalPages + '</span>';
+    html += '<button onclick="window._adminUserPage=Math.min(' + (totalPages-1) + ',window._adminUserPage+1);renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;" ' + (window._adminUserPage>=totalPages-1?'disabled':'') + '>Siguiente ›</button>';
+    html += '<button onclick="window._adminUserPage=' + (totalPages-1) + ';renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;" ' + (window._adminUserPage>=totalPages-1?'disabled':'') + '>»</button>';
+    html += '</div>';
+    html += '<div style="text-align:center;font-size:10px;color:var(--muted2);margin-top:6px;">Mostrando ' + (start+1) + '-' + Math.min(start+PAGE_SIZE, nonAdminList.length) + ' de ' + nonAdminList.length + ' usuarios</div>';
+  }
+
   el.innerHTML = html;
 }
 
@@ -7597,14 +7893,12 @@ function cambiarRango(username, newRank) {
       CU.rank = +newRank;
       try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
     }
-    // Sync to Supabase
-    if(typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_KEY !== 'undefined') {
-      fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username), {
-        method: 'PATCH',
-        headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
-        body: JSON.stringify({rank: +newRank})
-      }).catch(function(e){ console.warn('Rank sync error:', e); });
-    }
+    // Sync to server
+    fetch('/api/update-user', {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: username, updates: {rank: +newRank}})
+    }).catch(function(e){ console.warn('Rank sync error:', e); });
     var rk = RANKS[+newRank]||RANKS[0];
     showToast('Rango actualizado → ' + rk.icon + ' ' + rk.name);
     if(typeof renderRanking === 'function') renderRanking();
@@ -7817,12 +8111,46 @@ function deleteAnuncio(i) {
   renderAdminAnuncios();
 }
 
+var _toastStack = [];
 function showToast(msg, type) {
-  const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:999;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;animation:fadeUp 0.3s ease;background:${type==='err'?'rgba(226,75,74,0.15)':'rgba(29,158,117,0.15)'};border:0.5px solid ${type==='err'?'rgba(226,75,74,0.4)':'rgba(29,158,117,0.4)'};color:${type==='err'?'#E24B4A':'#1D9E75'};`;
-  t.textContent = msg;
+  var icons = {err:'✕', success:'✓', info:'ℹ', warn:'⚠'};
+  var colors = {
+    err: {bg:'rgba(226,75,74,0.12)', border:'rgba(226,75,74,0.35)', text:'#FF6B6B', icon:'#E24B4A'},
+    success: {bg:'rgba(29,158,117,0.12)', border:'rgba(29,158,117,0.35)', text:'#2ECC71', icon:'#1D9E75'},
+    info: {bg:'rgba(28,232,255,0.12)', border:'rgba(28,232,255,0.35)', text:'#1CE8FF', icon:'#1CE8FF'},
+    warn: {bg:'rgba(255,215,0,0.12)', border:'rgba(255,215,0,0.35)', text:'#FFD700', icon:'#FFD700'}
+  };
+  var c = colors[type] || colors.success;
+  var icon = icons[type] || icons.success;
+
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;right:16px;z-index:9999;padding:12px 18px 12px 14px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.3);max-width:340px;animation:skyToastIn 0.35s cubic-bezier(0.22,1,0.36,1) both;background:' + c.bg + ';border:0.5px solid ' + c.border + ';color:' + c.text + ';';
+
+  // Stack positioning
+  _toastStack.push(t);
+  var bottomOffset = 24;
+  for(var i = 0; i < _toastStack.length - 1; i++) {
+    if(_toastStack[i].parentNode) bottomOffset += _toastStack[i].offsetHeight + 8;
+  }
+  t.style.bottom = bottomOffset + 'px';
+
+  t.innerHTML = '<span style="width:24px;height:24px;border-radius:50%;background:' + c.icon + '18;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:900;">' + icon + '</span><span style="flex:1;line-height:1.4;">' + msg + '</span>';
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(), 2800);
+
+  // Auto-remove with exit animation
+  setTimeout(function(){
+    t.style.animation = 'skyToastOut 0.3s ease forwards';
+    setTimeout(function(){
+      t.remove();
+      var idx = _toastStack.indexOf(t);
+      if(idx !== -1) _toastStack.splice(idx, 1);
+      // Reposition remaining toasts
+      var offset = 24;
+      _toastStack.forEach(function(st){
+        if(st.parentNode) { st.style.bottom = offset + 'px'; offset += st.offsetHeight + 8; }
+      });
+    }, 300);
+  }, 3000);
 }
 
 /* ── ADMIN PANEL — CONFIG TAB ── */
