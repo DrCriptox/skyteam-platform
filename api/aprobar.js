@@ -21,15 +21,24 @@ export default async function handler(req, res) {
     if (!sols || sols.length === 0) return res.status(404).json({ error: 'Solicitud not found' });
     const sol = sols[0];
 
-    // Delete the solicitud
-    await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
-
     // Generate user credentials
     const rawUser = (sol.innova_user || sol.ref || String(id).slice(-6));
     const username = rawUser.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
     const primerNombre = sol.name ? sol.name.split(' ')[0] : 'Socio';
     const refLink = 'https://innovaia.app?ref=' + (sol.ref || username);
     const password = sol.password || 'skyteam2026';
+
+    // Check if user already exists (prevent duplicates from race conditions)
+    const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&limit=1', { headers: HEADERS });
+    const existUsers = await existCheck.json();
+    if (existUsers && existUsers.length > 0) {
+      // User already exists — just delete solicitud and return success
+      await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
+      return res.status(200).json({ ok: true, username, nombre: sol.name, emailSent: false, refLink, alreadyExisted: true });
+    }
+
+    // Delete the solicitud first to prevent double-approval
+    await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
 
     // Create user in users table
     await fetch(SUPABASE_URL + '/rest/v1/users', {

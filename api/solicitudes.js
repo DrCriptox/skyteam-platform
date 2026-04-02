@@ -11,7 +11,9 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const r = await fetch(SUPABASE_URL + '/rest/v1/solicitudes?order=created_at.desc', { headers: HEADERS });
+      const limit = Math.min(+(req.query.limit || 100), 200);
+      const offset = +(req.query.offset || 0);
+      const r = await fetch(SUPABASE_URL + '/rest/v1/solicitudes?order=created_at.desc&limit=' + limit + '&offset=' + offset, { headers: HEADERS });
       if (!r.ok) throw new Error('Supabase GET failed: ' + r.status);
       const rows = await r.json();
       // Map to old format for frontend compatibility
@@ -54,6 +56,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error('solicitudes error:', error.message);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Error procesando solicitud' });
   }
 }
