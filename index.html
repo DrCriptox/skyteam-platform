@@ -2511,7 +2511,7 @@ const RANKS = {
   8:{name:'Admin',     icon:'🔧',color:'#FFD700',bg:'rgba(201,168,76,0.15)',border:'rgba(201,168,76,0.3)'}
 };
 
-const USERS = {
+var USERS = {
   'angel':   {pass:'sky2024',   name:'Angel',   rank:7, ref:'angel2026', ventas:47, equipo:23},
   'genesis': {pass:'genesis22', name:'Genesis', rank:3, ref:'genesis22', ventas:12, equipo:5},
   'carlos':  {pass:'demo',      name:'Carlos',  rank:2, ref:'carlos01',  ventas:3,  equipo:0},
@@ -2524,6 +2524,29 @@ const USERS = {
   'yonfer':    {pass:'skyadmin2026',name:'Yonfer Rojas',    rank:7, ref:'angel2026', ventas:47, equipo:15, expiry:null},
   'billonarios':{pass:'billonarios26',name:'Johan Gonzalez', rank:1, ref:'billonarios', ventas:0, equipo:0, expiry:null},
 };
+
+// ── DYNAMIC USER LOADING FROM SUPABASE ──
+var _usersLoaded = false;
+function loadUsersFromServer(callback) {
+  fetch('/api/users')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.users) {
+        // Merge server users into USERS (server takes priority, but keep local-only users)
+        var serverUsers = data.users;
+        for (var key in serverUsers) {
+          USERS[key] = serverUsers[key];
+        }
+        _usersLoaded = true;
+        console.log('[SKY] Users loaded from server:', Object.keys(serverUsers).length);
+        if (callback) callback(true);
+      }
+    })
+    .catch(function(e) {
+      console.warn('[SKY] Could not load users from server, using local fallback:', e.message);
+      if (callback) callback(false);
+    });
+}
 
 const VIDEOS = [
   {id:'v1', mod:1,title:'Bienvenida al sistema Sky Team',         dur:'8 min', yt:'dQw4w9WgXcQ',rank:1,desc:'Conoce el sistema completo y tu hoja de ruta.'},
@@ -2613,12 +2636,35 @@ function doLogin() {
     const p = document.getElementById('lp').value;
     const err = document.getElementById('login-error');
     if(!u || !p) { err.textContent = 'Ingresa usuario y contraseña'; return; }
-    if(!USERS[u] || USERS[u].pass !== p) { err.textContent = 'Usuario o contraseña incorrectos'; return; }
-    if(USERS[u].expiry && Date.now() > USERS[u].expiry) { err.textContent = '⏰ Este usuario demo ha expirado'; return; }
-    CU = Object.assign({}, USERS[u], {username: u});
-    try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-    err.textContent = '';
-    showApp();
+
+    // Try local USERS first (includes server-loaded users if already fetched)
+    if(USERS[u] && USERS[u].pass === p) {
+      if(USERS[u].expiry && Date.now() > USERS[u].expiry) { err.textContent = '⏰ Este usuario demo ha expirado'; return; }
+      CU = Object.assign({}, USERS[u], {username: u});
+      try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+      err.textContent = '';
+      showApp();
+      return;
+    }
+
+    // If not found locally, try loading fresh from server (user may have been approved recently)
+    if(!_usersLoaded) {
+      err.textContent = 'Verificando credenciales...';
+      loadUsersFromServer(function(ok) {
+        if(ok && USERS[u] && USERS[u].pass === p) {
+          if(USERS[u].expiry && Date.now() > USERS[u].expiry) { err.textContent = '⏰ Este usuario demo ha expirado'; return; }
+          CU = Object.assign({}, USERS[u], {username: u});
+          try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+          err.textContent = '';
+          showApp();
+        } else {
+          err.textContent = 'Usuario o contraseña incorrectos';
+        }
+      });
+      return;
+    }
+
+    err.textContent = 'Usuario o contraseña incorrectos';
   } catch(e) {
     console.error('doLogin error:', e);
     document.getElementById('login-error').textContent = 'Error al iniciar sesión: ' + e.message;
@@ -8195,11 +8241,26 @@ function saveTZ(tz) {
 
 /* ── INIT ── */
 (function() {
+  // Load users from server in background (enables new approved users to log in)
+  loadUsersFromServer(function(ok) {
+    // If user is on login screen and not yet logged in, they can now login with server users
+    // If already logged in via localStorage, refresh CU data from server
+    if (ok && CU && CU.username && USERS[CU.username]) {
+      var fresh = USERS[CU.username];
+      CU.rank = fresh.rank !== undefined ? fresh.rank : CU.rank;
+      CU.name = fresh.name || CU.name;
+      CU.ref = fresh.ref || CU.ref;
+      CU.isAdmin = fresh.isAdmin || false;
+      try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+    }
+  });
+
   try {
     const saved = localStorage.getItem('skyteam_u');
     if(saved) {
       const parsed = JSON.parse(saved);
-      if(parsed && parsed.username && USERS[parsed.username]) {
+      // Allow auto-login even if user isn't in hardcoded USERS (they may be server-only)
+      if(parsed && parsed.username) {
         CU = parsed;
         var lp = document.getElementById('landing-page');
         if(lp) lp.style.display = 'none';
@@ -9014,7 +9075,8 @@ function crmInjectExtraFields() {
     if (calificarBtn) {
       calificarBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        crmStartRatingWizard(prospect.id,function(answers) {
+        var pid = (typeof prospect !== 'undefined' && prospect && prospect.id) ? prospect.id : 'new';
+        crmStartRatingWizard(pid, function(answers) {
           crmRatingAnswers = answers;
           crmUpdateStarsDisplay();
         });
