@@ -9007,7 +9007,8 @@ function sendSolicitud() {
   if(urlRef && !sponsor) sponsor = urlRef;
 
   function _doSubmit() {
-    var newRef = generarRef(name);
+    // Use Innova username as ref code (unique, already validated)
+    var newRef = innovaUser.toLowerCase().replace(/[^a-z0-9_]/g, '') || generarRef(name);
     var landingLink = 'https://innovaia.app?ref=' + newRef;
     var now = new Date();
     var fecha = now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})
@@ -9152,26 +9153,11 @@ function renderPerfil() {
     + '</div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Usuario</span><span class="perfil-data-value mono">'+CU.username+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">Correo</span><span class="perfil-data-value mono">'+(CU.email||'—')+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">WhatsApp</span><span class="perfil-data-value">'+(CU.whatsapp||CU.wa||'—')+'</span></div>'
+    + '<div class="perfil-data-row"><span class="perfil-data-label">Correo</span><span class="perfil-data-value mono" style="font-size:11px;">'+(CU.email||'—')+'</span></div>'
+    + '<div class="perfil-data-row"><span class="perfil-data-label">WhatsApp</span><span class="perfil-data-value">'+(CU.whatsapp||'—')+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">Referido</span><span class="perfil-data-value cyan">'+CU.ref+'</span></div>'
+    + '<div class="perfil-data-row"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:10px;word-break:break-all;">skyteam.global?ref='+(CU.ref||CU.username)+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
-    + '</div>'
-    + '<div class="perfil-data-card">'
-    + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
-    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(28,232,255,0.4);text-transform:uppercase;">📱 WhatsApp</span>'
-    + '</div>'
-    + '<div style="padding:14px 18px;">'
-    + (function(){
-        var lk='skyteam_wa_saved_'+(CU.ref||CU.user||''),ls=localStorage.getItem(lk),locked=false,hrs=0;
-        if(ls){var df=Date.now()-parseInt(ls);if(df<86400000){locked=true;hrs=Math.ceil((86400000-df)/3600000);}}
-        var h=phoneCountrySelectHTML('perfil-wa',CU.whatsapp||'',locked);
-        if(!locked) h+='<button onclick="guardarWhatsAppPerfil()" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💾 Guardar</button>';
-        if(locked) h+='<p style="font-size:10px;color:rgba(255,255,255,0.2);margin:4px 0 0;">🔒 Podrás cambiarlo en '+hrs+' hora'+(hrs===1?'':'s')+'</p>';
-        return h;
-      })()
-    + '</div>'
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
@@ -9228,12 +9214,94 @@ function handlePhotoUpload(e) {
   if(!file) return;
   var reader = new FileReader();
   reader.onload = function(ev) {
-    localStorage.setItem('skyteam_photo_' + CU.username, ev.target.result);
-    renderPerfil();
-    renderSidebarUser();
-    showToast('Foto actualizada ✓');
+    openCropModal(ev.target.result);
   };
   reader.readAsDataURL(file);
+}
+
+// ── Circular Crop Modal ──
+var _cropState = { img: null, scale: 1, ox: 0, oy: 0, dragging: false, lastX: 0, lastY: 0 };
+
+function openCropModal(dataUrl) {
+  var existing = document.getElementById('crop-modal');
+  if(existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'crop-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Nunito,sans-serif;';
+  modal.innerHTML =
+    '<p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px;">Ajusta tu foto de perfil</p>'
+  + '<div id="crop-viewport" style="position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;border:3px solid #1CE8FF;cursor:grab;touch-action:none;background:#000;">'
+  + '  <canvas id="crop-canvas" style="position:absolute;top:0;left:0;"></canvas>'
+  + '</div>'
+  + '<div style="display:flex;gap:10px;margin-top:16px;align-items:center;">'
+  + '  <span style="color:rgba(255,255,255,0.4);font-size:11px;">🔍</span>'
+  + '  <input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1" style="width:160px;accent-color:#1CE8FF;" oninput="_cropDraw()">'
+  + '  <span style="color:rgba(255,255,255,0.4);font-size:13px;">🔍</span>'
+  + '</div>'
+  + '<p style="color:rgba(255,255,255,0.3);font-size:10px;margin:8px 0 16px;">Arrastra para mover · Desliza para hacer zoom</p>'
+  + '<div style="display:flex;gap:12px;">'
+  + '  <button onclick="_cropConfirm()" style="background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;border-radius:10px;padding:11px 28px;font-size:13px;font-weight:900;cursor:pointer;font-family:Nunito,sans-serif;">✓ Confirmar</button>'
+  + '  <button onclick="document.getElementById(\'crop-modal\').remove()" style="background:rgba(255,255,255,0.07);border:0.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5);border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">Cancelar</button>'
+  + '</div>';
+  document.body.appendChild(modal);
+
+  var img = new window.Image();
+  img.onload = function() {
+    var vp = 280;
+    _cropState.img = img;
+    _cropState.scale = Math.max(vp/img.naturalWidth, vp/img.naturalHeight);
+    _cropState.ox = (vp - img.naturalWidth * _cropState.scale) / 2;
+    _cropState.oy = (vp - img.naturalHeight * _cropState.scale) / 2;
+    document.getElementById('crop-zoom').value = _cropState.scale;
+    document.getElementById('crop-zoom').min = _cropState.scale;
+    document.getElementById('crop-zoom').max = _cropState.scale * 4;
+    document.getElementById('crop-zoom').step = _cropState.scale * 0.01;
+    var canvas = document.getElementById('crop-canvas');
+    canvas.width = vp; canvas.height = vp;
+    _cropDraw();
+    _cropEvents(canvas);
+  };
+  img.src = dataUrl;
+}
+
+function _cropDraw() {
+  var canvas = document.getElementById('crop-canvas');
+  if(!canvas || !_cropState.img) return;
+  var vp = 280, s = parseFloat(document.getElementById('crop-zoom').value);
+  _cropState.scale = s;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,vp,vp);
+  ctx.drawImage(_cropState.img, _cropState.ox, _cropState.oy, _cropState.img.naturalWidth*s, _cropState.img.naturalHeight*s);
+}
+
+function _cropEvents(canvas) {
+  // Mouse
+  canvas.addEventListener('mousedown', function(e){ _cropState.dragging=true; _cropState.lastX=e.clientX; _cropState.lastY=e.clientY; canvas.style.cursor='grabbing'; });
+  window.addEventListener('mousemove', function(e){ if(!_cropState.dragging) return; _cropState.ox+=e.clientX-_cropState.lastX; _cropState.oy+=e.clientY-_cropState.lastY; _cropState.lastX=e.clientX; _cropState.lastY=e.clientY; _cropDraw(); });
+  window.addEventListener('mouseup', function(){ _cropState.dragging=false; canvas.style.cursor='grab'; });
+  // Touch
+  canvas.addEventListener('touchstart', function(e){ e.preventDefault(); var t=e.touches[0]; _cropState.dragging=true; _cropState.lastX=t.clientX; _cropState.lastY=t.clientY; }, {passive:false});
+  canvas.addEventListener('touchmove', function(e){ e.preventDefault(); if(!_cropState.dragging) return; var t=e.touches[0]; _cropState.ox+=t.clientX-_cropState.lastX; _cropState.oy+=t.clientY-_cropState.lastY; _cropState.lastX=t.clientX; _cropState.lastY=t.clientY; _cropDraw(); }, {passive:false});
+  canvas.addEventListener('touchend', function(){ _cropState.dragging=false; });
+  // Pinch zoom
+  var _initDist=0, _initScale=1;
+  canvas.addEventListener('touchstart', function(e){ if(e.touches.length===2){ _initDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); _initScale=_cropState.scale; } }, {passive:true});
+  canvas.addEventListener('touchmove', function(e){ if(e.touches.length===2){ var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); var ns=Math.max(parseFloat(document.getElementById('crop-zoom').min), Math.min(parseFloat(document.getElementById('crop-zoom').max), _initScale*(d/_initDist))); document.getElementById('crop-zoom').value=ns; _cropDraw(); } }, {passive:true});
+}
+
+function _cropConfirm() {
+  var out = 280;
+  var offscreen = document.createElement('canvas');
+  offscreen.width = out; offscreen.height = out;
+  var ctx = offscreen.getContext('2d');
+  ctx.drawImage(_cropState.img, _cropState.ox, _cropState.oy, _cropState.img.naturalWidth*_cropState.scale, _cropState.img.naturalHeight*_cropState.scale);
+  var result = offscreen.toDataURL('image/jpeg', 0.9);
+  localStorage.setItem('skyteam_photo_' + CU.username, result);
+  document.getElementById('crop-modal').remove();
+  renderPerfil();
+  renderSidebarUser();
+  showToast('Foto de perfil actualizada ✓');
 }
 
 function copiarLink() {

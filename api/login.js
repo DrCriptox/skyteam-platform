@@ -68,6 +68,8 @@ export default async function handler(req, res) {
         rank: user.rank || 0,
         ref: user.ref || user.username,
         sponsor: user.sponsor || null,
+        email: user.email || null,
+        whatsapp: user.whatsapp || null,
         ventas: user.ventas || 0,
         equipo: user.equipo || 0,
         expiry: user.expiry || null,
