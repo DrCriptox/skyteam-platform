@@ -7847,58 +7847,84 @@ function switchAdminTab(tab) {
 function renderSolicitudes() {
   var el = document.getElementById('admin-solicitudes');
   if(!el) return;
-  // Load from server first so admin sees submissions from ALL devices
-  fetch('/api/solicitudes').then(function(r){ return r.json(); })
-  .then(function(d){
-    var server = d.solicitudes || [];
-    var local = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-    // Merge: server first, then any local ones not yet on server
-    var ids = server.map(function(s){ return s.id; });
-    local.forEach(function(ls){ if(ids.indexOf(ls.id) === -1) server.push(ls); });
-    _renderSolicitudesList(el, server);
-  }).catch(function(){
-    var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-    if(pending.length === 0 && typeof PENDING !== 'undefined') pending = PENDING;
-    _renderSolicitudesList(el, pending);
-  });
-}
+  // Show recently registered users (auto-approved) from the USERS object
+  var userList = Object.keys(USERS)
+    .filter(function(u){ return !USERS[u].isAdmin; })
+    .map(function(u){ return Object.assign({ username: u }, USERS[u]); })
+    .sort(function(a, b) {
+      var ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      var tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, 50); // Show last 50
 
-function _renderSolicitudesList(el, pending) {
-  // CRITICAL: Save to localStorage so aprobarSolicitud can find them
-  localStorage.setItem('skyteam_pending', JSON.stringify(pending));
+  var html = '<div class="admin-info-box" style="border-color:rgba(28,232,255,0.2);">'
+    + '✅ <strong>Registro automático activo.</strong> Los accesos se aprueban al instante. Aquí puedes revisar los últimos ingresos y cancelar si detectas inconsistencias.'
+    + '</div>';
 
-  if(!pending.length) {
-    el.innerHTML = '<div class="admin-info-box">No hay solicitudes pendientes en este momento. Las solicitudes aparecen aquí cuando alguien llena el formulario de "Solicitar acceso" en el login.</div>';
+  if(!userList.length) {
+    el.innerHTML = html + '<div class="admin-info-box">Aún no hay usuarios registrados.</div>';
     return;
   }
-  var html = '<div class="admin-info-box"><strong>' + pending.length + ' solicitud(es) esperando aprobación.</strong> Verifica que la persona sea un socio que ya pagó antes de aprobar.</div>';
-  html += '<div style="display:flex;flex-direction:column;gap:12px;">';
-  pending.forEach(function(s) {
-    html += '<div class="sol-card">';
-    html += '<div class="sol-header"><span class="sol-name">' + s.name + '</span><span class="sol-date">' + (s.fecha||'—') + '</span></div>';
-    html += '<div class="sol-detail">📱 WA: <b>' + (s.wa||'—') + '</b></div>';
-    html += '<div class="sol-detail">✉️ Email: ' + (s.email||'—') + '</div>';
-    html += '<div class="sol-detail">👤 Usuario: <b>' + (s.innovaUser||s.user||'—') + '</b></div>';
-    html += '<div class="sol-detail">🤝 Patrocinador: <b>' + (s.patrocinador||s.sponsor||'—') + '</b></div>';
-    html += '<div class="sol-detail">💰 Membresía: ' + (s.membresia||'Por confirmar') + '</div>';
-    if(s.phone) {
-      try {
-        var ep = JSON.parse(s.phone);
-        if(ep && ep.expiry_label) {
-          html += '<div class="sol-detail" style="color:#4ade80;">📅 Vencimiento: <b>' + ep.expiry_label + '</b> <span style="color:rgba(255,255,255,0.4);font-size:11px;">(' + ep.days_remaining + ' días)</span></div>';
-        }
-      } catch(e) {}
+
+  html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+  userList.forEach(function(u) {
+    var expired = u.expiry && Date.now() > u.expiry;
+    var expiryLabel = '—';
+    var daysLeft = 0;
+    if(u.expiry) {
+      var d = new Date(u.expiry);
+      expiryLabel = d.getUTCDate().toString().padStart(2,'0') + '/' + (d.getUTCMonth()+1).toString().padStart(2,'0') + '/' + d.getUTCFullYear();
+      daysLeft = Math.max(0, Math.ceil((u.expiry - Date.now()) / 86400000));
     }
-    if(s.landingLink || s.ref) {
-      html += '<div class="sol-detail">🔗 Link: <span style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + (s.landingLink || ('https://innovaia.app?ref='+(s.ref||''))) + '</span></div>';
-    }
-    html += '<div class="sol-actions">';
-    html += '<button class="btn-approve" onclick="aprobarSolicitud(' + s.id + ')">✓ Aprobar</button>';
-    html += '<button class="btn-reject" onclick="rechazarSolicitud(' + s.id + ')">✕ Rechazar</button>';
+    var regDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-CO', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+
+    html += '<div class="sol-card" style="border-color:' + (expired ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.2)') + ';">';
+    html += '<div class="sol-header">';
+    html += '<span class="sol-name">' + _safe(u.name||u.username) + '</span>';
+    html += '<span class="sol-date" style="color:' + (expired ? '#f87171' : '#4ade80') + ';">' + (expired ? '⏰ Expirado' : '● Activo') + '</span>';
+    html += '</div>';
+    html += '<div class="sol-detail">👤 Usuario: <b style="color:#1CE8FF;font-family:monospace;">' + _safe(u.username) + '</b></div>';
+    if(u.email) html += '<div class="sol-detail">✉️ Email: ' + _safe(u.email) + '</div>';
+    if(u.sponsor) html += '<div class="sol-detail">🤝 Sponsor: <b style="color:#4ade80;">' + _safe(u.sponsor) + '</b></div>';
+    html += '<div class="sol-detail">📅 Vencimiento: <b>' + expiryLabel + '</b>'
+      + (u.expiry ? ' <span style="color:rgba(255,255,255,0.4);font-size:11px;">(' + daysLeft + ' días)</span>' : '') + '</div>';
+    html += '<div class="sol-detail" style="color:rgba(255,255,255,0.3);font-size:11px;">📆 Registrado: ' + regDate + '</div>';
+    html += '<div class="sol-actions" style="margin-top:10px;">';
+    html += '<button class="btn-reject" style="background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3);color:#f87171;" '
+      + 'onclick="cancelarPorInconsistencia(\'' + _safe(u.username) + '\',\'' + _safe(u.name||'') + '\')">'
+      + '✕ Cancelar por inconsistencia</button>';
     html += '</div></div>';
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+function cancelarPorInconsistencia(username, nombre) {
+  if(!confirm('¿Cancelar el acceso de ' + nombre + ' (@' + username + ') por inconsistencia en los datos?\n\nSe eliminará su cuenta y se le notificará por correo.')) return;
+  showToast('⏳ Cancelando acceso...');
+  fetch('/api/cancelar', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ username: username })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) {
+      showToast('✅ Acceso de @' + username + ' cancelado' + (d.emailSent ? ' — email enviado 📧' : ''));
+      delete USERS[username];
+      renderSolicitudes();
+      if(document.getElementById('admin-usuarios')) renderAdminUsuarios();
+    } else {
+      showToast('❌ Error: ' + (d.error || 'desconocido'));
+    }
+  })
+  .catch(function(e){ showToast('❌ ' + e.message); });
+}
+
+function _renderSolicitudesList(el, pending) {
+  // Legacy fallback — auto-approval is now the default
+  renderSolicitudes();
 }
 
 function aprobarSolicitud(id) {
@@ -8139,7 +8165,7 @@ function renderAdminUsuarios() {
   var pageUsers = nonAdminList.slice(start, start + PAGE_SIZE);
 
   html += '<div style="overflow-x:auto;"><table class="admin-table" id="admin-users-table">';
-  html += '<thead><tr><th>Usuario</th><th>Nombre</th><th>WhatsApp</th><th>Ref</th><th>Ventas</th><th>Rango</th><th>Estado</th></tr></thead><tbody>';
+  html += '<thead><tr><th>Usuario</th><th>Nombre</th><th>Sponsor</th><th>Email</th><th>Vencimiento</th><th>Rango</th><th>Estado</th><th></th></tr></thead><tbody>';
 
   pageUsers.forEach(function(u) {
     var rk = RANKS[u.rank] || RANKS[0];
@@ -8148,16 +8174,24 @@ function renderAdminUsuarios() {
       .map(function(e){ return '<option value="' + e[0] + '"' + (+e[0]===u.rank?' selected':'') + '>' + e[1].icon + ' ' + e[1].name + '</option>'; }).join('');
     var expired = u.expiry && Date.now() > u.expiry;
     var statusColor = expired ? '#E24B4A' : '#1D9E75';
-    var statusLabel = expired ? '⏰ Expirado' : '● Activo';
+    var statusLabel = expired ? '⏰ Exp.' : '● Activo';
+    var expiryStr = '—';
+    if(u.expiry) {
+      var d = new Date(u.expiry);
+      var days = Math.max(0, Math.ceil((u.expiry - Date.now()) / 86400000));
+      expiryStr = d.getUTCDate().toString().padStart(2,'0') + '/' + (d.getUTCMonth()+1).toString().padStart(2,'0') + '/' + d.getUTCFullYear()
+        + '<br><span style="font-size:10px;color:' + (expired?'#E24B4A':'#4ade80') + ';">' + days + 'd</span>';
+    }
 
-    html += '<tr data-search="' + _safe(u.user + ' ' + u.name + ' ' + u.wa + ' ' + u.ref).toLowerCase() + '"' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
+    html += '<tr data-search="' + _safe(u.user + ' ' + u.name + ' ' + (u.email||'') + ' ' + (u.sponsor||'')).toLowerCase() + '"' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
     html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + _safe(u.user) + (isMe?' (tu)':'') + '</td>';
-    html += '<td style="font-weight:600;">' + _safe(u.name) + '</td>';
-    html += '<td style="font-size:12px;color:rgba(255,255,255,0.5);">' + _safe(u.wa) + '</td>';
-    html += '<td style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + _safe(u.ref) + '</td>';
-    html += '<td style="text-align:center;">' + (u.ventas||0) + '</td>';
+    html += '<td style="font-weight:600;font-size:12px;">' + _safe(u.name) + '</td>';
+    html += '<td style="font-size:11px;color:#4ade80;font-weight:700;">' + _safe(u.sponsor||'—') + '</td>';
+    html += '<td style="font-size:11px;color:rgba(255,255,255,0.4);">' + _safe(u.email||'—') + '</td>';
+    html += '<td style="font-size:11px;line-height:1.4;">' + expiryStr + '</td>';
     html += '<td><select class="rank-select" data-uname="' + _safe(u.user) + '" onchange="cambiarRango(this.dataset.uname,this.value)">' + opts + '</select></td>';
     html += '<td><span style="font-size:11px;font-weight:700;color:' + statusColor + ';">' + statusLabel + '</span></td>';
+    html += '<td>' + (!isMe ? '<button onclick="cancelarPorInconsistencia(\'' + _safe(u.user) + '\',\'' + _safe(u.name||u.user) + '\')" style="padding:4px 8px;border-radius:6px;background:rgba(248,113,113,0.1);border:0.5px solid rgba(248,113,113,0.3);color:#f87171;font-size:10px;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;">✕ Cancelar</button>' : '') + '</td>';
     html += '</tr>';
   });
 
@@ -8807,29 +8841,53 @@ function sendSolicitud() {
       phone: expiryData ? JSON.stringify({ expiry_ts: expiryData.expiry_ts, expiry_label: expiryData.expiry_label, days_remaining: expiryData.days_remaining }) : null
     };
 
+    // Show loading state
+    document.getElementById('solicitud-box').style.display = 'none';
+    var sb = document.getElementById('solicitud-success');
+    sb.innerHTML = '<div style="font-size:32px;margin-bottom:10px;">⏳</div>'
+      + '<p style="font-family:Nunito,sans-serif;font-size:15px;font-weight:700;color:#1CE8FF;">Activando tu acceso...</p>';
+    sb.style.display = 'block';
+
+    // Save solicitud first (audit log), then auto-approve
     fetch('/api/solicitudes', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({action:'add', solicitud: newSolicitud})
-    }).catch(function(){
-      var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-      pending.unshift(newSolicitud);
-      localStorage.setItem('skyteam_pending', JSON.stringify(pending));
+    })
+    .catch(function(){}) // non-blocking
+    .then(function() {
+      // Auto-approve immediately
+      return fetch('/api/aprobar', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: newSolicitud.id, expiryTs: expiryData ? expiryData.expiry_ts : null })
+      });
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      saveReferralRelation(newRef, sponsor);
+      if(d.ok) {
+        var finalUser = d.username || innovaUser.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9_]/g,'');
+        sb.innerHTML = '<div style="font-size:32px;margin-bottom:10px;">🚀</div>'
+          + '<p style="font-family:Nunito,sans-serif;font-size:17px;font-weight:900;color:#1CE8FF;margin-bottom:10px;">¡Bienvenido, ' + name.split(' ')[0] + '!</p>'
+          + '<p style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:14px;">Tu acceso está activo. Ya puedes iniciar sesión.</p>'
+          + '<div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.25);border-radius:12px;padding:16px;text-align:left;">'
+          + '<p style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.8px;margin:0 0 10px;">Tus credenciales de acceso</p>'
+          + '<p style="font-size:13px;margin:6px 0;">👤 <span style="color:rgba(255,255,255,0.5);">Usuario:</span> <strong style="color:#1CE8FF;font-family:monospace;font-size:15px;">' + finalUser + '</strong></p>'
+          + '<p style="font-size:13px;margin:6px 0;">🔑 <span style="color:rgba(255,255,255,0.5);">Contraseña:</span> <strong style="color:#FFD700;font-family:monospace;font-size:15px;">' + pass + '</strong></p>'
+          + (expiryData ? '<p style="font-size:12px;margin:10px 0 0;color:#4ade80;">📅 Acceso hasta: <strong>' + expiryData.expiry_label + '</strong> (' + expiryData.days_remaining + ' días)</p>' : '')
+          + '</div>'
+          + '<div style="margin-top:14px;"><a href="https://skyteam.global" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">Entrar a SKY SYSTEM →</a></div>';
+        if(d.emailSent) sb.innerHTML += '<p style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;">📧 Te enviamos un correo de bienvenida.</p>';
+      } else {
+        sb.innerHTML = '<div style="font-size:28px;margin-bottom:8px;">❌</div>'
+          + '<p style="color:#f87171;font-size:14px;">Error al activar: ' + (d.error || 'intenta de nuevo') + '</p>';
+      }
+    })
+    .catch(function(e) {
+      sb.innerHTML = '<div style="font-size:28px;margin-bottom:8px;">❌</div>'
+        + '<p style="color:#f87171;font-size:14px;">Error de conexión. Intenta de nuevo.</p>';
     });
-    saveReferralRelation(newRef, sponsor);
-
-    document.getElementById('solicitud-box').style.display = 'none';
-    var sb = document.getElementById('solicitud-success');
-    sb.innerHTML = '<div style="font-size:28px;margin-bottom:10px;">🎉</div>'
-      + '<p style="font-family:Nunito,sans-serif;font-size:16px;font-weight:900;color:#1CE8FF;margin-bottom:10px;">¡Solicitud enviada, ' + name.split(' ')[0] + '!</p>'
-      + '<p style="font-size:13px;color:#F0EDE6;line-height:1.8;margin-bottom:14px;">En las próximas horas el equipo revisará tu solicitud y activará tu acceso. Te contactaremos por WhatsApp.</p>'
-      + '<div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;padding:14px;">'
-      + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Tu usuario SKYTEAM será:</p>'
-      + '<p style="font-size:14px;font-weight:900;color:#1CE8FF;">' + innovaUser + '</p>'
-      + (expiryData ? '<p style="font-size:12px;color:#4ade80;margin-top:8px;">📅 Acceso hasta: <strong>' + expiryData.expiry_label + '</strong></p>' : '')
-      + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">Una vez activado, entra con tu usuario y contraseña en skyteam.global</p>'
-      + '</div>';
-    sb.style.display = 'block';
   }
 
   // Check if email already registered
