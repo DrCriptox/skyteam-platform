@@ -10945,7 +10945,7 @@ async function crmSaveProspect(e){
     fecha_cierre_estimada:document.getElementById("crm-input-fecha-cierre").value||null};
   var res;if(crmEditingId){res=await crmApi("update",{id:crmEditingId,updates:data});if(res&&res.ok)crmToast("Prospecto actualizado","success");
     closeCrmModalAdd();crmLoadData();}
-  else{res=await crmApi("add",{prospecto:data});if(res&&res.ok){crmToast("Prospecto agregado!","success");
+  else{res=await crmApi("add",data);if(res&&res.ok){crmToast("Prospecto agregado!","success");
     closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){crmLoadData();crmStartRatingWizard(newId);}else crmLoadData();}
     else{closeCrmModalAdd();crmLoadData();}}}
 
