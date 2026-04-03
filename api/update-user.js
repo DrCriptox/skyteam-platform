@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     if (!username) return res.status(400).json({ error: 'Missing username' });
 
     // Only allow safe fields to be updated
-    const allowed = ['rank', 'name', 'ventas', 'equipo', 'expiry', 'ref', 'sponsor', 'email', 'whatsapp'];
+    const allowed = ['rank', 'name', 'ventas', 'equipo', 'expiry', 'ref', 'sponsor', 'email', 'whatsapp', 'photo'];
     const safe = {};
     for (const key of allowed) {
       if (updates && updates[key] !== undefined) safe[key] = updates[key];

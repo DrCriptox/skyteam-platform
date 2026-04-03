@@ -73,7 +73,8 @@ export default async function handler(req, res) {
         ventas: user.ventas || 0,
         equipo: user.equipo || 0,
         expiry: user.expiry || null,
-        isAdmin: user.is_admin || false
+        isAdmin: user.is_admin || false,
+        photo: user.photo || null
       }
     });
 

@@ -2904,6 +2904,10 @@ function doLogin() {
         CU = res.data.user;
         // Store session WITHOUT password
         try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+        // Sync photo from server to localStorage
+        if (CU.photo) {
+          try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
+        }
         // Also merge into USERS for local lookups (no password)
         USERS[CU.username] = {name:CU.name, rank:CU.rank, ref:CU.ref, ventas:CU.ventas, equipo:CU.equipo, expiry:CU.expiry, isAdmin:CU.isAdmin};
         err.textContent = '';
@@ -9324,8 +9328,14 @@ function _cropConfirm() {
   offscreen.width = out; offscreen.height = out;
   var ctx = offscreen.getContext('2d');
   ctx.drawImage(_cropState.img, _cropState.ox, _cropState.oy, _cropState.img.naturalWidth*_cropState.scale, _cropState.img.naturalHeight*_cropState.scale);
-  var result = offscreen.toDataURL('image/jpeg', 0.9);
+  var result = offscreen.toDataURL('image/jpeg', 0.85);
   localStorage.setItem('skyteam_photo_' + CU.username, result);
+  // Sync photo to Supabase so it's available on all devices
+  _skyFetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: CU.username, updates: { photo: result } })
+  }).catch(function(e) { console.warn('Photo sync failed:', e.message); });
   document.getElementById('crop-modal').remove();
   renderPerfil();
   renderSidebarUser();
