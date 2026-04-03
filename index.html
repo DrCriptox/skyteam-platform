@@ -2904,9 +2904,19 @@ function doLogin() {
         CU = res.data.user;
         // Store session WITHOUT password
         try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-        // Sync photo from server to localStorage
+        // Sync photo: server → localStorage OR localStorage → server
+        var localPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
         if (CU.photo) {
+          // Server has photo → save to localStorage
           try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
+        } else if (localPhoto) {
+          // Local has photo but server doesn't → upload to server
+          _skyFetch('/api/update-user', {
+            method: 'PATCH',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username: CU.username, updates: { photo: localPhoto } })
+          }).then(function() { console.log('[SKY] Photo synced to server'); })
+            .catch(function(e) { console.warn('Photo sync failed:', e.message); });
         }
         // Also merge into USERS for local lookups (no password)
         USERS[CU.username] = {name:CU.name, rank:CU.rank, ref:CU.ref, ventas:CU.ventas, equipo:CU.equipo, expiry:CU.expiry, isAdmin:CU.isAdmin};
@@ -9412,6 +9422,11 @@ function saveTZ(tz) {
       // Allow auto-login even if user isn't in hardcoded USERS (they may be server-only)
       if(parsed && parsed.username) {
         CU = parsed;
+        // If no local photo, try fetching from server on next login refresh
+        var localP = localStorage.getItem('skyteam_photo_' + CU.username) || '';
+        if (!localP && CU.photo) {
+          try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
+        }
         var lp = document.getElementById('landing-page');
         if(lp) lp.style.display = 'none';
         showApp();
