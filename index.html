@@ -3001,7 +3001,7 @@ function showApp() {
 
 function rankBadge(r, small) {
   const rk = RANKS[r]||RANKS[1];
-  const sz = small ? 'font-size:10px;padding:2px 8px;' : 'font-size:11px;padding:3px 10px;';
+  const sz = small === 'tiny' ? 'font-size:8px;padding:1px 6px;' : small ? 'font-size:10px;padding:2px 8px;' : 'font-size:11px;padding:3px 10px;';
   return `<span class="rank-badge" style="${sz}background:${rk.bg};border:0.5px solid ${rk.border};color:${rk.color};">${rk.icon} ${rk.name}</span>`;
 }
 
@@ -3011,14 +3011,14 @@ function renderSidebarUser() {
   const savedPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
   const initials = CU.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
   const avatarHtml = savedPhoto
-    ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid rgba(28,232,255,0.5);cursor:pointer;flex-shrink:0;">'
-    : '<div class="sidebar-perfil-btn" style="width:56px;height:56px;border-radius:50%;background:rgba(28,232,255,0.1);border:2px solid rgba(28,232,255,0.4);display:flex;align-items:center;justify-content:center;font-family:Nunito,sans-serif;font-size:18px;font-weight:900;color:#1CE8FF;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
+    ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;object-fit:cover;border:2px solid rgba(28,232,255,0.5);cursor:pointer;flex-shrink:0;">'
+    : '<div class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;background:rgba(28,232,255,0.1);border:2px solid rgba(28,232,255,0.4);display:flex;align-items:center;justify-content:center;font-family:Nunito,sans-serif;font-size:20px;font-weight:900;color:#1CE8FF;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
   document.getElementById('sidebar-user').innerHTML = `
     ${avatarHtml}
     <div class="su-info">
       <div class="su-name">${CU.name}</div>
-      ${rankBadge(CU.rank, true)}
-      <button class="sidebar-perfil-btn" style="margin-top:4px;font-size:10px;padding:3px 10px;border-radius:16px;background:rgba(28,232,255,0.1);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;letter-spacing:0.3px;width:fit-content;">👤 Ver perfil</button>
+      ${rankBadge(CU.rank, 'tiny')}
+      <button class="sidebar-perfil-btn" style="margin-top:3px;font-size:8px;padding:2px 7px;border-radius:12px;background:rgba(28,232,255,0.1);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;letter-spacing:0.3px;width:fit-content;">👤 Ver perfil</button>
     </div>
   `;
   document.querySelectorAll('.sidebar-perfil-btn').forEach(function(el) {
