@@ -80,13 +80,14 @@ export default async function handler(req, res) {
     }
 
     // Create user in users table — try progressively minimal payloads if columns are missing
-    const corePayload = { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null };
+    const fullPayload = { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null, email: sol.email || null, rank };
     const attempts = [
-      { ...corePayload, email: sol.email || null, rank }, // full
-      { ...corePayload, email: sol.email || null },       // no rank
-      { ...corePayload, rank },                           // no email
-      corePayload                                         // core only
-    ];
+      fullPayload,                                                                                 // 1. all fields
+      { ...fullPayload, rank: undefined },                                                         // 2. no rank
+      { ...fullPayload, email: undefined },                                                        // 3. no email
+      { ...fullPayload, rank: undefined, email: undefined },                                       // 4. no rank, no email
+      { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password }, // 5. guaranteed columns only
+    ].map(o => Object.fromEntries(Object.entries(o).filter(([,v]) => v !== undefined)));
     let insertR = null;
     for (let i = 0; i < attempts.length; i++) {
       insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
