@@ -771,7 +771,46 @@ function buildCoachSystemPrompt(ctx, live) {
   // Hot prospects from onboarding context
   if (ctx.hotProspects > 0) prompt += '\n🔥 Prospectos calientes: ' + ctx.hotProspects + ' — prioridad para agendar cierre.\n';
 
-  prompt += '\n=== INSTRUCCIONES DE RESPUESTA ===\n' +
+  // Select a power phrase based on day rotation
+  var frases = [
+    '"El éxito no se persigue, se atrae por la persona en la que te conviertes." — Jim Rohn',
+    '"No esperes el momento perfecto. Toma el momento y hazlo perfecto."',
+    '"La diferencia entre un sueño y una meta es una fecha límite."',
+    '"Mientras otros duermen, tú construyes. Mientras otros dudan, tú ejecutas."',
+    '"Tu competencia no es otro socio. Tu competencia es la persona que eras ayer."',
+    '"Cada prospecto que no contactas es un cierre que le regalas a otro."',
+    '"El seguimiento es donde se esconde el 80% del dinero."',
+    '"Los que ganan no son los más talentosos, son los más consistentes."',
+    '"Un mensaje más, una llamada más, un cierre más. Así se construye la libertad."',
+    '"No necesitas ser perfecto. Necesitas ser constante."',
+    '"Tu futuro se está construyendo HOY con las acciones que tomas AHORA."',
+    '"Quien domina el seguimiento, domina las ventas."',
+    '"La libertad financiera no es un golpe de suerte. Es una decisión diaria."',
+    '"Hoy alguien necesita lo que tú ofreces. Sal a buscarlo."',
+    '"Los líderes no esperan motivación. Crean disciplina."',
+    '"Cada \'no\' te acerca al próximo \'sí\'. Sigue adelante."',
+    '"El emprendedor que persiste cuando los demás abandonan es el que gana."',
+    '"Tu historia de éxito empieza con la decisión de intentarlo una vez más."',
+    '"No se trata de tener tiempo. Se trata de hacer tiempo para lo que importa."',
+    '"Las excusas no pagan facturas. Las acciones sí."',
+    '"Invierte en ti mismo. Es la única inversión que siempre da retorno."',
+    '"El que se levanta una vez más de las que cae, ese es el que triunfa."',
+    '"Tu franquicia digital es el vehículo. Tu disciplina es el combustible."',
+    '"Hoy es el día que tu yo del futuro te va a agradecer."',
+    '"No vendas un producto. Vende la transformación que la persona necesita."',
+    '"La acción imperfecta siempre le gana a la perfección paralizada."',
+    '"Cada persona que agregas a tu CRM es una semilla. Riégala con seguimiento."',
+    '"El 80% de las ventas se hacen entre el 5to y el 12vo contacto. No te rindas al primero."',
+    '"Tus resultados de mañana dependen de lo que hagas hoy después de las 6 PM."',
+    '"Un líder no le dice a su equipo qué hacer. Le muestra cómo se hace."'
+  ];
+  var fraseIdx = Math.floor(Date.now() / 3600000) % frases.length; // cambia cada hora
+  var fraseHoy = frases[fraseIdx];
+
+  prompt += '\n=== FRASE DE PODER (inclúyela al final de tu PRIMERA respuesta de cada conversación) ===\n' +
+    fraseHoy + '\n\n';
+
+  prompt += '=== INSTRUCCIONES DE RESPUESTA ===\n' +
     '- Responde en español latinoamericano, tono cercano y motivador.\n' +
     '- Máximo 4-5 oraciones por respuesta. Sé conciso pero con sustancia.\n' +
     '- SIEMPRE da un paso concreto y accionable que pueda hacer YA.\n' +
@@ -780,7 +819,10 @@ function buildCoachSystemPrompt(ctx, live) {
     '- Motívalo a estar en los 3 rankings: CRM, Agenda y Landing.\n' +
     '- Si tiene prospectos sin seguimiento, prioriza eso.\n' +
     '- Si su agenda está inactiva, urge que la active.\n' +
-    '- Celebra sus logros, por pequeños que sean.\n';
+    '- Celebra sus logros, por pequeños que sean.\n' +
+    '- En tu primera respuesta de la conversación, termina con la frase de poder entre comillas y un emoji de fuego 🔥.\n' +
+    '- En respuestas siguientes, si el socio necesita motivación, usa frases propias de mentalidad de crecimiento, visión, enfoque y determinación.\n' +
+    '- Hazlo sentir que es parte de algo grande, que cada acción cuenta, que está construyendo su libertad.\n';
 
   return prompt;
 }
