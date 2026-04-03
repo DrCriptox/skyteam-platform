@@ -1490,7 +1490,6 @@ function patchRenderHome() {
 
 function obInit() {
   injectStyles();
-  initCoachButton();
 
   // Try to patch renderHome immediately
   patchRenderHome();
@@ -1499,12 +1498,15 @@ function obInit() {
     var checkLogin = setInterval(function() {
       if (typeof CU !== 'undefined' && CU && CU.username) {
         clearInterval(checkLogin);
+        initCoachButton();
         obPostLogin();
       }
     }, 2000);
     return;
   }
 
+  // User already logged in
+  initCoachButton();
   obPostLogin();
 }
 
