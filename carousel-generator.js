@@ -655,16 +655,96 @@
 
   // ── DOWNLOAD HELPERS ──
 
+  var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   function downloadCanvas(canvas, filename) {
-    var link = document.createElement('a');
-    link.download = filename; link.href = canvas.toDataURL('image/png');
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    try {
+      if (isIOS) {
+        // iOS: open image in new tab — user long-presses to save
+        var dataUrl = canvas.toDataURL('image/png');
+        var win = window.open('', '_blank');
+        if (win) {
+          win.document.write(
+            '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<title>' + filename + '</title>' +
+            '<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;}' +
+            'img{max-width:100%;height:auto;}' +
+            '.tip{position:fixed;top:0;left:0;right:0;background:rgba(28,232,255,0.9);color:#000;text-align:center;' +
+            'padding:14px;font-family:Arial,sans-serif;font-weight:700;font-size:14px;z-index:10;}</style></head>' +
+            '<body><div class="tip">Mantén presionada la imagen → Guardar imagen</div>' +
+            '<img src="' + dataUrl + '" alt="' + filename + '"></body></html>'
+          );
+          win.document.close();
+        } else {
+          showToast('Permite las ventanas emergentes para descargar');
+        }
+        return;
+      }
+
+      // Desktop & Android: use blob download
+      canvas.toBlob(function(blob) {
+        if (!blob) {
+          // Fallback to data URL
+          var link = document.createElement('a');
+          link.download = filename;
+          link.href = canvas.toDataURL('image/png');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        // Cleanup after a short delay
+        setTimeout(function() {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 500);
+      }, 'image/png');
+    } catch (e) {
+      console.error('Download error:', e);
+      // Last resort: open data URL
+      try {
+        var dataUrl2 = canvas.toDataURL('image/png');
+        window.open(dataUrl2, '_blank');
+      } catch (e2) {
+        if (typeof showToast === 'function') showToast('Error al descargar. Haz captura de pantalla.');
+      }
+    }
   }
 
   function downloadAll(slides, topic) {
     var safe = topic.replace(/[^a-zA-Z0-9\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1 ]/g, '').replace(/\s+/g, '_').substring(0, 25);
+    if (isIOS) {
+      // iOS: open all in one page for easy saving
+      var htmlParts = [
+        '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">',
+        '<title>Contenido - ' + safe + '</title>',
+        '<style>body{margin:0;background:#000;padding:20px;font-family:Arial,sans-serif;}',
+        '.tip{background:rgba(28,232,255,0.9);color:#000;text-align:center;padding:14px;font-weight:700;font-size:14px;border-radius:12px;margin-bottom:20px;}',
+        'img{width:100%;max-width:600px;display:block;margin:10px auto;border-radius:8px;}',
+        '.label{color:rgba(255,255,255,0.5);text-align:center;font-size:12px;margin:4px 0 16px;}</style></head><body>',
+        '<div class="tip">Mantén presionada cada imagen → Guardar imagen</div>'
+      ];
+      for (var i = 0; i < slides.length; i++) {
+        htmlParts.push('<img src="' + slides[i].canvas.toDataURL('image/png') + '" alt="Slide ' + (i+1) + '">');
+        htmlParts.push('<p class="label">' + slides[i].label + ' — ' + safe + '</p>');
+      }
+      htmlParts.push('</body></html>');
+      var win = window.open('', '_blank');
+      if (win) { win.document.write(htmlParts.join('')); win.document.close(); }
+      else if (typeof showToast === 'function') showToast('Permite las ventanas emergentes');
+      return;
+    }
+    // Desktop/Android: sequential blob downloads
     slides.forEach(function(s, i) {
-      setTimeout(function() { downloadCanvas(s.canvas, safe + '_' + (i + 1) + '.png'); }, i * 350);
+      setTimeout(function() { downloadCanvas(s.canvas, safe + '_' + (i + 1) + '.png'); }, i * 500);
     });
   }
 
@@ -764,7 +844,7 @@
         '<div class="cg-prev" id="cg-prev">' +
           '<div class="cg-ph">' +
             '<p class="cg-lbl" style="margin:0">Vista previa</p>' +
-            '<button class="cg-btn" id="cg-dlAll" style="padding:9px 20px;font-size:12px">⬇ Descargar Todo</button>' +
+            '<button class="cg-btn" id="cg-dlAll" style="padding:9px 20px;font-size:12px">📤 Guardar Todo</button>' +
           '</div>' +
           '<div class="cg-ps" id="cg-ps"></div>' +
         '</div>' +
@@ -838,13 +918,34 @@
 
           var ft = document.createElement('div'); ft.className = 'cg-sf';
           var lb = document.createElement('span'); lb.className = 'cg-sl'; lb.textContent = s.label;
-          var dl = document.createElement('button'); dl.className = 'cg-btnO'; dl.textContent = '⬇';
-          dl.onclick = (function(canvas, i) {
+
+          // Share button (works great on mobile — lets user save/share directly)
+          var shareSupported = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+          var dl = document.createElement('button'); dl.className = 'cg-btnO';
+          dl.textContent = shareSupported ? '📤 Guardar' : '⬇ Guardar';
+          dl.onclick = (function(canvas, i, label) {
             return function() {
               var safe = topic.replace(/[^a-zA-Z0-9\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1 ]/g, '').replace(/\s+/g, '_').substring(0, 25);
-              downloadCanvas(canvas, safe + '_' + (i + 1) + '.png');
+              var fname = safe + '_' + (i + 1) + '.png';
+              // Try Web Share API first (best on mobile)
+              if (shareSupported) {
+                canvas.toBlob(function(blob) {
+                  if (!blob) { downloadCanvas(canvas, fname); return; }
+                  var file = new File([blob], fname, { type: 'image/png' });
+                  var shareData = { files: [file], title: label };
+                  if (navigator.canShare(shareData)) {
+                    navigator.share(shareData).catch(function() {
+                      downloadCanvas(canvas, fname);
+                    });
+                  } else {
+                    downloadCanvas(canvas, fname);
+                  }
+                }, 'image/png');
+              } else {
+                downloadCanvas(canvas, fname);
+              }
             };
-          })(s.canvas, idx);
+          })(s.canvas, idx, s.label);
           ft.appendChild(lb); ft.appendChild(dl);
           card.appendChild(ft);
           psEl.appendChild(card);
@@ -862,7 +963,31 @@
     };
 
     dlAllBtn.onclick = function() {
-      if (currentSlides.length) downloadAll(currentSlides, inp.value.trim() || 'contenido');
+      if (!currentSlides.length) return;
+      var topicName = inp.value.trim() || 'contenido';
+      var safe = topicName.replace(/[^a-zA-Z0-9\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1 ]/g, '').replace(/\s+/g, '_').substring(0, 25);
+      // Try share API with all files
+      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+        var promises = currentSlides.map(function(s, i) {
+          return new Promise(function(resolve) {
+            s.canvas.toBlob(function(blob) {
+              if (blob) resolve(new File([blob], safe + '_' + (i+1) + '.png', {type:'image/png'}));
+              else resolve(null);
+            }, 'image/png');
+          });
+        });
+        Promise.all(promises).then(function(files) {
+          files = files.filter(Boolean);
+          var shareData = { files: files, title: 'Contenido - ' + topicName };
+          if (files.length && navigator.canShare(shareData)) {
+            navigator.share(shareData).catch(function() { downloadAll(currentSlides, topicName); });
+          } else {
+            downloadAll(currentSlides, topicName);
+          }
+        }).catch(function() { downloadAll(currentSlides, topicName); });
+      } else {
+        downloadAll(currentSlides, topicName);
+      }
     };
   }
 
