@@ -149,18 +149,18 @@
     '{"stories":[{"titulo":"..","texto":"..","emoji":"🔥"},{"titulo":"..","texto":"..","emoji":"💰"},{"titulo":"..","texto":"..","emoji":"🚀"},{"titulo":"..","texto":"..","emoji":"📈"},{"titulo":"..","texto":"..","emoji":"📩","cta_palabra":"QUIERO"}]}\nSolo JSON.';
 
   var INFO_PROMPT =
-    'Crea un carrusel INFORMATIVO estilo minimalista viral para Instagram Latam. 6 slides.\n' +
-    'NICHO: franquicias digitales, sistemas automatizados de ingresos, IA aplicada a negocios.\n' +
-    'ESTILO: Como @ramiro.cubria — frases cortas, impactantes, profesionales. Conecta una TENDENCIA actual (IA, automatización, herramientas digitales) con la SOLUCIÓN (franquicia digital/sistemas).\n' +
-    'REGLAS:\n' +
-    'S1(hook): titulo_principal max 8 palabras con gancho brutal + subtitulo max 12 palabras. Debe mencionar una marca/herramienta real (IA, WhatsApp, Meta, etc). palabra_color=la palabra clave a resaltar en color.\n' +
-    'S2(dato): Un dato impactante que valide el tema. titulo max 8 palabras, texto max 25 palabras, palabra_color.\n' +
-    'S3(explicacion): Cómo funciona o qué significa. titulo max 8 palabras, texto max 25 palabras, palabra_color.\n' +
-    'S4(ejemplo): Ejemplo real o caso de uso. titulo max 8 palabras, texto max 25 palabras, palabra_color.\n' +
-    'S5(beneficio): Qué gana el usuario. titulo max 8 palabras, texto max 25 palabras, palabra_color.\n' +
-    'S6(cta): CTA tipo "Comenta X para recibir..." titulo max 6 palabras, cta_texto max 15 palabras, cta_palabra.\n' +
+    'Crea carrusel INFORMATIVO minimalista viral Instagram Latam. 6 slides.\n' +
+    'NICHO: franquicias digitales, sistemas automatizados, IA aplicada a negocios.\n' +
+    'ESTILO: frases cortas, impactantes. Conecta TENDENCIA (IA,automatización,herramientas) con SOLUCIÓN (franquicia/sistemas).\n' +
+    'Cada slide lleva img_desc: descripción en INGLÉS de imagen fotorealista que represente el mensaje (personas, logos, dispositivos, escenas). Ej: "young latino entrepreneur looking at phone with sales dashboard, luxury office".\n' +
+    'S1(hook):titulo_principal max 8 palabras+subtitulo max 12. Menciona marca/herramienta real. palabra_color=palabra clave.\n' +
+    'S2(dato):dato impactante. titulo max 8, texto max 25, palabra_color.\n' +
+    'S3(explicacion):cómo funciona. titulo max 8, texto max 25, palabra_color.\n' +
+    'S4(ejemplo):caso real. titulo max 8, texto max 25, palabra_color.\n' +
+    'S5(beneficio):qué gana el usuario. titulo max 8, texto max 25, palabra_color.\n' +
+    'S6(cta):titulo max 6, cta_texto max 15, cta_palabra.\n' +
     'JSON:\n' +
-    '{"slides":[{"tipo":"hook","titulo_principal":"..","subtitulo":"..","palabra_color":".."},{"tipo":"dato","titulo":"..","texto":"..","palabra_color":".."},{"tipo":"explicacion","titulo":"..","texto":"..","palabra_color":".."},{"tipo":"ejemplo","titulo":"..","texto":"..","palabra_color":".."},{"tipo":"beneficio","titulo":"..","texto":"..","palabra_color":".."},{"tipo":"cta","titulo":"..","cta_texto":"..","cta_palabra":"SISTEMA"}]}\nSolo JSON.';
+    '{"slides":[{"tipo":"hook","titulo_principal":"..","subtitulo":"..","palabra_color":"..","img_desc":".."},{"tipo":"dato","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"explicacion","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"ejemplo","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"beneficio","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"cta","titulo":"..","cta_texto":"..","cta_palabra":"SISTEMA","img_desc":".."}]}\nSolo JSON.';
 
   // ── CANVAS HELPERS ──
   function wrapText(ctx, text, maxW) {
@@ -557,8 +557,10 @@
     ctx.fillText('Deslizá  →', w/2, h - 30);
   }
 
-  // INFO SLIDE: Content (dato, explicacion, ejemplo, beneficio)
-  function renderInfoContent(ctx, slide, idx, total, w, h, accentColor) {
+  // INFO SLIDE: Content (dato, explicacion, ejemplo, beneficio) — with image
+  function renderInfoContent(ctx, img, slide, idx, total, w, h, accentColor) {
+    // Top half: white dot pattern + text
+    var splitY = h * 0.48;
     drawDotPattern(ctx, w, h);
     infoCounter(ctx, idx + 1, total, w);
     // Type badge
@@ -566,23 +568,46 @@
     var badge = badges[slide.tipo] || '📌 INFO';
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    roundRect(ctx, w/2 - 100, 90, 200, 36, 18); ctx.fill();
+    roundRect(ctx, w/2 - 100, 80, 200, 36, 18); ctx.fill();
     ctx.font = 'bold 14px Arial'; ctx.fillStyle = '#888'; ctx.textAlign = 'center';
-    ctx.fillText(badge, w/2, 114);
+    ctx.fillText(badge, w/2, 104);
     ctx.restore();
     // Title
-    var ty = drawBoldTextWithColor(ctx, slide.titulo || '', slide.palabra_color || '', w/2, 220, w - 120, 52, accentColor);
+    var ty = drawBoldTextWithColor(ctx, slide.titulo || '', slide.palabra_color || '', w/2, 180, w - 120, 48, accentColor);
     // Accent bar
     ctx.fillStyle = accentColor; ctx.globalAlpha = 0.8;
-    roundRect(ctx, w/2 - 40, ty + 16, 80, 5, 3); ctx.fill(); ctx.globalAlpha = 1;
+    roundRect(ctx, w/2 - 40, ty + 12, 80, 5, 3); ctx.fill(); ctx.globalAlpha = 1;
     // Text body
     if (slide.texto) {
-      ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#444';
+      ctx.font = '28px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#444';
       var txLines = wrapText(ctx, slide.texto, w - 140);
-      var txY = ty + 60;
+      var txY = ty + 50;
       for (var i = 0; i < txLines.length; i++) {
-        ctx.fillText(txLines[i], w/2, txY + i * 44);
+        ctx.fillText(txLines[i], w/2, txY + i * 40);
       }
+    }
+    // Bottom half: image with rounded corners
+    if (img && img.width) {
+      var imgMargin = 50;
+      var imgW = w - imgMargin * 2;
+      var imgH = h - splitY - 80;
+      var imgY = splitY + 10;
+      ctx.save();
+      roundRect(ctx, imgMargin, imgY, imgW, imgH, 20);
+      ctx.clip();
+      // Cover fit
+      var scale = Math.max(imgW / img.width, imgH / img.height);
+      var sx = (img.width - imgW / scale) / 2;
+      var sy = (img.height - imgH / scale) / 2;
+      ctx.drawImage(img, sx, sy, imgW / scale, imgH / scale, imgMargin, imgY, imgW, imgH);
+      // Subtle overlay at bottom for readability
+      var g = ctx.createLinearGradient(0, imgY + imgH - 80, 0, imgY + imgH);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.2)');
+      ctx.fillStyle = g; ctx.fillRect(imgMargin, imgY, imgW, imgH);
+      ctx.restore();
+      // Border around image
+      ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 2;
+      roundRect(ctx, imgMargin, imgY, imgW, imgH, 20); ctx.stroke(); ctx.restore();
     }
     // Bottom accent
     ctx.fillStyle = accentColor;
@@ -591,40 +616,47 @@
     ctx.fillText('Deslizá  →', w/2, h - 30);
   }
 
-  // INFO SLIDE: CTA (slide 6)
-  function renderInfoCTA(ctx, slide, total, w, h, accentColor) {
+  // INFO SLIDE: CTA (slide 6) — with image
+  function renderInfoCTA(ctx, img, slide, total, w, h, accentColor) {
     drawDotPattern(ctx, w, h);
     infoCounter(ctx, total, total, w);
     // Big CTA word
     var palabra = slide.cta_palabra || 'SISTEMA';
     ctx.save();
-    ctx.font = 'bold 90px "Arial Black", Arial'; ctx.textAlign = 'center';
+    ctx.font = 'bold 80px "Arial Black", Arial'; ctx.textAlign = 'center';
     ctx.fillStyle = accentColor;
-    ctx.fillText('Comenta ' + palabra, w/2, h * 0.35);
+    var ctaWord = 'Comenta ' + palabra;
+    var cwLines = wrapText(ctx, ctaWord, w - 80);
+    for (var c = 0; c < cwLines.length; c++) {
+      ctx.fillText(cwLines[c], w/2, h * 0.22 + c * 95);
+    }
     ctx.restore();
-    // Subtitle text
+    // Image in middle section
+    if (img && img.width) {
+      var imgMargin = 80;
+      var imgW = w - imgMargin * 2;
+      var imgH = h * 0.35;
+      var imgY = h * 0.32;
+      ctx.save();
+      roundRect(ctx, imgMargin, imgY, imgW, imgH, 20);
+      ctx.clip();
+      var scale = Math.max(imgW / img.width, imgH / img.height);
+      var sx = (img.width - imgW / scale) / 2;
+      var sy = (img.height - imgH / scale) / 2;
+      ctx.drawImage(img, sx, sy, imgW / scale, imgH / scale, imgMargin, imgY, imgW, imgH);
+      ctx.restore();
+      ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 2;
+      roundRect(ctx, imgMargin, imgY, imgW, imgH, 20); ctx.stroke(); ctx.restore();
+    }
+    // Subtitle text below image
     if (slide.cta_texto || slide.titulo) {
-      ctx.font = 'bold 36px "Arial Black", Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1a1a1a';
+      ctx.font = 'bold 34px "Arial Black", Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1a1a1a';
       var ctaLines = wrapText(ctx, slide.cta_texto || slide.titulo || '', w - 100);
+      var textY = img && img.width ? h * 0.73 : h * 0.5;
       for (var i = 0; i < ctaLines.length; i++) {
-        ctx.fillText(ctaLines[i], w/2, h * 0.5 + i * 50);
+        ctx.fillText(ctaLines[i], w/2, textY + i * 48);
       }
     }
-    // Decorative cards (mockup documents)
-    ctx.save(); ctx.globalAlpha = 0.12;
-    for (var d = 0; d < 5; d++) {
-      var dx = 100 + d * 170 + (Math.random() * 40 - 20);
-      var dy = h * 0.6 + (Math.random() * 80 - 40);
-      var rot = (Math.random() * 30 - 15) * Math.PI / 180;
-      ctx.save(); ctx.translate(dx, dy); ctx.rotate(rot);
-      ctx.fillStyle = '#ccc'; roundRect(ctx, -70, -45, 140, 90, 10); ctx.fill();
-      ctx.fillStyle = '#999';
-      for (var l = 0; l < 3; l++) { ctx.fillRect(-50, -25 + l * 22, 100, 8); }
-      ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = accentColor; ctx.globalAlpha = 0.3;
-      ctx.fillText('?', 0, 10);
-      ctx.restore();
-    }
-    ctx.restore();
     // Bottom accent
     ctx.fillStyle = accentColor; ctx.fillRect(0, h - 6, w, 6);
   }
@@ -722,25 +754,43 @@
     var slides = text.slides || [];
     var total = slides.length;
     var accentColor = randomInfoColor();
-    // Only generate 1 image for hook slide
-    status('Generando imagen de portada...');
-    var hookPrompt = getInfoImgPrompt();
-    var urls = await generateImages([hookPrompt], 'portrait');
-    var hookImg = null;
-    try { hookImg = urls[0] ? await loadImage(urls[0]) : null; }
-    catch(e) { hookImg = null; }
+
+    // Generate images for ALL slides based on img_desc from Claude
+    status('Generando imágenes con IA... (0/' + total + ')');
+    var prompts = slides.map(function(s, i) {
+      // Use Claude's img_desc if available, otherwise use a fallback
+      var base = s.img_desc || '';
+      if (!base) {
+        // Fallback prompts based on slide type
+        if (s.tipo === 'hook') return getInfoImgPrompt();
+        if (s.tipo === 'cta') return 'A photorealistic image of hands reaching toward a glowing smartphone screen showing a message notification, warm inviting lighting, clean modern background, editorial photography, 8k, no text no letters no words';
+        return getInfoImgPrompt();
+      }
+      // Enhance the description for Flux
+      return 'A photorealistic high-quality image of ' + base + ', clean modern aesthetic, professional editorial photography, natural lighting, 8k quality, no text no letters no words no watermarks';
+    });
+
+    var urls = await generateImages(prompts, 'portrait');
+    var images = [];
+    for (var u = 0; u < urls.length; u++) {
+      status('Cargando imagen ' + (u+1) + '/' + total + '...');
+      try { images.push(urls[u] ? await loadImage(urls[u]) : null); }
+      catch(e) { images.push(null); }
+    }
+
     var canvases = [];
     for (var i = 0; i < slides.length; i++) {
       status('Diseñando slide ' + (i+1) + '/' + total + '...');
       var c = document.createElement('canvas'); c.width = CW; c.height = CH;
       var ctx = c.getContext('2d');
       var s = slides[i];
+      var img = images[i] || null;
       if (s.tipo === 'hook' || i === 0) {
-        renderInfoHook(ctx, hookImg, s, total, CW, CH, accentColor);
+        renderInfoHook(ctx, img, s, total, CW, CH, accentColor);
       } else if (s.tipo === 'cta' || i === total - 1) {
-        renderInfoCTA(ctx, s, total, CW, CH, accentColor);
+        renderInfoCTA(ctx, img, s, total, CW, CH, accentColor);
       } else {
-        renderInfoContent(ctx, s, i, total, CW, CH, accentColor);
+        renderInfoContent(ctx, img, s, i, total, CW, CH, accentColor);
       }
       canvases.push({ canvas: c, label: i === 0 ? 'Hook' : (i === total-1 ? 'CTA' : 'Slide '+(i+1)) });
     }
