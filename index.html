@@ -10176,7 +10176,11 @@ var crmRatingWizardState = {
 
 function initSkyProspectos() {
   crmInjectExtraFields();
-  var _crmForm=document.getElementById("crm-form-add");if(_crmForm)_crmForm.addEventListener("submit",crmSaveProspect);
+  var _crmForm=document.getElementById("crm-form-add");
+  if(_crmForm && !_crmForm._listenerAttached){
+    _crmForm.addEventListener("submit",crmSaveProspect);
+    _crmForm._listenerAttached=true;
+  }
   crmLoadData().then(function() {
     crmSwitchView(crmCurrentView || 'kanban');
   });
@@ -10935,6 +10939,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function crmSaveProspect(e){
   if(e)e.preventDefault();var nombre=document.getElementById("crm-input-nombre").value.trim();
   if(!nombre){crmToast("El nombre es obligatorio","error");return;}
+  var _igEl=document.getElementById("crm-input-instagram");
   var data={nombre:nombre,telefono:document.getElementById("crm-input-telefono").value.trim()||null,
     email:document.getElementById("crm-input-email").value.trim()||null,
     etapa:document.getElementById("crm-input-etapa").value||"nuevo",
@@ -10942,7 +10947,8 @@ async function crmSaveProspect(e){
     temperatura:parseInt(document.getElementById("crm-input-temperatura").value)||50,
     notas:document.getElementById("crm-input-notas").value.trim()||null,
     valor_estimado:parseFloat(document.getElementById("crm-input-valor-estimado").value)||0,
-    fecha_cierre_estimada:document.getElementById("crm-input-fecha-cierre").value||null};
+    fecha_cierre_estimada:document.getElementById("crm-input-fecha-cierre").value||null,
+    instagram:_igEl?_igEl.value.trim().replace(/^@/,'')||null:null};
   var res;if(crmEditingId){res=await crmApi("update",{id:crmEditingId,updates:data});if(res&&res.ok)crmToast("Prospecto actualizado","success");
     closeCrmModalAdd();crmLoadData();}
   else{res=await crmApi("add",data);if(res&&res.ok){crmToast("Prospecto agregado!","success");
