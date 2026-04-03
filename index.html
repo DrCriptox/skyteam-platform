@@ -2172,8 +2172,8 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
             </div>
           </div>
         </div>
-        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0 0 8px;line-height:1.6;">En <strong style="color:#fff;">8innova.biz</strong>, abre tu perfil (esquina superior derecha). Toma captura del panel como el ejemplo. El sistema leerá tu usuario, sponsor y días automáticamente.</p>
-        <p style="font-size:10px;color:#f87171;margin:0;">Si tu membresía está en 0 días o vencida, no podrás registrarte.</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0 0 6px;line-height:1.7;">Entra a <strong style="color:#fff;">8innova.biz/login</strong>, inicia sesión con tu cuenta Innova. Haz clic en tu foto (esquina superior derecha) → <strong style="color:#fff;">Perfil</strong>. Desplázate hasta ver los 4 datos del ejemplo y toma la captura.</p>
+        <p style="font-size:10px;color:#f87171;margin:0;line-height:1.5;">⚠️ Si la captura no muestra los 4 requerimientos (días restantes, usuario, clasificación actual y patrocinador), no se podrá completar tu acceso.</p>
       </div>
       <label style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,215,0,0.4);border-radius:8px;cursor:pointer;margin-bottom:8px;">
         <span style="font-size:20px;">📸</span>
@@ -2214,32 +2214,32 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
         <!-- PASO 3: DATOS MANUALES -->
         <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:4px 0 10px;"></div>
         <p style="font-size:12px;color:#FFD700;font-weight:700;margin-bottom:8px;">PASO 3 — Completa tu información</p>
-        <input type="text" id="sol-name" placeholder="Tu nombre completo" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <input type="text" id="sol-name" placeholder="Nombre y apellido" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
         <input type="email" id="sol-email" placeholder="Tu correo electrónico" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
         <!-- WhatsApp con selector de país -->
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <select id="sol-country" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:12px;padding:10px 6px;outline:none;font-family:Nunito,sans-serif;min-width:110px;">
-            <option value="+57">🇨🇴 +57</option>
-            <option value="+58">🇻🇪 +58</option>
-            <option value="+52">🇲🇽 +52</option>
-            <option value="+54">🇦🇷 +54</option>
-            <option value="+56">🇨🇱 +56</option>
-            <option value="+51">🇵🇪 +51</option>
-            <option value="+593">🇪🇨 +593</option>
-            <option value="+502">🇬🇹 +502</option>
-            <option value="+503">🇸🇻 +503</option>
-            <option value="+504">🇭🇳 +504</option>
-            <option value="+505">🇳🇮 +505</option>
-            <option value="+506">🇨🇷 +506</option>
-            <option value="+507">🇵🇦 +507</option>
-            <option value="+1809">🇩🇴 +1809</option>
-            <option value="+591">🇧🇴 +591</option>
-            <option value="+595">🇵🇾 +595</option>
-            <option value="+598">🇺🇾 +598</option>
-            <option value="+55">🇧🇷 +55</option>
-            <option value="+34">🇪🇸 +34</option>
-            <option value="+351">🇵🇹 +351</option>
-            <option value="+1">🇺🇸 +1</option>
+            <option value="+57">CO +57</option>
+            <option value="+58">VE +58</option>
+            <option value="+52">MX +52</option>
+            <option value="+54">AR +54</option>
+            <option value="+56">CL +56</option>
+            <option value="+51">PE +51</option>
+            <option value="+593">EC +593</option>
+            <option value="+502">GT +502</option>
+            <option value="+503">SV +503</option>
+            <option value="+504">HN +504</option>
+            <option value="+505">NI +505</option>
+            <option value="+506">CR +506</option>
+            <option value="+507">PA +507</option>
+            <option value="+1809">DO +1809</option>
+            <option value="+591">BO +591</option>
+            <option value="+595">PY +595</option>
+            <option value="+598">UY +598</option>
+            <option value="+55">BR +55</option>
+            <option value="+34">ES +34</option>
+            <option value="+351">PT +351</option>
+            <option value="+1">US +1</option>
           </select>
           <input type="tel" id="sol-wa-num" placeholder="300 123 4567" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Nunito,sans-serif;">
         </div>
@@ -8847,7 +8847,7 @@ function sendSolicitud() {
     showToast('Tu membresía está vencida (0 días). Renueva en Innova para registrarte ❌'); return;
   }
   if(!innovaUser) { showToast('No se detectó tu usuario de Innova. Sube una captura más clara ⚠️'); return; }
-  if(!name) { showToast('Escribe tu nombre completo ⚠️'); return; }
+  if(!name) { showToast('Escribe tu nombre y apellido ⚠️'); return; }
   if(!waNum) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
   if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
   if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
