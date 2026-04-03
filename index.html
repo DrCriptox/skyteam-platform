@@ -9047,6 +9047,7 @@ function sendSolicitud() {
         directData: {
           name: name,
           email: email || null,
+          whatsapp: wa || null,
           password: pass,
           sponsor: sponsor || null,
           innova_user: innovaUser,
@@ -9153,8 +9154,34 @@ function renderPerfil() {
     + '</div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Usuario</span><span class="perfil-data-value mono">'+CU.username+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">Correo</span><span class="perfil-data-value mono" style="font-size:11px;">'+(CU.email||'—')+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">WhatsApp</span><span class="perfil-data-value">'+(CU.whatsapp||'—')+'</span></div>'
+    + (function(){
+        var LOCK = 15 * 24 * 3600000; // 15 days in ms
+        var emailLock = localStorage.getItem('skyteam_email_lock_' + CU.username);
+        var waLock    = localStorage.getItem('skyteam_wa_lock_' + CU.username);
+        var emailLocked = emailLock && (Date.now() - parseInt(emailLock)) < LOCK;
+        var waLocked    = waLock    && (Date.now() - parseInt(waLock))    < LOCK;
+        var emailDays = emailLocked ? Math.ceil((LOCK - (Date.now()-parseInt(emailLock))) / 86400000) : 0;
+        var waDays    = waLocked    ? Math.ceil((LOCK - (Date.now()-parseInt(waLock)))    / 86400000) : 0;
+        var eRow = '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;">'
+          + '<span class="perfil-data-label">Correo</span>'
+          + (emailLocked
+              ? '<span class="perfil-data-value mono" style="font-size:11px;flex:1;">'+(CU.email||'—')+'</span><span style="font-size:9px;color:rgba(255,255,255,0.2);">🔒 '+emailDays+'d</span>'
+              : '<div style="display:flex;gap:6px;flex:1;align-items:center;min-width:0;">'
+                + '<input id="pf-email" type="email" value="'+(CU.email||'')+'" placeholder="tu@correo.com" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.2);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Nunito,sans-serif;">'
+                + '<button onclick="guardarEmailPerfil()" style="background:rgba(28,232,255,0.15);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">Guardar</button>'
+                + '</div>')
+          + '</div>';
+        var waRow = '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;">'
+          + '<span class="perfil-data-label">WhatsApp</span>'
+          + (waLocked
+              ? '<span class="perfil-data-value" style="flex:1;">'+(CU.whatsapp||'—')+'</span><span style="font-size:9px;color:rgba(255,255,255,0.2);">🔒 '+waDays+'d</span>'
+              : '<div style="display:flex;gap:6px;flex:1;align-items:center;min-width:0;">'
+                + '<input id="pf-wa" type="tel" value="'+(CU.whatsapp||'')+'" placeholder="+57 300 000 0000" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(74,222,128,0.2);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Nunito,sans-serif;">'
+                + '<button onclick="guardarWaPerfil()" style="background:rgba(74,222,128,0.12);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">Guardar</button>'
+                + '</div>')
+          + '</div>';
+        return eRow + waRow;
+      })()
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:10px;word-break:break-all;">skyteam.global?ref='+(CU.ref||CU.username)+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
@@ -9302,6 +9329,42 @@ function _cropConfirm() {
   renderPerfil();
   renderSidebarUser();
   showToast('Foto de perfil actualizada ✓');
+}
+
+function guardarEmailPerfil() {
+  var val = (document.getElementById('pf-email')||{}).value;
+  if(!val) { showToast('Ingresa un correo válido ⚠️'); return; }
+  val = val.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { showToast('Correo inválido ⚠️'); return; }
+  fetch('/api/update-user', { method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ username: CU.username, updates: { email: val } })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(d.ok) {
+      CU.email = val;
+      localStorage.setItem('skyteam_u', JSON.stringify(CU));
+      localStorage.setItem('skyteam_email_lock_' + CU.username, String(Date.now()));
+      renderPerfil();
+      showToast('✅ Correo actualizado. Puedes iniciar sesión con él.');
+    } else { showToast('Error al guardar ⚠️'); }
+  }).catch(function(){ showToast('Error de conexión ⚠️'); });
+}
+
+function guardarWaPerfil() {
+  var val = (document.getElementById('pf-wa')||{}).value;
+  if(!val) { showToast('Ingresa tu WhatsApp ⚠️'); return; }
+  val = val.trim().replace(/\s+/g,'');
+  if(val.length < 10) { showToast('Número inválido ⚠️'); return; }
+  fetch('/api/update-user', { method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ username: CU.username, updates: { whatsapp: val } })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(d.ok) {
+      CU.whatsapp = val;
+      localStorage.setItem('skyteam_u', JSON.stringify(CU));
+      localStorage.setItem('skyteam_wa_lock_' + CU.username, String(Date.now()));
+      renderPerfil();
+      showToast('✅ WhatsApp actualizado.');
+    } else { showToast('Error al guardar ⚠️'); }
+  }).catch(function(){ showToast('Error de conexión ⚠️'); });
 }
 
 function copiarLink() {

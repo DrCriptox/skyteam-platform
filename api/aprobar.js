@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     }
 
     // Create user in users table — try progressively minimal payloads if columns are missing
-    const fullPayload = { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null, email: sol.email || null, rank };
+    const fullPayload = { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null, email: sol.email || null, whatsapp: sol.whatsapp || null, rank };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
       { ...fullPayload, rank: undefined },                                                         // 2. no rank
