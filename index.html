@@ -2314,7 +2314,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <div class="nav-section-label">Equipo</div>
       <button class="nav-item" data-sec="ranking" onclick="navigate('ranking')"><span class="nav-icon">🏆</span>Ranking</button>
       <button class="nav-item" data-sec="viajes" onclick="navigate('viajes')"><span class="nav-icon">✈️</span>Viajes</button>
-      <button class="nav-item" data-sec="comunidad" onclick="navigate('comunidad')"><span class="nav-icon">💬</span>Comunidad</button>
+      <button class="nav-item" data-sec="comunidad" onclick="navigate('comunidad')"><span class="nav-icon">💬</span>Comunidad<span id="comunidad-badge" style="display:none;margin-left:6px;background:#FF3B30;color:#fff;font-size:9px;font-weight:900;min-width:16px;height:16px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;font-family:Nunito,sans-serif;border:2px solid #030c1f;animation:notifPulse 2s infinite;"></span></button>
       <button class="nav-item" data-sec="anuncios" onclick="navigate('anuncios')"><span class="nav-icon">📢</span>Anuncios</button>
 
       <div class="nav-section-label" id="nav-admin-label" style="display:none;">Administración</div>
@@ -4501,8 +4501,21 @@ function refreshNotifications() {
   var currentHour = new Date().getHours();
   var dailyKey = 'daily_' + new Date().toDateString() + '_';
 
-  // Morning motivation (8-9 AM)
-  if(currentHour >= 8 && currentHour < 9 && !_notifDismissed[dailyKey+'morning']) {
+  // Early morning — Academia (6-8 AM)
+  if(currentHour >= 6 && currentHour < 8 && !_notifDismissed[dailyKey+'earlymorning']) {
+    notifs.push({
+      id: dailyKey+'earlymorning', type: 'system', icon: '☀️',
+      title: 'Empieza el día aprendiendo',
+      subtitle: 'La Academia te espera',
+      msg: 'Dedica 15 minutos a la Academia antes de empezar. Quienes aprenden más, cierran más.',
+      action: {label: '🎓 Ir a la Academia', url: 'javascript:navigate("academia")'},
+      priority: 0.7
+    });
+    activeCount++;
+  }
+
+  // Morning motivation (8-11 AM)
+  if(currentHour >= 8 && currentHour < 11 && !_notifDismissed[dailyKey+'morning']) {
     notifs.push({
       id: dailyKey+'morning', type: 'system', icon: '🌅',
       title: '¡Buenos días! Tu día productivo empieza ahora',
@@ -4514,8 +4527,8 @@ function refreshNotifications() {
     activeCount++;
   }
 
-  // Midday check-in (1-2 PM)
-  if(currentHour >= 13 && currentHour < 14 && !_notifDismissed[dailyKey+'midday']) {
+  // Midday check-in (12-2 PM)
+  if(currentHour >= 12 && currentHour < 14 && !_notifDismissed[dailyKey+'midday']) {
     notifs.push({
       id: dailyKey+'midday', type: 'system', icon: '📊',
       title: '¿Cómo va tu día? Revisa tu progreso',
@@ -4527,15 +4540,41 @@ function refreshNotifications() {
     activeCount++;
   }
 
-  // Evening follow-up (6-7 PM)
-  if(currentHour >= 18 && currentHour < 19 && !_notifDismissed[dailyKey+'evening']) {
+  // Afternoon — Prospects (4-6 PM)
+  if(currentHour >= 16 && currentHour < 18 && !_notifDismissed[dailyKey+'afternoon']) {
+    notifs.push({
+      id: dailyKey+'afternoon', type: 'system', icon: '🎯',
+      title: 'Momento ideal para prospectar',
+      subtitle: 'La gente ya terminó su jornada laboral',
+      msg: 'Por la tarde la gente está más receptiva. Comparte tu link, contacta nuevos prospectos y activa conversaciones.',
+      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("sky-prospectos")'},
+      priority: 0.7
+    });
+    activeCount++;
+  }
+
+  // Evening follow-up (6-8 PM)
+  if(currentHour >= 18 && currentHour < 20 && !_notifDismissed[dailyKey+'evening']) {
     notifs.push({
       id: dailyKey+'evening', type: 'system', icon: '🌙',
-      title: 'Hora del seguimiento de cierre del día',
+      title: 'Hora del seguimiento — cierre del día',
       subtitle: 'Los prospectos están más disponibles ahora',
       msg: 'Al final del día la gente revisa más su celular. Es el mejor momento para hacer seguimiento y agendar citas.',
       action: {label: '📋 Mis prospectos', url: 'javascript:navigate("sky-prospectos")'},
       priority: 0.7
+    });
+    activeCount++;
+  }
+
+  // Night wrap-up (9-10 PM)
+  if(currentHour >= 21 && currentHour < 22 && !_notifDismissed[dailyKey+'night']) {
+    notifs.push({
+      id: dailyKey+'night', type: 'system', icon: '✅',
+      title: '¿Cómo cerraste el día?',
+      subtitle: 'Revisa tu ranking y celebra tus logros',
+      msg: 'Antes de dormir revisa tu progreso en el ranking y planea mañana. Consistencia es la clave del éxito.',
+      action: {label: '🏆 Ver Ranking', url: 'javascript:navigate("ranking")'},
+      priority: 0.5
     });
     activeCount++;
   }
@@ -4599,7 +4638,16 @@ function renderNotifList(notifs) {
     }
     // Generic action button for non-agenda notifications
     if(n.action && n.action.url) {
-      html += '<a href="' + n.action.url + '" ' + (n.action.url.startsWith('http')?'target="_blank"':'onclick="toggleNotifPanel();'+(n.action.onclick||'')+'"') + ' style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
+      var _url = n.action.url;
+      var _btnAttrs = '';
+      if(_url.startsWith('http')) {
+        _btnAttrs = 'href="' + _url + '" target="_blank"';
+      } else {
+        // javascript: or internal — extract JS and run via onclick, prevent default
+        var _jsCode = _url.startsWith('javascript:') ? _url.slice('javascript:'.length) : 'navigate("' + _url + '")';
+        _btnAttrs = 'href="#" onclick="toggleNotifPanel();' + _jsCode + ';return false;"';
+      }
+      html += '<a ' + _btnAttrs + ' style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
     }
     html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Nunito,sans-serif;">Descartar</button>';
     html += '</div></div></div></div>';
@@ -7255,7 +7303,7 @@ function navigate(sec) {
   }
   var navBtn = document.querySelector('.nav-item[data-sec="'+sec+'"]');
   if(navBtn) navBtn.classList.add('active');
-  if(sec==='comunidad') { scrollChat(); startChatPolling(); }
+  if(sec==='comunidad') { scrollChat(); startChatPolling(); updateComunidadBadge(0); }
   else { stopChatPolling(); }
   if(sec==='agenda') {
     window.scrollTo(0,0);
@@ -7572,13 +7620,28 @@ function saveChatToServer(msgs) {
   }).catch(function(){});
 }
 
+function updateComunidadBadge(newCount) {
+  var badge = document.getElementById('comunidad-badge');
+  if(!badge) return;
+  var inComunidad = (typeof _currentSection !== 'undefined' && _currentSection === 'comunidad') ||
+                    document.getElementById('section-comunidad').style.display !== 'none';
+  if(newCount > 0 && !inComunidad) {
+    badge.textContent = newCount > 9 ? '9+' : newCount;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function startChatPolling() {
   if(_chatPollInterval) return;
   _chatPollInterval = setInterval(function(){
     syncChatFromServer(function(msgs){
       if(msgs.length !== _lastMsgCount) {
+        var newMsgs = msgs.length > _lastMsgCount ? msgs.length - _lastMsgCount : 0;
         _lastMsgCount = msgs.length;
         renderChat(msgs);
+        if(newMsgs > 0) updateComunidadBadge(newMsgs);
       }
     });
   }, 3000);
