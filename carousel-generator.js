@@ -128,31 +128,33 @@
     return all.slice(0, n);
   }
 
-  // ── TEXT PROMPTS (ultra-persuasivos, virales, directos) ──
+  // ── TEXT PROMPTS (ultra-persuasivos + img_desc contextual por slide) ──
+  // TODAS las modalidades generan img_desc para que gpt-image-1 cree imágenes ESPECÍFICAS por slide
+  var IMG_STYLE_HINT = 'img_desc: describe en INGLÉS una escena FOTOREALISTA cinematográfica que represente el mensaje. Sé MUY específico: describe la persona (edad, expresión, ropa, etnia latina), la acción exacta, el entorno (oficina, playa, penthouse, café), la iluminación (golden hour, neon, dramatic), objetos relevantes (laptop con gráficos, fajos de billetes, celular con notificaciones, reloj de alarma). NO pidas estilo cartoon ni 3D. Piensa en fotografía editorial de revista Forbes o Bloomberg.';
+
   var CAROUSEL_PROMPT =
-    'Eres el MEJOR copywriter de carruseles virales de Latinoamérica. Tu contenido genera 10K+ likes. Escribe como si hablaras con tu mejor amigo en un bar.\n' +
+    'Eres el MEJOR copywriter de carruseles virales de Latinoamérica. Tu contenido genera 10K+ likes.\n' +
     'NICHO: franquicias digitales, ingresos con sistemas automatizados. Público: personas con $500-$5,000 para invertir que odian su trabajo.\n' +
-    'TONO: Provocador, directo, sin rodeos. Usa frases como: "Te están robando", "Mientras tú chambeas 8 horas...", "Esto no te lo enseñan", "La verdad que nadie te dice".\n' +
-    'Genera 6 slides. Cada título debe ser CORTO y BRUTAL (3-5 palabras que duelan).\n' +
-    'S1(portada):titulo 3-5 palabras BRUTALES que detengan el scroll+subtitulo max 8 palabras. S2(contexto):dolor REAL+dato que duela. S3-S4(historia):datos reales, nombres de empresas (McDonald\'s=$2M vs franquicia digital=$500). S5(revelacion):la verdad que cambia todo. S6(cta):acción urgente.\n' +
-    'Texto max 20 palabras por slide (CORTO=VIRAL). dato=cifra real impactante.\n' +
-    '{"slides":[{"tipo":"portada","titulo":"..","subtitulo":"..","dato":null},{"tipo":"contexto","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"revelacion","titulo":"..","texto":"..","dato":".."},{"tipo":"cta","titulo":"..","texto":"..","cta_palabra":"QUIERO"}]}\nSolo JSON.';
+    'TONO: Provocador, directo. "Te están robando", "Mientras tú chambeas...", "La verdad que nadie te dice".\n' +
+    'Genera 6 slides. Títulos: 3-5 palabras BRUTALES. Texto: max 20 palabras.\n' +
+    IMG_STYLE_HINT + '\n' +
+    'S1(portada):titulo+subtitulo+img_desc(escena impactante de portada). S2(contexto):dolor+dato+img_desc(persona sufriendo el problema). S3-S4(historia):datos reales(McDonald\'s=$2M vs digital=$500)+img_desc(escena que muestre la comparación/transformación). S5(revelacion):verdad clave+img_desc(momento revelación). S6(cta):acción urgente+img_desc(persona exitosa invitando).\n' +
+    '{"slides":[{"tipo":"portada","titulo":"..","subtitulo":"..","dato":null,"img_desc":".."},{"tipo":"contexto","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"revelacion","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"cta","titulo":"..","texto":"..","cta_palabra":"QUIERO","img_desc":".."}]}\nSolo JSON.';
 
   var STORY_PROMPT =
-    'Eres el copywriter más viral de Instagram Stories Latam. Tono DIRECTO, provocador, que duela.\n' +
-    'NICHO: franquicias digitales, sistemas que generan plata solos. Público: personas hartas de chambear para otro.\n' +
-    'Genera 5 stories de UNA HISTORIA que enganche. Cada título: 3-4 palabras que GOLPEEN. Texto: max 15 palabras DIRECTAS.\n' +
-    'S1:gancho que duela("Tu jefe...","Mientras duermes..."). S2-3:datos reales que impacten. S4:la solución(sistemas/franquicia). S5:CTA urgente.\n' +
-    '{"stories":[{"titulo":"..","texto":"..","emoji":"🔥"},{"titulo":"..","texto":"..","emoji":"💰"},{"titulo":"..","texto":"..","emoji":"🚀"},{"titulo":"..","texto":"..","emoji":"📈"},{"titulo":"..","texto":"..","emoji":"📩","cta_palabra":"QUIERO"}]}\nSolo JSON.';
+    'Copywriter viral Instagram Stories Latam. NICHO: franquicias digitales, sistemas que generan plata solos.\n' +
+    'Genera 5 stories. Títulos: 3-4 palabras que GOLPEEN. Texto: max 15 palabras.\n' +
+    IMG_STYLE_HINT + '\n' +
+    'S1:gancho brutal+img_desc. S2-3:datos reales+img_desc. S4:solución+img_desc. S5:CTA+img_desc.\n' +
+    '{"stories":[{"titulo":"..","texto":"..","emoji":"🔥","img_desc":".."},{"titulo":"..","texto":"..","emoji":"💰","img_desc":".."},{"titulo":"..","texto":"..","emoji":"🚀","img_desc":".."},{"titulo":"..","texto":"..","emoji":"📈","img_desc":".."},{"titulo":"..","texto":"..","emoji":"📩","cta_palabra":"QUIERO","img_desc":".."}]}\nSolo JSON.';
 
   var INFO_PROMPT =
-    'Crea carrusel INFORMATIVO viral Instagram Latam. 6 slides. Estilo: LIMPIO, BOLD, PROFESIONAL.\n' +
+    'Crea carrusel INFORMATIVO viral Instagram Latam. 6 slides. LIMPIO, BOLD, PROFESIONAL.\n' +
     'NICHO: franquicias digitales, sistemas automatizados, IA para negocios.\n' +
-    'ESTILO: Como los mejores creadores de contenido — frases CORTAS que golpean. Conecta tendencia real (IA, WhatsApp, Meta, automatización) con solución (franquicia digital).\n' +
-    'Títulos: 4-6 palabras MÁXIMO, que se lean en 1 segundo. Textos: max 20 palabras, directos.\n' +
-    'img_desc: descripción en INGLÉS de foto/escena que REPRESENTE visualmente el mensaje. Sé específico (personas, dispositivos, expresiones, escenarios reales).\n' +
-    'S1(hook):titulo_principal max 6 palabras IMPACTANTES+subtitulo max 10. palabra_color=palabra clave en color.\n' +
-    'S2(dato):dato que genere shock. S3(explicacion):cómo funciona. S4(ejemplo):caso real. S5(beneficio):qué gana. S6(cta):CTA urgente.\n' +
+    'Conecta tendencia real (IA, WhatsApp, Meta, automatización) con solución (franquicia digital).\n' +
+    'Títulos: 4-6 palabras. Textos: max 20 palabras.\n' +
+    IMG_STYLE_HINT + '\n' +
+    'S1(hook):titulo_principal+subtitulo+palabra_color+img_desc. S2(dato):shock+img_desc. S3(explicacion)+img_desc. S4(ejemplo)+img_desc. S5(beneficio)+img_desc. S6(cta)+img_desc.\n' +
     '{"slides":[{"tipo":"hook","titulo_principal":"..","subtitulo":"..","palabra_color":"..","img_desc":".."},{"tipo":"dato","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"explicacion","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"ejemplo","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"beneficio","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"cta","titulo":"..","cta_texto":"..","cta_palabra":"SISTEMA","img_desc":".."}]}\nSolo JSON.';
 
   // ── CANVAS HELPERS ──
@@ -701,16 +703,22 @@
   // ── MAIN PIPELINES ──
   // ══════════════════════════════════════════════════════════
 
+  // Enhance img_desc for gpt-image-1 quality
+  function enhancePrompt(desc, fallback) {
+    if (!desc) return fallback || 'A dramatic photorealistic scene of a young Latino entrepreneur, cinematic lighting, editorial photography, 8k, no text no letters no words';
+    return desc + ', ultra photorealistic, cinematic dramatic lighting, shallow depth of field, shot on Sony A7IV, editorial photography style, 8k quality, no text no letters no words no watermarks';
+  }
+
   async function createCarousel(text, status) {
     var slides = text.slides || [];
     var total = slides.length;
     var accent = randomAccent();
-    status('Generando personajes 3D con IA... (0/' + total + ')');
+    status('Generando imágenes cinematográficas... (0/' + total + ')');
+    // Use img_desc from Claude for CONTEXTUAL images per slide
     var prompts = slides.map(function(s) {
-      if (s.tipo === 'portada') return getCharPrompt('portada_money');
-      if (s.tipo === 'cta') return getCharPrompt('cta_accion');
-      if (s.tipo === 'revelacion') return getCharPrompt('dato_impactante');
-      return getCharPrompt('historia_educativo');
+      return enhancePrompt(s.img_desc, getCharPrompt(
+        s.tipo === 'portada' ? 'portada_money' : s.tipo === 'cta' ? 'cta_accion' : 'historia_educativo'
+      ));
     });
     var urls = await generateImages(prompts, 'portrait');
     var canvases = [];
@@ -735,8 +743,11 @@
     var stories = text.stories || [];
     var total = stories.length;
     var accent = randomAccent();
-    status('Generando imágenes para historias...');
-    var prompts = stories.map(function() { return getCharPrompt('story_vertical'); });
+    status('Generando imágenes cinematográficas...');
+    // Use img_desc from Claude for contextual images
+    var prompts = stories.map(function(s) {
+      return enhancePrompt(s.img_desc, getCharPrompt('story_vertical'));
+    });
     var urls = await generateImages(prompts, 'story');
     var canvases = [];
     for (var i = 0; i < stories.length; i++) {
@@ -768,8 +779,7 @@
         if (s.tipo === 'cta') return 'A photorealistic image of hands reaching toward a glowing smartphone screen showing a message notification, warm inviting lighting, clean modern background, editorial photography, 8k, no text no letters no words';
         return getInfoImgPrompt();
       }
-      // Enhance the description for Flux
-      return 'A photorealistic high-quality image of ' + base + ', clean modern aesthetic, professional editorial photography, natural lighting, 8k quality, no text no letters no words no watermarks';
+      return enhancePrompt(base);
     });
 
     var urls = await generateImages(prompts, 'portrait');
