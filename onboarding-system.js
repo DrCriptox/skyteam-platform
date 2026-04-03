@@ -561,6 +561,10 @@ function checkCoachNudge() {
 function showCoachNudge() {
   setLastNudgeTime();
 
+  // Get first name from profile
+  var nombre = '';
+  try { nombre = (typeof CU !== 'undefined' && CU && CU.name) ? CU.name.split(' ')[0] : ''; } catch(e) {}
+
   // Pick a nudge message
   var idx = Math.floor(Date.now() / 600000) % NUDGE_MESSAGES.length; // changes every 10 min
   var nudge = NUDGE_MESSAGES[idx];
@@ -575,10 +579,12 @@ function showCoachNudge() {
   html += '<div onclick="dismissCoachNudge()" style="position:absolute;top:8px;right:10px;cursor:pointer;color:rgba(255,255,255,0.3);font-size:14px;padding:4px;">✕</div>';
   // Phrase
   html += '<p style="margin:0 0 10px;font-size:13px;color:#1CE8FF;font-weight:700;line-height:1.5;font-style:italic;padding-right:18px;">' + nudge.frase + '</p>';
-  // CTA message
-  html += '<p style="margin:0 0 12px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;">' + nudge.cta + '</p>';
-  // Action button
-  html += '<button onclick="openCoachFromNudge()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💪 ¡Vamos, Coach!</button>';
+  // CTA message (personalized with name)
+  var ctaText = nombre ? (nombre + ', ' + nudge.cta.charAt(0).toLowerCase() + nudge.cta.slice(1)) : nudge.cta;
+  html += '<p style="margin:0 0 12px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;">' + ctaText + '</p>';
+  // Action button with name
+  var btnLabel = nombre ? ('💪 ¡Vamos, ' + nombre + '!') : '💪 ¡Vamos!';
+  html += '<button onclick="openCoachFromNudge()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">' + btnLabel + '</button>';
 
   bubble.innerHTML = html;
   document.body.appendChild(bubble);
