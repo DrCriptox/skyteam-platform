@@ -513,6 +513,7 @@ function toggleCoachPanel() {
   obState.coachOpen = true;
   createCoachPanel();
 }
+window.toggleCoachPanel = toggleCoachPanel;
 
 function createCoachPanel() {
   var panel = document.createElement('div');
