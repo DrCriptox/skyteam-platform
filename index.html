@@ -139,6 +139,9 @@ html.ios-standalone .topbar{padding-top:max(env(safe-area-inset-top,50px),50px) 
 html.ios-standalone #sidebar{padding-top:max(env(safe-area-inset-top,50px),50px) !important;}
 html.ios-standalone #login-logo-wrap{top:calc(24px + max(env(safe-area-inset-top,50px),50px)) !important;}
 html.ios-standalone #login-screen{padding-top:calc(180px + max(env(safe-area-inset-top,50px),50px)) !important;}
+/* Landing nav safe area for iOS PWA */
+html.ios-standalone .landing-nav{padding-top:max(env(safe-area-inset-top,50px),50px) !important;}
+html.ios-standalone .landing-hero{padding-top:calc(140px + max(env(safe-area-inset-top,50px),50px)) !important;}
 body{background:var(--bg);background-image:radial-gradient(ellipse 500px 350px at 0% 0%,rgba(28,232,255,0.05) 0%,transparent 60%),radial-gradient(ellipse 400px 300px at 100% 15%,rgba(255,215,0,0.04) 0%,transparent 60%),radial-gradient(ellipse 350px 280px at 50% 100%,rgba(0,85,204,0.06) 0%,transparent 60%);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;min-height:100vh;}
 input,textarea,select,button{font-family:'Nunito',sans-serif;}
 select{background:#040f28 !important;color:#F0EDE6 !important;}
@@ -237,8 +240,10 @@ select option{background:#040f28;color:#F0EDE6;}
 }
 @media(max-width:480px){
   .landing-nav-btns .landing-btn-login{display:none;}
-  .landing-hero-cta .btn-secondary{display:none;}
   .landing-hero h1{font-size:32px;}
+  .landing-hero-cta{flex-direction:column;align-items:stretch;gap:10px;}
+  .landing-hero-cta .btn-big{padding:15px;font-size:13px;width:100%;}
+  .landing-hero-cta .btn-secondary{display:block !important;color:rgba(255,255,255,0.75);border-color:rgba(255,255,255,0.2);font-size:13px;}
 }
 
 /* ── LOGIN ── */
