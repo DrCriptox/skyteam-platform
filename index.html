@@ -3022,7 +3022,7 @@ function showApp() {
 
 function rankBadge(r, small) {
   const rk = RANKS[r]||RANKS[1];
-  const sz = small === 'tiny' ? 'font-size:10px;padding:2px 8px;text-align:center;' : small ? 'font-size:10px;padding:2px 8px;' : 'font-size:11px;padding:3px 10px;';
+  const sz = small === 'tiny' ? 'font-size:9px;padding:1px 6px;text-align:center;' : small ? 'font-size:10px;padding:2px 8px;' : 'font-size:11px;padding:3px 10px;';
   return `<span class="rank-badge" style="${sz}background:${rk.bg};border:0.5px solid ${rk.border};color:${rk.color};">${rk.icon} ${rk.name}</span>`;
 }
 
