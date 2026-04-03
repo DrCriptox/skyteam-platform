@@ -17,9 +17,10 @@ export default async function handler(req, res) {
 
     // Validate size
     const validSizes = {
-      'square': { width: 1024, height: 1024 },      // carousel
-      'story': { width: 768, height: 1344 },          // story (closest to 9:16)
-      'landscape': { width: 1344, height: 768 }       // landscape
+      'square': { width: 1024, height: 1024 },
+      'portrait': { width: 864, height: 1080 },       // 4:5 carousel (closest ratio)
+      'story': { width: 768, height: 1344 },           // 9:16 story
+      'landscape': { width: 1344, height: 768 }
     };
     const dims = validSizes[size] || validSizes['square'];
     const count = Math.min(num_images || 1, 4); // max 4 per request
