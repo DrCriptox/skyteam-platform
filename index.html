@@ -8931,11 +8931,19 @@ function onSolImgChange(input) {
 
         } else {
           input._expiryData = null;
-          preview.innerHTML = '❌ No se pudo leer la información. Asegúrate de que la captura muestre claramente tu usuario, sponsor y los días restantes.';
+          document.getElementById('sol-autofill-section').style.display = 'none';
+          // Specific message based on what's missing
+          var _missing = [];
+          if(!d.expiry_ts && !d.days_remaining) _missing.push('los días activos en la plataforma');
+          if(!d.username) _missing.push('el usuario de Innova');
+          if(!d.sponsor) _missing.push('el patrocinador (Sponsor o Patrocinador como aparezca en tu perfil)');
+          var _missingMsg = _missing.length
+            ? 'En la imagen no se visualiza ' + _missing.join(' ni ') + '. Sube una captura donde se vean claramente los 4 datos requeridos.'
+            : 'No se pudo procesar la imagen. Intenta con una captura de pantalla más clara.';
+          preview.innerHTML = '❌ ' + _missingMsg;
           preview.style.color = '#f87171';
           preview.style.borderColor = 'rgba(248,113,113,0.3)';
           preview.style.background = 'rgba(248,113,113,0.06)';
-          document.getElementById('sol-autofill-section').style.display = 'none';
         }
       })
       .catch(function(){
@@ -8974,10 +8982,10 @@ function sendSolicitud() {
     showToast('Primero sube tu captura de Innova 📸'); return;
   }
   if(!expiryData) {
-    showToast('Espera a que la imagen termine de analizarse, o sube una captura más clara ⏳'); return;
+    showToast('En la imagen no se visualizan los días activos en la plataforma. Sube una captura más clara ❌'); return;
   }
   if(expiryData.days_remaining <= 0) {
-    showToast('Tu membresía está vencida (0 días). Renueva en Innova para registrarte ❌'); return;
+    showToast('En la imagen aparecen 0 días activos. Renueva tu membresía en Innova para continuar ❌'); return;
   }
   if(!innovaUser) {
     document.getElementById('sol-innova-user').focus();
