@@ -15,13 +15,14 @@ function hashPassword(plain) {
 function mapInnovaRank(classification) {
   if (!classification) return 0;
   const c = classification.toUpperCase().trim();
-  if (c.includes('50K') || c.includes('CROWN') || c.includes('IMPERIAL')) return 7;
-  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('20K')) return 6;
+  if (c.includes('50K'))                                     return 7; // NOVA DIAMOND 50K → DIAMANTE 50K
+  if (c.includes('DIAMOND') || c.includes('DIAMANTE'))      return 6; // NOVA DIAMOND → DIAMANTE 20K
   if (c.includes('10K') || c.includes('PLATINUM') || c.includes('PLATINO')) return 5;
-  if (c.includes('5K') || c.includes('GOLD') || c.includes('ORO')) return 4;
-  if (c.includes('1500') || c.includes('SILVER') || c.includes('PLATA')) return 3;
-  if (c.includes('500')) return 2;
-  if (c.includes('200') || c.includes('INN') || c.includes('NOVA')) return 1;
+  if (c.includes('5K')  || c.includes('GOLD') || c.includes('ORO'))         return 4;
+  if (c.includes('1500') || c.includes('SILVER') || c.includes('PLATA'))    return 3;
+  if (c === 'NOVA')      return 3; // "NOVA" solo en la foto = NOVA 1500
+  if (c.includes('500')) return 2; // INN 500
+  if (c.includes('200') || c.includes('INN'))                return 1; // INN 200
   return 0;
 }
 
