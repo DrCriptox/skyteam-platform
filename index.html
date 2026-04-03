@@ -8853,21 +8853,32 @@ function sendSolicitud() {
       + '<p style="font-family:Nunito,sans-serif;font-size:15px;font-weight:700;color:#1CE8FF;">Activando tu acceso...</p>';
     sb.style.display = 'block';
 
-    // Save solicitud first (audit log), then auto-approve
+    // Save solicitud for audit log (fire and forget — don't block on it)
     fetch('/api/solicitudes', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({action:'add', solicitud: newSolicitud})
-    })
-    .catch(function(){}) // non-blocking
-    .then(function() {
-      // Auto-approve immediately
-      return fetch('/api/aprobar', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ id: newSolicitud.id, expiryTs: expiryData ? expiryData.expiry_ts : null })
-      });
-    })
+    }).catch(function(){});
+
+    // Auto-approve immediately using directData — no DB roundtrip needed
+    var aprobarPromise = fetch('/api/aprobar', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        id: newSolicitud.id,
+        expiryTs: expiryData ? expiryData.expiry_ts : null,
+        directData: {
+          name: name,
+          email: email || null,
+          password: pass,
+          sponsor: sponsor || null,
+          innova_user: innovaUser,
+          ref: newRef
+        }
+      })
+    });
+
+    aprobarPromise
     .then(function(r){ return r.json(); })
     .then(function(d) {
       saveReferralRelation(newRef, sponsor);

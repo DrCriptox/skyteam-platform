@@ -11,22 +11,28 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { id, expiryTs } = req.body;
-    if (!id) return res.status(400).json({ error: 'Missing id' });
+    const { id, expiryTs, directData } = req.body;
+    if (!id && !directData) return res.status(400).json({ error: 'Missing id or directData' });
 
-    // Find the solicitud
-    const sr = await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { headers: HEADERS });
-    if (!sr.ok) throw new Error('Supabase GET failed: ' + sr.status);
-    const sols = await sr.json();
-    if (!sols || sols.length === 0) return res.status(404).json({ error: 'Solicitud not found' });
-    const sol = sols[0];
+    // Use directData if provided (auto-registration), otherwise lookup solicitud
+    let sol;
+    if (directData) {
+      sol = directData; // { name, email, password, sponsor, innova_user, ref }
+    } else {
+      const sr = await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { headers: HEADERS });
+      if (!sr.ok) throw new Error('Supabase GET failed: ' + sr.status);
+      const sols = await sr.json();
+      if (!sols || sols.length === 0) return res.status(404).json({ error: 'Solicitud not found' });
+      sol = sols[0];
+    }
 
     // Generate user credentials
-    const rawUser = (sol.innova_user || sol.ref || String(id).slice(-6));
+    const rawUser = (sol.innova_user || sol.ref || String(id || Date.now()).slice(-6));
     const username = rawUser.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
     const primerNombre = sol.name ? sol.name.split(' ')[0] : 'Socio';
     const refLink = 'https://innovaia.app?ref=' + (sol.ref || username);
     const password = sol.password || 'skyteam2026';
+    if (!password || password === 'skyteam2026') console.warn('[aprobar] WARNING: using default password for', username);
 
     // Check if user already exists (prevent duplicates from race conditions)
     const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&limit=1', { headers: HEADERS });
@@ -37,15 +43,22 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, username, nombre: sol.name, emailSent: false, refLink, alreadyExisted: true });
     }
 
-    // Delete the solicitud first to prevent double-approval
-    await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
+    // Delete the solicitud (only if it came from DB)
+    if (!directData && id) {
+      await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
+    }
 
-    // Create user in users table
-    await fetch(SUPABASE_URL + '/rest/v1/users', {
+    // Create user in users table — use 'return=representation' to verify insertion
+    const insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
       method: 'POST',
-      headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      headers: { ...HEADERS, Prefer: 'resolution=ignore-duplicates,return=minimal' },
       body: JSON.stringify({ username, email: sol.email || null, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null })
     });
+    if (!insertR.ok) {
+      const errText = await insertR.text();
+      console.error('[aprobar] User INSERT failed:', insertR.status, errText);
+      throw new Error('No se pudo crear el usuario: ' + insertR.status);
+    }
 
     // Create empty agenda config for the new user
     await fetch(SUPABASE_URL + '/rest/v1/agenda_configs', {
