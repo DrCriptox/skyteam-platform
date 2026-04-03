@@ -590,25 +590,27 @@ function loadCoachContext() {
       return;
     }
 
-    // Fresh conversation — generate greeting
+    // Fresh conversation — generate smart greeting based on live context
+    var live = gatherLiveCoachContext();
+    var nombre = live.nombre ? live.nombre.split(' ')[0] : 'socio';
     var greeting = '';
+
     if (ctx.isNewUser) {
-      greeting = '¡Hola! 👋 Soy tu Coach IA. ¿Empezamos con tu Ruta de 7 Días?';
-    } else if (ctx.onboardingDay <= 7) {
-      greeting = '¡Hola! Estás en el Día ' + ctx.onboardingDay + '. ';
-      if (ctx.staleProspects.length > 0) {
-        greeting += ctx.staleProspects[0] + ' lleva días sin seguimiento. ¿Te ayudo a escribirle?';
-      } else {
-        greeting += '¿En qué te puedo ayudar?';
-      }
+      greeting = '¡Hola ' + nombre + '! 👋 Soy tu Coach IA personal. Estoy aquí para guiarte paso a paso hacia tus primeras ventas. ¿Empezamos con tu Ruta de 7 Días?';
+    } else if (live.prospectosSinSeguimiento && live.prospectosSinSeguimiento.length > 0) {
+      greeting = '¡Hey ' + nombre + '! 👋 Tienes ' + live.prospectosSinSeguimiento.length + ' prospecto' + (live.prospectosSinSeguimiento.length>1?'s':'') + ' sin seguimiento — ' + live.prospectosSinSeguimiento.slice(0,2).join(' y ') + '. ¿Te ayudo a escribirles un mensaje de seguimiento?';
+    } else if (!live.agendaActiva) {
+      greeting = '¡Hola ' + nombre + '! 👋 Veo que tu agenda de cierres está inactiva. Activarla es clave para recibir citas automáticas. ¿La activamos juntos?';
+    } else if (live.citasFuturas > 0) {
+      greeting = '¡' + nombre + '! 🔥 Tienes ' + live.citasFuturas + ' cita' + (live.citasFuturas>1?'s':'') + ' de cierre pendiente' + (live.citasFuturas>1?'s':'') + '. ¿Te preparo un guión para cerrar?';
+    } else if (ctx.hotProspects > 0) {
+      greeting = '¡' + nombre + '! 🔥 Tienes ' + ctx.hotProspects + ' prospecto' + (ctx.hotProspects>1?'s':'') + ' caliente' + (ctx.hotProspects>1?'s':'') + '. Es momento de agendarles una cita de cierre. ¿Te ayudo?';
+    } else if ((live.totalProspectos || 0) === 0) {
+      greeting = '¡Hola ' + nombre + '! 👋 Tu CRM está vacío todavía. El primer paso para generar ventas es agregar prospectos. ¿Empezamos a crear tu lista de 20 prospectos?';
+    } else if (ctx.onboardingDay && ctx.onboardingDay <= 7) {
+      greeting = '¡Hola ' + nombre + '! Estás en el Día ' + ctx.onboardingDay + ' de tu ruta. Rango actual: ' + (live.rankName||'INN 200') + '. ¿En qué te puedo ayudar hoy?';
     } else {
-      if (ctx.staleProspects.length > 0) {
-        greeting = 'Tienes ' + ctx.staleProspects.length + ' prospectos esperando. ¿Empezamos?';
-      } else if (ctx.hotProspects > 0) {
-        greeting = '¡' + ctx.hotProspects + ' prospectos calientes! ¿Te ayudo a agendar?';
-      } else {
-        greeting = '¿En qué te puedo ayudar hoy?';
-      }
+      greeting = '¡Hola ' + nombre + '! 👋 Rango: ' + (live.rankName||'INN 200') + ' | ' + (live.totalProspectos||0) + ' prospectos | ' + (live.citasAgendadas||0) + ' citas. ¿Qué hacemos hoy para avanzar?';
     }
 
     msgArea.innerHTML = renderCoachBubble(greeting, 'bot');
@@ -624,6 +626,163 @@ function renderCoachBubble(text, role) {
   var border = isBot ? 'rgba(28,232,255,0.15)' : C.border;
   return '<div style="display:flex;justify-content:' + align + ';margin-bottom:6px;">' +
     '<div style="max-width:85%;padding:8px 12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;font-size:12px;line-height:1.5;">' + text + '</div></div>';
+}
+
+function gatherLiveCoachContext() {
+  var live = {};
+  try {
+    // User profile
+    if (typeof CU !== 'undefined' && CU) {
+      live.nombre = CU.name || '';
+      live.username = CU.username || CU.user || '';
+      live.rank = CU.rank || 1;
+      live.rankName = (typeof RANKS !== 'undefined' && RANKS[CU.rank]) ? RANKS[CU.rank].name : 'INN 200';
+      live.ventas = CU.ventas || 0;
+      live.equipo = CU.equipo || 0;
+      live.ref = CU.ref || '';
+      live.landingLink = 'https://innovaia.app?ref=' + (CU.ref || '');
+    }
+    // CRM prospects
+    if (typeof crmProspectos !== 'undefined' && crmProspectos) {
+      live.totalProspectos = crmProspectos.length;
+      var stages = {};
+      crmProspectos.forEach(function(p) { stages[p.etapa] = (stages[p.etapa]||0) + 1; });
+      live.prospectosPorEtapa = stages;
+      live.prospectosNuevos = stages['nuevo'] || 0;
+      live.prospectosContactados = stages['contactado'] || 0;
+      live.prospectosInteresados = stages['interesado'] || 0;
+      live.prospectosPresentacion = stages['presentacion'] || 0;
+      live.prospectosSeguimiento = stages['seguimiento'] || 0;
+      live.cerradosGanados = stages['cerrado_ganado'] || 0;
+      live.cerradosPerdidos = stages['cerrado_perdido'] || 0;
+      // Stale prospects (3+ days without contact)
+      var now = Date.now();
+      var stale = crmProspectos.filter(function(p) {
+        if (!p.etapa || p.etapa === 'cerrado_ganado' || p.etapa === 'cerrado_perdido') return false;
+        var updated = p.updated_at ? new Date(p.updated_at).getTime() : 0;
+        return (now - updated) > 3*86400000;
+      });
+      live.prospectosSinSeguimiento = stale.map(function(p) { return p.nombre || 'Sin nombre'; });
+    }
+    // Agenda bookings
+    if (typeof agendaBookings !== 'undefined' && agendaBookings) {
+      var activas = agendaBookings.filter(function(b) { return b.status !== 'cancelada'; });
+      live.citasAgendadas = activas.length;
+      var futuras = activas.filter(function(b) { return new Date(b.fechaISO) > new Date(); });
+      live.citasFuturas = futuras.length;
+    }
+    // Agenda config
+    if (typeof agendaConfig !== 'undefined' && agendaConfig) {
+      live.agendaActiva = !!agendaConfig.activa;
+      live.tieneLinkReunion = !!(agendaConfig.linkReunion);
+    }
+  } catch(e) { console.error('[Coach] Error gathering live context:', e); }
+  return live;
+}
+
+function buildCoachSystemPrompt(ctx, live) {
+  var name = live.nombre || 'socio';
+  var prompt = 'Eres el Coach IA personal de ' + name + ' en SKYTEAM. Eres su mentor, motivador y guía estratégico. ' +
+    'Tu misión es ayudarle a generar resultados reales: ventas, cierres, y ascensos de rango. ' +
+    'Conócelo, recuerda lo que te ha dicho, dale continuidad a sus tareas y NUNCA repitas consejos que ya le diste en esta conversación.\n\n';
+
+  // === PLATFORM KNOWLEDGE ===
+  prompt += '=== MAPA DE LA PLATAFORMA ===\n' +
+    'Explícale AL SOCIO dónde encontrar cada herramienta cuando pregunte:\n' +
+    '- INICIO: Dashboard con stats, progreso de rango, resumen del día.\n' +
+    '- SKY SALES IA: 6 agentes especializados (Anti-Objeciones, Contenido, Tráfico, Cierre, Seguimiento, Copywriter). Úsalos para crear mensajes, posts y estrategias.\n' +
+    '- SKY PROSPECT (CRM): Agregar prospectos, pipeline Kanban, calificación IA, seguimiento. TIENE RANKING de quiénes más trabajan el CRM.\n' +
+    '- AGENDA: Configurar disponibilidad, recibir reservas de cierres, Plan Diario personal. TIENE RANKING de quiénes más citas de cierre agendan y confirman.\n' +
+    '- LANDING PERSONAL: Cada socio tiene su link (innovaia.app?ref=CÓDIGO). Compartirlo genera visitas y prospectos. TIENE RANKING de visitas a la landing.\n' +
+    '- SKY TV: Sesiones en vivo, formaciones, Zoom. Solo admin crea eventos, los socios reciben notificaciones.\n' +
+    '- CHAT: Comunicación entre socios del equipo.\n' +
+    '- RANKING GENERAL: Posición del socio vs. todos los demás.\n' +
+    '- VIAJES: Incentivos por rango (Bogotá, Cancún, Europa, Dubái).\n\n';
+
+  // === RANK SYSTEM ===
+  prompt += '=== SISTEMA DE RANGOS Y GANANCIAS ===\n' +
+    'Los rangos son: Cliente(0) → INN 200(1) → INN 500(2) → NOVA 1500(3) → NOVA 5K(4) → NOVA 10K(5) → DIAMANTE 20K(6) → NOVA 50K(7).\n' +
+    'PRIMER RANGO — INN 200: Necesita 750 puntos de volumen a CADA LADO (izquierdo y derecho). Gana aprox. $350 a $500 USD. ' +
+    'Para lograrlo necesita hacer un promedio de 3 ventas de $999 o 4 ventas de $549.\n' +
+    'MEMBRESÍAS Y COMISIONES:\n' +
+    '- Entrada $229 → comisión $23\n' +
+    '- Recomendada $549 → comisión $55 + bono $200×3 referidos = hasta $665\n' +
+    '- Estándar $999 → comisión $100 + bono $500×3 = hasta $1,600\n' +
+    '- Avanzada $1,500 → comisión $150 + bono $700×3 = hasta $2,250\n' +
+    '- Premium $2,300 → comisión $230 + bono $1,000×3 = hasta $3,230\n' +
+    'AUTOFINANCIAMIENTO: La primera venta cubre parte de la inversión, la segunda termina de pagar, la tercera es ganancia pura.\n\n';
+
+  // === THREE RANKINGS ===
+  prompt += '=== 3 RANKINGS CLAVE (motiva al socio a estar en los TOP) ===\n' +
+    '1. RANKING CRM (Sky Prospect): Quiénes más prospectos agregan, más interacciones registran, más cierres logran. ' +
+    'Motiva al socio a agregar prospectos diariamente y hacer seguimiento constante.\n' +
+    '2. RANKING AGENDA: Quiénes más citas de cierre agendan y confirman. ' +
+    'Motiva al socio a activar su agenda, compartir el link de agenda, y cerrar llamadas.\n' +
+    '3. RANKING LANDING (Visitas): Quiénes más visitas reciben en su landing personal. ' +
+    'Motiva al socio a compartir su link (innovaia.app?ref=CÓDIGO) en redes, WhatsApp, y con pauta.\n' +
+    'El socio que domina los 3 rankings es el que más vende y más rápido sube de rango.\n\n';
+
+  // === DAILY ACTION PLAN ===
+  prompt += '=== PLAN DE ACCIÓN DIARIO QUE DEBES PROMOVER ===\n' +
+    '1. Agregar 3-5 prospectos nuevos al CRM cada día\n' +
+    '2. Hacer seguimiento a prospectos que llevan 2+ días sin contacto\n' +
+    '3. Agendar al menos 1-2 citas de cierre por día\n' +
+    '4. Publicar 1 contenido (Reel, historia, post) usando el Agente de Contenido\n' +
+    '5. Compartir la landing personal en al menos 3 lugares distintos\n' +
+    '6. Revisar las sesiones de Sky TV y asistir a las formaciones en vivo\n' +
+    '7. Usar los agentes IA para preparar mensajes de prospección\n\n';
+
+  // === PROSPECT RULE ===
+  prompt += '=== REGLA CRÍTICA PARA MENSAJES A PROSPECTOS ===\n' +
+    'Cuando generes mensajes o scripts que el socio enviará a prospectos, JAMÁS menciones "SKYTEAM", "Innova", "Innova IA" ni ningún nombre de empresa. ' +
+    'Solo usa "franquicia digital", "sistema digital", "negocio digital" o "oportunidad digital". ' +
+    'El nombre de la empresa se revela DESPUÉS de que el prospecto muestre interés real.\n' +
+    'Estrategia de 3 contactos: 1ro = conectar como persona (rapport). 2do = aportar valor. 3ro = mencionar la oportunidad.\n\n';
+
+  // === LIVE USER CONTEXT ===
+  prompt += '=== ESTADO ACTUAL DE ' + name.toUpperCase() + ' ===\n';
+  prompt += 'Rango actual: ' + (live.rankName || 'INN 200') + ' (nivel ' + (live.rank || 1) + ')\n';
+  prompt += 'Ventas registradas: ' + (live.ventas || 0) + '\n';
+  prompt += 'Equipo (personas en su red): ' + (live.equipo || 0) + '\n';
+  prompt += 'Link de landing: ' + (live.landingLink || 'no configurado') + '\n';
+
+  if (ctx.onboardingDay) prompt += 'Día de onboarding: ' + ctx.onboardingDay + '\n';
+  if (ctx.achievementsUnlocked) prompt += 'Logros desbloqueados: ' + ctx.achievementsUnlocked.length + '/12\n';
+
+  // CRM stats
+  prompt += '\nCRM (Sky Prospect):\n';
+  prompt += '- Total prospectos: ' + (live.totalProspectos || 0) + '\n';
+  if (live.totalProspectos > 0) {
+    prompt += '- Nuevos: ' + (live.prospectosNuevos||0) + ', Contactados: ' + (live.prospectosContactados||0) +
+      ', Interesados: ' + (live.prospectosInteresados||0) + ', En presentación: ' + (live.prospectosPresentacion||0) +
+      ', Seguimiento: ' + (live.prospectosSeguimiento||0) + ', Cerrados ganados: ' + (live.cerradosGanados||0) +
+      ', Perdidos: ' + (live.cerradosPerdidos||0) + '\n';
+  }
+  if (live.prospectosSinSeguimiento && live.prospectosSinSeguimiento.length > 0) {
+    prompt += '- ⚠️ Sin seguimiento (3+ días): ' + live.prospectosSinSeguimiento.slice(0,5).join(', ') + '\n';
+  }
+
+  // Agenda stats
+  prompt += '\nAgenda de cierres:\n';
+  prompt += '- Agenda ' + (live.agendaActiva ? 'ACTIVA ✅' : 'INACTIVA ❌ (debe activarla!)') + '\n';
+  prompt += '- Link de reunión: ' + (live.tieneLinkReunion ? 'Configurado ✅' : 'No configurado ❌') + '\n';
+  prompt += '- Citas totales: ' + (live.citasAgendadas || 0) + ', Futuras pendientes: ' + (live.citasFuturas || 0) + '\n';
+
+  // Hot prospects from onboarding context
+  if (ctx.hotProspects > 0) prompt += '\n🔥 Prospectos calientes: ' + ctx.hotProspects + ' — prioridad para agendar cierre.\n';
+
+  prompt += '\n=== INSTRUCCIONES DE RESPUESTA ===\n' +
+    '- Responde en español latinoamericano, tono cercano y motivador.\n' +
+    '- Máximo 4-5 oraciones por respuesta. Sé conciso pero con sustancia.\n' +
+    '- SIEMPRE da un paso concreto y accionable que pueda hacer YA.\n' +
+    '- Si necesita un script o mensaje, escríbelo LISTO para copiar y pegar.\n' +
+    '- Recuerda lo que ya hablaron en esta conversación. No repitas.\n' +
+    '- Motívalo a estar en los 3 rankings: CRM, Agenda y Landing.\n' +
+    '- Si tiene prospectos sin seguimiento, prioriza eso.\n' +
+    '- Si su agenda está inactiva, urge que la active.\n' +
+    '- Celebra sus logros, por pequeños que sean.\n';
+
+  return prompt;
 }
 
 function sendCoachMessage() {
@@ -643,16 +802,8 @@ function sendCoachMessage() {
   msgArea.scrollTop = msgArea.scrollHeight;
 
   var ctx = obState.coachContext || {};
-  var sysPrompt = 'Eres el Coach IA de SKYTEAM. Tu rol es guiar socios nuevos para lograr sus primeras ventas. ' +
-    'Sé motivador, conciso y práctico. Siempre da pasos concretos. ' +
-    'REGLA CRÍTICA: Cuando generes mensajes o scripts que el socio enviará a prospectos, JAMÁS menciones "SKYTEAM", "Innova", "Innova IA" ni ningún nombre de empresa. Solo usa "franquicia digital", "sistema digital", "negocio digital" o "oportunidad digital". El nombre de la empresa se revela DESPUÉS de que el prospecto muestre interés real. ' +
-    'Estrategia de contacto: Primer contacto = conectar como persona, rapport genuino. Segundo contacto = aportar valor. Tercer contacto = mencionar la oportunidad de forma natural. ' +
-    'Contexto del usuario: Día de onboarding: ' + (ctx.onboardingDay || '?') +
-    ', Prospectos: ' + (ctx.prospectCount || 0) +
-    ', Prospectos calientes: ' + (ctx.hotProspects || 0) +
-    ', Sin seguimiento: ' + (ctx.staleProspects ? ctx.staleProspects.join(', ') : 'ninguno') +
-    ', Logros: ' + (ctx.achievementsUnlocked ? ctx.achievementsUnlocked.length : 0) + '/12.' +
-    ' Responde en español, máximo 3 oraciones. Si el usuario necesita un script de mensaje, escríbelo listo para copiar.';
+  var liveCtx = gatherLiveCoachContext();
+  var sysPrompt = buildCoachSystemPrompt(ctx, liveCtx);
 
   var messages = obState.coachMessages.map(function(m) {
     return { role: m.role, content: m.content };
