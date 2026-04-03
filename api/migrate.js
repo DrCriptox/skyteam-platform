@@ -71,11 +71,26 @@ export default async function handler(req, res) {
 
   // RPC not available — return the SQL for manual execution in Supabase SQL editor
   const projectRef = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '').split('.')[0];
+
+  // Also include rank-fix SQL for existing users
+  const rankFixSQL = `
+-- Fix ranks for existing users after adding rank column
+UPDATE users SET rank = 7 WHERE username IN ('angel','yonfer');
+UPDATE users SET rank = 6 WHERE username IN ('genesis22','genesis');
+UPDATE users SET rank = 2 WHERE username = 'carlos';
+UPDATE users SET rank = 1 WHERE username IN ('maria','billonarios','demo');
+UPDATE users SET rank = 8 WHERE username = 'admin';
+-- For any other user you want to fix manually:
+-- UPDATE users SET rank = 6 WHERE username = 'put_username_here';
+`;
+
   return res.status(200).json({
     ok: false,
-    message: 'Automatic migration not available. Run this SQL in Supabase SQL Editor:',
+    message: 'Run these SQL statements in Supabase SQL Editor (Step 1: add columns, Step 2: fix ranks):',
     sqlEditorUrl: `https://supabase.com/dashboard/project/${projectRef}/sql/new`,
-    sql: fullSQL,
+    step1_addColumns: fullSQL,
+    step2_fixRanks: rankFixSQL.trim(),
+    fullSQLToCopy: fullSQL + '\n' + rankFixSQL.trim(),
     missingColumns: missing.map(c => c.name),
     detectedColumns: detected
   });
