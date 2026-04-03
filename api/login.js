@@ -1,7 +1,29 @@
 // Server-side login — passwords never sent to frontend
+import crypto from 'crypto';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
+
+// Verifica contraseña: soporta hash nuevo (salt:hash) y texto plano legacy
+function checkPassword(plain, stored) {
+  if (!plain || !stored) return false;
+  if (stored.includes(':')) {
+    // Formato hashed: salt:hash (scrypt)
+    const [salt, hash] = stored.split(':');
+    try {
+      const check = crypto.scryptSync(plain, salt, 32).toString('hex');
+      return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(check, 'hex'));
+    } catch { return false; }
+  }
+  // Legacy plaintext — solo para cuentas admin existentes, usar timingSafeEqual
+  try {
+    const a = Buffer.from(stored);
+    const b = Buffer.alloc(a.length);
+    Buffer.from(plain.substring(0, a.length)).copy(b);
+    return stored === plain && crypto.timingSafeEqual(a, b);
+  } catch { return false; }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,7 +34,11 @@ export default async function handler(req, res) {
 
   try {
     const { username, password } = req.body || {};
-    if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
+
+    // Input validation
+    if (!username || !password) return res.status(400).json({ error: 'Credenciales requeridas' });
+    if (typeof username !== 'string' || username.length > 50)  return res.status(400).json({ error: 'Usuario inválido' });
+    if (typeof password !== 'string' || password.length > 200) return res.status(400).json({ error: 'Contraseña inválida' });
 
     const clean = username.trim().toLowerCase();
 
@@ -20,14 +46,10 @@ export default async function handler(req, res) {
       SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(clean) + '&select=*&limit=1',
       { headers: HEADERS }
     );
-    if (!r.ok) {
-      const errBody = await r.text();
-      console.error('login DB error:', r.status, errBody);
-      throw new Error('DB error: ' + r.status);
-    }
+    if (!r.ok) throw new Error('DB error');
     const rows = await r.json();
 
-    if (!rows.length || rows[0].password !== password) {
+    if (!rows.length || !checkPassword(password, rows[0].password)) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
@@ -36,7 +58,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Este usuario ha expirado' });
     }
 
-    // Return user data WITHOUT password
     return res.status(200).json({
       user: {
         username: user.username,

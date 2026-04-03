@@ -3,9 +3,12 @@ import crypto from 'crypto';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
-const RESET_SECRET = process.env.RESET_SECRET || 'skyteam-reset-secret-2026';
+
+// Secret requerido — sin fallback hardcodeado
+const RESET_SECRET = process.env.RESET_SECRET;
 
 function generateToken(username, email) {
+  if (!RESET_SECRET) throw new Error('RESET_SECRET not configured');
   const payload = Buffer.from(JSON.stringify({ u: username, e: email, exp: Date.now() + 3600000 })).toString('base64url');
   const sig = crypto.createHmac('sha256', RESET_SECRET).update(payload).digest('base64url');
   return payload + '.' + sig;
@@ -20,20 +23,22 @@ export default async function handler(req, res) {
 
   try {
     const { email } = req.body || {};
-    if (!email) return res.status(400).json({ error: 'Email requerido' });
+
+    // Siempre retorna 200 para evitar enumeración de emails
+    if (!email || typeof email !== 'string' || email.length > 200) {
+      return res.status(200).json({ ok: true });
+    }
 
     const clean = email.trim().toLowerCase();
 
-    // Find user by email in Supabase
     const r = await fetch(
       SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=username,name&limit=1',
       { headers: HEADERS }
     );
     const users = await r.json();
 
-    // Always return 200 to prevent email enumeration
     if (!users || users.length === 0) {
-      return res.status(200).json({ ok: true });
+      return res.status(200).json({ ok: true }); // No revelar si el email existe
     }
 
     const user = users[0];
@@ -81,6 +86,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('forgot-password error:', error.message);
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(200).json({ ok: true }); // No revelar errores internos
   }
 }

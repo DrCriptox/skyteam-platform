@@ -1,7 +1,15 @@
 // Supabase-powered aprobar (approve) API
+import crypto from 'crypto';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
+
+function hashPassword(plain) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(plain, salt, 32).toString('hex');
+  return salt + ':' + hash;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,13 +34,20 @@ export default async function handler(req, res) {
       sol = sols[0];
     }
 
+    // Validate password
+    if (!sol.password || sol.password.length < 6) {
+      return res.status(400).json({ error: 'Contraseña inválida o no proporcionada' });
+    }
+    if (sol.password.length > 200) {
+      return res.status(400).json({ error: 'Contraseña demasiado larga' });
+    }
+
     // Generate user credentials
     const rawUser = (sol.innova_user || sol.ref || String(id || Date.now()).slice(-6));
     const username = rawUser.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
     const primerNombre = sol.name ? sol.name.split(' ')[0] : 'Socio';
     const refLink = 'https://innovaia.app?ref=' + (sol.ref || username);
-    const password = sol.password || 'skyteam2026';
-    if (!password || password === 'skyteam2026') console.warn('[aprobar] WARNING: using default password for', username);
+    const password = hashPassword(sol.password); // Always hash before storing
 
     // Check if user already exists (prevent duplicates from race conditions)
     const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&limit=1', { headers: HEADERS });

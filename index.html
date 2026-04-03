@@ -7908,10 +7908,11 @@ function renderSolicitudes() {
 function cancelarPorInconsistencia(username, nombre) {
   if(!confirm('¿Cancelar el acceso de ' + nombre + ' (@' + username + ') por inconsistencia en los datos?\n\nSe eliminará su cuenta y se le notificará por correo.')) return;
   showToast('⏳ Cancelando acceso...');
+  var adminUser = (SESSION && SESSION.username) ? SESSION.username : '';
   fetch('/api/cancelar', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ username: username })
+    body: JSON.stringify({ username: username, adminUser: adminUser })
   })
   .then(function(r){ return r.json(); })
   .then(function(d){

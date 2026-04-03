@@ -11,8 +11,23 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { username } = req.body || {};
-    if (!username) return res.status(400).json({ error: 'username requerido' });
+    const { username, adminUser } = req.body || {};
+
+    // Verify requester is an admin
+    if (!adminUser || typeof adminUser !== 'string' || adminUser.length > 50) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const adminCheck = await fetch(
+      SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser.trim().toLowerCase()) + '&select=is_admin&limit=1',
+      { headers: HEADERS }
+    );
+    const adminRows = await adminCheck.json();
+    if (!adminRows || adminRows.length === 0 || !adminRows[0].is_admin) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    if (!username || typeof username !== 'string' || username.length > 50) {
+      return res.status(400).json({ error: 'username inválido' });
+    }
 
     // Fetch user to get email and name before deleting
     const r = await fetch(
