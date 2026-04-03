@@ -1,7 +1,8 @@
 // Image generation endpoint — supports FAL.ai Flux and OpenAI gpt-image-1
 // Provider selection: body.provider = 'openai' | 'flux' (default: auto-detect by available key)
 const FAL_KEY = process.env.FAL_KEY;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY2 || process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.SKY_OAI_KEY || '';
+// OpenAI key kept for future use but Flux is default (better cost/quality ratio)
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY2 || process.env.OPENAI_API_KEY || '';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,9 +16,8 @@ export default async function handler(req, res) {
     if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
 
     // Determine provider: explicit choice > auto-detect
-    const useOpenAI = provider === 'openai' ? true
-      : provider === 'flux' ? false
-      : !!OPENAI_API_KEY; // Auto: prefer OpenAI if key exists
+    // Default to Flux (cheaper, similar quality). Only use OpenAI if explicitly requested.
+    const useOpenAI = provider === 'openai' ? true : false;
 
     if (useOpenAI && !OPENAI_API_KEY) {
       return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });

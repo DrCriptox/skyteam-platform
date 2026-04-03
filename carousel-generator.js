@@ -128,33 +128,48 @@
     return all.slice(0, n);
   }
 
-  // ── TEXT PROMPTS (ultra-persuasivos + img_desc contextual por slide) ──
-  // TODAS las modalidades generan img_desc para que gpt-image-1 cree imágenes ESPECÍFICAS por slide
-  var IMG_STYLE_HINT = 'img_desc: describe en INGLÉS una escena FOTOREALISTA cinematográfica que represente el mensaje. Sé MUY específico: describe la persona (edad, expresión, ropa, etnia latina), la acción exacta, el entorno (oficina, playa, penthouse, café), la iluminación (golden hour, neon, dramatic), objetos relevantes (laptop con gráficos, fajos de billetes, celular con notificaciones, reloj de alarma). NO pidas estilo cartoon ni 3D. Piensa en fotografía editorial de revista Forbes o Bloomberg.';
+  // ── TEXT PROMPTS (Flux optimized + estilos variados + img_desc contextual) ──
+  // IMPORTANTE: Cada carrusel varía el estilo visual (3D Pixar, fotorealista, ilustración flat, neon cyberpunk, collage editorial)
+  var VISUAL_STYLES = [
+    'Estilo: 3D Pixar/Disney cartoon con personajes latinos expresivos, colores vibrantes, fondos oscuros lujosos, iluminación cinematográfica dorada',
+    'Estilo: Fotografía editorial ultra-realista tipo Forbes/Bloomberg, personas reales latinas, iluminación dramática, shallow depth of field',
+    'Estilo: Neon cyberpunk futurista, colores cyan y magenta, ciudad nocturna, hologramas, estética tecnológica',
+    'Estilo: Ilustración moderna flat design con gradientes vibrantes, iconos grandes, composición limpia y colorida',
+    'Estilo: Collage editorial con fotos recortadas, flechas dibujadas a mano, stickers, fondo de pizarra o papel kraft, estilo Instagram trending'
+  ];
+
+  function getRandomStyle() { return VISUAL_STYLES[Math.floor(Math.random() * VISUAL_STYLES.length)]; }
+
+  var IMG_HINT = 'img_desc: descripción en INGLÉS para generar imagen con IA. IMPORTANTE: la imagen debe conectar DIRECTAMENTE con el mensaje del slide. Describe: personaje latino (edad, emoción, acción que refleje el mensaje), entorno específico que refuerce la idea, iluminación dramática. La imagen debe contar la MISMA historia que el texto. Sin texto visual. Termina con "no text no letters no words".';
 
   var CAROUSEL_PROMPT =
-    'Eres el MEJOR copywriter de carruseles virales de Latinoamérica. Tu contenido genera 10K+ likes.\n' +
-    'NICHO: franquicias digitales, ingresos con sistemas automatizados. Público: personas con $500-$5,000 para invertir que odian su trabajo.\n' +
-    'TONO: Provocador, directo. "Te están robando", "Mientras tú chambeas...", "La verdad que nadie te dice".\n' +
-    'Genera 6 slides. Títulos: 3-5 palabras BRUTALES. Texto: max 20 palabras.\n' +
-    IMG_STYLE_HINT + '\n' +
-    'S1(portada):titulo+subtitulo+img_desc(escena impactante de portada). S2(contexto):dolor+dato+img_desc(persona sufriendo el problema). S3-S4(historia):datos reales(McDonald\'s=$2M vs digital=$500)+img_desc(escena que muestre la comparación/transformación). S5(revelacion):verdad clave+img_desc(momento revelación). S6(cta):acción urgente+img_desc(persona exitosa invitando).\n' +
+    'Eres el MEJOR copywriter de carruseles virales de Latinoamérica. 10K+ likes por post.\n' +
+    'NICHO: franquicias digitales, ingresos con sistemas automatizados. Público: personas con $500-$5,000 que odian su trabajo.\n' +
+    'TONO: Provocador, directo, como hablando con un amigo. Varía entre estos estilos de contenido:\n' +
+    '- POLÉMICO: "Lo que tu jefe NO quiere que sepas", "Te están ROBANDO y no lo sabes"\n' +
+    '- STORYTELLING: "Juan ganaba $800/mes, hoy factura $5,000 con un sistema"\n' +
+    '- DATO SHOCK: "El 95% morirá pobre. Esto hacen los del 5%"\n' +
+    '- COMPARACIÓN: "McDonald\'s=$2M vs Franquicia Digital=$500"\n' +
+    '- URGENCIA: "En 2030 tu empleo NO existirá. ¿Ya tienes plan B?"\n' +
+    'ELIGE UNO de estos estilos para este carrusel.\n' +
+    'Genera 6 slides. TÍTULOS: MÁXIMO 4 PALABRAS (cortos, que impacten). Texto: max 15 palabras.\n' +
+    IMG_HINT + '\n' +
     '{"slides":[{"tipo":"portada","titulo":"..","subtitulo":"..","dato":null,"img_desc":".."},{"tipo":"contexto","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"revelacion","titulo":"..","texto":"..","dato":"..","img_desc":".."},{"tipo":"cta","titulo":"..","texto":"..","cta_palabra":"QUIERO","img_desc":".."}]}\nSolo JSON.';
 
   var STORY_PROMPT =
-    'Copywriter viral Instagram Stories Latam. NICHO: franquicias digitales, sistemas que generan plata solos.\n' +
-    'Genera 5 stories. Títulos: 3-4 palabras que GOLPEEN. Texto: max 15 palabras.\n' +
-    IMG_STYLE_HINT + '\n' +
-    'S1:gancho brutal+img_desc. S2-3:datos reales+img_desc. S4:solución+img_desc. S5:CTA+img_desc.\n' +
+    'Copywriter viral Instagram Stories Latam. NICHO: franquicias digitales, sistemas que generan plata.\n' +
+    'Varía el estilo: DATO SHOCK, STORYTELLING, URGENCIA, o POLÉMICO.\n' +
+    'Genera 5 stories. TÍTULOS: MÁXIMO 3 PALABRAS. Texto: max 10 palabras.\n' +
+    IMG_HINT + '\n' +
     '{"stories":[{"titulo":"..","texto":"..","emoji":"🔥","img_desc":".."},{"titulo":"..","texto":"..","emoji":"💰","img_desc":".."},{"titulo":"..","texto":"..","emoji":"🚀","img_desc":".."},{"titulo":"..","texto":"..","emoji":"📈","img_desc":".."},{"titulo":"..","texto":"..","emoji":"📩","cta_palabra":"QUIERO","img_desc":".."}]}\nSolo JSON.';
 
   var INFO_PROMPT =
-    'Crea carrusel INFORMATIVO viral Instagram Latam. 6 slides. LIMPIO, BOLD, PROFESIONAL.\n' +
+    'Carrusel INFORMATIVO viral Instagram Latam. 6 slides. LIMPIO, BOLD.\n' +
     'NICHO: franquicias digitales, sistemas automatizados, IA para negocios.\n' +
-    'Conecta tendencia real (IA, WhatsApp, Meta, automatización) con solución (franquicia digital).\n' +
-    'Títulos: 4-6 palabras. Textos: max 20 palabras.\n' +
-    IMG_STYLE_HINT + '\n' +
-    'S1(hook):titulo_principal+subtitulo+palabra_color+img_desc. S2(dato):shock+img_desc. S3(explicacion)+img_desc. S4(ejemplo)+img_desc. S5(beneficio)+img_desc. S6(cta)+img_desc.\n' +
+    'Conecta TENDENCIA real (IA, WhatsApp, Meta, TikTok, automatización) con SOLUCIÓN (franquicia/sistemas).\n' +
+    'Varía: noticia de IA, herramienta nueva, caso de éxito real, comparación antes/después.\n' +
+    'TÍTULOS: MÁXIMO 4 PALABRAS (cortos, impactantes). Textos: max 15 palabras.\n' +
+    IMG_HINT + '\n' +
     '{"slides":[{"tipo":"hook","titulo_principal":"..","subtitulo":"..","palabra_color":"..","img_desc":".."},{"tipo":"dato","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"explicacion","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"ejemplo","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"beneficio","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"cta","titulo":"..","cta_texto":"..","cta_palabra":"SISTEMA","img_desc":".."}]}\nSolo JSON.';
 
   // ── CANVAS HELPERS ──
@@ -192,29 +207,46 @@
     var g;
     if (type === 'heavy-bottom') {
       g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(0.35, 'rgba(0,0,0,0.35)');
-      g.addColorStop(0.65, 'rgba(0,0,0,0.6)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
+      g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(0.3, 'rgba(0,0,0,0.65)');
+      g.addColorStop(0.6, 'rgba(0,0,0,0.78)'); g.addColorStop(1, 'rgba(0,0,0,0.92)');
     } else if (type === 'heavy-top') {
       g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, 'rgba(0,0,0,0.8)'); g.addColorStop(0.4, 'rgba(0,0,0,0.5)');
-      g.addColorStop(0.7, 'rgba(0,0,0,0.2)'); g.addColorStop(1, 'rgba(0,0,0,0.4)');
+      g.addColorStop(0, 'rgba(0,0,0,0.92)'); g.addColorStop(0.35, 'rgba(0,0,0,0.75)');
+      g.addColorStop(0.65, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0.7)');
     } else {
+      // uniform — very dark for maximum text readability
       g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(0.5, 'rgba(0,0,0,0.45)');
-      g.addColorStop(1, 'rgba(0,0,0,0.65)');
+      g.addColorStop(0, 'rgba(0,0,0,0.72)'); g.addColorStop(0.5, 'rgba(0,0,0,0.65)');
+      g.addColorStop(1, 'rgba(0,0,0,0.78)');
     }
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   }
 
   function glassCard(ctx, x, y, w, h, r) {
     ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 20;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 24;
     roundRect(ctx, x, y, w, h, r || 20); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
     roundRect(ctx, x, y, w, h, r || 20); ctx.stroke();
     ctx.restore();
+  }
+
+  // Auto-fit: reduce font size until text fits in maxLines
+  function fitText(ctx, text, maxW, startSize, minSize, fontFamily, maxLines) {
+    maxLines = maxLines || 3;
+    fontFamily = fontFamily || '"Arial Black", Arial';
+    var size = startSize;
+    while (size >= minSize) {
+      ctx.font = 'bold ' + size + 'px ' + fontFamily;
+      var lines = wrapText(ctx, text, maxW);
+      if (lines.length <= maxLines) return { size: size, lines: lines };
+      size -= 4;
+    }
+    ctx.font = 'bold ' + minSize + 'px ' + fontFamily;
+    var lines = wrapText(ctx, text, maxW);
+    return { size: minSize, lines: lines.slice(0, maxLines) };
   }
 
   function accentBar(ctx, x, y, w, color, alpha) {
@@ -246,153 +278,189 @@
   // ══════════════════════════════════════════════════════════
 
   function renderPortada(ctx, img, slide, w, h, accent) {
+    // Image in center portion
     ctx.drawImage(img, 0, 0, w, h);
+    // Heavy overlay everywhere
     drawOverlay(ctx, w, h, 'heavy-bottom');
+    // Extra dark zone at top for title readability
+    var topG = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+    topG.addColorStop(0, 'rgba(0,0,0,0.88)'); topG.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = topG; ctx.fillRect(0, 0, w, h * 0.42);
+    // Accent top line
     ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
     ctx.fillRect(0, 0, w, 6); ctx.globalAlpha = 1;
     // Badge
-    glassCard(ctx, w/2 - 100, 50, 200, 42, 21);
-    ctx.font = 'bold 16px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
-    ctx.fillText('🔥 NO TE LO PIERDAS', w/2, 78);
-    // Title — HUGE
-    var ty = h * 0.52;
-    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 80);
-    for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], w/2, ty, 'bold 88px "Arial Black", Arial', '#fff', 'center', 20);
-      ty += 100;
+    glassCard(ctx, w/2 - 120, 40, 240, 46, 23);
+    ctx.font = 'bold 18px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
+    ctx.fillText('🔥 NO TE LO PIERDAS', w/2, 70);
+    // Title — auto-fit, max 3 lines, starts at 92px
+    var fit = fitText(ctx, slide.titulo.toUpperCase(), w - 100, 92, 52, '"Arial Black", Arial', 3);
+    var lineH = fit.size * 1.15;
+    var ty = 130;
+    for (var i = 0; i < fit.lines.length; i++) {
+      shadowText(ctx, fit.lines[i], w/2, ty, 'bold ' + fit.size + 'px "Arial Black", Arial', '#fff', 'center', 22);
+      ty += lineH;
     }
-    accentBar(ctx, w/2 - 70, ty + 4, 140, accent, 0.9);
-    ty += 35;
-    // Subtitle — bigger
+    accentBar(ctx, w/2 - 80, ty + 8, 160, accent, 0.9);
+    ty += 40;
+    // Subtitle — with glass background
     if (slide.subtitulo) {
-      var sLines = wrapText(ctx, slide.subtitulo, w - 100);
+      ctx.font = 'bold 36px Arial';
+      var sLines = wrapText(ctx, slide.subtitulo, w - 120);
+      if (sLines.length > 3) sLines = sLines.slice(0, 3);
+      var cardH = sLines.length * 48 + 30;
+      glassCard(ctx, 30, ty - 10, w - 60, cardH, 16);
+      var sty = ty + 22;
       for (var j = 0; j < sLines.length; j++) {
-        shadowText(ctx, sLines[j], w/2, ty, 'bold 36px Arial', 'rgba(255,255,255,0.95)', 'center', 12);
-        ty += 46;
+        shadowText(ctx, sLines[j], w/2, sty, 'bold 36px Arial', 'rgba(255,255,255,0.95)', 'center', 14);
+        sty += 48;
       }
+      ty += cardH + 15;
     }
-    if (slide.dato) { ty = Math.max(ty + 10, h * 0.85); drawDataBox(ctx, '📊 ' + slide.dato, 50, ty, w - 100, accent); }
-    shadowText(ctx, 'Desliza  →', w/2, h - 38, 'bold 24px Arial', accent, 'center', 8);
+    // Data box at bottom
+    if (slide.dato) { ty = Math.max(ty + 10, h * 0.82); drawDataBox(ctx, '📊 ' + slide.dato, 40, ty, w - 80, accent); }
+    shadowText(ctx, 'Desliza  →', w/2, h - 38, 'bold 24px Arial', accent, 'center', 10);
     swipeCue(ctx, w, h, accent);
   }
 
   function renderHistoria(ctx, img, slide, idx, total, w, h, accent) {
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'uniform');
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.7;
+    // Extra dark band at top for title zone
+    var topG = ctx.createLinearGradient(0, 0, 0, h * 0.38);
+    topG.addColorStop(0, 'rgba(0,0,0,0.85)'); topG.addColorStop(1, 'rgba(0,0,0,0.15)');
+    ctx.fillStyle = topG; ctx.fillRect(0, 0, w, h * 0.38);
+    // Extra dark band at bottom for data
+    var botG = ctx.createLinearGradient(0, h * 0.72, 0, h);
+    botG.addColorStop(0, 'rgba(0,0,0,0.1)'); botG.addColorStop(1, 'rgba(0,0,0,0.85)');
+    ctx.fillStyle = botG; ctx.fillRect(0, h * 0.72, w, h * 0.28);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.8;
     ctx.fillRect(0, 0, w, 5); ctx.globalAlpha = 1;
     slideCounter(ctx, idx + 1, total, w, accent);
-    // Title — bigger, bolder
-    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 120);
-    var titleH = tLines.length * 68 + 30;
-    glassCard(ctx, 35, 95, w - 70, titleH, 20);
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.8;
-    roundRect(ctx, 35, 100, 6, titleH - 10, 3); ctx.fill(); ctx.globalAlpha = 1;
-    var ty = 138;
-    for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], 70, ty, 'bold 56px "Arial Black", Arial', '#fff', 'left', 12);
-      ty += 68;
+    // Title — auto-fit, max 2 lines
+    var fit = fitText(ctx, slide.titulo.toUpperCase(), w - 140, 62, 40, '"Arial Black", Arial', 2);
+    var titleH = fit.lines.length * (fit.size * 1.2) + 30;
+    glassCard(ctx, 30, 85, w - 60, titleH, 18);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
+    roundRect(ctx, 30, 90, 6, titleH - 10, 3); ctx.fill(); ctx.globalAlpha = 1;
+    var ty = 122;
+    for (var i = 0; i < fit.lines.length; i++) {
+      shadowText(ctx, fit.lines[i], 66, ty, 'bold ' + fit.size + 'px "Arial Black", Arial', '#fff', 'left', 14);
+      ty += fit.size * 1.2;
     }
-    ty = 95 + titleH + 20;
-    accentBar(ctx, 70, ty, 100, accent, 0.8); ty += 30;
-    // Text — bigger
+    ty = 85 + titleH + 16;
+    accentBar(ctx, 66, ty, 120, accent, 0.9); ty += 28;
+    // Text — in glass card, auto-fit
     if (slide.texto) {
-      var txLines = wrapText(ctx, slide.texto, w - 140);
-      var cardH = txLines.length * 46 + 44;
-      glassCard(ctx, 35, ty, w - 70, cardH, 18);
-      var txY = ty + 35;
-      for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], 68, txY, 'bold 34px Arial', 'rgba(255,255,255,0.95)', 'left', 8);
-        txY += 46;
+      var txFit = fitText(ctx, slide.texto, w - 140, 38, 26, 'Arial', 4);
+      var cardH = txFit.lines.length * (txFit.size * 1.35) + 40;
+      glassCard(ctx, 30, ty, w - 60, cardH, 16);
+      var txY = ty + 32;
+      for (var j = 0; j < txFit.lines.length; j++) {
+        shadowText(ctx, txFit.lines[j], 62, txY, 'bold ' + txFit.size + 'px Arial', 'rgba(255,255,255,0.97)', 'left', 10);
+        txY += txFit.size * 1.35;
       }
-      ty += cardH + 20;
+      ty += cardH + 14;
     }
-    if (slide.dato) { ty = Math.max(ty, h * 0.70); drawDataBox(ctx, '📊 ' + slide.dato, 35, ty, w - 70, accent); }
-    shadowText(ctx, 'Desliza  →', w/2, h - 32, 'bold 20px Arial', 'rgba(255,255,255,0.45)', 'center', 6);
+    if (slide.dato) { ty = Math.max(ty, h * 0.74); drawDataBox(ctx, '📊 ' + slide.dato, 30, ty, w - 60, accent); }
+    shadowText(ctx, 'Desliza  →', w/2, h - 32, 'bold 20px Arial', 'rgba(255,255,255,0.5)', 'center', 8);
     swipeCue(ctx, w, h, accent);
   }
 
   function renderRevelacion(ctx, img, slide, idx, total, w, h, accent) {
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'heavy-top');
+    // Extra dark top zone for text
+    var topG = ctx.createLinearGradient(0, 0, 0, h * 0.45);
+    topG.addColorStop(0, 'rgba(0,0,0,0.9)'); topG.addColorStop(1, 'rgba(0,0,0,0.15)');
+    ctx.fillStyle = topG; ctx.fillRect(0, 0, w, h * 0.45);
     ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
     ctx.fillRect(0, 0, w, 6); ctx.globalAlpha = 1;
     slideCounter(ctx, idx + 1, total, w, accent);
-    glassCard(ctx, w/2 - 110, 85, 220, 42, 21);
-    ctx.font = 'bold 16px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
-    ctx.fillText('⚡ PUNTO CLAVE', w/2, 113);
-    var ty = 185;
-    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 100);
-    for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], w/2, ty, 'bold 62px "Arial Black", Arial', '#fff', 'center', 16);
-      ty += 76;
+    glassCard(ctx, w/2 - 120, 75, 240, 46, 23);
+    ctx.font = 'bold 18px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
+    ctx.fillText('⚡ PUNTO CLAVE', w/2, 105);
+    // Title — auto-fit
+    var fit = fitText(ctx, slide.titulo.toUpperCase(), w - 100, 68, 44, '"Arial Black", Arial', 3);
+    var ty = 165;
+    for (var i = 0; i < fit.lines.length; i++) {
+      shadowText(ctx, fit.lines[i], w/2, ty, 'bold ' + fit.size + 'px "Arial Black", Arial', '#fff', 'center', 18);
+      ty += fit.size * 1.2;
     }
-    accentBar(ctx, w/2 - 60, ty + 4, 120, accent, 0.9); ty += 35;
+    accentBar(ctx, w/2 - 70, ty + 6, 140, accent, 0.9); ty += 35;
     if (slide.texto) {
-      var txLines = wrapText(ctx, slide.texto, w - 120);
-      var cardH = txLines.length * 46 + 44;
-      glassCard(ctx, 45, ty, w - 90, cardH, 18);
-      var txY = ty + 35;
-      for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], w/2, txY, 'bold 34px Arial', 'rgba(255,255,255,0.95)', 'center', 10);
-        txY += 46;
+      var txFit = fitText(ctx, slide.texto, w - 130, 38, 26, 'Arial', 4);
+      var cardH = txFit.lines.length * (txFit.size * 1.35) + 40;
+      glassCard(ctx, 40, ty, w - 80, cardH, 16);
+      var txY = ty + 32;
+      for (var j = 0; j < txFit.lines.length; j++) {
+        shadowText(ctx, txFit.lines[j], w/2, txY, 'bold ' + txFit.size + 'px Arial', 'rgba(255,255,255,0.97)', 'center', 12);
+        txY += txFit.size * 1.35;
       }
-      ty += cardH + 16;
+      ty += cardH + 14;
     }
-    if (slide.dato) { ty = Math.max(ty, h * 0.70); drawDataBox(ctx, '💡 ' + slide.dato, 45, ty, w - 90, accent); }
+    if (slide.dato) { ty = Math.max(ty, h * 0.74); drawDataBox(ctx, '💡 ' + slide.dato, 40, ty, w - 80, accent); }
     swipeCue(ctx, w, h, accent);
   }
 
   function renderCTA(ctx, img, slide, total, w, h, accent) {
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'heavy-bottom');
+    // Extra dark bottom zone for CTA
+    var botG = ctx.createLinearGradient(0, h * 0.5, 0, h);
+    botG.addColorStop(0, 'rgba(0,0,0,0.2)'); botG.addColorStop(1, 'rgba(0,0,0,0.9)');
+    ctx.fillStyle = botG; ctx.fillRect(0, h * 0.5, w, h * 0.5);
     ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
     ctx.fillRect(0, 0, w, 6); ctx.globalAlpha = 1;
     slideCounter(ctx, total, total, w, accent);
-    // Title — big and centered
-    var ty = h * 0.38;
-    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 100);
-    for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], w/2, ty, 'bold 62px "Arial Black", Arial', '#fff', 'center', 16);
-      ty += 76;
+    // Title — auto-fit, centered
+    var fit = fitText(ctx, slide.titulo.toUpperCase(), w - 100, 68, 44, '"Arial Black", Arial', 3);
+    var ty = h * 0.36;
+    for (var i = 0; i < fit.lines.length; i++) {
+      shadowText(ctx, fit.lines[i], w/2, ty, 'bold ' + fit.size + 'px "Arial Black", Arial', '#fff', 'center', 18);
+      ty += fit.size * 1.2;
     }
-    accentBar(ctx, w/2 - 60, ty + 4, 120, accent, 0.9); ty += 30;
-    // Text — bigger
+    accentBar(ctx, w/2 - 70, ty + 6, 140, accent, 0.9); ty += 30;
+    // Text — in glass card
     if (slide.texto) {
-      var txLines = wrapText(ctx, slide.texto, w - 120);
-      ty = Math.max(ty, h * 0.56);
-      for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], w/2, ty, 'bold 32px Arial', 'rgba(255,255,255,0.95)', 'center', 10);
-        ty += 42;
+      var txFit = fitText(ctx, slide.texto, w - 130, 36, 26, 'Arial', 3);
+      ty = Math.max(ty, h * 0.54);
+      var cardH = txFit.lines.length * (txFit.size * 1.35) + 36;
+      glassCard(ctx, 35, ty - 12, w - 70, cardH, 16);
+      var txY = ty + 16;
+      for (var j = 0; j < txFit.lines.length; j++) {
+        shadowText(ctx, txFit.lines[j], w/2, txY, 'bold ' + txFit.size + 'px Arial', 'rgba(255,255,255,0.97)', 'center', 12);
+        txY += txFit.size * 1.35;
       }
+      ty += cardH + 10;
     }
-    // CTA Button — bigger
+    // CTA Button
     var palabra = slide.cta_palabra || 'QUIERO';
-    ty = Math.max(ty + 25, h * 0.73);
-    var btnW = 700, btnH = 80, btnX = (w - btnW) / 2;
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 6;
+    ty = Math.max(ty + 20, h * 0.74);
+    var btnW = Math.min(720, w - 80), btnH = 80, btnX = (w - btnW) / 2;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 28; ctx.shadowOffsetY = 6;
     ctx.fillStyle = accent; roundRect(ctx, btnX, ty, btnW, btnH, 40); ctx.fill(); ctx.restore();
     ctx.font = 'bold 30px "Arial Black", Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
     ctx.fillText('💬 Comenta "' + palabra + '"  →', w/2, ty + 52);
-    // Sub-CTA
-    shadowText(ctx, 'y te cuento cómo lograrlo', w/2, ty + btnH + 32, 'bold 24px Arial', 'rgba(255,255,255,0.6)', 'center', 6);
+    shadowText(ctx, 'y te cuento cómo lograrlo', w/2, ty + btnH + 34, 'bold 24px Arial', 'rgba(255,255,255,0.65)', 'center', 8);
     ty = ty + btnH + 68;
-    glassCard(ctx, w/2 - 220, ty, 440, 44, 22);
-    shadowText(ctx, '🔖 Guarda este post para después', w/2, ty + 30, 'bold 18px Arial', 'rgba(255,255,255,0.65)', 'center', 4);
+    glassCard(ctx, w/2 - 230, ty, 460, 48, 24);
+    shadowText(ctx, '🔖 Guarda este post para después', w/2, ty + 32, 'bold 20px Arial', 'rgba(255,255,255,0.7)', 'center', 6);
   }
 
   function drawDataBox(ctx, text, x, y, w, accent) {
     if (!text) return y;
-    ctx.save(); ctx.font = 'bold 20px Arial';
-    var lines = wrapText(ctx, text, w - 44);
-    var h = lines.length * 28 + 28;
+    ctx.save(); ctx.font = 'bold 24px Arial';
+    var lines = wrapText(ctx, text, w - 50);
+    if (lines.length > 2) lines = lines.slice(0, 2);
+    var h = lines.length * 34 + 32;
     glassCard(ctx, x, y, w, h, 14);
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.6;
-    roundRect(ctx, x, y + 4, 4, h - 8, 2); ctx.fill(); ctx.globalAlpha = 1;
-    var ty = y + 24;
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.8;
+    roundRect(ctx, x, y + 4, 5, h - 8, 3); ctx.fill(); ctx.globalAlpha = 1;
+    var ty = y + 28;
     for (var i = 0; i < lines.length; i++) {
-      shadowText(ctx, lines[i], x + 22, ty, 'bold 20px Arial', accent, 'left', 6);
-      ty += 28;
+      shadowText(ctx, lines[i], x + 26, ty, 'bold 24px Arial', accent, 'left', 8);
+      ty += 34;
     }
     ctx.restore(); return y + h + 14;
   }
@@ -401,6 +469,11 @@
   function renderStorySlide(ctx, img, story, idx, total, isLast, w, h, accent) {
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'heavy-bottom');
+    // Extra dark middle zone for text area
+    var midG = ctx.createLinearGradient(0, h * 0.2, 0, h * 0.7);
+    midG.addColorStop(0, 'rgba(0,0,0,0.6)'); midG.addColorStop(0.5, 'rgba(0,0,0,0.45)'); midG.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = midG; ctx.fillRect(0, h * 0.2, w, h * 0.5);
+    // Progress bars
     var barY = 40, barGap = 5, barW = (w - 50 - (total - 1) * barGap) / total;
     for (var b = 0; b < total; b++) {
       ctx.fillStyle = b <= idx ? accent : 'rgba(255,255,255,0.2)';
@@ -409,34 +482,35 @@
     }
     ctx.globalAlpha = 1;
     ctx.font = '120px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(story.emoji || '🔥', w/2, h * 0.28);
-    var tLines = wrapText(ctx, story.titulo.toUpperCase(), w - 80);
-    var ty = h * 0.38;
-    for (var t = 0; t < tLines.length; t++) {
-      shadowText(ctx, tLines[t], w/2, ty, 'bold 76px "Arial Black", Arial', '#fff', 'center', 18);
-      ty += 90;
+    ctx.fillText(story.emoji || '🔥', w/2, h * 0.22);
+    // Title — auto-fit, max 2 lines
+    var fit = fitText(ctx, story.titulo.toUpperCase(), w - 90, 80, 52, '"Arial Black", Arial', 2);
+    var ty = h * 0.34;
+    for (var t = 0; t < fit.lines.length; t++) {
+      shadowText(ctx, fit.lines[t], w/2, ty, 'bold ' + fit.size + 'px "Arial Black", Arial', '#fff', 'center', 20);
+      ty += fit.size * 1.2;
     }
-    accentBar(ctx, w/2 - 60, ty + 6, 120, accent, 0.8); ty += 45;
+    accentBar(ctx, w/2 - 70, ty + 8, 140, accent, 0.9); ty += 45;
     if (story.texto) {
-      var txLines = wrapText(ctx, story.texto, w - 120);
-      var cardH = txLines.length * 50 + 44;
-      glassCard(ctx, 35, ty, w - 70, cardH, 20);
+      var txFit = fitText(ctx, story.texto, w - 120, 40, 28, 'Arial', 3);
+      var cardH = txFit.lines.length * (txFit.size * 1.4) + 44;
+      glassCard(ctx, 30, ty, w - 60, cardH, 20);
       var txY = ty + 38;
-      for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], w/2, txY, 'bold 36px Arial', 'rgba(255,255,255,0.95)', 'center', 10);
-        txY += 50;
+      for (var j = 0; j < txFit.lines.length; j++) {
+        shadowText(ctx, txFit.lines[j], w/2, txY, 'bold ' + txFit.size + 'px Arial', 'rgba(255,255,255,0.97)', 'center', 12);
+        txY += txFit.size * 1.4;
       }
       ty += cardH + 20;
     }
     if (isLast && story.cta_palabra) {
       ty = Math.max(ty + 20, h * 0.72);
-      var bW = 500, bH = 64, bX = (w - bW) / 2;
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 4;
-      ctx.fillStyle = accent; roundRect(ctx, bX, ty, bW, bH, 32); ctx.fill(); ctx.restore();
-      ctx.font = 'bold 24px "Arial Black", Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
-      ctx.fillText('📩 Escríbeme "' + story.cta_palabra + '"', w/2, ty + 42);
+      var bW = 540, bH = 70, bX = (w - bW) / 2;
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 5;
+      ctx.fillStyle = accent; roundRect(ctx, bX, ty, bW, bH, 35); ctx.fill(); ctx.restore();
+      ctx.font = 'bold 26px "Arial Black", Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
+      ctx.fillText('📩 Escríbeme "' + story.cta_palabra + '"', w/2, ty + 46);
     }
-    if (!isLast) shadowText(ctx, 'Toca para ver más  →', w/2, h - 65, 'bold 18px Arial', 'rgba(255,255,255,0.35)', 'center', 6);
+    if (!isLast) shadowText(ctx, 'Toca para ver más  →', w/2, h - 65, 'bold 20px Arial', 'rgba(255,255,255,0.45)', 'center', 8);
   }
 
   // ══════════════════════════════════════════════════════════
@@ -521,15 +595,14 @@
 
   // INFO SLIDE: Hook (slide 1) — with image
   function renderInfoHook(ctx, img, slide, total, w, h, accentColor) {
-    // If we have an AI image, draw it in bottom half
+    // Top zone: clean white background for title
+    drawDotPattern(ctx, w, h * 0.42);
+    // Image area — bottom portion with overlay
     if (img && img.width) {
-      drawDotPattern(ctx, w, h * 0.35);
-      // Image area — bottom portion
-      ctx.drawImage(img, 0, h * 0.35, w, h * 0.65);
-      // Dark overlay on image
-      var g = ctx.createLinearGradient(0, h * 0.35, 0, h);
-      g.addColorStop(0, 'rgba(0,0,0,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0.7)');
-      ctx.fillStyle = g; ctx.fillRect(0, h * 0.35, w, h * 0.65);
+      ctx.drawImage(img, 0, h * 0.42, w, h * 0.58);
+      var g = ctx.createLinearGradient(0, h * 0.42, 0, h);
+      g.addColorStop(0, 'rgba(0,0,0,0.15)'); g.addColorStop(0.4, 'rgba(0,0,0,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
+      ctx.fillStyle = g; ctx.fillRect(0, h * 0.42, w, h * 0.58);
     } else {
       drawDotPattern(ctx, w, h);
     }
@@ -537,25 +610,39 @@
     // Badge
     ctx.save();
     ctx.fillStyle = accentColor;
-    roundRect(ctx, w/2 - 70, 85, 140, 36, 18); ctx.fill();
-    ctx.font = 'bold 15px Arial'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-    ctx.fillText('⚡ TENDENCIA', w/2, 109);
+    roundRect(ctx, w/2 - 80, 70, 160, 40, 20); ctx.fill();
+    ctx.font = 'bold 17px Arial'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    ctx.fillText('⚡ TENDENCIA', w/2, 96);
     ctx.restore();
-    // Title — BIGGER
-    var titleY = img && img.width ? 170 : 260;
-    var endY = drawBoldTextWithColor(ctx, slide.titulo_principal || slide.titulo || '', slide.palabra_color || '', w/2, titleY, w - 100, 66, accentColor);
-    // Subtitle — bigger
+    // Title — auto-fit in white zone
+    var fit = fitText(ctx, (slide.titulo_principal || slide.titulo || '').toUpperCase(), w - 80, 72, 44, '"Arial Black", Arial', 3);
+    var titleY = 155;
+    // Draw with color word support
+    drawBoldTextWithColor(ctx, (slide.titulo_principal || slide.titulo || '').toUpperCase(), (slide.palabra_color || '').toUpperCase(), w/2, titleY, w - 80, fit.size, accentColor);
+    var endY = titleY + fit.lines.length * (fit.size * 1.3);
+    // Subtitle — with background for readability
     if (slide.subtitulo) {
-      ctx.font = 'bold 34px Arial'; ctx.fillStyle = img && img.width ? '#fff' : '#444'; ctx.textAlign = 'center';
-      var subLines = wrapText(ctx, slide.subtitulo, w - 120);
+      ctx.font = 'bold 32px Arial';
+      var subLines = wrapText(ctx, slide.subtitulo, w - 100);
+      if (subLines.length > 2) subLines = subLines.slice(0, 2);
+      var isOverImage = endY + 30 > h * 0.42;
+      if (isOverImage) {
+        // Draw glass card behind text if over image
+        var subH = subLines.length * 42 + 24;
+        glassCard(ctx, 30, endY + 10, w - 60, subH, 14);
+      }
+      ctx.fillStyle = isOverImage ? '#fff' : '#444'; ctx.textAlign = 'center';
       for (var i = 0; i < subLines.length; i++) {
-        ctx.fillText(subLines[i], w/2, endY + 35 + i * 44);
+        if (isOverImage) {
+          shadowText(ctx, subLines[i], w/2, endY + 40 + i * 42, 'bold 32px Arial', '#fff', 'center', 10);
+        } else {
+          ctx.fillText(subLines[i], w/2, endY + 40 + i * 42);
+        }
       }
     }
     // Bottom accent line
     ctx.fillStyle = accentColor;
     ctx.fillRect(0, h - 6, w, 6);
-    // Deslizá
     ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
     ctx.fillStyle = img && img.width ? '#fff' : '#999';
     ctx.fillText('Deslizá  →', w/2, h - 30);
@@ -563,57 +650,53 @@
 
   // INFO SLIDE: Content (dato, explicacion, ejemplo, beneficio) — with image
   function renderInfoContent(ctx, img, slide, idx, total, w, h, accentColor) {
-    // Top half: white dot pattern + text
-    var splitY = h * 0.48;
+    var splitY = h * 0.50;
     drawDotPattern(ctx, w, h);
     infoCounter(ctx, idx + 1, total, w);
     // Type badge
     var badges = { dato: '📊 DATO', explicacion: '🔍 CÓMO FUNCIONA', ejemplo: '💡 EJEMPLO REAL', beneficio: '🎯 BENEFICIO' };
     var badge = badges[slide.tipo] || '📌 INFO';
     ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    roundRect(ctx, w/2 - 100, 80, 200, 36, 18); ctx.fill();
-    ctx.font = 'bold 14px Arial'; ctx.fillStyle = '#888'; ctx.textAlign = 'center';
-    ctx.fillText(badge, w/2, 104);
+    ctx.fillStyle = 'rgba(0,0,0,0.07)';
+    roundRect(ctx, w/2 - 110, 75, 220, 40, 20); ctx.fill();
+    ctx.font = 'bold 16px Arial'; ctx.fillStyle = '#666'; ctx.textAlign = 'center';
+    ctx.fillText(badge, w/2, 101);
     ctx.restore();
-    // Title — BIGGER
-    var ty = drawBoldTextWithColor(ctx, slide.titulo || '', slide.palabra_color || '', w/2, 170, w - 100, 56, accentColor);
+    // Title — auto-fit
+    var fit = fitText(ctx, (slide.titulo || '').toUpperCase(), w - 80, 60, 38, '"Arial Black", Arial', 3);
+    drawBoldTextWithColor(ctx, (slide.titulo || '').toUpperCase(), (slide.palabra_color || '').toUpperCase(), w/2, 160, w - 80, fit.size, accentColor);
+    var ty = 160 + fit.lines.length * (fit.size * 1.3);
     // Accent bar
     ctx.fillStyle = accentColor; ctx.globalAlpha = 0.8;
-    roundRect(ctx, w/2 - 50, ty + 12, 100, 5, 3); ctx.fill(); ctx.globalAlpha = 1;
-    // Text body — bigger, bolder
+    roundRect(ctx, w/2 - 60, ty + 8, 120, 5, 3); ctx.fill(); ctx.globalAlpha = 1;
+    // Text body — auto-fit, bolder
     if (slide.texto) {
-      ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#333';
-      var txLines = wrapText(ctx, slide.texto, w - 120);
-      var txY = ty + 55;
-      for (var i = 0; i < txLines.length; i++) {
-        ctx.fillText(txLines[i], w/2, txY + i * 46);
+      var txFit = fitText(ctx, slide.texto, w - 100, 34, 24, 'Arial', 3);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#333';
+      var txY = ty + 50;
+      for (var i = 0; i < txFit.lines.length; i++) {
+        ctx.font = 'bold ' + txFit.size + 'px Arial';
+        ctx.fillText(txFit.lines[i], w/2, txY + i * (txFit.size * 1.4));
       }
+      splitY = Math.max(splitY, txY + txFit.lines.length * (txFit.size * 1.4) + 20);
     }
     // Bottom half: image with rounded corners
     if (img && img.width) {
-      var imgMargin = 50;
+      var imgMargin = 40;
       var imgW = w - imgMargin * 2;
-      var imgH = h - splitY - 80;
-      var imgY = splitY + 10;
+      var imgH = h - splitY - 60;
+      var imgY = splitY;
       ctx.save();
       roundRect(ctx, imgMargin, imgY, imgW, imgH, 20);
       ctx.clip();
-      // Cover fit
       var scale = Math.max(imgW / img.width, imgH / img.height);
       var sx = (img.width - imgW / scale) / 2;
       var sy = (img.height - imgH / scale) / 2;
       ctx.drawImage(img, sx, sy, imgW / scale, imgH / scale, imgMargin, imgY, imgW, imgH);
-      // Subtle overlay at bottom for readability
-      var g = ctx.createLinearGradient(0, imgY + imgH - 80, 0, imgY + imgH);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.2)');
-      ctx.fillStyle = g; ctx.fillRect(imgMargin, imgY, imgW, imgH);
       ctx.restore();
-      // Border around image
-      ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 2;
+      ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 2;
       roundRect(ctx, imgMargin, imgY, imgW, imgH, 20); ctx.stroke(); ctx.restore();
     }
-    // Bottom accent
     ctx.fillStyle = accentColor;
     ctx.fillRect(0, h - 6, w, 6);
     ctx.font = 'bold 18px Arial'; ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
@@ -703,10 +786,11 @@
   // ── MAIN PIPELINES ──
   // ══════════════════════════════════════════════════════════
 
-  // Enhance img_desc for gpt-image-1 quality
+  // Enhance img_desc with random visual style for variety
   function enhancePrompt(desc, fallback) {
-    if (!desc) return fallback || 'A dramatic photorealistic scene of a young Latino entrepreneur, cinematic lighting, editorial photography, 8k, no text no letters no words';
-    return desc + ', ultra photorealistic, cinematic dramatic lighting, shallow depth of field, shot on Sony A7IV, editorial photography style, 8k quality, no text no letters no words no watermarks';
+    var style = getRandomStyle();
+    if (!desc) return (fallback || 'A dramatic photorealistic scene of a young Latino entrepreneur, cinematic lighting, editorial photography, 8k, no text no letters no words') + '. ' + style;
+    return desc + '. ' + style + ', cinematic dramatic lighting, shallow depth of field, 8k quality, no text no letters no words no watermarks';
   }
 
   async function createCarousel(text, status) {
