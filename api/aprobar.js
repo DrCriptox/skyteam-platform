@@ -79,16 +79,27 @@ export default async function handler(req, res) {
       await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
     }
 
-    // Create user in users table — use 'return=representation' to verify insertion
-    const insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
-      method: 'POST',
-      headers: { ...HEADERS, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-      body: JSON.stringify({ username, email: sol.email || null, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null, rank })
-    });
-    if (!insertR.ok) {
-      const errText = await insertR.text();
-      console.error('[aprobar] User INSERT failed:', insertR.status, errText);
-      throw new Error('No se pudo crear el usuario: ' + insertR.status);
+    // Create user in users table — try progressively minimal payloads if columns are missing
+    const corePayload = { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null };
+    const attempts = [
+      { ...corePayload, email: sol.email || null, rank }, // full
+      { ...corePayload, email: sol.email || null },       // no rank
+      { ...corePayload, rank },                           // no email
+      corePayload                                         // core only
+    ];
+    let insertR = null;
+    for (let i = 0; i < attempts.length; i++) {
+      insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify(attempts[i])
+      });
+      if (insertR.ok) { console.log('[aprobar] INSERT succeeded on attempt', i + 1, 'fields:', Object.keys(attempts[i]).join(',')); break; }
+      const errTxt = await insertR.text();
+      console.error('[aprobar] INSERT attempt', i + 1, 'failed', insertR.status, errTxt.substring(0, 200));
+      if (insertR.status !== 400 || i === attempts.length - 1) {
+        throw new Error('No se pudo crear el usuario: ' + insertR.status + ' — ' + errTxt.substring(0, 120));
+      }
     }
 
     // Create empty agenda config for the new user
