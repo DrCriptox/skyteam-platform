@@ -1,5 +1,5 @@
-// SKYTEAM - Service Worker v2 (with push notification handlers)
-var CACHE_NAME = 'skyteam-v2';
+// SKYTEAM - Service Worker v3
+var CACHE_NAME = 'skyteam-v3';
 var OFFLINE_URL = '/';
 
 // Install: cache the shell
