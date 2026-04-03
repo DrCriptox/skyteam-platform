@@ -106,38 +106,23 @@
 
   // ── TEXT PROMPTS ──
   var CAROUSEL_PROMPT =
-    'Eres un creador de contenido VIRAL para Instagram en Latinoamérica. Tu NICHO ESPECÍFICO es: personas que quieren tener una FRANQUICIA DIGITAL, generar INGRESOS DIGITALES con SISTEMAS AUTOMATIZADOS, y que TIENEN DINERO para invertir pero no saben dónde.\n' +
-    'DOLORES del público: esclavitud laboral, poco tiempo libre, sueldo que no alcanza, miedo a invertir, no saben cómo empezar un negocio digital, ven a otros ganar pero ellos no, deudas, inflación come sus ahorros.\n' +
-    'SOLUCIONES: franquicias digitales con sistemas que trabajan 24/7, ingresos pasivos automatizados, IA que vende por ti, modelo de negocio probado, inversión inteligente en sistemas digitales, libertad financiera y de tiempo.\n' +
-    'Genera un carrusel de 8 slides que cuente UNA HISTORIA enfocada en estos dolores y soluciones.\n' +
-    'REGLAS:\n' +
-    '- Lenguaje COLOQUIAL latino. Nada de anglicismos. Di "chambear", "generar plata", "negocio digital", "sistema que trabaja por ti".\n' +
-    '- Slide 1 (PORTADA/HOOK): Max 6 palabras MEGA impactantes sobre franquicias digitales o ingresos con sistemas. Subtítulo gancho de max 10 palabras. Debe sentirse INCOMPLETO.\n' +
-    '- Slide 2 (CONTEXTO): El DOLOR del empleado/inversionista sin rumbo. Dato duro que genere shock sobre la realidad laboral en Latam.\n' +
-    '- Slides 3-6 (HISTORIA): Narrativa progresiva de alguien que descubrió los sistemas digitales. Datos REALES de franquicias, cifras de la economía digital, ejemplos de marcas (McDonald\'s vs franquicia digital, Amazon, Uber). Muestra la transformación. Como un amigo contando en un café.\n' +
-    '- Slide 7 (REVELACIÓN): El punto clave — por qué los SISTEMAS DIGITALES y franquicias son la respuesta. El giro que lo cambia todo.\n' +
-    '- Slide 8 (CTA): Frase poderosa sobre tomar acción + "Comenta [PALABRA] y te cuento cómo tener tu propia franquicia digital" + "Guarda este post".\n' +
-    '- Cada slide: titulo (max 6 palabras), texto (max 35 palabras, narrativo, enfocado en el nicho), dato (cifra real o null).\n' +
-    'JSON:\n' +
-    '{"slides":[{"tipo":"portada","titulo":"...","subtitulo":"...","dato":"..."},{"tipo":"contexto","titulo":"...","texto":"...","dato":"..."},{"tipo":"historia","titulo":"...","texto":"...","dato":"..."},{"tipo":"historia","titulo":"...","texto":"...","dato":"..."},{"tipo":"historia","titulo":"...","texto":"...","dato":"..."},{"tipo":"historia","titulo":"...","texto":"...","dato":"..."},{"tipo":"revelacion","titulo":"...","texto":"...","dato":"..."},{"tipo":"cta","titulo":"...","texto":"...","cta_palabra":"QUIERO"}]}\n' +
-    'Solo JSON. Sin markdown. Sin explicaciones.';
+    'Creador de carruseles VIRALES para Instagram Latam. NICHO: franquicias digitales, ingresos con sistemas automatizados, personas con capital para invertir.\n' +
+    'DOLORES: esclavitud laboral, sueldo bajo, sin tiempo, miedo a invertir, inflación come ahorros.\n' +
+    'SOLUCIONES: franquicias digitales 24/7, ingresos pasivos, IA que vende, modelo probado, libertad financiera.\n' +
+    'Genera 8 slides contando UNA HISTORIA sobre estos dolores→soluciones. Lenguaje coloquial latino ("chambear","generar plata","sistema que trabaja por ti").\n' +
+    'S1(portada):titulo max 6 palabras impactantes+subtitulo max 10 palabras. S2(contexto):dolor del empleado+dato real. S3-S6(historia):narrativa progresiva con datos reales de franquicias/economía digital, ejemplos (McDonald\'s,Amazon,Uber). S7(revelacion):por qué sistemas digitales son la respuesta. S8(cta):llamado a acción+cta_palabra.\n' +
+    'Texto max 30 palabras por slide. dato=cifra real o null.\n' +
+    'JSON estricto:\n' +
+    '{"slides":[{"tipo":"portada","titulo":"..","subtitulo":"..","dato":null},{"tipo":"contexto","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":null},{"tipo":"revelacion","titulo":"..","texto":"..","dato":".."},{"tipo":"cta","titulo":"..","texto":"..","cta_palabra":"QUIERO"}]}\nSolo JSON.';
 
   var STORY_PROMPT =
-    'Eres creador de contenido VIRAL para Instagram Stories en Latinoamérica.\n' +
-    'NICHO: Franquicias digitales, ingresos con sistemas automatizados, personas con dinero para invertir.\n' +
-    'DOLORES: esclavitud laboral, poco tiempo, sueldo insuficiente, miedo a invertir, no saben cómo empezar.\n' +
-    'SOLUCIONES: sistemas digitales 24/7, ingresos pasivos, IA que vende, franquicia digital probada, libertad.\n' +
-    'Genera 5 stories que cuenten UNA HISTORIA impactante sobre estos dolores y soluciones.\n' +
-    'REGLAS:\n' +
-    '- Lenguaje coloquial latino. "Generar plata", "sistema que trabaja solo", "tu franquicia digital".\n' +
-    '- Story 1: GANCHO brutal sobre el dolor del empleado o dato impactante de la economía digital.\n' +
-    '- Story 2-3: La transformación — cómo los sistemas digitales cambian vidas, datos reales, cifras.\n' +
-    '- Story 4: La revelación — por qué una franquicia digital es la solución.\n' +
-    '- Story 5: CTA "Escríbeme [EMOJI] si quieres tu propia franquicia digital".\n' +
-    '- Cada story: titulo (max 5 palabras), texto (max 20 palabras), emoji (1).\n' +
+    'Stories VIRALES Instagram Latam. NICHO: franquicias digitales, ingresos con sistemas, personas con capital.\n' +
+    'DOLORES: esclavitud laboral, sueldo bajo, sin tiempo. SOLUCIONES: sistemas 24/7, ingresos pasivos, franquicia digital.\n' +
+    'Genera 5 stories contando UNA HISTORIA. Lenguaje coloquial latino.\n' +
+    'S1:gancho brutal(dolor/dato). S2-3:transformación con datos reales. S4:revelación(franquicia digital=solución). S5:CTA.\n' +
+    'titulo max 5 palabras, texto max 20 palabras, emoji 1.\n' +
     'JSON:\n' +
-    '{"stories":[{"titulo":"...","texto":"...","emoji":"🔥"},{"titulo":"...","texto":"...","emoji":"💰"},{"titulo":"...","texto":"...","emoji":"🚀"},{"titulo":"...","texto":"...","emoji":"📈"},{"titulo":"...","texto":"...","emoji":"📩","cta_palabra":"QUIERO"}]}\n' +
-    'Solo JSON.';
+    '{"stories":[{"titulo":"..","texto":"..","emoji":"🔥"},{"titulo":"..","texto":"..","emoji":"💰"},{"titulo":"..","texto":"..","emoji":"🚀"},{"titulo":"..","texto":"..","emoji":"📈"},{"titulo":"..","texto":"..","emoji":"📩","cta_palabra":"QUIERO"}]}\nSolo JSON.';
 
   // ── CANVAS HELPERS ──
   function wrapText(ctx, text, maxW) {
@@ -592,6 +577,32 @@
     return canvases;
   }
 
+  // ── JSON REPAIR (handles truncated API responses) ──
+  function repairJSON(str) {
+    // Remove markdown fences
+    str = str.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    // Try direct parse first
+    try { return JSON.parse(str); } catch(e) {}
+    // Truncated: try to close open structures
+    // Remove trailing incomplete key/value after last comma
+    var fixed = str.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '');
+    // Also handle trailing incomplete object in array
+    fixed = fixed.replace(/,\s*\{[^}]*$/, '');
+    // Count unclosed brackets/braces
+    var opens = (fixed.match(/\[/g) || []).length - (fixed.match(/\]/g) || []).length;
+    var braces = (fixed.match(/\{/g) || []).length - (fixed.match(/\}/g) || []).length;
+    for (var i = 0; i < braces; i++) fixed += '}';
+    for (var j = 0; j < opens; j++) fixed += ']';
+    // Close any open braces at end
+    if (!fixed.endsWith('}')) fixed += '}';
+    try { return JSON.parse(fixed); } catch(e2) {
+      // Last resort: extract whatever JSON object we can find
+      var m = str.match(/\{[\s\S]*\}/);
+      if (m) try { return JSON.parse(m[0]); } catch(e3) {}
+      throw new Error('JSON Parse error: ' + e2.message);
+    }
+  }
+
   // ── FETCH TEXT ──
   async function fetchContent(topic, mode) {
     var usr = (typeof CU !== 'undefined' && CU) ? (CU.ref || CU.user || 'socio') : 'socio';
@@ -602,8 +613,7 @@
     if (!res.ok) throw new Error('Error texto (' + res.status + ')');
     var d = await res.json();
     var raw = d.reply || d.content || JSON.stringify(d);
-    if (typeof raw === 'string') raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return typeof raw === 'string' ? repairJSON(raw) : raw;
   }
 
   // ── DOWNLOAD ──

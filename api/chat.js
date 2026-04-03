@@ -46,7 +46,8 @@ export default async function handler(req, res) {
     if (body.agent || body.systemPrompt) {
       // Coach IA / onboarding format
       model = 'claude-sonnet-4-20250514';
-      max_tokens = 512;
+      // Carousel/story agents need more tokens for 8-slide JSON output
+      max_tokens = (body.agent === 'carousel') ? 1800 : 512;
       system = body.systemPrompt || 'Eres un asistente de SKYTEAM. Responde en español, sé breve y útil.';
       messages = (body.messages || []).map(m => ({
         role: m.role === 'bot' ? 'assistant' : m.role,
