@@ -1,4 +1,5 @@
-// Check if an email already has an active account or pending solicitud
+// Check if an email already has an active account in users table
+// Note: solicitudes is audit-only — does NOT block re-registration
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
@@ -16,24 +17,14 @@ export default async function handler(req, res) {
 
     const clean = email.trim().toLowerCase();
 
-    // Check active users
-    const r1 = await fetch(
+    // Only block if email already has an active user account
+    const r = await fetch(
       SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=username&limit=1',
       { headers: HEADERS }
     );
-    const users = await r1.json();
+    const users = await r.json();
     if (users && users.length > 0) {
       return res.status(200).json({ exists: true, where: 'active' });
-    }
-
-    // Check pending solicitudes
-    const r2 = await fetch(
-      SUPABASE_URL + '/rest/v1/solicitudes?email=eq.' + encodeURIComponent(clean) + '&select=id&limit=1',
-      { headers: HEADERS }
-    );
-    const sols = await r2.json();
-    if (sols && sols.length > 0) {
-      return res.status(200).json({ exists: true, where: 'pending' });
     }
 
     return res.status(200).json({ exists: false });
