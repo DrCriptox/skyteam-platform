@@ -4626,7 +4626,13 @@ function renderNotifList(notifs) {
     html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
     html += '<span style="font-size:24px;">' + n.icon + '</span>';
     html += '<div style="flex:1;min-width:0;">';
-    html += '<div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:2px;">' + n.title + '</div>';
+    // Timestamp — use stored timestamp if available, else current time
+    var _tDate = n.timestamp ? new Date(n.timestamp) : new Date();
+    var _timeStr = n.time || (_tDate.getHours().toString().padStart(2,'0') + ':' + _tDate.getMinutes().toString().padStart(2,'0'));
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">';
+    html += '<div style="font-size:13px;font-weight:800;color:#fff;">' + n.title + '</div>';
+    html += '<span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:600;flex-shrink:0;margin-left:8px;">' + _timeStr + '</span>';
+    html += '</div>';
     html += '<div style="font-size:11px;color:' + (n.type==='urgent'?'#FF6B6B':n.type==='soon'?'#FFB347':'rgba(28,232,255,0.7)') + ';font-weight:700;margin-bottom:6px;">' + n.subtitle + '</div>';
     html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 10px;line-height:1.5;">' + n.msg + '</p>';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
@@ -4636,24 +4642,35 @@ function renderNotifList(notifs) {
     if(n.type === 'urgent' && agendaConfig && agendaConfig.linkReunion) {
       html += '<a href="' + agendaConfig.linkReunion + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">🖥️ Abrir sala</a>';
     }
-    // Generic action button for non-agenda notifications
+    // Generic action button — use data attribute to avoid quote-breaking in onclick
     if(n.action && n.action.url) {
       var _url = n.action.url;
-      var _btnAttrs = '';
       if(_url.startsWith('http')) {
-        _btnAttrs = 'href="' + _url + '" target="_blank"';
+        html += '<a href="' + _url + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
       } else {
-        // javascript: or internal — extract JS and run via onclick, prevent default
-        var _jsCode = _url.startsWith('javascript:') ? _url.slice('javascript:'.length) : 'navigate("' + _url + '")';
-        _btnAttrs = 'href="#" onclick="toggleNotifPanel();' + _jsCode + ';return false;"';
+        // Store JS in data attribute, execute via _notifAction() to avoid quote conflicts
+        var _sec = _url.replace('javascript:navigate(','').replace(')','').replace(/['"]/g,'').split(';')[0].trim();
+        html += '<button data-navsec="' + _sec + '" data-notifid="' + n.id + '" onclick="_notifNav(this)" style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">' + (n.action.label||'Ver') + '</button>';
       }
-      html += '<a ' + _btnAttrs + ' style="display:inline-flex;align-items:center;gap:5px;background:rgba(28,232,255,0.12);border:0.5px solid rgba(28,232,255,0.3);color:#1CE8FF;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
     }
     html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Nunito,sans-serif;">Descartar</button>';
     html += '</div></div></div></div>';
   });
 
   list.innerHTML = html;
+}
+
+function _notifNav(btn) {
+  toggleNotifPanel();
+  var sec = btn.getAttribute('data-navsec');
+  if(!sec) return;
+  // Handle compound actions like agenda+switchAgendaTab
+  if(sec === 'agenda') {
+    navigate('agenda');
+    setTimeout(function(){ if(typeof switchAgendaTab==='function') switchAgendaTab('plandiario'); }, 300);
+  } else {
+    navigate(sec);
+  }
 }
 
 function dismissNotif(id) {
