@@ -2117,7 +2117,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 <div class="login-box">
     <div class="logo-big"><span style="color:#1CE8FF;">SKY</span> SYSTEM</div>
     <p class="login-sub">Plataforma del Equipo SKYTEAM</p>
-    <div class="login-field"><label>Usuario</label><input type="text" id="lu" placeholder="tu_usuario" autocomplete="username"></div>
+    <div class="login-field"><label>Usuario o Email</label><input type="text" id="lu" placeholder="tu_usuario o correo@email.com" autocomplete="username"></div>
     <div class="login-field"><label>Contraseña</label><div style="position:relative;"><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px;"><button type="button" onclick="var i=document.getElementById('lp');var s=this.querySelector('svg');if(i.type==='password'){i.type='text';s.innerHTML='<path d=\'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94\'/><path d=\'M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19\'/><line x1=\'1\' y1=\'1\' x2=\'23\' y2=\'23\'/>';}else{i.type='password';s.innerHTML='<path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/>';}" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
     <button class="btn-login" onclick="doLogin()">Entrar a SkySystem →</button>
     <p id="login-error"></p>
@@ -2159,6 +2159,12 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
               <span style="font-size:9px;color:#e53e3e;margin-left:4px;">← Tu usuario</span>
             </div>
             <div style="height:0.5px;background:#ddd;margin:6px 0;"></div>
+            <div style="font-size:9px;color:#888;">Clasificación Actual</div>
+            <div style="font-size:12px;color:#222;font-weight:900;margin-bottom:4px;">
+              <span style="background:#bee3f8;padding:0 4px;border-radius:3px;">NOVA DIAMOND</span>
+              <span style="font-size:9px;color:#3182ce;margin-left:4px;">← Tu rango</span>
+            </div>
+            <div style="height:0.5px;background:#ddd;margin:6px 0;"></div>
             <div style="font-size:9px;color:#888;">Patrocinador</div>
             <div style="font-size:12px;color:#222;font-weight:900;">
               <span style="background:#c6f6d5;padding:0 4px;border-radius:3px;">LEGEND</span>
@@ -2187,6 +2193,13 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
           <label style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.6px;">👤 Tu usuario Innova</label>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
             <input type="text" id="sol-innova-user" readonly style="flex:1;background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.3);border-radius:8px;color:#1CE8FF;font-size:14px;font-weight:700;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;letter-spacing:1px;">
+            <span style="font-size:18px;">✅</span>
+          </div>
+        </div>
+        <div style="margin-bottom:6px;">
+          <label style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.6px;">🏆 Tu clasificación (rango)</label>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <input type="text" id="sol-classification" readonly style="flex:1;background:rgba(133,183,235,0.08);border:0.5px solid rgba(133,183,235,0.4);border-radius:8px;color:#85B7EB;font-size:13px;font-weight:700;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;letter-spacing:1px;">
             <span style="font-size:18px;">✅</span>
           </div>
         </div>
@@ -8774,15 +8787,20 @@ function onSolImgChange(input) {
           var sField = document.getElementById('sol-sponsor');
           if(sField) sField.value = d.sponsor.toUpperCase();
         }
+        if(d.classification) {
+          var cField = document.getElementById('sol-classification');
+          if(cField) cField.value = d.classification.toUpperCase();
+        }
 
         // Show auto-fill section and step 2/3
         document.getElementById('sol-autofill-section').style.display = 'block';
 
         // Show result
         var lines = ['✅ <strong>' + d.days_remaining + ' días de acceso</strong> detectados'];
-        if(d.expiry_label) lines.push('📅 Vencimiento: ' + d.expiry_label);
-        if(d.username)     lines.push('👤 Usuario: <strong style="color:#1CE8FF;">' + d.username + '</strong>');
-        if(d.sponsor)      lines.push('🤝 Sponsor: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
+        if(d.expiry_label)    lines.push('📅 Vencimiento: ' + d.expiry_label);
+        if(d.username)        lines.push('👤 Usuario: <strong style="color:#1CE8FF;">' + d.username + '</strong>');
+        if(d.classification)  lines.push('🏆 Clasificación: <strong style="color:#85B7EB;">' + d.classification + '</strong>');
+        if(d.sponsor)         lines.push('🤝 Sponsor: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
         preview.innerHTML = lines.join('<br>');
 
       } else {
@@ -8808,9 +8826,10 @@ function sendSolicitud() {
   var waNum      = document.getElementById('sol-wa-num') ? document.getElementById('sol-wa-num').value.trim().replace(/\s+/g,'') : '';
   var country    = document.getElementById('sol-country') ? document.getElementById('sol-country').value : '+57';
   var wa         = waNum ? (country + waNum) : '';
-  var innovaUser = document.getElementById('sol-innova-user').value.trim();
-  var email      = document.getElementById('sol-email').value.trim();
-  var sponsor    = document.getElementById('sol-sponsor').value.trim();
+  var innovaUser     = document.getElementById('sol-innova-user').value.trim();
+  var email          = document.getElementById('sol-email').value.trim();
+  var sponsor        = document.getElementById('sol-sponsor').value.trim();
+  var classification = document.getElementById('sol-classification') ? document.getElementById('sol-classification').value.trim() : '';
   var pass       = document.getElementById('sol-pass') ? document.getElementById('sol-pass').value : '';
   var pass2      = document.getElementById('sol-pass2') ? document.getElementById('sol-pass2').value : '';
 
@@ -8879,7 +8898,8 @@ function sendSolicitud() {
           password: pass,
           sponsor: sponsor || null,
           innova_user: innovaUser,
-          ref: newRef
+          ref: newRef,
+          classification: classification || null
         }
       })
     });

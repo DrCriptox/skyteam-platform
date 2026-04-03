@@ -11,6 +11,20 @@ function hashPassword(plain) {
   return salt + ':' + hash;
 }
 
+// Map Innova "Clasificación Actual" text → platform rank number (0–7)
+function mapInnovaRank(classification) {
+  if (!classification) return 0;
+  const c = classification.toUpperCase().trim();
+  if (c.includes('50K') || c.includes('CROWN') || c.includes('IMPERIAL')) return 7;
+  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('20K')) return 6;
+  if (c.includes('10K') || c.includes('PLATINUM') || c.includes('PLATINO')) return 5;
+  if (c.includes('5K') || c.includes('GOLD') || c.includes('ORO')) return 4;
+  if (c.includes('1500') || c.includes('SILVER') || c.includes('PLATA')) return 3;
+  if (c.includes('500')) return 2;
+  if (c.includes('200') || c.includes('INN') || c.includes('NOVA')) return 1;
+  return 0;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -48,6 +62,7 @@ export default async function handler(req, res) {
     const primerNombre = sol.name ? sol.name.split(' ')[0] : 'Socio';
     const refLink = 'https://innovaia.app?ref=' + (sol.ref || username);
     const password = hashPassword(sol.password); // Always hash before storing
+    const rank = mapInnovaRank(sol.classification || null); // Auto-assign rank from Innova classification
 
     // Check if user already exists (prevent duplicates from race conditions)
     const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&limit=1', { headers: HEADERS });
@@ -67,7 +82,7 @@ export default async function handler(req, res) {
     const insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
       method: 'POST',
       headers: { ...HEADERS, Prefer: 'resolution=ignore-duplicates,return=minimal' },
-      body: JSON.stringify({ username, email: sol.email || null, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null })
+      body: JSON.stringify({ username, email: sol.email || null, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null, rank })
     });
     if (!insertR.ok) {
       const errText = await insertR.text();

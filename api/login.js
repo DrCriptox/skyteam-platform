@@ -42,10 +42,13 @@ export default async function handler(req, res) {
 
     const clean = username.trim().toLowerCase();
 
-    const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(clean) + '&select=*&limit=1',
-      { headers: HEADERS }
-    );
+    // Support login by email or username
+    const isEmail = clean.includes('@');
+    const query = isEmail
+      ? SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=*&limit=1'
+      : SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(clean) + '&select=*&limit=1';
+
+    const r = await fetch(query, { headers: HEADERS });
     if (!r.ok) throw new Error('DB error');
     const rows = await r.json();
 
