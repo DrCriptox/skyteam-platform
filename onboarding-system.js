@@ -501,7 +501,119 @@ function initCoachButton() {
   btn.addEventListener('click', function() { toggleCoachPanel(); });
 
   document.body.appendChild(btn);
+  // Start proactive nudge system
+  setTimeout(startCoachNudge, 8000);
 }
+
+// ══════════════════════════════════════════════════════════
+// COACH PROACTIVO — Nudge motivacional automático
+// ══════════════════════════════════════════════════════════
+
+var COACH_NUDGE_KEY = 'skyteam_coach_nudge';
+var _coachNudgeInterval = null;
+var _coachNudgeBubble = null;
+
+var NUDGE_MESSAGES = [
+  {frase: '"El seguimiento es donde se esconde el 80% del dinero." 🔥', cta: '¿Quieres que te ayude a hacer seguimiento a tus prospectos hoy?'},
+  {frase: '"Cada día sin acción es un día regalado a tu competencia." 🔥', cta: '¿Empezamos a trabajar tu CRM y agendar citas de cierre?'},
+  {frase: '"Los líderes no esperan motivación. Crean disciplina." 🔥', cta: '¿Te ayudo sin experiencia a construir tu cheque de más de $1,000 al mes?'},
+  {frase: '"Tu franquicia digital es el vehículo. Tu disciplina es el combustible." 🔥', cta: 'Dime y nos ponemos manos a la obra. ¿Avanzamos juntos hoy?'},
+  {frase: '"Un mensaje más, una llamada más, un cierre más. Así se construye la libertad." 🔥', cta: '¿Quieres empezar a avanzar y tener resultados hoy?'},
+  {frase: '"Mientras otros duermen, tú construyes. Mientras otros dudan, tú ejecutas." 🔥', cta: '¿Te preparo una estrategia para conseguir tus primeras 3 ventas esta semana?'},
+  {frase: '"La acción imperfecta siempre le gana a la perfección paralizada." 🔥', cta: 'Dime en qué punto estás y te doy tu siguiente paso concreto.'},
+  {frase: '"El 80% de las ventas se hacen entre el 5to y el 12vo contacto." 🔥', cta: '¿Revisamos juntos tus prospectos y les damos seguimiento?'},
+  {frase: '"Hoy alguien necesita lo que tú ofreces. Sal a buscarlo." 🔥', cta: '¿Te ayudo a crear mensajes de prospección para hoy?'},
+  {frase: '"No vendas un producto. Vende la transformación." 🔥', cta: '¿Quieres un guión de cierre listo para usar en tu próxima cita?'},
+  {frase: '"Tus resultados de mañana dependen de lo que hagas hoy después de las 6 PM." 🔥', cta: '¿Hacemos tu plan de acción para esta noche?'},
+  {frase: '"Las excusas no pagan facturas. Las acciones sí." 🔥', cta: '¿Empezamos? Te guío paso a paso, sin importar tu nivel de experiencia.'},
+  {frase: '"Quien domina el seguimiento, domina las ventas." 🔥', cta: '¿Vemos cuáles prospectos necesitan tu atención hoy?'},
+  {frase: '"La libertad financiera no es un golpe de suerte. Es una decisión diaria." 🔥', cta: 'Hoy puede ser el día que cambies tu historia. ¿Arrancamos?'},
+  {frase: '"Invierte en ti mismo. Es la única inversión que siempre da retorno." 🔥', cta: '¿Te enseño cómo usar los agentes IA para generar contenido que vende?'}
+];
+
+function getLastNudgeTime() {
+  try { return parseInt(localStorage.getItem(COACH_NUDGE_KEY) || '0'); } catch(e) { return 0; }
+}
+function setLastNudgeTime() {
+  try { localStorage.setItem(COACH_NUDGE_KEY, String(Date.now())); } catch(e) {}
+}
+
+function startCoachNudge() {
+  if (_coachNudgeInterval) clearInterval(_coachNudgeInterval);
+  // Check every 2 minutes if we should show a nudge
+  _coachNudgeInterval = setInterval(checkCoachNudge, 120000);
+  // First check after 45 seconds
+  setTimeout(checkCoachNudge, 45000);
+}
+
+function checkCoachNudge() {
+  // Don't nudge if coach is already open
+  if (obState.coachOpen) return;
+  // Don't nudge if there's already a nudge bubble
+  if (_coachNudgeBubble && document.body.contains(_coachNudgeBubble)) return;
+  // Don't nudge more than once every 20 minutes
+  var lastNudge = getLastNudgeTime();
+  if (Date.now() - lastNudge < 20 * 60000) return;
+
+  showCoachNudge();
+}
+
+function showCoachNudge() {
+  setLastNudgeTime();
+
+  // Pick a nudge message
+  var idx = Math.floor(Date.now() / 600000) % NUDGE_MESSAGES.length; // changes every 10 min
+  var nudge = NUDGE_MESSAGES[idx];
+
+  // Create floating bubble next to coach button
+  var bubble = document.createElement('div');
+  bubble.id = 'coach-nudge-bubble';
+  bubble.style.cssText = 'position:fixed;bottom:80px;right:20px;width:280px;background:linear-gradient(135deg,rgba(3,12,31,0.97),rgba(10,25,55,0.97));border:1px solid rgba(28,232,255,0.25);border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px rgba(28,232,255,0.1);z-index:9989;animation:obSlideUp 0.4s ease;cursor:default;';
+
+  var html = '';
+  // Close button
+  html += '<div onclick="dismissCoachNudge()" style="position:absolute;top:8px;right:10px;cursor:pointer;color:rgba(255,255,255,0.3);font-size:14px;padding:4px;">✕</div>';
+  // Phrase
+  html += '<p style="margin:0 0 10px;font-size:13px;color:#1CE8FF;font-weight:700;line-height:1.5;font-style:italic;padding-right:18px;">' + nudge.frase + '</p>';
+  // CTA message
+  html += '<p style="margin:0 0 12px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;">' + nudge.cta + '</p>';
+  // Action button
+  html += '<button onclick="openCoachFromNudge()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">💪 ¡Vamos, Coach!</button>';
+
+  bubble.innerHTML = html;
+  document.body.appendChild(bubble);
+  _coachNudgeBubble = bubble;
+
+  // Pulse animation on coach button
+  var btn = document.getElementById('ob-coach-btn');
+  if (btn) btn.style.animation = 'obPulse 1.5s ease infinite';
+
+  // Auto-dismiss after 25 seconds if not interacted
+  setTimeout(function() {
+    if (_coachNudgeBubble && document.body.contains(_coachNudgeBubble)) {
+      dismissCoachNudge();
+    }
+  }, 25000);
+}
+
+function dismissCoachNudge() {
+  if (_coachNudgeBubble && document.body.contains(_coachNudgeBubble)) {
+    _coachNudgeBubble.style.animation = 'obSlideDown 0.3s ease forwards';
+    setTimeout(function() {
+      if (_coachNudgeBubble && _coachNudgeBubble.parentNode) _coachNudgeBubble.parentNode.removeChild(_coachNudgeBubble);
+      _coachNudgeBubble = null;
+    }, 300);
+  }
+  var btn = document.getElementById('ob-coach-btn');
+  if (btn) btn.style.animation = '';
+}
+window.dismissCoachNudge = dismissCoachNudge;
+
+function openCoachFromNudge() {
+  dismissCoachNudge();
+  if (!obState.coachOpen) toggleCoachPanel();
+}
+window.openCoachFromNudge = openCoachFromNudge;
 
 var COACH_STORAGE_KEY = 'skyteam_coach_history';
 var COACH_EXPIRY_MS = 12 * 3600000; // 12 horas
@@ -1383,7 +1495,7 @@ function injectStyles() {
     // Animations
     '@keyframes obFadeIn { from { opacity:0 } to { opacity:1 } }',
     '@keyframes obSlideUp { from { opacity:0;transform:translateY(20px) } to { opacity:1;transform:translateY(0) } }',
-    '@keyframes obSlideDown { from { opacity:0;transform:translateX(-50%) translateY(-20px) } to { opacity:1;transform:translateX(-50%) translateY(0) } }',
+    '@keyframes obSlideDown { from { opacity:1;transform:translateY(0) } to { opacity:0;transform:translateY(20px) } }',
     '@keyframes obBounceIn { 0% { opacity:0;transform:scale(0.3) } 50% { opacity:1;transform:scale(1.05) } 70% { transform:scale(0.95) } 100% { transform:scale(1) } }',
     '@keyframes obPulse { 0%,100% { opacity:1 } 50% { opacity:0.6 } }',
     '@keyframes obConfettiFall { 0% { opacity:1;transform:translateY(0) rotate(0deg) } 100% { opacity:0;transform:translateY(100vh) rotate(720deg) } }',
