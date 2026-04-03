@@ -23,14 +23,14 @@
 <meta name="twitter:description" content="Una visión. Un equipo. Un legado. Únete a la franquicia digital #1 con IA, educación y comunidad global.">
 <meta name="twitter:image" content="https://www.skyteam.global/api/og-image">
 <!-- Favicon & PWA -->
-<link rel="icon" type="image/png" sizes="32x32" href="/logo-skyteam.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/logo-skyteam.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icon-192.png">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0a0a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SKYTEAM">
-<link rel="apple-touch-icon" href="/logo-skyteam.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>if(window.navigator.standalone===true)document.documentElement.classList.add('ios-standalone');</script>
 <style>
@@ -4292,8 +4292,8 @@ function showNativeNotification(title, body, icon, url) {
     navigator.serviceWorker.ready.then(function(reg) {
       reg.showNotification(title, {
         body: body,
-        icon: icon || '/logo-skyteam.png',
-        badge: '/logo-skyteam.png',
+        icon: icon || '/icon-192.png',
+        badge: '/icon-192.png',
         vibrate: [200, 100, 200],
         tag: 'skyteam-' + Date.now(),
         data: { url: url || '/' },
@@ -4301,11 +4301,11 @@ function showNativeNotification(title, body, icon, url) {
       });
     }).catch(function() {
       // Fallback to Notification API
-      var n = new Notification(title, {body:body, icon:icon||'/logo-skyteam.png', tag:'skyteam-'+Date.now()});
+      var n = new Notification(title, {body:body, icon:icon||'/icon-192.png', tag:'skyteam-'+Date.now()});
       if(url) n.onclick = function(){ window.focus(); if(url.indexOf('javascript:')===0){ eval(url.replace('javascript:','')); } else { window.location.href=url; } };
     });
   } else {
-    var n = new Notification(title, {body:body, icon:icon||'/logo-skyteam.png', tag:'skyteam-'+Date.now()});
+    var n = new Notification(title, {body:body, icon:icon||'/icon-192.png', tag:'skyteam-'+Date.now()});
     if(url) n.onclick = function(){ window.focus(); if(url.indexOf('javascript:')===0){ eval(url.replace('javascript:','')); } else { window.location.href=url; } };
   }
 }
