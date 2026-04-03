@@ -1,7 +1,7 @@
 {
   "name": "skyteam-api",
   "version": "1.0.0",
-  "description": "SKY TEAM - Franquicia Digital API and PWA",
+  "description": "SKYTEAM - Franquicia Digital API and PWA",
   "private": true,
   "dependencies": {
     "sharp": "^0.33.0",
@@ -17,6 +17,6 @@
     "pwa",
     "push-notifications"
   ],
-  "author": "SKY TEAM",
+  "author": "SKYTEAM",
   "license": "MIT"
 }

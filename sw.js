@@ -1,4 +1,4 @@
-// SKY TEAM - Service Worker v2 (with push notification handlers)
+// SKYTEAM - Service Worker v2 (with push notification handlers)
 var CACHE_NAME = 'skyteam-v2';
 var OFFLINE_URL = '/';
 
@@ -69,12 +69,12 @@ self.addEventListener('push', function(event) {
     data = event.data.json();
   } catch(e) {
     data = {
-      title: 'SKY TEAM',
+      title: 'SKYTEAM',
       body: event.data ? event.data.text() : 'Nueva notificacion'
     };
   }
 
-  var title = data.title || 'SKY TEAM';
+  var title = data.title || 'SKYTEAM';
   var body = data.body || 'Tienes una nueva notificacion';
 
   var options = {

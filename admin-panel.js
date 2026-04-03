@@ -1,5 +1,5 @@
 /**
- * Sky Team Admin Panel Extension
+ * SKYTEAM Admin Panel Extension
  * Provides enhanced admin functionality: user editing, community management, membership control
  * Loaded after index.html inline scripts
  *

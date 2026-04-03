@@ -1,4 +1,4 @@
-// Content Locks API — SKY TEAM
+// Content Locks API — SKYTEAM
 // GET: returns current content locks
 // POST: saves content locks (from admin panel)
 // Uses onboarding_progress table with special username '_system_locks'

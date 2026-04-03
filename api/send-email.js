@@ -292,12 +292,12 @@ export default async function handler(req, res) {
     if (!to) return res.status(400).json({ error: 'Missing email' });
 
     const senderLabels = {
-      'lideres@skyteam.global': 'SKY TEAM LÃ­deres',
-      'soporte@skyteam.global': 'SKY TEAM Soporte',
-      'academy@skyteam.global': 'SKY TEAM Academy'
+      'lideres@skyteam.global': 'SKYTEAM LÃ­deres',
+      'soporte@skyteam.global': 'SKYTEAM Soporte',
+      'academy@skyteam.global': 'SKYTEAM Academy'
     };
     const fromEmail = from || 'lideres@skyteam.global';
-    const fromLabel = senderLabels[fromEmail] || 'SKY TEAM';
+    const fromLabel = senderLabels[fromEmail] || 'SKYTEAM';
     const fromField = fromLabel + ' <' + fromEmail + '>';
 
     const htmlBody = customHtml || `

@@ -616,6 +616,65 @@ function toggleLive(id, isLive, callback) {
     });
 }
 
+// --- SKY TV NOTIFICATION ENGINE ---
+var _skyTvNotifSent = {};
+var _skyTvNotifInterval = null;
+
+function checkSkyTvNotifications() {
+  if (!skyTvState.eventos || !skyTvState.eventos.length) return;
+  if (typeof pushNotification !== 'function') return;
+  var now = new Date();
+
+  skyTvState.eventos.forEach(function(ev) {
+    if (!ev.fecha || !ev.hora_inicio) return;
+    var dt = new Date(ev.fecha + 'T' + ev.hora_inicio);
+    var diff = dt - now;
+    var evId = ev.id || ev.titulo;
+
+    // 1 hour before — reminder
+    if (diff > 30*60000 && diff <= 60*60000 && !_skyTvNotifSent['1h_'+evId]) {
+      _skyTvNotifSent['1h_'+evId] = true;
+      pushNotification({
+        id: 'skytv_1h_'+evId, type: 'event', icon: '📺',
+        title: '📺 Evento en 1 hora',
+        subtitle: ev.titulo + ' — ' + formatTime(ev.hora_inicio),
+        msg: (ev.host_nombre ? 'Con ' + ev.host_nombre + '. ' : '') + 'Prepárate para conectarte.',
+        action: ev.zoom_link ? {label: '📹 Unirse a Zoom', url: ev.zoom_link} : {label: '📺 Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+      });
+    }
+
+    // 15 minutes before — urgent reminder
+    if (diff > 0 && diff <= 15*60000 && !_skyTvNotifSent['15m_'+evId]) {
+      _skyTvNotifSent['15m_'+evId] = true;
+      pushNotification({
+        id: 'skytv_15m_'+evId, type: 'event', icon: '⏰',
+        title: '⏰ ¡Evento en 15 minutos!',
+        subtitle: ev.titulo,
+        msg: 'La sala se abrirá pronto. Ten listo tu Zoom.',
+        action: ev.zoom_link ? {label: '📹 Unirse a Zoom', url: ev.zoom_link} : {label: '📺 Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+      });
+    }
+
+    // Event is LIVE — sala abierta
+    if (ev.en_vivo && !_skyTvNotifSent['live_'+evId]) {
+      _skyTvNotifSent['live_'+evId] = true;
+      pushNotification({
+        id: 'skytv_live_'+evId, type: 'event', icon: '🔴',
+        title: '🔴 ¡EN VIVO ahora!',
+        subtitle: ev.titulo + (ev.host_nombre ? ' con ' + ev.host_nombre : ''),
+        msg: '¡La sala ya está abierta! Únete ahora.',
+        action: ev.zoom_link ? {label: '📹 Unirse a Zoom', url: ev.zoom_link} : {label: '📺 Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+      });
+    }
+  });
+}
+
+function startSkyTvNotifEngine() {
+  if (_skyTvNotifInterval) clearInterval(_skyTvNotifInterval);
+  checkSkyTvNotifications();
+  _skyTvNotifInterval = setInterval(checkSkyTvNotifications, 60000);
+}
+
 // --- INIT ---
 window.initSkyTv = function() {
   var container = document.getElementById('sky-tv-content') || document.querySelector('#section-sky-tv .sc');
@@ -625,7 +684,7 @@ window.initSkyTv = function() {
   var adminBtn = document.getElementById('nav-admin-btn') || document.querySelector('[onclick*="admin"]');
   skyTvState.userIsAdmin = !!adminBtn;
   skyTvState.selectedWeek = new Date();
-  loadEventos();
+  loadEventos(function() { startSkyTvNotifEngine(); });
 };
 
 window.renderSkyTvCalendar = renderCartelera;

@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       // Coach IA / onboarding format
       model = 'claude-sonnet-4-20250514';
       max_tokens = 512;
-      system = body.systemPrompt || 'Eres un asistente de Sky Team. Responde en español, sé breve y útil.';
+      system = body.systemPrompt || 'Eres un asistente de SKYTEAM. Responde en español, sé breve y útil.';
       messages = (body.messages || []).map(m => ({
         role: m.role === 'bot' ? 'assistant' : m.role,
         content: typeof m.content === 'string' ? m.content.slice(0, 4000) : m.content

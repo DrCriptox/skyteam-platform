@@ -1,4 +1,4 @@
-// SKY TEAM – Gamification API (Vercel Serverless + Supabase REST)
+// SKYTEAM – Gamification API (Vercel Serverless + Supabase REST)
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = {

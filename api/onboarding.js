@@ -1,4 +1,4 @@
-// Onboarding & Achievements API — SKY TEAM V2
+// Onboarding & Achievements API — SKYTEAM V2
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };

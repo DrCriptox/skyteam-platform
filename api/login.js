@@ -17,10 +17,14 @@ export default async function handler(req, res) {
     const clean = username.trim().toLowerCase();
 
     const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(clean) + '&select=username,password,name,rank,ref,sponsor,ventas,equipo,expiry,is_admin&limit=1',
+      SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(clean) + '&select=*&limit=1',
       { headers: HEADERS }
     );
-    if (!r.ok) throw new Error('DB error');
+    if (!r.ok) {
+      const errBody = await r.text();
+      console.error('login DB error:', r.status, errBody);
+      throw new Error('DB error: ' + r.status);
+    }
     const rows = await r.json();
 
     if (!rows.length || rows[0].password !== password) {

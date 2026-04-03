@@ -1,4 +1,4 @@
-// SKY TEAM - Fix aprobar solicitud
+// SKYTEAM - Fix aprobar solicitud
 (function() {
   function patch() {
     if(typeof window.aprobarSolicitud === 'function' && !window._aprobarPatched) {

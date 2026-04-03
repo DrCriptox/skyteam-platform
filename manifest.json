@@ -1,7 +1,7 @@
 {
-  "name": "SKY TEAM — Franquicia Digital",
-  "short_name": "SKY TEAM",
-  "description": "Plataforma de entrenamiento, ventas y agenda para socios SKY TEAM",
+  "name": "SKYTEAM — Franquicia Digital",
+  "short_name": "SKYTEAM",
+  "description": "Plataforma de entrenamiento, ventas y agenda para socios SKYTEAM",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

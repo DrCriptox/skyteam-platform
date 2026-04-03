@@ -1,6 +1,6 @@
 
 // ═══════════════════════════════════════════════════════════════
-// SKY TEAM V2 — ONBOARDING SYSTEM (Frontend)
+// SKYTEAM V2 — ONBOARDING SYSTEM (Frontend)
 // Ruta de 7 Días, Logros, Coach IA, Dashboard, Script Bank
 // V2.1 — Integrado en Inicio con pestañas
 // ═══════════════════════════════════════════════════════════════
@@ -52,7 +52,7 @@ var DAY_CONFIG = {
   1: {
     name: 'Conoce tu negocio',
     icon: '🚀',
-    desc: 'Entiende qué es Sky Team, cómo funciona y cuál es tu oportunidad.',
+    desc: 'Entiende qué es SKYTEAM, cómo funciona y cuál es tu oportunidad.',
     tasks: [
       { id: 'd1_tour', label: 'Haz el tour de la plataforma', action: 'startTour' },
       { id: 'd1_video', label: 'Ve el video de bienvenida (3 min)', action: 'autoCheck' },
@@ -601,8 +601,10 @@ function sendCoachMessage() {
   msgArea.scrollTop = msgArea.scrollHeight;
 
   var ctx = obState.coachContext || {};
-  var sysPrompt = 'Eres el Coach IA de Sky Team. Tu rol es guiar socios nuevos para lograr sus primeras ventas. ' +
+  var sysPrompt = 'Eres el Coach IA de SKYTEAM. Tu rol es guiar socios nuevos para lograr sus primeras ventas. ' +
     'Sé motivador, conciso y práctico. Siempre da pasos concretos. ' +
+    'REGLA CRÍTICA: Cuando generes mensajes o scripts que el socio enviará a prospectos, JAMÁS menciones "SKYTEAM", "Innova", "Innova IA" ni ningún nombre de empresa. Solo usa "franquicia digital", "sistema digital", "negocio digital" o "oportunidad digital". El nombre de la empresa se revela DESPUÉS de que el prospecto muestre interés real. ' +
+    'Estrategia de contacto: Primer contacto = conectar como persona, rapport genuino. Segundo contacto = aportar valor. Tercer contacto = mencionar la oportunidad de forma natural. ' +
     'Contexto del usuario: Día de onboarding: ' + (ctx.onboardingDay || '?') +
     ', Prospectos: ' + (ctx.prospectCount || 0) +
     ', Prospectos calientes: ' + (ctx.hotProspects || 0) +
