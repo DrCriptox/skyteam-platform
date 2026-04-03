@@ -503,9 +503,34 @@ function initCoachButton() {
   document.body.appendChild(btn);
 }
 
+var COACH_STORAGE_KEY = 'skyteam_coach_history';
+var COACH_EXPIRY_MS = 12 * 3600000; // 12 horas
+
+function saveCoachHistory() {
+  try {
+    var data = { messages: obState.coachMessages, savedAt: Date.now() };
+    localStorage.setItem(COACH_STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadCoachHistory() {
+  try {
+    var raw = localStorage.getItem(COACH_STORAGE_KEY);
+    if (!raw) return null;
+    var data = JSON.parse(raw);
+    if (!data || !data.messages || !data.messages.length) return null;
+    if (Date.now() - data.savedAt > COACH_EXPIRY_MS) {
+      localStorage.removeItem(COACH_STORAGE_KEY);
+      return null;
+    }
+    return data.messages;
+  } catch(e) { return null; }
+}
+
 function toggleCoachPanel() {
   var panel = document.getElementById('ob-coach-panel');
   if (panel) {
+    saveCoachHistory();
     panel.remove();
     obState.coachOpen = false;
     return;
@@ -552,6 +577,20 @@ function loadCoachContext() {
     var msgArea = document.getElementById('ob-coach-messages');
     if (!msgArea) return;
 
+    // Try to restore previous conversation (within 12h)
+    var saved = loadCoachHistory();
+    if (saved && saved.length > 0) {
+      obState.coachMessages = saved;
+      var html = '';
+      saved.forEach(function(m) {
+        html += renderCoachBubble(m.content, m.role === 'assistant' ? 'bot' : 'user');
+      });
+      msgArea.innerHTML = html;
+      msgArea.scrollTop = msgArea.scrollHeight;
+      return;
+    }
+
+    // Fresh conversation — generate greeting
     var greeting = '';
     if (ctx.isNewUser) {
       greeting = '¡Hola! 👋 Soy tu Coach IA. ¿Empezamos con tu Ruta de 7 Días?';
@@ -574,6 +613,7 @@ function loadCoachContext() {
 
     msgArea.innerHTML = renderCoachBubble(greeting, 'bot');
     obState.coachMessages = [{ role: 'assistant', content: greeting }];
+    saveCoachHistory();
   });
 }
 
@@ -597,6 +637,7 @@ function sendCoachMessage() {
 
   msgArea.innerHTML += renderCoachBubble(text, 'user');
   obState.coachMessages.push({ role: 'user', content: text });
+  saveCoachHistory();
 
   msgArea.innerHTML += '<div id="ob-coach-typing" style="display:flex;justify-content:flex-start;margin-bottom:6px;"><div style="padding:8px 12px;background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.15);border-radius:10px;font-size:12px;color:' + C.textSub + ';">Pensando...</div></div>';
   msgArea.scrollTop = msgArea.scrollHeight;
@@ -627,6 +668,7 @@ function sendCoachMessage() {
     if (typing) typing.remove();
     var reply = data.reply || data.content || data.message || 'Error. Intenta de nuevo.';
     obState.coachMessages.push({ role: 'assistant', content: reply });
+    saveCoachHistory();
     if (msgArea) {
       msgArea.innerHTML += renderCoachBubble(reply, 'bot');
       msgArea.scrollTop = msgArea.scrollHeight;
