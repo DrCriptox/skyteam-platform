@@ -2139,7 +2139,11 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
     <div id="solicitud-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;">
       <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:6px;">Completa tus datos:</p><p style="font-size:11px;color:rgba(28,232,255,0.6);margin-bottom:12px;">Crea tu cuenta para acceder a la plataforma SKYTEAM.</p>
       <input type="text" id="sol-name" placeholder="Tu nombre completo" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <input type="text" id="sol-innova-user" placeholder="Tu nombre de usuario" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
+      <div style="background:rgba(28,232,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+        <p style="font-size:11px;color:rgba(28,232,255,0.8);margin:0 0 6px;font-weight:700;">📌 ¿Dónde está tu usuario de Innova?</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0;line-height:1.7;">Entra a <strong style="color:#fff;">8innova.biz</strong> → perfil (esquina superior derecha) → verás tu nombre completo y <strong style="color:#1CE8FF;">debajo el nombre en mayúsculas es tu usuario</strong> (ej: ANGEL2026). Cópialo exactamente.</p>
+      </div>
+      <input type="text" id="sol-innova-user" placeholder="Tu usuario Innova (ej: ANGEL2026)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
       <input type="email" id="sol-email" placeholder="Tu correo electrónico" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
       <input type="tel" id="sol-wa" placeholder="WhatsApp (ej: +57 300...)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
       <input type="text" id="sol-sponsor" placeholder="¿Quién te invitó? (sponsor)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
@@ -2153,7 +2157,34 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
         <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
         <button type="button" onclick="togglePassVis('sol-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
       </div>
+      <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:6px 0 10px;"></div>
+      <p style="font-size:11px;color:#1CE8FF;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">📸 Captura de tu membresía activa <span style="color:#f87171;font-weight:700;">*obligatorio</span></p>
+      <div style="background:rgba(255,215,0,0.06);border:0.5px solid rgba(255,215,0,0.2);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+        <p style="font-size:11px;color:rgba(255,215,0,0.9);margin:0 0 4px;font-weight:700;">¿Qué captura subir?</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0;line-height:1.7;">Entra a <strong style="color:#fff;">8innova.biz</strong> → abre el perfil (esquina superior derecha en escritorio, o menú en móvil) → toma captura donde se vea el <strong style="color:#FFD700;">contador de días restantes</strong> y tu usuario. Los días que aparezcan allí serán tus días de acceso en la plataforma.<br><span style="color:#f87171;">Si tu membresía está vencida (0 días), no podrás registrarte.</span></p>
+      </div>
+      <label id="sol-img-label" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border:0.5px dashed rgba(28,232,255,0.35);border-radius:8px;cursor:pointer;margin-bottom:6px;">
+        <span style="font-size:20px;">📁</span>
+        <span id="sol-img-name" style="font-size:12px;color:rgba(255,255,255,0.5);">Seleccionar captura de Innova...</span>
+        <input type="file" id="sol-img" accept="image/*" style="display:none;" onchange="onSolImgChange(this)">
+      </label>
+      <div id="sol-expiry-preview" style="display:none;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.25);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#4ade80;"></div>
       <button onclick="sendSolicitud()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">Solicitar acceso →</button>
+    </div>
+
+    <!-- RESET PASSWORD MODAL -->
+    <div id="reset-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;">
+      <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:6px;">🔑 Crear nueva contraseña</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;">Ingresa y confirma tu nueva contraseña.</p>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="password" id="reset-pass" placeholder="Nueva contraseña (mín. 6 caracteres)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <button type="button" onclick="togglePassVis('reset-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
+      </div>
+      <div style="position:relative;margin-bottom:12px;">
+        <input type="password" id="reset-pass2" placeholder="Repite la nueva contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <button type="button" onclick="togglePassVis('reset-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
+      </div>
+      <button onclick="submitResetPassword()" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;font-family:Nunito,sans-serif;">Guardar contraseña →</button>
     </div>
 
     <!-- SUCCESS MESSAGE -->
@@ -7782,6 +7813,14 @@ function _renderSolicitudesList(el, pending) {
     html += '<div class="sol-detail">👤 Usuario: <b>' + (s.innovaUser||s.user||'—') + '</b></div>';
     html += '<div class="sol-detail">🤝 Patrocinador: <b>' + (s.patrocinador||s.sponsor||'—') + '</b></div>';
     html += '<div class="sol-detail">💰 Membresía: ' + (s.membresia||'Por confirmar') + '</div>';
+    if(s.phone) {
+      try {
+        var ep = JSON.parse(s.phone);
+        if(ep && ep.expiry_label) {
+          html += '<div class="sol-detail" style="color:#4ade80;">📅 Vencimiento: <b>' + ep.expiry_label + '</b> <span style="color:rgba(255,255,255,0.4);font-size:11px;">(' + ep.days_remaining + ' días)</span></div>';
+        }
+      } catch(e) {}
+    }
     if(s.landingLink || s.ref) {
       html += '<div class="sol-detail">🔗 Link: <span style="font-family:monospace;font-size:11px;color:#1CE8FF;">' + (s.landingLink || ('https://innovaia.app?ref='+(s.ref||''))) + '</span></div>';
     }
@@ -7796,10 +7835,16 @@ function _renderSolicitudesList(el, pending) {
 
 function aprobarSolicitud(id) {
   showToast('⏳ Aprobando...');
+  var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+  var sol = pending.find(function(s){ return String(s.id) === String(id); });
+  var expiryTs = null;
+  if(sol && sol.phone) {
+    try { var ep = JSON.parse(sol.phone); expiryTs = ep.expiry_ts || null; } catch(e) {}
+  }
   fetch('/api/aprobar', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({id: id})
+    body: JSON.stringify({id: id, expiryTs: expiryTs})
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
@@ -8516,9 +8561,23 @@ function toggleBox(id) {
 
 function sendForgot() {
   var email = document.getElementById('forgot-email').value.trim();
-  if(!email) { alert('Por favor ingresa tu correo'); return; }
-  document.getElementById('forgot-box').style.display = 'none';
-  alert('Si tu correo está registrado recibirás instrucciones.\nContacta también: soporte@skyteam.global');
+  if(!email) { showToast('Por favor ingresa tu correo ⚠️'); return; }
+  var btn = document.querySelector('#forgot-box button');
+  if(btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  fetch('/api/forgot-password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ email: email })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){
+    document.getElementById('forgot-box').style.display = 'none';
+    showToast('📧 Si tu correo está registrado, recibirás instrucciones en breve.');
+  })
+  .catch(function(){
+    document.getElementById('forgot-box').style.display = 'none';
+    showToast('📧 Si tu correo está registrado, recibirás instrucciones en breve.');
+  });
 }
 
 function generarRef(name) {
@@ -8553,6 +8612,46 @@ function registrarSocioEnInnova(nombre, whatsapp, refCodigo) {
   }
 }
 
+function onSolImgChange(input) {
+  var file = input.files[0];
+  if(!file) return;
+  document.getElementById('sol-img-name').textContent = file.name;
+  var preview = document.getElementById('sol-expiry-preview');
+  preview.style.display = 'none';
+  preview.textContent = '';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    var commaIdx = dataUrl.indexOf(',');
+    var b64 = dataUrl.substring(commaIdx + 1);
+    var mime = file.type || 'image/jpeg';
+    preview.style.display = 'block';
+    preview.textContent = '⏳ Analizando imagen...';
+    fetch('/api/extract-expiry', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ imageBase64: b64, mimeType: mime })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.found && d.expiry_label) {
+        input._expiryData = d;
+        preview.textContent = '✅ Vencimiento detectado: ' + d.expiry_label + ' (' + d.days_remaining + ' días restantes)';
+      } else {
+        input._expiryData = null;
+        preview.style.display = 'none';
+        showToast('No se detectó fecha de vencimiento en la imagen. Puedes continuar igual.');
+      }
+    })
+    .catch(function(){
+      input._expiryData = null;
+      preview.style.display = 'none';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
 function sendSolicitud() {
   var name       = document.getElementById('sol-name').value.trim();
   var wa         = document.getElementById('sol-wa').value.trim();
@@ -8568,44 +8667,85 @@ function sendSolicitud() {
   var urlRef = new URLSearchParams(window.location.search).get('ref') || '';
   if(urlRef && !sponsor) sponsor = urlRef;
 
-  var newRef = generarRef(name);
-  var landingLink = 'https://innovaia.app?ref=' + newRef;
-  var now = new Date();
-  var fecha = now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})
-            + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var imgInput = document.getElementById('sol-img');
+  var expiryData = (imgInput && imgInput._expiryData) ? imgInput._expiryData : null;
 
-  var newSolicitud = {
-    id:Date.now(), name:name, wa:wa, email:email,
-    sponsor:sponsor||'Sin especificar', innovaUser:innovaUser,
-    patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
-    fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
-    password:pass
-  };
+  // Image is mandatory
+  if(!imgInput || !imgInput.files || !imgInput.files.length) {
+    showToast('Debes subir una captura de tu membresía en Innova 📸'); return;
+  }
+  if(!expiryData) {
+    showToast('Espera a que la imagen termine de analizarse, o sube una captura más clara ⏳'); return;
+  }
+  // Block expired memberships
+  if(expiryData.days_remaining <= 0) {
+    showToast('Tu membresía está vencida (0 días). Renueva en Innova para poder registrarte ❌'); return;
+  }
 
-  // Save to server (JSONBin) so admin can see from any device
-  fetch('/api/solicitudes', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({action:'add', solicitud: newSolicitud})
-  }).catch(function(){
-    // Fallback to localStorage if server fails
-    var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
-    pending.unshift(newSolicitud);
-    localStorage.setItem('skyteam_pending', JSON.stringify(pending));
-  });
-  saveReferralRelation(newRef, sponsor);
+  function _doSubmit() {
+    var newRef = generarRef(name);
+    var landingLink = 'https://innovaia.app?ref=' + newRef;
+    var now = new Date();
+    var fecha = now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})
+              + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 
-  document.getElementById('solicitud-box').style.display = 'none';
-  var sb = document.getElementById('solicitud-success');
-  sb.innerHTML = '<div style="font-size:28px;margin-bottom:10px;">🎉</div>'
-    + '<p style="font-family:Nunito,sans-serif;font-size:16px;font-weight:900;color:#1CE8FF;margin-bottom:10px;">¡Solicitud enviada, ' + name.split(' ')[0] + '!</p>'
-    + '<p style="font-size:13px;color:#F0EDE6;line-height:1.8;margin-bottom:14px;">En las próximas horas el equipo revisará tu solicitud y activará tu acceso. Te contactaremos por WhatsApp.</p>'
-    + '<div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;padding:14px;">'
-    + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Tu usuario SKYTEAM será:</p>'
-    + '<p style="font-size:14px;font-weight:900;color:#1CE8FF;">' + innovaUser + '</p>'
-    + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">Una vez activado, entra con tu usuario y contraseña en skyteam.global</p>'
-    + '</div>';
-  sb.style.display = 'block';
+    var newSolicitud = {
+      id:Date.now(), name:name, wa:wa, email:email,
+      sponsor:sponsor||'Sin especificar', innovaUser:innovaUser,
+      patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
+      fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
+      password:pass,
+      phone: expiryData ? JSON.stringify({ expiry_ts: expiryData.expiry_ts, expiry_label: expiryData.expiry_label, days_remaining: expiryData.days_remaining }) : null
+    };
+
+    fetch('/api/solicitudes', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'add', solicitud: newSolicitud})
+    }).catch(function(){
+      var pending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
+      pending.unshift(newSolicitud);
+      localStorage.setItem('skyteam_pending', JSON.stringify(pending));
+    });
+    saveReferralRelation(newRef, sponsor);
+
+    document.getElementById('solicitud-box').style.display = 'none';
+    var sb = document.getElementById('solicitud-success');
+    sb.innerHTML = '<div style="font-size:28px;margin-bottom:10px;">🎉</div>'
+      + '<p style="font-family:Nunito,sans-serif;font-size:16px;font-weight:900;color:#1CE8FF;margin-bottom:10px;">¡Solicitud enviada, ' + name.split(' ')[0] + '!</p>'
+      + '<p style="font-size:13px;color:#F0EDE6;line-height:1.8;margin-bottom:14px;">En las próximas horas el equipo revisará tu solicitud y activará tu acceso. Te contactaremos por WhatsApp.</p>'
+      + '<div style="background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;padding:14px;">'
+      + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Tu usuario SKYTEAM será:</p>'
+      + '<p style="font-size:14px;font-weight:900;color:#1CE8FF;">' + innovaUser + '</p>'
+      + (expiryData ? '<p style="font-size:12px;color:#4ade80;margin-top:8px;">📅 Acceso hasta: <strong>' + expiryData.expiry_label + '</strong></p>' : '')
+      + '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">Una vez activado, entra con tu usuario y contraseña en skyteam.global</p>'
+      + '</div>';
+    sb.style.display = 'block';
+  }
+
+  // Check if email already registered
+  if(email) {
+    fetch('/api/check-email', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email: email })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.exists) {
+        if(d.where === 'active') {
+          showToast('Este correo ya tiene una cuenta activa. Usa "¿Olvidaste tu contraseña?" para recuperar acceso. 🔑');
+        } else {
+          showToast('Ya tienes una solicitud pendiente con este correo. El equipo te notificará pronto. ⏳');
+        }
+      } else {
+        _doSubmit();
+      }
+    })
+    .catch(function(){ _doSubmit(); });
+  } else {
+    _doSubmit();
+  }
 }
 
 
@@ -8791,7 +8931,49 @@ window.addEventListener('DOMContentLoaded', function(){
   if(params.get('agenda')) {
     checkPublicAgenda();
   }
+  // Handle password reset link (?reset=TOKEN)
+  var resetToken = params.get('reset');
+  if(resetToken) {
+    window._resetToken = resetToken;
+    // Remove token from URL without reload
+    var cleanUrl = window.location.pathname + (params.get('ref') ? '?ref=' + params.get('ref') : '');
+    history.replaceState(null, '', cleanUrl);
+    // Show reset box in login screen
+    var boxes = ['solicitud-box','forgot-box','solicitud-success'];
+    boxes.forEach(function(b){ var el=document.getElementById(b); if(el) el.style.display='none'; });
+    var rb = document.getElementById('reset-box');
+    if(rb) rb.style.display = 'block';
+  }
 });
+
+function submitResetPassword() {
+  var pass  = document.getElementById('reset-pass').value;
+  var pass2 = document.getElementById('reset-pass2').value;
+  if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
+  if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
+  if(!window._resetToken) { showToast('Enlace inválido. Solicita uno nuevo.'); return; }
+  var btn = document.querySelector('#reset-box button[onclick]');
+  if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  fetch('/api/reset-password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ token: window._resetToken, password: pass })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) {
+      document.getElementById('reset-box').style.display = 'none';
+      showToast('✅ Contraseña actualizada. Ya puedes iniciar sesión.');
+    } else {
+      showToast('❌ ' + (d.error || 'El enlace expiró. Solicita uno nuevo.'));
+      if(btn) { btn.disabled = false; btn.textContent = 'Guardar contraseña →'; }
+    }
+  })
+  .catch(function(){
+    showToast('❌ Error al conectar. Intenta de nuevo.');
+    if(btn) { btn.disabled = false; btn.textContent = 'Guardar contraseña →'; }
+  });
+}
 
 // ═══════════════════════════════════════════════════
 //  PWA — SERVICE WORKER + INSTALL PROMPT
