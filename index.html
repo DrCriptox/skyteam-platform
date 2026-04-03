@@ -8923,10 +8923,10 @@ function onSolImgChange(input) {
           var lines = ['✅ <strong>' + d.days_remaining + ' días de acceso</strong> detectados'];
           if(d.expiry_label)   lines.push('📅 Vencimiento: ' + d.expiry_label);
           if(d.username)       lines.push('👤 Usuario: <strong style="color:#1CE8FF;">' + d.username + '</strong>');
-          else                 lines.push('⚠️ <span style="color:#FFD700;">Usuario no detectado — escríbelo arriba</span>');
+          else                 lines.push('⚠️ <span style="color:#FFD700;">Usuario no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
           if(d.classification) lines.push('🏆 Clasificación: <strong style="color:#85B7EB;">' + d.classification + '</strong>');
-          if(d.sponsor)        lines.push('🤝 Sponsor: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
-          else                 lines.push('⚠️ <span style="color:#FFD700;">Sponsor no detectado — escríbelo arriba</span>');
+          if(d.sponsor)        lines.push('🤝 Patrocinador: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
+          else                 lines.push('⚠️ <span style="color:#FFD700;">Patrocinador no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
           preview.innerHTML = lines.join('<br>');
 
         } else {
@@ -8979,7 +8979,14 @@ function sendSolicitud() {
   if(expiryData.days_remaining <= 0) {
     showToast('Tu membresía está vencida (0 días). Renueva en Innova para registrarte ❌'); return;
   }
-  if(!innovaUser) { showToast('No se detectó tu usuario de Innova. Sube una captura más clara ⚠️'); return; }
+  if(!innovaUser) {
+    document.getElementById('sol-innova-user').focus();
+    showToast('Escribe tu usuario de Innova en el campo amarillo ⚠️'); return;
+  }
+  if(!sponsor) {
+    document.getElementById('sol-sponsor').focus();
+    showToast('Escribe el nombre de tu patrocinador en el campo amarillo ⚠️'); return;
+  }
   if(!email) { showToast('Ingresa tu correo electrónico ⚠️'); return; }
   var emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailReg.test(email)) { showToast('Ingresa un correo válido (ej: tu@email.com) ⚠️'); return; }
