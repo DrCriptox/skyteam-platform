@@ -69,7 +69,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.RESEND_API_KEY },
         body: JSON.stringify({
-          from: 'SKYTEAM <lideres@skyteam.global>',
+          from: 'SKYTEAM <soporte@skyteam.global>',
           to: [clean],
           subject: '🔑 Restablece tu contraseña de SKYTEAM',
           html
