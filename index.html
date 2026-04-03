@@ -9573,31 +9573,122 @@ function showInstallMenuBtn() {
 
 function showInstallBanner() {
   if(_pwaInstalled) return;
+  if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
   if(document.getElementById('pwa-install-banner')) return;
   var banner = document.createElement('div');
   banner.id = 'pwa-install-banner';
   banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;background:linear-gradient(135deg,#1CE8FF,#0077FF);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(28,232,255,0.3);font-family:Nunito,sans-serif;max-width:360px;width:calc(100% - 32px);animation:fadeSlideUp 0.4s ease;';
   banner.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:#030c1f;">📲 Instala SKYTEAM</div><div style="font-size:11px;color:rgba(3,12,31,0.6);margin-top:2px;">Accede más rápido desde tu pantalla de inicio</div></div>'
     + '<button onclick="installPWA()" style="background:#030c1f;color:#1CE8FF;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap;">Instalar</button>'
-    + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(3,12,31,0.4);font-size:16px;cursor:pointer;padding:4px;">✕</button>';
+    + '<button onclick="this.parentElement.remove();localStorage.setItem(\'skyteam_dismiss_install\',Date.now())" style="background:none;border:none;color:rgba(3,12,31,0.4);font-size:16px;cursor:pointer;padding:4px;">✕</button>';
   document.body.appendChild(banner);
 }
 
 function installPWA() {
-  if(!_deferredInstallPrompt) {
-    // If no prompt available, show manual instructions
-    showToast('Abre el menú de tu navegador (⋮) y selecciona "Agregar a pantalla de inicio"');
+  if(_deferredInstallPrompt) {
+    _deferredInstallPrompt.prompt();
+    _deferredInstallPrompt.userChoice.then(function(choice) {
+      if(choice.outcome === 'accepted') markPWAInstalled();
+      _deferredInstallPrompt = null;
+      var banner = document.getElementById('pwa-install-banner');
+      if(banner) banner.remove();
+    });
     return;
   }
-  _deferredInstallPrompt.prompt();
-  _deferredInstallPrompt.userChoice.then(function(choice) {
-    if(choice.outcome === 'accepted') {
-      markPWAInstalled();
-    }
-    _deferredInstallPrompt = null;
-    var banner = document.getElementById('pwa-install-banner');
-    if(banner) banner.remove();
-  });
+  // No native prompt — show visual tutorial based on device
+  showInstallTutorial();
+}
+
+function _detectDevice() {
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|Chrome/.test(ua);
+  var isChrome = /CriOS/.test(ua) || (/Chrome/.test(ua) && !/Edge|Edg|OPR|Opera|Samsung/.test(ua));
+  var isSamsung = /SamsungBrowser/.test(ua);
+  var isFirefox = /FxiOS/.test(ua) || /Firefox/.test(ua);
+  var isAndroid = /Android/.test(ua);
+  if (isIOS && isSafari) return 'ios-safari';
+  if (isIOS) return 'ios-other';
+  if (isAndroid && isSamsung) return 'android-samsung';
+  if (isAndroid && isChrome) return 'android-chrome';
+  if (isAndroid) return 'android-other';
+  return 'desktop';
+}
+
+function showInstallTutorial() {
+  if(document.getElementById('install-tutorial-modal')) return;
+  var dev = _detectDevice();
+  var steps = [];
+  var title = 'Instalar SKYTEAM';
+  var subtitle = '';
+
+  if (dev === 'ios-safari') {
+    subtitle = 'Safari en iPhone/iPad';
+    steps = [
+      {icon: '⬆️', text: 'Toca el botón <b>Compartir</b> <span style="display:inline-block;width:22px;height:22px;border:1.5px solid #1CE8FF;border-radius:5px;text-align:center;line-height:20px;font-size:13px;vertical-align:middle;">⬆</span> en la barra inferior'},
+      {icon: '📜', text: 'Desliza hacia abajo en las opciones'},
+      {icon: '➕', text: 'Toca <b>"Añadir a pantalla de inicio"</b>'},
+      {icon: '✅', text: 'Confirma tocando <b>"Añadir"</b> arriba a la derecha'}
+    ];
+  } else if (dev === 'ios-other') {
+    subtitle = 'Chrome/Firefox en iPhone';
+    steps = [
+      {icon: '💡', text: 'Para instalar como app, necesitas usar <b>Safari</b>'},
+      {icon: '🌐', text: 'Abre <b>Safari</b> y visita <b>skyteam.global</b>'},
+      {icon: '⬆️', text: 'Toca el botón <b>Compartir</b> <span style="display:inline-block;width:22px;height:22px;border:1.5px solid #1CE8FF;border-radius:5px;text-align:center;line-height:20px;font-size:13px;vertical-align:middle;">⬆</span>'},
+      {icon: '➕', text: 'Selecciona <b>"Añadir a pantalla de inicio"</b>'}
+    ];
+  } else if (dev === 'android-chrome') {
+    subtitle = 'Chrome en Android';
+    steps = [
+      {icon: '⋮', text: 'Toca los <b>3 puntos</b> ⋮ arriba a la derecha'},
+      {icon: '📲', text: 'Toca <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>'},
+      {icon: '✅', text: 'Confirma tocando <b>"Instalar"</b>'}
+    ];
+  } else if (dev === 'android-samsung') {
+    subtitle = 'Samsung Internet';
+    steps = [
+      {icon: '☰', text: 'Toca el menú <b>☰</b> abajo a la derecha'},
+      {icon: '➕', text: 'Toca <b>"Añadir página a"</b>'},
+      {icon: '📱', text: 'Selecciona <b>"Pantalla de inicio"</b>'},
+      {icon: '✅', text: 'Confirma tocando <b>"Añadir"</b>'}
+    ];
+  } else if (dev === 'android-other') {
+    subtitle = 'Navegador Android';
+    steps = [
+      {icon: '⋮', text: 'Abre el <b>menú</b> de tu navegador (⋮ o ☰)'},
+      {icon: '📲', text: 'Busca <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar"</b>'},
+      {icon: '✅', text: 'Confirma la instalación'}
+    ];
+  } else {
+    subtitle = 'Navegador de escritorio';
+    steps = [
+      {icon: '🔍', text: 'Busca el ícono <b>📲</b> o <b>⊕</b> en la barra de direcciones'},
+      {icon: '📲', text: 'Haz clic en <b>"Instalar"</b>'},
+      {icon: '✅', text: '¡Listo! La app aparecerá en tu escritorio'}
+    ];
+  }
+
+  var stepsHtml = steps.map(function(s, i) {
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;'+(i<steps.length-1?'border-bottom:0.5px solid rgba(255,255,255,0.06);':'')+'">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:rgba(28,232,255,0.1);border:1px solid rgba(28,232,255,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+(i+1)+'</div>'
+      + '<div style="flex:1;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;padding-top:6px;">'+s.text+'</div>'
+      + '</div>';
+  }).join('');
+
+  var modal = document.createElement('div');
+  modal.id = 'install-tutorial-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;font-family:Nunito,sans-serif;';
+  modal.innerHTML = '<div style="background:linear-gradient(180deg,#0d1529,#080c18);border-radius:24px 24px 0 0;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;padding:24px 20px 32px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
+    + '<div><div style="font-size:18px;font-weight:900;color:#fff;">📲 '+title+'</div><div style="font-size:12px;color:rgba(28,232,255,0.7);font-weight:700;margin-top:2px;">'+subtitle+'</div></div>'
+    + '<button onclick="document.getElementById(\'install-tutorial-modal\').remove()" style="background:rgba(255,255,255,0.06);border:none;border-radius:50%;width:32px;height:32px;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:16px;padding:4px 16px;">'+stepsHtml+'</div>'
+    + '<div style="text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,0.25);">Después de instalar, busca SKYTEAM en tu pantalla de inicio</div>'
+    + '</div>';
+  modal.addEventListener('click', function(e) { if(e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function markPWAInstalled() {
@@ -9621,10 +9712,16 @@ window.addEventListener('appinstalled', function() {
   if(banner) banner.remove();
 });
 
-// On page load, show menu button state
+// On page load, show menu button state + install banner for all devices
 window.addEventListener('load', function() {
-  // Small delay to let sidebar render
   setTimeout(showInstallMenuBtn, 500);
+  // Show install banner on iOS/Safari/other browsers that lack beforeinstallprompt
+  // Wait a bit so user sees the app first
+  var dismissed = parseInt(localStorage.getItem('skyteam_dismiss_install') || '0');
+  var dayAgo = Date.now() - 86400000;
+  if (!_deferredInstallPrompt && !_pwaInstalled && dismissed < dayAgo) {
+    setTimeout(showInstallBanner, 3000);
+  }
 });
 
 /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
