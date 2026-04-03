@@ -8835,68 +8835,121 @@ function checkPassStrength(val) {
   bar.style.width = widths[score-1] || '20%';
 }
 
+function _solFieldEditable(id, editable) {
+  var f = document.getElementById(id);
+  if(!f) return;
+  if(editable) {
+    f.removeAttribute('readonly');
+    f.style.background = 'rgba(255,255,255,0.07)';
+    f.style.borderColor = 'rgba(255,160,0,0.4)';
+    f.style.color = '#FFD700';
+    f.placeholder = 'Escríbelo manualmente';
+  } else {
+    f.setAttribute('readonly', '');
+  }
+}
+
 function onSolImgChange(input) {
   var file = input.files[0];
   if(!file) return;
   document.getElementById('sol-img-name').textContent = '📎 ' + file.name;
   var preview = document.getElementById('sol-expiry-preview');
   preview.style.display = 'block';
+  preview.style.color = '';
+  preview.style.borderColor = '';
+  preview.style.background = '';
   preview.innerHTML = '⏳ Analizando tu captura con IA...';
 
+  // Always convert to JPEG via Canvas — fixes HEIC (iPhone), HEIF, and oversized images
   var reader = new FileReader();
   reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    var b64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
-    var mime = file.type || 'image/jpeg';
-    fetch('/api/extract-expiry', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ imageBase64: b64, mimeType: mime })
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(d.found && d.expiry_ts) {
-        input._expiryData = d;
-
-        // Auto-fill innova user and sponsor (readonly)
-        if(d.username) {
-          var uField = document.getElementById('sol-innova-user');
-          if(uField) uField.value = d.username.toUpperCase();
-        }
-        if(d.sponsor) {
-          var sField = document.getElementById('sol-sponsor');
-          if(sField) sField.value = d.sponsor.toUpperCase();
-        }
-        if(d.classification) {
-          var cField = document.getElementById('sol-classification');
-          if(cField) cField.value = d.classification.toUpperCase();
-        }
-
-        // Show auto-fill section and step 2/3
-        document.getElementById('sol-autofill-section').style.display = 'block';
-
-        // Show result
-        var lines = ['✅ <strong>' + d.days_remaining + ' días de acceso</strong> detectados'];
-        if(d.expiry_label)    lines.push('📅 Vencimiento: ' + d.expiry_label);
-        if(d.username)        lines.push('👤 Usuario: <strong style="color:#1CE8FF;">' + d.username + '</strong>');
-        if(d.classification)  lines.push('🏆 Clasificación: <strong style="color:#85B7EB;">' + d.classification + '</strong>');
-        if(d.sponsor)         lines.push('🤝 Sponsor: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
-        preview.innerHTML = lines.join('<br>');
-
-      } else {
-        input._expiryData = null;
-        preview.innerHTML = '❌ No se pudo leer la información. Asegúrate de que la captura muestre claramente tu usuario, sponsor y los días restantes.';
-        preview.style.color = '#f87171';
-        preview.style.borderColor = 'rgba(248,113,113,0.3)';
-        preview.style.background = 'rgba(248,113,113,0.06)';
-        document.getElementById('sol-autofill-section').style.display = 'none';
+    var img = new window.Image();
+    img.onload = function() {
+      var MAX = 1600; // max dimension to keep payload manageable
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if(w > MAX || h > MAX) {
+        var ratio = Math.min(MAX/w, MAX/h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
       }
-    })
-    .catch(function(){
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var jpegUrl = canvas.toDataURL('image/jpeg', 0.92);
+      var b64 = jpegUrl.substring(jpegUrl.indexOf(',') + 1);
+
+      fetch('/api/extract-expiry', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ imageBase64: b64, mimeType: 'image/jpeg' })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d.found && d.expiry_ts) {
+          input._expiryData = d;
+
+          // Auto-fill fields — if not detected, make editable so user can type manually
+          var uField = document.getElementById('sol-innova-user');
+          if(d.username && uField) {
+            uField.value = d.username.toUpperCase();
+            _solFieldEditable('sol-innova-user', false);
+          } else {
+            uField.value = '';
+            _solFieldEditable('sol-innova-user', true);
+          }
+
+          var sField = document.getElementById('sol-sponsor');
+          if(d.sponsor && sField) {
+            sField.value = d.sponsor.toUpperCase();
+            _solFieldEditable('sol-sponsor', false);
+          } else {
+            sField.value = '';
+            _solFieldEditable('sol-sponsor', true);
+          }
+
+          var cField = document.getElementById('sol-classification');
+          if(d.classification && cField) {
+            cField.value = d.classification.toUpperCase();
+            _solFieldEditable('sol-classification', false);
+          } else if(cField) {
+            cField.value = '';
+            _solFieldEditable('sol-classification', true);
+          }
+
+          // Show auto-fill section
+          document.getElementById('sol-autofill-section').style.display = 'block';
+
+          // Show result summary
+          var lines = ['✅ <strong>' + d.days_remaining + ' días de acceso</strong> detectados'];
+          if(d.expiry_label)   lines.push('📅 Vencimiento: ' + d.expiry_label);
+          if(d.username)       lines.push('👤 Usuario: <strong style="color:#1CE8FF;">' + d.username + '</strong>');
+          else                 lines.push('⚠️ <span style="color:#FFD700;">Usuario no detectado — escríbelo arriba</span>');
+          if(d.classification) lines.push('🏆 Clasificación: <strong style="color:#85B7EB;">' + d.classification + '</strong>');
+          if(d.sponsor)        lines.push('🤝 Sponsor: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
+          else                 lines.push('⚠️ <span style="color:#FFD700;">Sponsor no detectado — escríbelo arriba</span>');
+          preview.innerHTML = lines.join('<br>');
+
+        } else {
+          input._expiryData = null;
+          preview.innerHTML = '❌ No se pudo leer la información. Asegúrate de que la captura muestre claramente tu usuario, sponsor y los días restantes.';
+          preview.style.color = '#f87171';
+          preview.style.borderColor = 'rgba(248,113,113,0.3)';
+          preview.style.background = 'rgba(248,113,113,0.06)';
+          document.getElementById('sol-autofill-section').style.display = 'none';
+        }
+      })
+      .catch(function(){
+        input._expiryData = null;
+        preview.innerHTML = '❌ Error al analizar la imagen. Intenta de nuevo.';
+        preview.style.color = '#f87171';
+      });
+    };
+    img.onerror = function() {
       input._expiryData = null;
-      preview.innerHTML = '❌ Error al analizar la imagen. Intenta de nuevo.';
+      preview.innerHTML = '❌ No se pudo leer el archivo. Intenta con una captura de pantalla (no una foto de cámara).';
       preview.style.color = '#f87171';
-    });
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
