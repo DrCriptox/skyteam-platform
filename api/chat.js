@@ -35,9 +35,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Mensaje demasiado largo', reply: 'El mensaje es demasiado largo. Por favor acortalo.' });
     }
 
-    // Limit conversation history to last 20 messages
-    if (body.messages && body.messages.length > 20) {
-      body.messages = body.messages.slice(-20);
+    // Limit conversation history to last 10 messages (saves ~40% input tokens)
+    if (body.messages && body.messages.length > 10) {
+      body.messages = body.messages.slice(-10);
     }
 
     // ── Detect format: Coach IA vs direct Anthropic ──
