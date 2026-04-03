@@ -4527,28 +4527,28 @@ function refreshNotifications() {
     activeCount++;
   }
 
-  // Midday check-in (12-2 PM)
+  // Midday — Prospecting (12-2 PM)
   if(currentHour >= 12 && currentHour < 14 && !_notifDismissed[dailyKey+'midday']) {
     notifs.push({
-      id: dailyKey+'midday', type: 'system', icon: '📊',
-      title: '¿Cómo va tu día? Revisa tu progreso',
-      subtitle: 'Usa los agentes IA para crear contenido',
-      msg: 'Es hora de revisar tu progreso y publicar contenido. Los agentes IA te ayudan a crear posts, mensajes y estrategias.',
-      action: {label: '🤖 Sky Sales IA', url: 'javascript:navigate("skysales")'},
-      priority: 0.6
+      id: dailyKey+'midday', type: 'system', icon: '🎯',
+      title: 'Mediodía: momento ideal para prospectar',
+      subtitle: 'La gente está en su descanso, más receptiva',
+      msg: 'Aprovecha el mediodía para contactar nuevos prospectos y compartir tu link. Es el mejor momento para abrir conversaciones.',
+      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("sky-prospectos")'},
+      priority: 0.7
     });
     activeCount++;
   }
 
-  // Afternoon — Prospects (4-6 PM)
+  // Afternoon — Sky Sales IA content (4-6 PM)
   if(currentHour >= 16 && currentHour < 18 && !_notifDismissed[dailyKey+'afternoon']) {
     notifs.push({
-      id: dailyKey+'afternoon', type: 'system', icon: '🎯',
-      title: 'Momento ideal para prospectar',
-      subtitle: 'La gente ya terminó su jornada laboral',
-      msg: 'Por la tarde la gente está más receptiva. Comparte tu link, contacta nuevos prospectos y activa conversaciones.',
-      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("sky-prospectos")'},
-      priority: 0.7
+      id: dailyKey+'afternoon', type: 'system', icon: '🤖',
+      title: 'Crea contenido y comparte tu enlace',
+      subtitle: 'Usa los agentes IA para cerrar más',
+      msg: 'La tarde es perfecta para publicar contenido. Usa Sky Sales IA para crear posts, responder objeciones y compartir tu landing.',
+      action: {label: '🚀 Sky Sales IA', url: 'javascript:navigate("skysales")'},
+      priority: 0.6
     });
     activeCount++;
   }
