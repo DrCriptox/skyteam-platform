@@ -1,7 +1,7 @@
 // Server-side user updates — keeps Supabase credentials secure
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
+const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,9 +26,17 @@ export default async function handler(req, res) {
       SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username),
       { method: 'PATCH', headers: HEADERS, body: JSON.stringify(safe) }
     );
-    if (!r.ok) throw new Error('Update failed: ' + r.status);
+    if (!r.ok) {
+      const body = await r.text();
+      console.error('Supabase PATCH failed:', r.status, body);
+      throw new Error('Update failed: ' + r.status);
+    }
+    const rows = await r.json();
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: 'User not found', ok: false });
+    }
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, updated: rows.length });
   } catch (error) {
     console.error('update-user error:', error.message);
     return res.status(500).json({ error: 'Error updating user' });

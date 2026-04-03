@@ -2904,19 +2904,26 @@ function doLogin() {
         CU = res.data.user;
         // Store session WITHOUT password
         try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-        // Sync photo: server → localStorage OR localStorage → server
+        // Sync photo: server ALWAYS wins over localStorage
         var localPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
+        console.log('[SKY] Login photo sync — server:', CU.photo ? Math.round(CU.photo.length/1024)+'KB' : 'null', '| local:', localPhoto ? Math.round(localPhoto.length/1024)+'KB' : 'null');
         if (CU.photo) {
-          // Server has photo → save to localStorage
+          // Server has photo → overwrite localStorage (server is source of truth)
           try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
+          console.log('[SKY] Photo loaded from server ✓');
         } else if (localPhoto) {
           // Local has photo but server doesn't → upload to server
+          console.log('[SKY] Uploading local photo to server...');
           _skyFetch('/api/update-user', {
             method: 'PATCH',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ username: CU.username, updates: { photo: localPhoto } })
-          }).then(function() { console.log('[SKY] Photo synced to server'); })
-            .catch(function(e) { console.warn('Photo sync failed:', e.message); });
+          }).then(function(r) { return r.json(); })
+            .then(function(d) {
+              if (d.ok) { console.log('[SKY] Local photo synced to server ✓'); }
+              else { console.warn('[SKY] Photo upload response:', d); }
+            })
+            .catch(function(e) { console.warn('[SKY] Photo sync failed:', e.message); });
         }
         // Also merge into USERS for local lookups (no password)
         USERS[CU.username] = {name:CU.name, rank:CU.rank, ref:CU.ref, ventas:CU.ventas, equipo:CU.equipo, expiry:CU.expiry, isAdmin:CU.isAdmin};
@@ -9340,12 +9347,28 @@ function _cropConfirm() {
   ctx.drawImage(_cropState.img, _cropState.ox, _cropState.oy, _cropState.img.naturalWidth*_cropState.scale, _cropState.img.naturalHeight*_cropState.scale);
   var result = offscreen.toDataURL('image/jpeg', 0.85);
   localStorage.setItem('skyteam_photo_' + CU.username, result);
-  // Sync photo to Supabase so it's available on all devices
+  // Update CU and stored session so photo persists
+  CU.photo = result;
+  try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
+  console.log('[SKY] Photo size:', Math.round(result.length/1024) + 'KB');
+  // Sync photo to Supabase — verify it actually saved
   _skyFetch('/api/update-user', {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ username: CU.username, updates: { photo: result } })
-  }).catch(function(e) { console.warn('Photo sync failed:', e.message); });
+  }).then(function(r) {
+    return r.json().then(function(d) {
+      if (r.ok && d.ok) {
+        console.log('[SKY] Photo synced to server OK');
+      } else {
+        console.warn('[SKY] Photo sync response:', d);
+        showToast('Error guardando foto en servidor ⚠️');
+      }
+    });
+  }).catch(function(e) {
+    console.warn('[SKY] Photo sync failed:', e.message);
+    showToast('Error sincronizando foto ⚠️ Intenta de nuevo');
+  });
   document.getElementById('crop-modal').remove();
   renderPerfil();
   renderSidebarUser();
@@ -9422,10 +9445,15 @@ function saveTZ(tz) {
       // Allow auto-login even if user isn't in hardcoded USERS (they may be server-only)
       if(parsed && parsed.username) {
         CU = parsed;
-        // If no local photo, try fetching from server on next login refresh
+        // Restore photo from stored session if localStorage doesn't have it
         var localP = localStorage.getItem('skyteam_photo_' + CU.username) || '';
-        if (!localP && CU.photo) {
+        if (CU.photo && !localP) {
           try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
+          console.log('[SKY] Photo restored from session cache');
+        } else if (CU.photo && localP && CU.photo !== localP) {
+          // Session has different photo than localStorage — use session (came from server)
+          try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
+          console.log('[SKY] Photo updated from session cache (was different)');
         }
         var lp = document.getElementById('landing-page');
         if(lp) lp.style.display = 'none';
