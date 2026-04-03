@@ -5725,7 +5725,19 @@ function renderSkySales() {
     card += '</div>';
     html += card;
   }
-  html += '</div></div>';
+  html += '</div>';
+  // ── Carousel Generator Section ──
+  html += '<div style="margin-top:24px;border-top:0.5px solid rgba(255,255,255,0.07);padding-top:20px;">';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-bottom:14px;">Contenido para Redes Sociales</div>';
+  html += '<div class="card" onclick="if(typeof openCarouselGenerator===\'function\')openCarouselGenerator();else showToast(\'Cargando generador...\');" style="background:rgba(127,119,221,0.08);border:0.5px solid rgba(127,119,221,0.25);border-radius:18px;padding:20px;cursor:pointer;position:relative;backdrop-filter:blur(12px);">';
+  html += '<div style="position:absolute;top:14px;right:14px;font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:20px;background:rgba(127,119,221,0.25);color:#7F77DD;">Nuevo</div>';
+  html += '<div style="font-size:30px;margin-bottom:10px;">📸</div>';
+  html += '<div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;">Generador de Carruseles</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Crea carruseles educativos de 4-5 slides para Instagram. Temas de finanzas, negocios digitales y emprendimiento. Descarga y publica directo.</div>';
+  html += '<div style="margin-top:12px;font-size:11px;font-weight:700;color:#7F77DD;">Crear carrusel</div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
   document.getElementById('skysales-content').innerHTML = html;
   var btn = document.getElementById('ss-copy-btn');
   if(btn) { btn.addEventListener('click', function(){ navigator.clipboard.writeText(landingLink).then(function(){ showToast('Link copiado'); }); }); }
@@ -10985,6 +10997,7 @@ navigate = function(section) {
 </script>
 <script src="sky-tv.js"></script>
 <script src="sky-voice.js"></script>
+<script src="carousel-generator.js"></script>
 <script>
 // === PATCH: Update gamification frontend to show IP flags in ranking ===
 // This patches lbRenderList, lbRenderWeekly, lbRenderDaily, and lbRenderAntiCheat
