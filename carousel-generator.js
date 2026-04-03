@@ -128,38 +128,31 @@
     return all.slice(0, n);
   }
 
-  // ── TEXT PROMPTS ──
+  // ── TEXT PROMPTS (ultra-persuasivos, virales, directos) ──
   var CAROUSEL_PROMPT =
-    'Creador de carruseles VIRALES para Instagram Latam. NICHO: franquicias digitales, ingresos con sistemas automatizados, personas con capital para invertir.\n' +
-    'DOLORES: esclavitud laboral, sueldo bajo, sin tiempo, miedo a invertir, inflación come ahorros.\n' +
-    'SOLUCIONES: franquicias digitales 24/7, ingresos pasivos, IA que vende, modelo probado, libertad financiera.\n' +
-    'Genera 6 slides contando UNA HISTORIA sobre estos dolores→soluciones. Lenguaje coloquial latino ("chambear","generar plata","sistema que trabaja por ti").\n' +
-    'S1(portada):titulo max 6 palabras impactantes+subtitulo max 10 palabras. S2(contexto):dolor del empleado+dato real. S3-S4(historia):narrativa con datos reales, ejemplos (McDonald\'s,Amazon). S5(revelacion):por qué sistemas digitales son la respuesta. S6(cta):llamado a acción+cta_palabra.\n' +
-    'Texto max 30 palabras por slide. dato=cifra real o null.\n' +
-    'JSON estricto:\n' +
+    'Eres el MEJOR copywriter de carruseles virales de Latinoamérica. Tu contenido genera 10K+ likes. Escribe como si hablaras con tu mejor amigo en un bar.\n' +
+    'NICHO: franquicias digitales, ingresos con sistemas automatizados. Público: personas con $500-$5,000 para invertir que odian su trabajo.\n' +
+    'TONO: Provocador, directo, sin rodeos. Usa frases como: "Te están robando", "Mientras tú chambeas 8 horas...", "Esto no te lo enseñan", "La verdad que nadie te dice".\n' +
+    'Genera 6 slides. Cada título debe ser CORTO y BRUTAL (3-5 palabras que duelan).\n' +
+    'S1(portada):titulo 3-5 palabras BRUTALES que detengan el scroll+subtitulo max 8 palabras. S2(contexto):dolor REAL+dato que duela. S3-S4(historia):datos reales, nombres de empresas (McDonald\'s=$2M vs franquicia digital=$500). S5(revelacion):la verdad que cambia todo. S6(cta):acción urgente.\n' +
+    'Texto max 20 palabras por slide (CORTO=VIRAL). dato=cifra real impactante.\n' +
     '{"slides":[{"tipo":"portada","titulo":"..","subtitulo":"..","dato":null},{"tipo":"contexto","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"historia","titulo":"..","texto":"..","dato":".."},{"tipo":"revelacion","titulo":"..","texto":"..","dato":".."},{"tipo":"cta","titulo":"..","texto":"..","cta_palabra":"QUIERO"}]}\nSolo JSON.';
 
   var STORY_PROMPT =
-    'Stories VIRALES Instagram Latam. NICHO: franquicias digitales, ingresos con sistemas, personas con capital.\n' +
-    'DOLORES: esclavitud laboral, sueldo bajo, sin tiempo. SOLUCIONES: sistemas 24/7, ingresos pasivos, franquicia digital.\n' +
-    'Genera 5 stories contando UNA HISTORIA. Lenguaje coloquial latino.\n' +
-    'S1:gancho brutal(dolor/dato). S2-3:transformación con datos reales. S4:revelación(franquicia digital=solución). S5:CTA.\n' +
-    'titulo max 5 palabras, texto max 20 palabras, emoji 1.\n' +
-    'JSON:\n' +
+    'Eres el copywriter más viral de Instagram Stories Latam. Tono DIRECTO, provocador, que duela.\n' +
+    'NICHO: franquicias digitales, sistemas que generan plata solos. Público: personas hartas de chambear para otro.\n' +
+    'Genera 5 stories de UNA HISTORIA que enganche. Cada título: 3-4 palabras que GOLPEEN. Texto: max 15 palabras DIRECTAS.\n' +
+    'S1:gancho que duela("Tu jefe...","Mientras duermes..."). S2-3:datos reales que impacten. S4:la solución(sistemas/franquicia). S5:CTA urgente.\n' +
     '{"stories":[{"titulo":"..","texto":"..","emoji":"🔥"},{"titulo":"..","texto":"..","emoji":"💰"},{"titulo":"..","texto":"..","emoji":"🚀"},{"titulo":"..","texto":"..","emoji":"📈"},{"titulo":"..","texto":"..","emoji":"📩","cta_palabra":"QUIERO"}]}\nSolo JSON.';
 
   var INFO_PROMPT =
-    'Crea carrusel INFORMATIVO minimalista viral Instagram Latam. 6 slides.\n' +
-    'NICHO: franquicias digitales, sistemas automatizados, IA aplicada a negocios.\n' +
-    'ESTILO: frases cortas, impactantes. Conecta TENDENCIA (IA,automatización,herramientas) con SOLUCIÓN (franquicia/sistemas).\n' +
-    'Cada slide lleva img_desc: descripción en INGLÉS de imagen fotorealista que represente el mensaje (personas, logos, dispositivos, escenas). Ej: "young latino entrepreneur looking at phone with sales dashboard, luxury office".\n' +
-    'S1(hook):titulo_principal max 8 palabras+subtitulo max 12. Menciona marca/herramienta real. palabra_color=palabra clave.\n' +
-    'S2(dato):dato impactante. titulo max 8, texto max 25, palabra_color.\n' +
-    'S3(explicacion):cómo funciona. titulo max 8, texto max 25, palabra_color.\n' +
-    'S4(ejemplo):caso real. titulo max 8, texto max 25, palabra_color.\n' +
-    'S5(beneficio):qué gana el usuario. titulo max 8, texto max 25, palabra_color.\n' +
-    'S6(cta):titulo max 6, cta_texto max 15, cta_palabra.\n' +
-    'JSON:\n' +
+    'Crea carrusel INFORMATIVO viral Instagram Latam. 6 slides. Estilo: LIMPIO, BOLD, PROFESIONAL.\n' +
+    'NICHO: franquicias digitales, sistemas automatizados, IA para negocios.\n' +
+    'ESTILO: Como los mejores creadores de contenido — frases CORTAS que golpean. Conecta tendencia real (IA, WhatsApp, Meta, automatización) con solución (franquicia digital).\n' +
+    'Títulos: 4-6 palabras MÁXIMO, que se lean en 1 segundo. Textos: max 20 palabras, directos.\n' +
+    'img_desc: descripción en INGLÉS de foto/escena que REPRESENTE visualmente el mensaje. Sé específico (personas, dispositivos, expresiones, escenarios reales).\n' +
+    'S1(hook):titulo_principal max 6 palabras IMPACTANTES+subtitulo max 10. palabra_color=palabra clave en color.\n' +
+    'S2(dato):dato que genere shock. S3(explicacion):cómo funciona. S4(ejemplo):caso real. S5(beneficio):qué gana. S6(cta):CTA urgente.\n' +
     '{"slides":[{"tipo":"hook","titulo_principal":"..","subtitulo":"..","palabra_color":"..","img_desc":".."},{"tipo":"dato","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"explicacion","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"ejemplo","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"beneficio","titulo":"..","texto":"..","palabra_color":"..","img_desc":".."},{"tipo":"cta","titulo":"..","cta_texto":"..","cta_palabra":"SISTEMA","img_desc":".."}]}\nSolo JSON.';
 
   // ── CANVAS HELPERS ──
@@ -254,27 +247,30 @@
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'heavy-bottom');
     ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
-    ctx.fillRect(0, 0, w, 5); ctx.globalAlpha = 1;
-    glassCard(ctx, w/2 - 90, 55, 180, 38, 19);
-    ctx.font = 'bold 14px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
-    ctx.fillText('🔥 NO TE LO PIERDAS', w/2, 80);
-    var ty = h * 0.58;
-    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 100);
+    ctx.fillRect(0, 0, w, 6); ctx.globalAlpha = 1;
+    // Badge
+    glassCard(ctx, w/2 - 100, 50, 200, 42, 21);
+    ctx.font = 'bold 16px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
+    ctx.fillText('🔥 NO TE LO PIERDAS', w/2, 78);
+    // Title — HUGE
+    var ty = h * 0.52;
+    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 80);
     for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], w/2, ty, 'bold 76px "Arial Black", Arial', '#fff', 'center', 16);
-      ty += 90;
+      shadowText(ctx, tLines[i], w/2, ty, 'bold 88px "Arial Black", Arial', '#fff', 'center', 20);
+      ty += 100;
     }
-    accentBar(ctx, w/2 - 60, ty + 4, 120, accent, 0.9);
-    ty += 30;
+    accentBar(ctx, w/2 - 70, ty + 4, 140, accent, 0.9);
+    ty += 35;
+    // Subtitle — bigger
     if (slide.subtitulo) {
-      var sLines = wrapText(ctx, slide.subtitulo, w - 120);
+      var sLines = wrapText(ctx, slide.subtitulo, w - 100);
       for (var j = 0; j < sLines.length; j++) {
-        shadowText(ctx, sLines[j], w/2, ty, '30px Arial', 'rgba(255,255,255,0.9)', 'center', 10);
-        ty += 40;
+        shadowText(ctx, sLines[j], w/2, ty, 'bold 36px Arial', 'rgba(255,255,255,0.95)', 'center', 12);
+        ty += 46;
       }
     }
-    if (slide.dato) { ty = Math.max(ty + 10, h * 0.85); drawDataBox(ctx, '📊 ' + slide.dato, 60, ty, w - 120, accent); }
-    shadowText(ctx, 'Desliza  →', w/2, h - 40, 'bold 22px Arial', accent, 'center', 8);
+    if (slide.dato) { ty = Math.max(ty + 10, h * 0.85); drawDataBox(ctx, '📊 ' + slide.dato, 50, ty, w - 100, accent); }
+    shadowText(ctx, 'Desliza  →', w/2, h - 38, 'bold 24px Arial', accent, 'center', 8);
     swipeCue(ctx, w, h, accent);
   }
 
@@ -282,64 +278,66 @@
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'uniform');
     ctx.fillStyle = accent; ctx.globalAlpha = 0.7;
-    ctx.fillRect(0, 0, w, 4); ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, w, 5); ctx.globalAlpha = 1;
     slideCounter(ctx, idx + 1, total, w, accent);
-    var tLines = wrapText(ctx, slide.titulo, w - 140);
-    var titleH = tLines.length * 58 + 30;
-    glassCard(ctx, 40, 100, w - 80, titleH, 20);
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.7;
-    roundRect(ctx, 40, 105, 5, titleH - 10, 3); ctx.fill(); ctx.globalAlpha = 1;
-    var ty = 140;
+    // Title — bigger, bolder
+    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 120);
+    var titleH = tLines.length * 68 + 30;
+    glassCard(ctx, 35, 95, w - 70, titleH, 20);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.8;
+    roundRect(ctx, 35, 100, 6, titleH - 10, 3); ctx.fill(); ctx.globalAlpha = 1;
+    var ty = 138;
     for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], 75, ty, 'bold 48px "Arial Black", Arial', '#fff', 'left', 10);
-      ty += 58;
+      shadowText(ctx, tLines[i], 70, ty, 'bold 56px "Arial Black", Arial', '#fff', 'left', 12);
+      ty += 68;
     }
-    ty = 100 + titleH + 20;
-    accentBar(ctx, 75, ty, 80, accent, 0.7); ty += 30;
+    ty = 95 + titleH + 20;
+    accentBar(ctx, 70, ty, 100, accent, 0.8); ty += 30;
+    // Text — bigger
     if (slide.texto) {
-      var txLines = wrapText(ctx, slide.texto, w - 180);
-      var cardH = txLines.length * 38 + 44;
-      glassCard(ctx, 40, ty, w - 80, cardH, 18);
-      var txY = ty + 32;
+      var txLines = wrapText(ctx, slide.texto, w - 140);
+      var cardH = txLines.length * 46 + 44;
+      glassCard(ctx, 35, ty, w - 70, cardH, 18);
+      var txY = ty + 35;
       for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], 72, txY, '28px Arial', 'rgba(255,255,255,0.92)', 'left', 8);
-        txY += 38;
+        shadowText(ctx, txLines[j], 68, txY, 'bold 34px Arial', 'rgba(255,255,255,0.95)', 'left', 8);
+        txY += 46;
       }
       ty += cardH + 20;
     }
-    if (slide.dato) { ty = Math.max(ty, h * 0.72); drawDataBox(ctx, '📊 ' + slide.dato, 40, ty, w - 80, accent); }
-    shadowText(ctx, 'Desliza  →', w/2, h - 35, 'bold 18px Arial', 'rgba(255,255,255,0.4)', 'center', 6);
+    if (slide.dato) { ty = Math.max(ty, h * 0.70); drawDataBox(ctx, '📊 ' + slide.dato, 35, ty, w - 70, accent); }
+    shadowText(ctx, 'Desliza  →', w/2, h - 32, 'bold 20px Arial', 'rgba(255,255,255,0.45)', 'center', 6);
     swipeCue(ctx, w, h, accent);
   }
 
   function renderRevelacion(ctx, img, slide, idx, total, w, h, accent) {
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'heavy-top');
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.8;
-    ctx.fillRect(0, 0, w, 5); ctx.globalAlpha = 1;
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
+    ctx.fillRect(0, 0, w, 6); ctx.globalAlpha = 1;
     slideCounter(ctx, idx + 1, total, w, accent);
-    glassCard(ctx, w/2 - 100, 90, 200, 38, 19);
-    ctx.font = 'bold 14px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
-    ctx.fillText('⚡ PUNTO CLAVE', w/2, 115);
-    var ty = 180;
-    var tLines = wrapText(ctx, slide.titulo, w - 120);
+    glassCard(ctx, w/2 - 110, 85, 220, 42, 21);
+    ctx.font = 'bold 16px Arial'; ctx.fillStyle = accent; ctx.textAlign = 'center';
+    ctx.fillText('⚡ PUNTO CLAVE', w/2, 113);
+    var ty = 185;
+    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 100);
     for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], w/2, ty, 'bold 52px "Arial Black", Arial', '#fff', 'center', 14);
-      ty += 64;
+      shadowText(ctx, tLines[i], w/2, ty, 'bold 62px "Arial Black", Arial', '#fff', 'center', 16);
+      ty += 76;
     }
-    accentBar(ctx, w/2 - 50, ty + 4, 100, accent, 0.8); ty += 35;
+    accentBar(ctx, w/2 - 60, ty + 4, 120, accent, 0.9); ty += 35;
     if (slide.texto) {
-      var txLines = wrapText(ctx, slide.texto, w - 140);
-      var cardH = txLines.length * 38 + 44;
-      glassCard(ctx, 50, ty, w - 100, cardH, 18);
-      var txY = ty + 32;
+      var txLines = wrapText(ctx, slide.texto, w - 120);
+      var cardH = txLines.length * 46 + 44;
+      glassCard(ctx, 45, ty, w - 90, cardH, 18);
+      var txY = ty + 35;
       for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], w/2, txY, '28px Arial', 'rgba(255,255,255,0.92)', 'center', 8);
-        txY += 38;
+        shadowText(ctx, txLines[j], w/2, txY, 'bold 34px Arial', 'rgba(255,255,255,0.95)', 'center', 10);
+        txY += 46;
       }
       ty += cardH + 16;
     }
-    if (slide.dato) { ty = Math.max(ty, h * 0.72); drawDataBox(ctx, '💡 ' + slide.dato, 50, ty, w - 100, accent); }
+    if (slide.dato) { ty = Math.max(ty, h * 0.70); drawDataBox(ctx, '💡 ' + slide.dato, 45, ty, w - 90, accent); }
     swipeCue(ctx, w, h, accent);
   }
 
@@ -347,34 +345,38 @@
     ctx.drawImage(img, 0, 0, w, h);
     drawOverlay(ctx, w, h, 'heavy-bottom');
     ctx.fillStyle = accent; ctx.globalAlpha = 0.9;
-    ctx.fillRect(0, 0, w, 5); ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, w, 6); ctx.globalAlpha = 1;
     slideCounter(ctx, total, total, w, accent);
-    var ty = h * 0.4;
-    var tLines = wrapText(ctx, slide.titulo, w - 120);
+    // Title — big and centered
+    var ty = h * 0.38;
+    var tLines = wrapText(ctx, slide.titulo.toUpperCase(), w - 100);
     for (var i = 0; i < tLines.length; i++) {
-      shadowText(ctx, tLines[i], w/2, ty, 'bold 52px "Arial Black", Arial', '#fff', 'center', 14);
-      ty += 64;
+      shadowText(ctx, tLines[i], w/2, ty, 'bold 62px "Arial Black", Arial', '#fff', 'center', 16);
+      ty += 76;
     }
-    accentBar(ctx, w/2 - 50, ty + 4, 100, accent, 0.8); ty += 30;
+    accentBar(ctx, w/2 - 60, ty + 4, 120, accent, 0.9); ty += 30;
+    // Text — bigger
     if (slide.texto) {
-      var txLines = wrapText(ctx, slide.texto, w - 140);
-      ty = Math.max(ty, h * 0.58);
+      var txLines = wrapText(ctx, slide.texto, w - 120);
+      ty = Math.max(ty, h * 0.56);
       for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], w/2, ty, '26px Arial', 'rgba(255,255,255,0.9)', 'center', 8);
-        ty += 36;
+        shadowText(ctx, txLines[j], w/2, ty, 'bold 32px Arial', 'rgba(255,255,255,0.95)', 'center', 10);
+        ty += 42;
       }
     }
+    // CTA Button — bigger
     var palabra = slide.cta_palabra || 'QUIERO';
-    ty = Math.max(ty + 30, h * 0.75);
-    var btnW = 640, btnH = 70, btnX = (w - btnW) / 2;
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 6;
-    ctx.fillStyle = accent; roundRect(ctx, btnX, ty, btnW, btnH, 35); ctx.fill(); ctx.restore();
-    ctx.font = 'bold 26px "Arial Black", Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
-    ctx.fillText('💬 Comenta "' + palabra + '"  →', w/2, ty + 45);
-    shadowText(ctx, 'y te cuento cómo lograrlo', w/2, ty + btnH + 30, '22px Arial', 'rgba(255,255,255,0.5)', 'center', 6);
-    ty = ty + btnH + 65;
-    glassCard(ctx, w/2 - 200, ty, 400, 40, 20);
-    shadowText(ctx, '🔖 Guarda este post para después', w/2, ty + 27, 'bold 16px Arial', 'rgba(255,255,255,0.6)', 'center', 4);
+    ty = Math.max(ty + 25, h * 0.73);
+    var btnW = 700, btnH = 80, btnX = (w - btnW) / 2;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 6;
+    ctx.fillStyle = accent; roundRect(ctx, btnX, ty, btnW, btnH, 40); ctx.fill(); ctx.restore();
+    ctx.font = 'bold 30px "Arial Black", Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
+    ctx.fillText('💬 Comenta "' + palabra + '"  →', w/2, ty + 52);
+    // Sub-CTA
+    shadowText(ctx, 'y te cuento cómo lograrlo', w/2, ty + btnH + 32, 'bold 24px Arial', 'rgba(255,255,255,0.6)', 'center', 6);
+    ty = ty + btnH + 68;
+    glassCard(ctx, w/2 - 220, ty, 440, 44, 22);
+    shadowText(ctx, '🔖 Guarda este post para después', w/2, ty + 30, 'bold 18px Arial', 'rgba(255,255,255,0.65)', 'center', 4);
   }
 
   function drawDataBox(ctx, text, x, y, w, accent) {
@@ -404,23 +406,23 @@
       roundRect(ctx, 25 + b * (barW + barGap), barY, barW, 3, 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    ctx.font = '100px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(story.emoji || '🔥', w/2, h * 0.3);
-    var tLines = wrapText(ctx, story.titulo.toUpperCase(), w - 100);
-    var ty = h * 0.4;
+    ctx.font = '120px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(story.emoji || '🔥', w/2, h * 0.28);
+    var tLines = wrapText(ctx, story.titulo.toUpperCase(), w - 80);
+    var ty = h * 0.38;
     for (var t = 0; t < tLines.length; t++) {
-      shadowText(ctx, tLines[t], w/2, ty, 'bold 64px "Arial Black", Arial', '#fff', 'center', 16);
-      ty += 78;
+      shadowText(ctx, tLines[t], w/2, ty, 'bold 76px "Arial Black", Arial', '#fff', 'center', 18);
+      ty += 90;
     }
-    accentBar(ctx, w/2 - 50, ty + 6, 100, accent, 0.7); ty += 45;
+    accentBar(ctx, w/2 - 60, ty + 6, 120, accent, 0.8); ty += 45;
     if (story.texto) {
-      var txLines = wrapText(ctx, story.texto, w - 140);
-      var cardH = txLines.length * 42 + 44;
-      glassCard(ctx, 40, ty, w - 80, cardH, 20);
-      var txY = ty + 34;
+      var txLines = wrapText(ctx, story.texto, w - 120);
+      var cardH = txLines.length * 50 + 44;
+      glassCard(ctx, 35, ty, w - 70, cardH, 20);
+      var txY = ty + 38;
       for (var j = 0; j < txLines.length; j++) {
-        shadowText(ctx, txLines[j], w/2, txY, '30px Arial', 'rgba(255,255,255,0.92)', 'center', 8);
-        txY += 42;
+        shadowText(ctx, txLines[j], w/2, txY, 'bold 36px Arial', 'rgba(255,255,255,0.95)', 'center', 10);
+        txY += 50;
       }
       ty += cardH + 20;
     }
@@ -537,15 +539,15 @@
     ctx.font = 'bold 15px Arial'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
     ctx.fillText('⚡ TENDENCIA', w/2, 109);
     ctx.restore();
-    // Title
-    var titleY = img && img.width ? 180 : 280;
-    var endY = drawBoldTextWithColor(ctx, slide.titulo_principal || slide.titulo || '', slide.palabra_color || '', w/2, titleY, w - 120, 58, accentColor);
-    // Subtitle
+    // Title — BIGGER
+    var titleY = img && img.width ? 170 : 260;
+    var endY = drawBoldTextWithColor(ctx, slide.titulo_principal || slide.titulo || '', slide.palabra_color || '', w/2, titleY, w - 100, 66, accentColor);
+    // Subtitle — bigger
     if (slide.subtitulo) {
-      ctx.font = '28px Arial'; ctx.fillStyle = img && img.width ? '#fff' : '#555'; ctx.textAlign = 'center';
-      var subLines = wrapText(ctx, slide.subtitulo, w - 140);
+      ctx.font = 'bold 34px Arial'; ctx.fillStyle = img && img.width ? '#fff' : '#444'; ctx.textAlign = 'center';
+      var subLines = wrapText(ctx, slide.subtitulo, w - 120);
       for (var i = 0; i < subLines.length; i++) {
-        ctx.fillText(subLines[i], w/2, endY + 30 + i * 38);
+        ctx.fillText(subLines[i], w/2, endY + 35 + i * 44);
       }
     }
     // Bottom accent line
@@ -572,18 +574,18 @@
     ctx.font = 'bold 14px Arial'; ctx.fillStyle = '#888'; ctx.textAlign = 'center';
     ctx.fillText(badge, w/2, 104);
     ctx.restore();
-    // Title
-    var ty = drawBoldTextWithColor(ctx, slide.titulo || '', slide.palabra_color || '', w/2, 180, w - 120, 48, accentColor);
+    // Title — BIGGER
+    var ty = drawBoldTextWithColor(ctx, slide.titulo || '', slide.palabra_color || '', w/2, 170, w - 100, 56, accentColor);
     // Accent bar
     ctx.fillStyle = accentColor; ctx.globalAlpha = 0.8;
-    roundRect(ctx, w/2 - 40, ty + 12, 80, 5, 3); ctx.fill(); ctx.globalAlpha = 1;
-    // Text body
+    roundRect(ctx, w/2 - 50, ty + 12, 100, 5, 3); ctx.fill(); ctx.globalAlpha = 1;
+    // Text body — bigger, bolder
     if (slide.texto) {
-      ctx.font = '28px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#444';
-      var txLines = wrapText(ctx, slide.texto, w - 140);
-      var txY = ty + 50;
+      ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#333';
+      var txLines = wrapText(ctx, slide.texto, w - 120);
+      var txY = ty + 55;
       for (var i = 0; i < txLines.length; i++) {
-        ctx.fillText(txLines[i], w/2, txY + i * 40);
+        ctx.fillText(txLines[i], w/2, txY + i * 46);
       }
     }
     // Bottom half: image with rounded corners
@@ -623,20 +625,20 @@
     // Big CTA word
     var palabra = slide.cta_palabra || 'SISTEMA';
     ctx.save();
-    ctx.font = 'bold 80px "Arial Black", Arial'; ctx.textAlign = 'center';
+    ctx.font = 'bold 88px "Arial Black", Arial'; ctx.textAlign = 'center';
     ctx.fillStyle = accentColor;
     var ctaWord = 'Comenta ' + palabra;
-    var cwLines = wrapText(ctx, ctaWord, w - 80);
+    var cwLines = wrapText(ctx, ctaWord, w - 60);
     for (var c = 0; c < cwLines.length; c++) {
-      ctx.fillText(cwLines[c], w/2, h * 0.22 + c * 95);
+      ctx.fillText(cwLines[c], w/2, h * 0.20 + c * 100);
     }
     ctx.restore();
     // Image in middle section
     if (img && img.width) {
-      var imgMargin = 80;
+      var imgMargin = 60;
       var imgW = w - imgMargin * 2;
-      var imgH = h * 0.35;
-      var imgY = h * 0.32;
+      var imgH = h * 0.38;
+      var imgY = h * 0.30;
       ctx.save();
       roundRect(ctx, imgMargin, imgY, imgW, imgH, 20);
       ctx.clip();
@@ -648,11 +650,11 @@
       ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 2;
       roundRect(ctx, imgMargin, imgY, imgW, imgH, 20); ctx.stroke(); ctx.restore();
     }
-    // Subtitle text below image
+    // Subtitle text below image — bigger
     if (slide.cta_texto || slide.titulo) {
-      ctx.font = 'bold 34px "Arial Black", Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1a1a1a';
-      var ctaLines = wrapText(ctx, slide.cta_texto || slide.titulo || '', w - 100);
-      var textY = img && img.width ? h * 0.73 : h * 0.5;
+      ctx.font = 'bold 38px "Arial Black", Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1a1a1a';
+      var ctaLines = wrapText(ctx, slide.cta_texto || slide.titulo || '', w - 80);
+      var textY = img && img.width ? h * 0.74 : h * 0.5;
       for (var i = 0; i < ctaLines.length; i++) {
         ctx.fillText(ctaLines[i], w/2, textY + i * 48);
       }
