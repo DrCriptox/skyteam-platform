@@ -8847,6 +8847,9 @@ function sendSolicitud() {
     showToast('Tu membresía está vencida (0 días). Renueva en Innova para registrarte ❌'); return;
   }
   if(!innovaUser) { showToast('No se detectó tu usuario de Innova. Sube una captura más clara ⚠️'); return; }
+  if(!email) { showToast('Ingresa tu correo electrónico ⚠️'); return; }
+  var emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!emailReg.test(email)) { showToast('Ingresa un correo válido (ej: tu@email.com) ⚠️'); return; }
   if(!name) { showToast('Escribe tu nombre y apellido ⚠️'); return; }
   if(!waNum) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
   if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
