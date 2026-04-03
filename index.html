@@ -2137,39 +2137,107 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 
     <!-- SOLICITAR ACCESO -->
     <div id="solicitud-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:12px;">
-      <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:6px;">Completa tus datos:</p><p style="font-size:11px;color:rgba(28,232,255,0.6);margin-bottom:12px;">Crea tu cuenta para acceder a la plataforma SKYTEAM.</p>
-      <input type="text" id="sol-name" placeholder="Tu nombre completo" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <div style="background:rgba(28,232,255,0.04);border:0.5px solid rgba(28,232,255,0.15);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-        <p style="font-size:11px;color:rgba(28,232,255,0.8);margin:0 0 6px;font-weight:700;">📌 ¿Dónde está tu usuario de Innova?</p>
-        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0;line-height:1.7;">Entra a <strong style="color:#fff;">8innova.biz</strong> → perfil (esquina superior derecha) → verás tu nombre completo y <strong style="color:#1CE8FF;">debajo el nombre en mayúsculas es tu usuario</strong> (ej: ANGEL2026). Cópialo exactamente.</p>
+      <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:4px;">Solicitar acceso a SKYTEAM</p>
+      <p style="font-size:11px;color:rgba(28,232,255,0.6);margin-bottom:12px;">Sigue los pasos para crear tu cuenta.</p>
+
+      <!-- PASO 1: IMAGEN -->
+      <div style="background:rgba(255,215,0,0.05);border:0.5px solid rgba(255,215,0,0.25);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <p style="font-size:12px;color:#FFD700;font-weight:700;margin:0 0 8px;">PASO 1 — Sube tu captura de Innova</p>
+        <!-- Visual guide mockup -->
+        <div style="background:#fff;border-radius:8px;padding:10px;margin-bottom:8px;position:relative;">
+          <div style="text-align:center;">
+            <div style="display:inline-block;background:#e8e0ff;border-radius:50%;width:40px;height:40px;margin-bottom:4px;"></div>
+            <div style="background:#e53e3e;color:#fff;border-radius:20px;font-size:9px;font-weight:700;padding:2px 8px;display:inline-block;margin-bottom:6px;">173 días restantes</div>
+            <div style="font-size:11px;color:#222;font-weight:400;margin-bottom:2px;">Genesis Zaymara Rivera Ayala</div>
+            <div style="font-size:13px;color:#222;font-weight:900;margin-bottom:6px;">
+              <span style="background:#ffe066;padding:0 4px;border-radius:3px;">ANGEL2026</span>
+              <span style="font-size:9px;color:#e53e3e;margin-left:4px;">← Tu usuario</span>
+            </div>
+            <div style="height:0.5px;background:#ddd;margin:6px 0;"></div>
+            <div style="font-size:9px;color:#888;">Patrocinador</div>
+            <div style="font-size:12px;color:#222;font-weight:900;">
+              <span style="background:#c6f6d5;padding:0 4px;border-radius:3px;">LEGEND</span>
+              <span style="font-size:9px;color:#e53e3e;margin-left:4px;">← Sponsor</span>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0 0 8px;line-height:1.6;">En <strong style="color:#fff;">8innova.biz</strong>, abre tu perfil (esquina superior derecha). Toma captura del panel como el ejemplo. El sistema leerá tu usuario, sponsor y días automáticamente.</p>
+        <p style="font-size:10px;color:#f87171;margin:0;">Si tu membresía está en 0 días o vencida, no podrás registrarte.</p>
       </div>
-      <input type="text" id="sol-innova-user" placeholder="Tu usuario Innova (ej: ANGEL2026)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
-      <input type="email" id="sol-email" placeholder="Tu correo electrónico" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <input type="tel" id="sol-wa" placeholder="WhatsApp (ej: +57 300...)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <input type="text" id="sol-sponsor" placeholder="¿Quién te invitó? (sponsor)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;">
-      <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:6px 0 10px;"></div>
-      <p style="font-size:11px;color:rgba(28,232,255,0.6);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">🔑 Crea tu contraseña de acceso</p>
-      <div style="position:relative;margin-bottom:8px;">
-        <input type="password" id="sol-pass" placeholder="Crea una contraseña (mín. 6 caracteres)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
-        <button type="button" onclick="togglePassVis('sol-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
-      </div>
-      <div style="position:relative;margin-bottom:14px;">
-        <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
-        <button type="button" onclick="togglePassVis('sol-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
-      </div>
-      <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:6px 0 10px;"></div>
-      <p style="font-size:11px;color:#1CE8FF;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">📸 Captura de tu membresía activa <span style="color:#f87171;font-weight:700;">*obligatorio</span></p>
-      <div style="background:rgba(255,215,0,0.06);border:0.5px solid rgba(255,215,0,0.2);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-        <p style="font-size:11px;color:rgba(255,215,0,0.9);margin:0 0 4px;font-weight:700;">¿Qué captura subir?</p>
-        <p style="font-size:11px;color:rgba(255,255,255,0.5);margin:0;line-height:1.7;">Entra a <strong style="color:#fff;">8innova.biz</strong> → abre el perfil (esquina superior derecha en escritorio, o menú en móvil) → toma captura donde se vea el <strong style="color:#FFD700;">contador de días restantes</strong> y tu usuario. Los días que aparezcan allí serán tus días de acceso en la plataforma.<br><span style="color:#f87171;">Si tu membresía está vencida (0 días), no podrás registrarte.</span></p>
-      </div>
-      <label id="sol-img-label" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border:0.5px dashed rgba(28,232,255,0.35);border-radius:8px;cursor:pointer;margin-bottom:6px;">
-        <span style="font-size:20px;">📁</span>
-        <span id="sol-img-name" style="font-size:12px;color:rgba(255,255,255,0.5);">Seleccionar captura de Innova...</span>
+      <label style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,215,0,0.4);border-radius:8px;cursor:pointer;margin-bottom:8px;">
+        <span style="font-size:20px;">📸</span>
+        <div style="flex:1;">
+          <div id="sol-img-name" style="font-size:12px;color:rgba(255,255,255,0.5);">Toca aquí para subir tu captura</div>
+          <div style="font-size:10px;color:rgba(255,215,0,0.5);margin-top:2px;">JPG, PNG o captura de pantalla</div>
+        </div>
         <input type="file" id="sol-img" accept="image/*" style="display:none;" onchange="onSolImgChange(this)">
       </label>
-      <div id="sol-expiry-preview" style="display:none;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.25);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#4ade80;"></div>
-      <button onclick="sendSolicitud()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;">Solicitar acceso →</button>
+      <div id="sol-expiry-preview" style="display:none;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.3);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#4ade80;line-height:1.7;"></div>
+
+      <!-- PASO 2: AUTO-RELLENADO (aparece tras análisis) -->
+      <div id="sol-autofill-section" style="display:none;">
+        <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:4px 0 10px;"></div>
+        <p style="font-size:12px;color:#FFD700;font-weight:700;margin-bottom:8px;">PASO 2 — Datos detectados automáticamente</p>
+        <div style="margin-bottom:6px;">
+          <label style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.6px;">👤 Tu usuario Innova</label>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <input type="text" id="sol-innova-user" readonly style="flex:1;background:rgba(28,232,255,0.06);border:0.5px solid rgba(28,232,255,0.3);border-radius:8px;color:#1CE8FF;font-size:14px;font-weight:700;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;letter-spacing:1px;">
+            <span style="font-size:18px;">✅</span>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.6px;">🤝 Tu sponsor (patrocinador)</label>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <input type="text" id="sol-sponsor" readonly style="flex:1;background:rgba(74,222,128,0.06);border:0.5px solid rgba(74,222,128,0.3);border-radius:8px;color:#4ade80;font-size:14px;font-weight:700;padding:9px 12px;outline:none;font-family:Nunito,sans-serif;letter-spacing:1px;">
+            <span style="font-size:18px;">✅</span>
+          </div>
+        </div>
+
+        <!-- PASO 3: DATOS MANUALES -->
+        <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:4px 0 10px;"></div>
+        <p style="font-size:12px;color:#FFD700;font-weight:700;margin-bottom:8px;">PASO 3 — Completa tu información</p>
+        <input type="text" id="sol-name" placeholder="Tu nombre completo" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <input type="email" id="sol-email" placeholder="Tu correo electrónico" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Nunito,sans-serif;box-sizing:border-box;">
+        <!-- WhatsApp con selector de país -->
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <select id="sol-country" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:12px;padding:10px 6px;outline:none;font-family:Nunito,sans-serif;min-width:110px;">
+            <option value="+57">🇨🇴 +57</option>
+            <option value="+58">🇻🇪 +58</option>
+            <option value="+52">🇲🇽 +52</option>
+            <option value="+54">🇦🇷 +54</option>
+            <option value="+56">🇨🇱 +56</option>
+            <option value="+51">🇵🇪 +51</option>
+            <option value="+593">🇪🇨 +593</option>
+            <option value="+502">🇬🇹 +502</option>
+            <option value="+503">🇸🇻 +503</option>
+            <option value="+504">🇭🇳 +504</option>
+            <option value="+505">🇳🇮 +505</option>
+            <option value="+506">🇨🇷 +506</option>
+            <option value="+507">🇵🇦 +507</option>
+            <option value="+1809">🇩🇴 +1809</option>
+            <option value="+591">🇧🇴 +591</option>
+            <option value="+595">🇵🇾 +595</option>
+            <option value="+598">🇺🇾 +598</option>
+            <option value="+55">🇧🇷 +55</option>
+            <option value="+34">🇪🇸 +34</option>
+            <option value="+351">🇵🇹 +351</option>
+            <option value="+1">🇺🇸 +1</option>
+          </select>
+          <input type="tel" id="sol-wa-num" placeholder="300 123 4567" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Nunito,sans-serif;">
+        </div>
+        <div style="width:100%;height:0.5px;background:rgba(28,232,255,0.1);margin:6px 0 10px;"></div>
+        <p style="font-size:11px;color:rgba(28,232,255,0.7);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">🔑 Crea tu contraseña de acceso</p>
+        <div style="position:relative;margin-bottom:8px;">
+          <input type="password" id="sol-pass" placeholder="Mínimo 6 caracteres" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" oninput="checkPassStrength(this.value)">
+          <button type="button" onclick="togglePassVis('sol-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
+        </div>
+        <div id="sol-pass-strength" style="display:none;height:3px;border-radius:2px;margin-bottom:6px;transition:all 0.3s;"></div>
+        <div style="position:relative;margin-bottom:14px;">
+          <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(28,232,255,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;">
+          <button type="button" onclick="togglePassVis('sol-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
+        </div>
+        <button onclick="sendSolicitud()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Nunito,sans-serif;letter-spacing:0.5px;">Solicitar acceso →</button>
+      </div>
     </div>
 
     <!-- RESET PASSWORD MODAL -->
@@ -8612,22 +8680,36 @@ function registrarSocioEnInnova(nombre, whatsapp, refCodigo) {
   }
 }
 
+function checkPassStrength(val) {
+  var bar = document.getElementById('sol-pass-strength');
+  if(!bar) return;
+  if(!val) { bar.style.display='none'; return; }
+  bar.style.display = 'block';
+  var score = 0;
+  if(val.length >= 6) score++;
+  if(val.length >= 10) score++;
+  if(/[A-Z]/.test(val)) score++;
+  if(/[0-9]/.test(val)) score++;
+  if(/[^A-Za-z0-9]/.test(val)) score++;
+  var colors = ['#f87171','#fb923c','#facc15','#4ade80','#22d3ee'];
+  var widths  = ['20%','40%','60%','80%','100%'];
+  bar.style.background = colors[score-1] || '#f87171';
+  bar.style.width = widths[score-1] || '20%';
+}
+
 function onSolImgChange(input) {
   var file = input.files[0];
   if(!file) return;
-  document.getElementById('sol-img-name').textContent = file.name;
+  document.getElementById('sol-img-name').textContent = '📎 ' + file.name;
   var preview = document.getElementById('sol-expiry-preview');
-  preview.style.display = 'none';
-  preview.textContent = '';
+  preview.style.display = 'block';
+  preview.innerHTML = '⏳ Analizando tu captura con IA...';
 
   var reader = new FileReader();
   reader.onload = function(e) {
     var dataUrl = e.target.result;
-    var commaIdx = dataUrl.indexOf(',');
-    var b64 = dataUrl.substring(commaIdx + 1);
+    var b64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
     var mime = file.type || 'image/jpeg';
-    preview.style.display = 'block';
-    preview.textContent = '⏳ Analizando imagen...';
     fetch('/api/extract-expiry', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -8635,18 +8717,42 @@ function onSolImgChange(input) {
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if(d.found && d.expiry_label) {
+      if(d.found && d.expiry_ts) {
         input._expiryData = d;
-        preview.textContent = '✅ Vencimiento detectado: ' + d.expiry_label + ' (' + d.days_remaining + ' días restantes)';
+
+        // Auto-fill innova user and sponsor (readonly)
+        if(d.username) {
+          var uField = document.getElementById('sol-innova-user');
+          if(uField) uField.value = d.username.toUpperCase();
+        }
+        if(d.sponsor) {
+          var sField = document.getElementById('sol-sponsor');
+          if(sField) sField.value = d.sponsor.toUpperCase();
+        }
+
+        // Show auto-fill section and step 2/3
+        document.getElementById('sol-autofill-section').style.display = 'block';
+
+        // Show result
+        var lines = ['✅ <strong>' + d.days_remaining + ' días de acceso</strong> detectados'];
+        if(d.expiry_label) lines.push('📅 Vencimiento: ' + d.expiry_label);
+        if(d.username)     lines.push('👤 Usuario: <strong style="color:#1CE8FF;">' + d.username + '</strong>');
+        if(d.sponsor)      lines.push('🤝 Sponsor: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
+        preview.innerHTML = lines.join('<br>');
+
       } else {
         input._expiryData = null;
-        preview.style.display = 'none';
-        showToast('No se detectó fecha de vencimiento en la imagen. Puedes continuar igual.');
+        preview.innerHTML = '❌ No se pudo leer la información. Asegúrate de que la captura muestre claramente tu usuario, sponsor y los días restantes.';
+        preview.style.color = '#f87171';
+        preview.style.borderColor = 'rgba(248,113,113,0.3)';
+        preview.style.background = 'rgba(248,113,113,0.06)';
+        document.getElementById('sol-autofill-section').style.display = 'none';
       }
     })
     .catch(function(){
       input._expiryData = null;
-      preview.style.display = 'none';
+      preview.innerHTML = '❌ Error al analizar la imagen. Intenta de nuevo.';
+      preview.style.color = '#f87171';
     });
   };
   reader.readAsDataURL(file);
@@ -8654,33 +8760,36 @@ function onSolImgChange(input) {
 
 function sendSolicitud() {
   var name       = document.getElementById('sol-name').value.trim();
-  var wa         = document.getElementById('sol-wa').value.trim();
+  var waNum      = document.getElementById('sol-wa-num') ? document.getElementById('sol-wa-num').value.trim().replace(/\s+/g,'') : '';
+  var country    = document.getElementById('sol-country') ? document.getElementById('sol-country').value : '+57';
+  var wa         = waNum ? (country + waNum) : '';
   var innovaUser = document.getElementById('sol-innova-user').value.trim();
   var email      = document.getElementById('sol-email').value.trim();
   var sponsor    = document.getElementById('sol-sponsor').value.trim();
   var pass       = document.getElementById('sol-pass') ? document.getElementById('sol-pass').value : '';
   var pass2      = document.getElementById('sol-pass2') ? document.getElementById('sol-pass2').value : '';
-  if(!name||!wa||!innovaUser) { showToast('Completa nombre, usuario en Innova y WhatsApp ⚠️'); return; }
+
+  var imgInput   = document.getElementById('sol-img');
+  var expiryData = (imgInput && imgInput._expiryData) ? imgInput._expiryData : null;
+
+  // Validations
+  if(!imgInput || !imgInput.files || !imgInput.files.length) {
+    showToast('Primero sube tu captura de Innova 📸'); return;
+  }
+  if(!expiryData) {
+    showToast('Espera a que la imagen termine de analizarse, o sube una captura más clara ⏳'); return;
+  }
+  if(expiryData.days_remaining <= 0) {
+    showToast('Tu membresía está vencida (0 días). Renueva en Innova para registrarte ❌'); return;
+  }
+  if(!innovaUser) { showToast('No se detectó tu usuario de Innova. Sube una captura más clara ⚠️'); return; }
+  if(!name) { showToast('Escribe tu nombre completo ⚠️'); return; }
+  if(!waNum) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
   if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
   if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
 
   var urlRef = new URLSearchParams(window.location.search).get('ref') || '';
   if(urlRef && !sponsor) sponsor = urlRef;
-
-  var imgInput = document.getElementById('sol-img');
-  var expiryData = (imgInput && imgInput._expiryData) ? imgInput._expiryData : null;
-
-  // Image is mandatory
-  if(!imgInput || !imgInput.files || !imgInput.files.length) {
-    showToast('Debes subir una captura de tu membresía en Innova 📸'); return;
-  }
-  if(!expiryData) {
-    showToast('Espera a que la imagen termine de analizarse, o sube una captura más clara ⏳'); return;
-  }
-  // Block expired memberships
-  if(expiryData.days_remaining <= 0) {
-    showToast('Tu membresía está vencida (0 días). Renueva en Innova para poder registrarte ❌'); return;
-  }
 
   function _doSubmit() {
     var newRef = generarRef(name);
