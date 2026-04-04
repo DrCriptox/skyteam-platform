@@ -52,8 +52,8 @@
       }
 
       .admin-modal {
-        background: var(--bg2, #0a1428);
-        border: 1px solid var(--border, #1a3a52);
+        background: var(--bg2, #0a0a12);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
         border-radius: 12px;
         padding: 28px;
         max-width: 600px;
@@ -74,13 +74,13 @@
         width: 64px;
         height: 64px;
         border-radius: 50%;
-        background: var(--bg3, #142850);
-        border: 2px solid var(--cyan, #1CE8FF);
+        background: var(--bg3, #14141f);
+        border: 2px solid var(--gold, #C9A84C);
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        color: var(--cyan);
+        color: var(--gold, #C9A84C);
         font-size: 20px;
         flex-shrink: 0;
       }
@@ -98,14 +98,14 @@
 
       .admin-modal-title p {
         margin: 4px 0 0 0;
-        color: var(--muted, #8b9db4);
+        color: var(--muted, rgba(255,255,255,0.45));
         font-size: 13px;
       }
 
       .admin-modal-close {
         background: none;
         border: none;
-        color: var(--muted, #8b9db4);
+        color: var(--muted, rgba(255,255,255,0.45));
         font-size: 24px;
         cursor: pointer;
         padding: 0;
@@ -119,7 +119,7 @@
       }
 
       .admin-modal-close:hover {
-        background: var(--bg3, #142850);
+        background: var(--bg3, #14141f);
         color: var(--text, #F0EDE6);
       }
 
@@ -142,8 +142,8 @@
       .admin-form-group textarea {
         width: 100%;
         padding: 10px 12px;
-        background: var(--bg3, #142850);
-        border: 1px solid var(--border, #1a3a52);
+        background: var(--bg3, #14141f);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
         border-radius: 6px;
         color: var(--text, #F0EDE6);
         font-size: 14px;
@@ -156,8 +156,8 @@
       .admin-form-group select:focus,
       .admin-form-group textarea:focus {
         outline: none;
-        border-color: var(--cyan, #1CE8FF);
-        box-shadow: 0 0 0 3px rgba(28, 232, 255, 0.1);
+        border-color: var(--gold, #C9A84C);
+        box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
       }
 
       .admin-form-row {
@@ -186,23 +186,23 @@
       }
 
       .admin-btn-primary {
-        background: var(--cyan, #1CE8FF);
+        background: var(--gold, #C9A84C);
         color: #000;
       }
 
       .admin-btn-primary:hover {
-        background: #00d0ff;
+        background: #E8D48B;
         transform: translateY(-2px);
       }
 
       .admin-btn-secondary {
-        background: var(--bg3, #142850);
+        background: var(--bg3, #14141f);
         color: var(--text, #F0EDE6);
-        border: 1px solid var(--border, #1a3a52);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
       }
 
       .admin-btn-secondary:hover {
-        background: var(--border, #1a3a52);
+        background: var(--border, rgba(201,168,76,0.08));
       }
 
       /* Tab Navigation */
@@ -210,7 +210,7 @@
         display: flex;
         gap: 8px;
         margin-bottom: 20px;
-        border-bottom: 1px solid var(--border, #1a3a52);
+        border-bottom: 1px solid var(--border, rgba(201,168,76,0.08));
         overflow-x: auto;
         padding-bottom: 12px;
       }
@@ -219,7 +219,7 @@
         padding: 8px 16px;
         background: none;
         border: none;
-        color: var(--muted, #8b9db4);
+        color: var(--muted, rgba(255,255,255,0.45));
         cursor: pointer;
         font-size: 13px;
         font-weight: 500;
@@ -231,8 +231,8 @@
       }
 
       .admin-tab-btn.active {
-        color: var(--cyan, #1CE8FF);
-        border-bottom-color: var(--cyan, #1CE8FF);
+        color: var(--gold, #C9A84C);
+        border-bottom-color: var(--gold, #C9A84C);
       }
 
       .admin-tab-btn:hover {
@@ -247,16 +247,16 @@
       .admin-comunidad-search input {
         width: 100%;
         padding: 10px 12px;
-        background: var(--bg3, #142850);
-        border: 1px solid var(--border, #1a3a52);
+        background: var(--bg3, #14141f);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
         border-radius: 6px;
         color: var(--text, #F0EDE6);
         font-size: 13px;
       }
 
       .admin-message-item {
-        background: var(--bg3, #142850);
-        border: 1px solid var(--border, #1a3a52);
+        background: var(--bg3, #14141f);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
         border-radius: 6px;
         padding: 12px;
         margin-bottom: 10px;
@@ -269,13 +269,13 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: var(--bg2, #0a1428);
-        border: 1px solid var(--border, #1a3a52);
+        background: var(--bg2, #0a0a12);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 500;
-        color: var(--cyan, #1CE8FF);
+        color: var(--gold, #C9A84C);
         font-size: 12px;
         flex-shrink: 0;
       }
@@ -299,7 +299,7 @@
       }
 
       .admin-message-time {
-        color: var(--muted, #8b9db4);
+        color: var(--muted, rgba(255,255,255,0.45));
         font-size: 12px;
       }
 
@@ -313,7 +313,7 @@
       .admin-message-delete {
         background: none;
         border: none;
-        color: var(--muted, #8b9db4);
+        color: var(--muted, rgba(255,255,255,0.45));
         cursor: pointer;
         font-size: 12px;
         transition: all 0.2s;
@@ -334,26 +334,26 @@
       }
 
       .admin-membership-table th {
-        background: var(--bg3, #142850);
+        background: var(--bg3, #14141f);
         color: var(--text, #F0EDE6);
         padding: 12px;
         text-align: left;
         font-size: 12px;
         font-weight: 600;
-        border-bottom: 1px solid var(--border, #1a3a52);
+        border-bottom: 1px solid var(--border, rgba(201,168,76,0.08));
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
 
       .admin-membership-table td {
         padding: 12px;
-        border-bottom: 1px solid var(--border, #1a3a52);
+        border-bottom: 1px solid var(--border, rgba(201,168,76,0.08));
         font-size: 13px;
         color: var(--text, #F0EDE6);
       }
 
       .admin-membership-table tbody tr:hover {
-        background: var(--bg3, #142850);
+        background: var(--bg3, #14141f);
       }
 
       .admin-status-badge {
@@ -388,9 +388,9 @@
 
       .admin-membership-btn {
         padding: 6px 10px;
-        background: var(--bg2, #0a1428);
-        border: 1px solid var(--border, #1a3a52);
-        color: var(--cyan, #1CE8FF);
+        background: var(--bg2, #0a0a12);
+        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        color: var(--gold, #C9A84C);
         border-radius: 4px;
         font-size: 11px;
         cursor: pointer;
@@ -398,24 +398,24 @@
       }
 
       .admin-membership-btn:hover {
-        background: var(--cyan, #1CE8FF);
+        background: var(--gold, #C9A84C);
         color: #000;
       }
 
       .admin-screenshot-area {
-        background: var(--bg3, #142850);
-        border: 2px dashed var(--border, #1a3a52);
+        background: var(--bg3, #14141f);
+        border: 2px dashed var(--border, rgba(201,168,76,0.08));
         border-radius: 8px;
         padding: 20px;
         text-align: center;
-        color: var(--muted, #8b9db4);
+        color: var(--muted, rgba(255,255,255,0.45));
         font-size: 13px;
         margin: 16px 0;
       }
 
       .admin-screenshot-area.dragover {
-        border-color: var(--cyan, #1CE8FF);
-        background: rgba(28, 232, 255, 0.05);
+        border-color: var(--gold, #C9A84C);
+        background: rgba(201, 168, 76, 0.05);
       }
 
       .admin-screenshot-preview {

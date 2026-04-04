@@ -47,8 +47,8 @@ export default async function handler(req, res) {
     const primerNombre = user.name ? user.name.split(' ')[0] : 'Socio';
 
     if (process.env.RESEND_API_KEY) {
-      const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#030c1f;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;">
-        <div style="background:linear-gradient(135deg,#0a1628,#0d2045,#0a1628);padding:32px;text-align:center;border-bottom:1px solid rgba(28,232,255,0.15);">
+      const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);">
           <img src="https://skyteam.global/logo-skyteam.png" alt="SKYTEAM" style="height:44px;max-width:240px;" />
         </div>
         <div style="padding:32px;">
@@ -59,14 +59,14 @@ export default async function handler(req, res) {
           </div>
           <p style="color:rgba(255,255,255,0.7);line-height:1.7;">Hola <strong>${primerNombre}</strong>, haz clic en el botón para crear una nueva contraseña. Este enlace expira en <strong>1 hora</strong>.</p>
           <div style="text-align:center;margin:28px 0;">
-            <a href="${resetLink}" style="background:linear-gradient(135deg,#1CE8FF,#0077FF);color:#030c1f;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;display:inline-block;">Crear nueva contraseña →</a>
+            <a href="${resetLink}" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;display:inline-block;">Crear nueva contraseña →</a>
           </div>
           <div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-top:20px;">
             <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;line-height:1.6;">Si no solicitaste esto, ignora este correo. Tu contraseña no cambiará.<br>Si tienes problemas escríbenos a soporte@skyteam.global</p>
           </div>
         </div>
         <div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);">
-          <p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#1CE8FF;text-decoration:none;">skyteam.global</a></p>
+          <p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;text-decoration:none;">skyteam.global</a></p>
         </div>
       </div>`;
 

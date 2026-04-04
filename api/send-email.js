@@ -301,22 +301,22 @@ export default async function handler(req, res) {
     const fromField = fromLabel + ' <' + fromEmail + '>';
 
     const htmlBody = customHtml || `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#030c1f;color:#F0EDE6;padding:32px;border-radius:16px;">
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">
         <div style="text-align:center;margin-bottom:24px;">
-          <h1 style="color:#1CE8FF;font-size:28px;margin:0;">SKY<span style="color:#fff"> SYSTEM</span></h1>
+          <h1 style="color:#C9A84C;font-size:28px;margin:0;">SKY<span style="color:#fff"> SYSTEM</span></h1>
           <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:4px;">Plataforma del Equipo SKYTEAM</p>
         </div>
-        <h2 style="color:#1CE8FF;font-size:20px;">ð Â¡Bienvenido al equipo, ${nombre}!</h2>
-        <p style="color:rgba(255,255,255,0.8);line-height:1.7;">Tu acceso a la plataforma ha sido <strong style="color:#1CE8FF;">activado</strong>. Ya puedes entrar con tus datos:</p>
-        <div style="background:rgba(28,232,255,0.08);border:1px solid rgba(28,232,255,0.2);border-radius:12px;padding:20px;margin:20px 0;">
-          <p style="margin:6px 0;font-size:14px;">ð <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#1CE8FF;">skyteam.global</a></p>
+        <h2 style="color:#C9A84C;font-size:20px;">ð Â¡Bienvenido al equipo, ${nombre}!</h2>
+        <p style="color:rgba(255,255,255,0.8);line-height:1.7;">Tu acceso a la plataforma ha sido <strong style="color:#C9A84C;">activado</strong>. Ya puedes entrar con tus datos:</p>
+        <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:20px 0;">
+          <p style="margin:6px 0;font-size:14px;">ð <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>
           <p style="margin:6px 0;font-size:14px;">ð¤ <strong>Usuario:</strong> ${usuario}</p>
           <p style="margin:6px 0;font-size:14px;">ð <strong>ContraseÃ±a:</strong> ${password}</p>
           ${sponsor ? '<p style="margin:6px 0;font-size:14px;">ð¤ <strong>Sponsor:</strong> ' + sponsor + '</p>' : ''}
           ${membresia ? '<p style="margin:6px 0;font-size:14px;">ð <strong>MembresÃ­a:</strong> ' + membresia + '</p>' : ''}
         </div>
         ${linkRef ? '<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:16px;margin:16px 0;"><p style="margin:0 0 8px;font-size:13px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;">Tu link de referidos</p><p style="margin:0;font-family:monospace;color:#FFD700;font-size:13px;word-break:break-all;">' + linkRef + '</p></div>' : ''}
-        <p style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:24px;text-align:center;">Enviado por ${fromLabel} Â· <a href="https://skyteam.global" style="color:#1CE8FF;">skyteam.global</a></p>
+        <p style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:24px;text-align:center;">Enviado por ${fromLabel} Â· <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>
       </div>
     `;
 

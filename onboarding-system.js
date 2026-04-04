@@ -13,10 +13,10 @@ var CHAT_API = '/api/chat';
 
 // ── Colores del sistema ──
 var C = {
-  bg: '#050508', bgCard: 'rgba(10,10,18,0.45)', bgCardHover: 'rgba(10,10,18,0.6)',
+  bg: '#050508', bgCard: 'rgba(255,255,255,0.025)', bgCardHover: 'rgba(255,255,255,0.05)',
   accent: '#C9A84C', gold: '#C9A84C', green: '#1D9E75', red: '#E24B4A',
   orange: '#E8D48B', textMain: '#FFFFFF', textSub: 'rgba(255,255,255,0.5)',
-  border: 'rgba(201,168,76,0.08)', glow: 'rgba(201,168,76,0.25)'
+  border: 'rgba(255,255,255,0.05)', glow: 'rgba(201,168,76,0.15)'
 };
 
 // ── Estado local ──

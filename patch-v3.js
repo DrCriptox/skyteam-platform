@@ -94,7 +94,7 @@ lbRenderDaily = function(container) {
 
     data.ranking.forEach(function(r, i) {
       var isMe = r.username === (CU && CU.username);
-      var meBorder = isMe ? 'border:1px solid rgba(28,232,255,0.4);background:rgba(28,232,255,0.06);' : 'border:1px solid rgba(255,255,255,0.08);';
+      var meBorder = isMe ? 'border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.06);' : 'border:1px solid rgba(255,255,255,0.08);';
       var ipBadge = '';
       if (r.ipDupes && r.ipDupes > 0) {
         ipBadge = ' <span style="background:rgba(255,60,60,0.2);color:#FF6B6B;font-size:9px;padding:1px 5px;border-radius:4px;">IP x' + r.ipDupes + '</span>';
@@ -102,7 +102,7 @@ lbRenderDaily = function(container) {
       html += '<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin:8px 0;' + meBorder + '">';
       html += medalCircle(i + 1, '36px');
       html += renderAvatar(r.username, r.name, '36px');
-      html += '<div style="flex:1;"><div style="font-weight:600;font-size:14px;">' + (r.name || r.username) + (isMe ? ' <span style="color:#1CE8FF;font-size:11px;">(Tu)</span>' : '') + ipBadge + '</div>';
+      html += '<div style="flex:1;"><div style="font-weight:600;font-size:14px;">' + (r.name || r.username) + (isMe ? ' <span style="color:#C9A84C;font-size:11px;">(Tu)</span>' : '') + ipBadge + '</div>';
       html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);">' + r.citas + ' citas - ' + r.verificadas + ' verificadas</div></div>';
       html += '<div style="font-size:20px;font-weight:900;color:#FFD700;">' + r.score + '<span style="font-size:10px;color:rgba(255,255,255,0.3);"> pts</span></div>';
       html += '</div>';
@@ -313,7 +313,7 @@ function renderAdminAgendaDiaria(el, todayLabel, timeStr) {
     html += '<div><h3 style="font-size:16px;margin:0;">Agenda en Tiempo Real</h3>';
     html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">' + todayLabel + ' \u2014 Actualizado ' + timeStr + '</p></div>';
     html += '<div style="display:flex;gap:6px;">';
-    html += '<button onclick="_adminAgendaView=\'diaria\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.15);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-size:12px;font-weight:700;cursor:pointer;">Diaria</button>';
+    html += '<button onclick="_adminAgendaView=\'diaria\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Diaria</button>';
     html += '<button onclick="_adminAgendaView=\'semanal\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;cursor:pointer;">Semanal</button>';
     html += '</div></div>';
 
@@ -321,7 +321,7 @@ function renderAdminAgendaDiaria(el, todayLabel, timeStr) {
     html += '<div style="display:flex;gap:12px;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:10px;color:rgba(255,255,255,0.5);">';
     html += '<span style="color:#00E676;">+3 pts agenda</span>';
     html += '<span style="color:#FF6B6B;">-5 pts fraude</span>';
-    html += '<span style="color:#1CE8FF;">+3 pts prueba</span>';
+    html += '<span style="color:#C9A84C;">+3 pts prueba</span>';
     html += '<span style="color:rgba(255,255,255,0.3);">Auto-update :00 y :30</span>';
     html += '</div>';
 
@@ -367,13 +367,13 @@ function renderAdminAgendaSemanal(el, todayLabel, timeStr) {
     html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:2px 0 0;">Semana actual \u2014 Actualizado ' + timeStr + '</p></div>';
     html += '<div style="display:flex;gap:6px;">';
     html += '<button onclick="_adminAgendaView=\'diaria\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;cursor:pointer;">Diaria</button>';
-    html += '<button onclick="_adminAgendaView=\'semanal\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(28,232,255,0.15);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-size:12px;font-weight:700;cursor:pointer;">Semanal</button>';
+    html += '<button onclick="_adminAgendaView=\'semanal\';renderAdminAgenda();" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Semanal</button>';
     html += '</div></div>';
 
     html += '<div style="display:flex;gap:12px;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:10px;color:rgba(255,255,255,0.5);">';
     html += '<span style="color:#00E676;">+3 pts agenda</span>';
     html += '<span style="color:#FF6B6B;">-5 pts fraude</span>';
-    html += '<span style="color:#1CE8FF;">+3 pts prueba</span>';
+    html += '<span style="color:#C9A84C;">+3 pts prueba</span>';
     html += '</div>';
 
     if (data.ok && data.ranking && data.ranking.length > 0) {
@@ -527,9 +527,9 @@ function renderAntifraudeCardMini(r) {
     agTabs.forEach(function(t) {
       var isActive = t.id === 'ranking';
       var sty = isActive
-        ? 'background:rgba(28,232,255,0.12);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-weight:700;'
-        : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-weight:500;';
-      html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Nunito,sans-serif;' + sty + '">' + t.icon + ' ' + t.label + '</button>';
+        ? 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-weight:700;'
+        : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);font-weight:500;';
+      html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Outfit,Nunito,sans-serif;' + sty + '">' + t.icon + ' ' + t.label + '</button>';
     });
     html += '</div>';
     // Leaderboard sub-tabs
@@ -543,9 +543,9 @@ function renderAntifraudeCardMini(r) {
     subTabs.forEach(function(t, i) {
       var isA = i === 0;
       var sty2 = isA
-        ? 'background:rgba(28,232,255,0.12);border:1px solid rgba(28,232,255,0.4);color:#1CE8FF;font-weight:700;'
-        : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-weight:500;';
-      html += '<button onclick="switchRankingSubTab(\'' + t.id + '\')" id="rsub-' + t.id + '" style="padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;margin:2px 3px;font-family:Nunito,sans-serif;' + sty2 + '">' + t.icon + ' ' + t.label + '</button>';
+        ? 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-weight:700;'
+        : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);font-weight:500;';
+      html += '<button onclick="switchRankingSubTab(\'' + t.id + '\')" id="rsub-' + t.id + '" style="padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;margin:2px 3px;font-family:Outfit,Nunito,sans-serif;' + sty2 + '">' + t.icon + ' ' + t.label + '</button>';
     });
     html += '</div>';
     html += '<div id="agenda-ranking-subtab-content"></div>';
@@ -555,9 +555,9 @@ function renderAntifraudeCardMini(r) {
       var sBtns = el.querySelectorAll('[id^="rsub-"]');
       for (var j = 0; j < sBtns.length; j++) {
         var isA2 = sBtns[j].id === 'rsub-' + tab;
-        sBtns[j].style.background = isA2 ? 'rgba(28,232,255,0.12)' : 'rgba(255,255,255,0.04)';
-        sBtns[j].style.border = isA2 ? '1px solid rgba(28,232,255,0.4)' : '1px solid rgba(255,255,255,0.1)';
-        sBtns[j].style.color = isA2 ? '#1CE8FF' : 'rgba(255,255,255,0.5)';
+        sBtns[j].style.background = isA2 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)';
+        sBtns[j].style.border = isA2 ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.06)';
+        sBtns[j].style.color = isA2 ? '#fff' : 'rgba(255,255,255,0.45)';
         sBtns[j].style.fontWeight = isA2 ? '700' : '500';
       }
       var ct = document.getElementById('agenda-ranking-subtab-content');
@@ -602,8 +602,8 @@ function renderAntifraudeCardMini(r) {
   var _redirectHTML = '<div style="text-align:center;padding:60px 20px;">' +
     '<div style="font-size:40px;margin-bottom:12px;">\uD83C\uDFC6</div>' +
     '<h3 style="font-size:16px;color:rgba(255,255,255,0.6);margin:0 0 8px;">Ranking del Equipo</h3>' +
-    '<p style="font-size:13px;color:rgba(255,255,255,0.35);max-width:300px;margin:0 auto;">El ranking ahora está disponible en la sección <b style="color:#1CE8FF;">Mi Agenda</b>.</p>' +
-    '<button onclick="navigate(\'agenda\');setTimeout(function(){switchAgendaTab(\'ranking\');},200);" style="margin-top:16px;padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#1CE8FF,#0077FF);border:none;color:#030c1f;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">Ir a Ranking</button>' +
+    '<p style="font-size:13px;color:rgba(255,255,255,0.35);max-width:300px;margin:0 auto;">El ranking ahora está disponible en la sección <b style="color:#C9A84C;">Mi Agenda</b>.</p>' +
+    '<button onclick="navigate(\'agenda\');setTimeout(function(){switchAgendaTab(\'ranking\');},200);" style="margin-top:16px;padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Ir a Ranking</button>' +
     '</div>';
 
   function showRedirect() {
