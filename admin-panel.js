@@ -156,8 +156,8 @@
       .admin-form-group select:focus,
       .admin-form-group textarea:focus {
         outline: none;
-        border-color: rgba(255,255,255,0.25);
-        box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+        border-color: rgba(201,168,76,0.30);
+        box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
       }
 
       .admin-form-row {
@@ -202,7 +202,7 @@
       }
 
       .admin-btn-secondary:hover {
-        background: rgba(255,255,255,0.06);
+        background: rgba(201,168,76,0.06);
       }
 
       /* Tab Navigation */

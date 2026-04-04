@@ -374,7 +374,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .login-field{margin-bottom:14px;}
 .login-field label{display:block;font-size:11px;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600;font-family:'Outfit','Nunito',sans-serif;}
 .login-field input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--text);font-size:14px;padding:13px 16px;outline:none;font-family:'Outfit','Nunito',sans-serif;transition:border-color 0.3s;box-sizing:border-box;}
-.login-field input:focus{border-color:rgba(255,255,255,0.20);}
+.login-field input:focus{border-color:rgba(201,168,76,0.35);}
 .login-field input::placeholder{color:var(--muted2);}
 .btn-login{width:100%;padding:14px;border-radius:50px;background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 4s linear infinite;color:#0a0a12;font-family:'Outfit','Nunito',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-top:8px;box-shadow:0 4px 24px rgba(201,168,76,0.2);letter-spacing:1px;text-transform:uppercase;transition:all 0.3s;}
 .btn-login:hover{transform:translateY(-1px);box-shadow:0 8px 36px rgba(201,168,76,0.3);}
@@ -402,8 +402,8 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .rank-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
 .sidebar-nav{flex:1;padding:10px 0 16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:2px 8px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);cursor:pointer;border:none;background:transparent;width:calc(100% - 16px);text-align:left;font-family:'Outfit','Nunito',sans-serif;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);letter-spacing:0.2px;}
-.nav-item:hover{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.9);transform:translateX(4px);}
-.nav-item.active{background:rgba(255,255,255,0.05);color:#fff;font-weight:600;border:none;border-left:2px solid #C9A84C;border-radius:0 10px 10px 0;margin-left:0;padding-left:20px;box-shadow:inset 0 0 20px rgba(255,255,255,0.02);}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:rgba(232,212,139,0.9);transform:translateX(4px);}
+.nav-item.active{background:rgba(255,255,255,0.05);color:#fff;font-weight:600;border:none;border-left:2px solid #C9A84C;border-radius:0 10px 10px 0;margin-left:0;padding-left:20px;box-shadow:inset 0 0 20px rgba(201,168,76,0.03);}
 .nav-item .nav-icon{font-size:14px;width:18px;text-align:center;}
 .nav-section-label{font-size:9px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,0.18);text-transform:uppercase;padding:14px 18px 5px;font-family:'Outfit','Nunito',sans-serif;}
 .sidebar-bottom{flex-shrink:0;padding:12px 10px;border-top:1px solid rgba(255,255,255,0.04);}
@@ -442,8 +442,8 @@ select option{background:#0a0a12;color:#F0EDE6;}
 
 /* ── CARDS — Elite Crystal Glassmorphism ── */
 .card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:20px;padding:20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 30px rgba(0,0,0,0.12);margin-bottom:14px;position:relative;overflow:hidden;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.08) 30%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.08) 70%,transparent 100%);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
-.card:hover{border-color:rgba(255,255,255,0.10);box-shadow:0 12px 50px rgba(0,0,0,0.20),0 0 0 0.5px rgba(255,255,255,0.05);transform:translateY(-3px);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(201,168,76,0.15) 30%,rgba(255,255,255,0.1) 50%,rgba(201,168,76,0.15) 70%,transparent 100%);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
+.card:hover{border-color:rgba(255,255,255,0.10);box-shadow:0 12px 50px rgba(0,0,0,0.20),0 0 0 0.5px rgba(201,168,76,0.08);transform:translateY(-3px);}
 .card:hover::before{opacity:1;}
 .card-gold{border-color:rgba(255,255,255,0.06);background:linear-gradient(135deg,rgba(10,10,18,0.35) 0%,rgba(255,255,255,0.02) 100%);}
 
@@ -670,7 +670,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .crm-view-btn:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);}
 .crm-view-btn-active{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15);color:#fff;}
 .crm-search-input{flex:1;min-width:160px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:9px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;}
-.crm-search-input:focus{border-color:rgba(255,255,255,0.20);}
+.crm-search-input:focus{border-color:rgba(201,168,76,0.30);}
 .crm-search-input::placeholder{color:rgba(255,255,255,0.25);}
 .crm-add-btn{padding:9px 18px;border-radius:50px;background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 4s linear infinite;color:#0a0a12;font-weight:700;font-size:12px;border:none;cursor:pointer;font-family:'Outfit','Nunito',sans-serif;box-shadow:0 4px 20px rgba(201,168,76,0.2);white-space:nowrap;letter-spacing:0.5px;}
 .crm-add-btn:hover{opacity:0.9;}
@@ -2094,7 +2094,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 
 /* ── ACADEMIA ── */
 .module-card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:18px;padding:18px;margin-bottom:12px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);cursor:pointer;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}
-.module-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
+.module-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.10),transparent);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
 .module-card:hover::after{opacity:1;}
 .module-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.12);}
 .module-progress-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:12px;}
@@ -3557,8 +3557,8 @@ function renderAgendaUI(el) {
   html += '</div>';
 
   // Header — link de agenda
-  html += '<div class="card" style="background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border-color:rgba(255,255,255,0.06);margin-bottom:16px;">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;">🔗 Tu link público de agenda</p>';
+  html += '<div class="card" style="background:linear-gradient(135deg,rgba(201,168,76,0.04),rgba(255,255,255,0.015));border-color:rgba(255,255,255,0.06);margin-bottom:16px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.55);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;">🔗 Tu link público de agenda</p>';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">';
   html += '<span style="font-family:monospace;font-size:12px;color:#fff;flex:1;word-break:break-all;">' + bookingLink + '</span>';
   html += '<div style="display:flex;gap:6px;flex-shrink:0;">';
@@ -3620,7 +3620,7 @@ function renderAgendaConfigUI() {
 .ag-blocks{flex:1;display:flex;flex-direction:column;gap:6px;}
 .ag-block-row{display:flex;align-items:center;gap:6px;}
 .ag-time-input{background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:7px 10px;outline:none;width:110px;font-family:Outfit,Nunito,sans-serif;transition:border-color 0.15s;color-scheme:dark;}
-.ag-time-input:focus{border-color:rgba(255,255,255,0.20);}
+.ag-time-input:focus{border-color:rgba(201,168,76,0.30);}
 .ag-time-sep{color:rgba(255,255,255,0.3);font-size:12px;flex-shrink:0;}
 .ag-del-btn{background:none;border:none;color:rgba(255,80,80,0.4);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;transition:all 0.15s;line-height:1;flex-shrink:0;}
 .ag-del-btn:hover{background:rgba(255,60,60,0.1);color:rgba(255,80,80,0.8);}
@@ -3637,7 +3637,7 @@ function renderAgendaConfigUI() {
 .ag-dur-btn.on{background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.4);color:#C9A84C;}
 .ag-dur-btn.off{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);}
 .ag-input-field{width:100%;background:rgba(0,0,0,0.2);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;transition:border-color 0.15s;}
-.ag-input-field:focus{border-color:rgba(255,255,255,0.20);}
+.ag-input-field:focus{border-color:rgba(201,168,76,0.30);}
 .ag-copy-btn{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.15s;white-space:nowrap;}
 .ag-copy-btn:hover{background:rgba(255,255,255,0.08);color:#fff;}
 .ag-save-btn{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.3px;transition:opacity 0.15s;}
@@ -4089,8 +4089,8 @@ function renderPlanDiarioUI() {
   html += '</div>';
 
   // Voice + text input card
-  html += '<div class="card pd-input-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border-color:rgba(255,255,255,0.06);">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.50);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 10px;">🎙️ Agregar actividad con voz o texto</p>';
+  html += '<div class="card pd-input-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border-color:rgba(201,168,76,0.12);">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.50);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 10px;">🎙️ Agregar actividad con voz o texto</p>';
   html += '<div style="display:flex;gap:8px;align-items:stretch;">';
   html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio de 7 a 8 am todos los lunes y miércoles" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
   html += '<button id="pd-mic-btn" onclick="togglePlanDiarioVoice()" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:10px;padding:0 16px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.3s;" title="Hablar">🎙️</button>';
@@ -5107,7 +5107,7 @@ function renderNotifList(notifs) {
       } else {
         // Store JS in data attribute, execute via _notifAction() to avoid quote conflicts
         var _sec = _url.replace('javascript:navigate(','').replace(')','').replace(/['"]/g,'').split(';')[0].trim();
-        html += '<button data-navsec="' + _sec + '" data-notifid="' + n.id + '" onclick="_notifNav(this)" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">' + (n.action.label||'Ver') + '</button>';
+        html += '<button data-navsec="' + _sec + '" data-notifid="' + n.id + '" onclick="_notifNav(this)" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(201,168,76,0.7);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">' + (n.action.label||'Ver') + '</button>';
       }
     }
     html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Descartar</button>';
@@ -6265,8 +6265,8 @@ function renderSkySales() {
   var html = '<div class="sc-sub">Genera tu link, usa tus agentes IA y cierra más prospectos</div>';
   html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
   html += '<div style="max-width:700px;">';
-  html += '<div class="card" style="background:rgba(255,255,255,0.025);border-color:rgba(255,255,255,0.06);margin-bottom:20px;">';
-  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
+  html += '<div class="card" style="background:rgba(255,255,255,0.025);border-color:rgba(201,168,76,0.12);margin-bottom:20px;">';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
   html += '<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;line-height:1.6;">Completa tus datos y genera tu link único para compartir. Cada persona que se registre desde tu link llegará directo a tu WhatsApp.</p>';
   html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
 
@@ -6324,8 +6324,8 @@ function renderSkySales() {
     // Show existing link if saved
     var savedLink = localStorage.getItem('skyteam_ref_link_' + (CU.ref||CU.user||''));
     if(savedLink) {
-      html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin-bottom:10px;">';
-      html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">🔗 Tu link activo</p>';
+      html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:16px;margin-bottom:10px;">';
+      html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.50);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">🔗 Tu link activo</p>';
       html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
       html += '<span style="font-family:monospace;font-size:12px;color:#fff;flex:1;word-break:break-all;">' + savedLink + '</span>';
       html += '<button id="ss-locked-copy-btn" data-link="' + savedLink + '" onclick="var l=this.getAttribute(\'data-link\');navigator.clipboard.writeText(l).then(function(){showToast(\'🔗 Link copiado ✓\');}).catch(function(){var t=document.createElement(\'textarea\');t.value=l;document.body.appendChild(t);t.select();document.execCommand(\'copy\');document.body.removeChild(t);showToast(\'🔗 Link copiado ✓\');});" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
@@ -6336,8 +6336,8 @@ function renderSkySales() {
   }
 
   html += '<div id="ss-link-result" style="display:none;margin-bottom:4px;">';
-  html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin-bottom:10px;">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">✅ Tu link personalizado</p>';
+  html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:16px;margin-bottom:10px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.50);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">✅ Tu link personalizado</p>';
   html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
   html += '<span id="ss-link-text" style="font-family:monospace;font-size:12px;color:#fff;flex:1;word-break:break-all;"></span>';
   html += '<button onclick="copiarLinkVentas()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
@@ -7882,7 +7882,7 @@ function renderHome() {
 
     // My link card
     + '<div style="position:relative;overflow:hidden;padding:18px;border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border:0.5px solid rgba(255,255,255,0.06);margin-bottom:14px;">'
-    + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>'
+    + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>'
     + '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px;line-height:1.6;">Genera tu link personalizado con tu usuario y WhatsApp para empezar a duplicar.</p>'
     + '<button onclick="navigate(\'skysales\')" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.5px;">⚡ Generar mi link de ventas →</button>'
     + '</div>'

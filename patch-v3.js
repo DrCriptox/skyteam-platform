@@ -527,7 +527,7 @@ function renderAntifraudeCardMini(r) {
     agTabs.forEach(function(t) {
       var isActive = t.id === 'ranking';
       var sty = isActive
-        ? 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-weight:700;'
+        ? 'background:rgba(255,255,255,0.08);border:1px solid rgba(201,168,76,0.30);color:#fff;font-weight:700;'
         : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);font-weight:500;';
       html += '<button onclick="switchAgendaTab(\'' + t.id + '\')" style="padding:8px 14px;border-radius:10px;font-size:12px;cursor:pointer;margin:2px 4px;font-family:Outfit,Nunito,sans-serif;' + sty + '">' + t.icon + ' ' + t.label + '</button>';
     });
@@ -543,7 +543,7 @@ function renderAntifraudeCardMini(r) {
     subTabs.forEach(function(t, i) {
       var isA = i === 0;
       var sty2 = isA
-        ? 'background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-weight:700;'
+        ? 'background:rgba(255,255,255,0.08);border:1px solid rgba(201,168,76,0.30);color:#fff;font-weight:700;'
         : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);font-weight:500;';
       html += '<button onclick="switchRankingSubTab(\'' + t.id + '\')" id="rsub-' + t.id + '" style="padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;margin:2px 3px;font-family:Outfit,Nunito,sans-serif;' + sty2 + '">' + t.icon + ' ' + t.label + '</button>';
     });
@@ -556,7 +556,7 @@ function renderAntifraudeCardMini(r) {
       for (var j = 0; j < sBtns.length; j++) {
         var isA2 = sBtns[j].id === 'rsub-' + tab;
         sBtns[j].style.background = isA2 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)';
-        sBtns[j].style.border = isA2 ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.06)';
+        sBtns[j].style.border = isA2 ? '1px solid rgba(201,168,76,0.30)' : '1px solid rgba(255,255,255,0.06)';
         sBtns[j].style.color = isA2 ? '#fff' : 'rgba(255,255,255,0.45)';
         sBtns[j].style.fontWeight = isA2 ? '700' : '500';
       }

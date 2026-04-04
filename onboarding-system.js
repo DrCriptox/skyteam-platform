@@ -185,7 +185,7 @@ function renderOnboarding(container) {
       var isPast = day < currentDay;
 
       var cardBg = isActive ? 'rgba(255,255,255,0.04)' : C.bgCard;
-      var cardBorder = isActive ? '1px solid rgba(255,255,255,0.12)' : dayComplete ? '1px solid rgba(0,230,118,0.3)' : '1px solid ' + C.border;
+      var cardBorder = isActive ? '1px solid rgba(201,168,76,0.25)' : dayComplete ? '1px solid rgba(0,230,118,0.3)' : '1px solid ' + C.border;
       var opacity = isLocked ? '0.45' : '1';
 
       html += '<div style="background:' + cardBg + ';border:' + cardBorder + ';border-radius:14px;padding:16px;margin-bottom:10px;opacity:' + opacity + ';transition:all 0.3s;">';
@@ -197,7 +197,7 @@ function renderOnboarding(container) {
       html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
       html += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:' + (dayComplete ? C.green : isActive ? C.accent : C.textSub) + ';letter-spacing:1px;">Día ' + day + '</span>';
       if (dayComplete) html += '<span style="font-size:9px;background:rgba(0,230,118,0.15);color:' + C.green + ';padding:2px 6px;border-radius:8px;">✓ Listo</span>';
-      if (isActive) html += '<span style="font-size:9px;background:rgba(255,255,255,0.10);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">← Aquí</span>';
+      if (isActive) html += '<span style="font-size:9px;background:rgba(201,168,76,0.15);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">← Aquí</span>';
       html += '</div>';
       html += '<h3 style="font-size:14px;font-weight:700;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cfg.name + '</h3>';
       html += '</div>';
@@ -573,7 +573,7 @@ function showCoachNudge() {
   // Create floating bubble next to coach button
   var bubble = document.createElement('div');
   bubble.id = 'coach-nudge-bubble';
-  bubble.style.cssText = 'position:fixed;bottom:80px;right:20px;width:280px;background:linear-gradient(135deg,rgba(5,5,8,0.97),rgba(10,25,55,0.97));border:1px solid rgba(255,255,255,0.10);border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px rgba(255,255,255,0.05);z-index:9989;animation:obSlideUp 0.4s ease;cursor:default;';
+  bubble.style.cssText = 'position:fixed;bottom:80px;right:20px;width:280px;background:linear-gradient(135deg,rgba(5,5,8,0.97),rgba(10,25,55,0.97));border:1px solid rgba(201,168,76,0.15);border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px rgba(255,255,255,0.05);z-index:9989;animation:obSlideUp 0.4s ease;cursor:default;';
 
   var html = '';
   // Close button
@@ -742,7 +742,7 @@ function renderCoachBubble(text, role) {
   var isBot = role === 'bot' || role === 'assistant';
   var align = isBot ? 'flex-start' : 'flex-end';
   var bg = isBot ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)';
-  var border = isBot ? 'rgba(255,255,255,0.06)' : C.border;
+  var border = isBot ? 'rgba(201,168,76,0.15)' : C.border;
   return '<div style="display:flex;justify-content:' + align + ';margin-bottom:6px;">' +
     '<div style="max-width:85%;padding:8px 12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;font-size:12px;line-height:1.5;">' + text + '</div></div>';
 }
@@ -940,7 +940,7 @@ function renderScriptBank(container) {
   html += '</div>';
 
   // Prospect name input
-  html += '<div style="margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">';
+  html += '<div style="margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(201,168,76,0.12);border-radius:10px;">';
   html += '<label style="font-size:10px;color:' + C.textSub + ';display:block;margin-bottom:3px;">Nombre del prospecto</label>';
   html += '<input id="ob-script-name" type="text" placeholder="Ej: Carlos" style="width:100%;padding:7px 10px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:13px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" />';
   html += '</div>';
