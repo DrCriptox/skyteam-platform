@@ -4115,9 +4115,9 @@ function renderPlanDiarioUI() {
   html += '<div class="card pd-input-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border-color:rgba(201,168,76,0.12);">';
   html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.50);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 10px;">🎙️ Agregar actividad con voz o texto</p>';
   html += '<div style="display:flex;gap:8px;align-items:stretch;">';
-  html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio de 7 a 8 am todos los lunes y miércoles" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
+  html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio 7-8am lunes y miércoles | Borra la agenda de hoy | Cambia gym a 9am" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
   html += '<button id="pd-mic-btn" onclick="togglePlanDiarioVoice()" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:10px;padding:0 16px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.3s;" title="Hablar">🎙️</button>';
-  html += '<button onclick="processPlanDiarioInput()" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">Agregar</button>';
+  html += '<button onclick="processPlanDiarioInput()" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">Ejecutar</button>';
   html += '</div>';
   html += '<p id="pd-voice-status" style="font-size:11px;color:rgba(255,255,255,0.45);margin:8px 0 0;display:none;"></p>';
   html += '<p id="pd-ai-status" style="font-size:11px;color:rgba(255,215,0,0.6);margin:6px 0 0;display:none;">🤖 Procesando con IA...</p>';
@@ -4387,7 +4387,14 @@ function processPlanDiarioInput() {
   var dayOfWeek = hoy.getDay();
   var DIAS_ES = {0:'domingo',1:'lunes',2:'martes',3:'miércoles',4:'jueves',5:'viernes',6:'sábado'};
 
-  var systemPrompt = 'Eres un asistente que convierte instrucciones de texto en bloques de calendario personal. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). La semana actual mostrada va del '+fmtDate(dates[0])+' al '+fmtDate(dates[6])+'. Responde SOLO con un JSON array de objetos, sin explicación. Cada objeto debe tener: {fecha:"YYYY-MM-DD", hora_inicio:"HH:MM", hora_fin:"HH:MM", titulo:"string corto", categoria:"personal|gym|estudio|trabajo|salud|otro"}. Si el usuario dice "todos los lunes y miércoles" o similar, genera un bloque por cada día que aplique dentro de la semana mostrada. Si no especifica fecha, usa hoy. Si no especifica hora exacta, usa una hora razonable. Si dice "mañana", calcula la fecha correcta.';
+  // Build context of existing blocks for delete/modify
+  var existingCtx = '';
+  var weekBlocks = planDiarioBlocks.filter(function(b){ return b.fecha>=fmtDate(dates[0]) && b.fecha<=fmtDate(dates[6]) && !b._isBooking; });
+  if(weekBlocks.length>0) {
+    existingCtx = ' Bloques existentes esta semana: ' + weekBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
+  }
+
+  var systemPrompt = 'Eres un asistente de calendario personal. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Semana: '+fmtDate(dates[0])+' a '+fmtDate(dates[6])+'.'+existingCtx+' Responde SOLO con un JSON object (no array), sin explicación. Formato: {"action":"add|delete|delete_all|modify","blocks":[...]}. ACCIONES: (1) "add": blocks con {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro. (2) "delete": blocks con {id} del bloque a borrar. Si el usuario dice "borra el gimnasio del lunes" busca el id en los bloques existentes. (3) "delete_all": blocks con {fecha} para borrar TODOS los bloques de ese día. Si dice "borra toda la agenda de hoy" usa fecha de hoy. (4) "modify": blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria} — borra el viejo y crea el nuevo. Si no especifica fecha usa hoy. Si dice "todos los lunes" genera uno por cada lunes de la semana. IMPORTANTE: Siempre responde con el JSON object, nunca texto adicional.';
 
   fetch('/api/chat', {
     method:'POST',
@@ -4404,23 +4411,71 @@ function processPlanDiarioInput() {
     if(aiStatus) aiStatus.style.display='none';
     if(d.content && d.content[0] && d.content[0].text) {
       var raw = d.content[0].text.trim();
-      // Extract JSON from response (may have markdown code blocks)
-      var jsonMatch = raw.match(/\[[\s\S]*\]/);
+      // Extract JSON object or array from response
+      var jsonMatch = raw.match(/\{[\s\S]*\}/) || raw.match(/\[[\s\S]*\]/);
       if(jsonMatch) {
         try {
-          var blocks = JSON.parse(jsonMatch[0]);
-          if(blocks.length === 0) { showToast('No se pudo interpretar. Intenta de nuevo.'); return; }
-          // Save all blocks
-          fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:CU.ref||CU.user||'',blocks:blocks})})
-            .then(function(r2){return r2.json();})
-            .then(function(d2){
-              if(d2.ok){
-                showToast('✅ '+blocks.length+' actividad'+(blocks.length>1?'es':'')+' agregada'+(blocks.length>1?'s':''));
-                input.value='';
-                loadPlanDiario();
-              } else showToast('❌ Error guardando: '+(d2.error||''));
-            }).catch(function(){showToast('❌ Error de conexión');});
-        } catch(e) { showToast('❌ Error interpretando respuesta de IA'); }
+          var parsed = JSON.parse(jsonMatch[0]);
+          // Normalize: if array, treat as add action
+          if(Array.isArray(parsed)) parsed = {action:'add', blocks:parsed};
+          var act = parsed.action || 'add';
+          var blocks = parsed.blocks || [];
+          var userRef = CU.ref||CU.user||'';
+
+          if(act === 'add' && blocks.length > 0) {
+            fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:blocks})})
+              .then(function(r2){return r2.json();})
+              .then(function(d2){
+                if(d2.ok){ showToast('✅ '+blocks.length+' actividad'+(blocks.length>1?'es':'')+' agregada'+(blocks.length>1?'s':'')); input.value=''; loadPlanDiario(); }
+                else showToast('❌ Error guardando');
+              }).catch(function(){showToast('❌ Error de conexión');});
+
+          } else if(act === 'delete' && blocks.length > 0) {
+            var deleteIds = blocks.map(function(b){return b.id;}).filter(Boolean);
+            var deleted = 0;
+            var pending = deleteIds.length;
+            if(pending === 0) { showToast('No se encontraron bloques para borrar'); return; }
+            deleteIds.forEach(function(bid){
+              fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',user:userRef,id:bid})})
+                .then(function(r2){return r2.json();})
+                .then(function(d2){ if(d2.ok) deleted++; pending--; if(pending<=0){ showToast('🗑️ '+deleted+' bloque'+(deleted>1?'s':'')+' eliminado'+(deleted>1?'s':'')); input.value=''; loadPlanDiario(); } })
+                .catch(function(){ pending--; if(pending<=0){ showToast('🗑️ '+deleted+' eliminado'+(deleted>1?'s':'')); input.value=''; loadPlanDiario(); } });
+            });
+
+          } else if(act === 'delete_all' && blocks.length > 0) {
+            var fechas = blocks.map(function(b){return b.fecha;}).filter(Boolean);
+            // Find all block IDs matching those dates
+            var idsToDelete = planDiarioBlocks.filter(function(b){ return fechas.indexOf(b.fecha)>-1 && !b._isBooking; }).map(function(b){return b.id;}).filter(Boolean);
+            if(idsToDelete.length === 0) { showToast('No hay bloques para borrar en esa fecha'); return; }
+            var delCount = 0; var delPending = idsToDelete.length;
+            idsToDelete.forEach(function(bid){
+              fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',user:userRef,id:bid})})
+                .then(function(r2){return r2.json();})
+                .then(function(d2){ if(d2.ok) delCount++; delPending--; if(delPending<=0){ showToast('🗑️ '+delCount+' bloque'+(delCount>1?'s':'')+' borrado'+(delCount>1?'s':'')+' del día'); input.value=''; loadPlanDiario(); } })
+                .catch(function(){ delPending--; if(delPending<=0){ input.value=''; loadPlanDiario(); } });
+            });
+
+          } else if(act === 'modify' && blocks.length > 0) {
+            // Delete old, then add new
+            var modIds = blocks.map(function(b){return b.id;}).filter(Boolean);
+            var modBlocks = blocks.map(function(b){ var nb={fecha:b.fecha,hora_inicio:b.hora_inicio,hora_fin:b.hora_fin,titulo:b.titulo,categoria:b.categoria}; return nb; });
+            var modPending = modIds.length;
+            var modDone = function(){
+              fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:modBlocks})})
+                .then(function(r2){return r2.json();})
+                .then(function(d2){ if(d2.ok){ showToast('✏️ '+modBlocks.length+' bloque'+(modBlocks.length>1?'s':'')+' modificado'+(modBlocks.length>1?'s':'')); input.value=''; loadPlanDiario(); } })
+                .catch(function(){showToast('❌ Error guardando modificación');});
+            };
+            if(modIds.length > 0) {
+              modIds.forEach(function(bid){
+                fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',user:userRef,id:bid})})
+                  .then(function(){modPending--;if(modPending<=0)modDone();})
+                  .catch(function(){modPending--;if(modPending<=0)modDone();});
+              });
+            } else { modDone(); }
+
+          } else { showToast('No se pudo interpretar. Intenta de nuevo.'); }
+        } catch(e) { showToast('❌ Error interpretando respuesta de IA'); console.error(e); }
       } else { showToast('❌ No se pudo interpretar. Intenta ser más específico.'); }
     } else { showToast('❌ Error de IA: '+(d.error&&d.error.message||'sin respuesta')); }
   })
