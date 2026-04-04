@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     if (action === 'update') {
       const { id, updates } = req.body;
       if (!id) return res.status(400).json({ error: 'Missing id' });
-      const allowed = ['nombre', 'telefono', 'email', 'etapa', 'fuente', 'temperatura', 'notas', 'valor_estimado', 'fecha_cierre_estimada', 'instagram', 'calif_positivo', 'calif_emprendedor', 'calif_dinero', 'calif_lider'];
+      const allowed = ['nombre', 'telefono', 'email', 'etapa', 'fuente', 'temperatura', 'notas', 'valor_estimado', 'fecha_cierre_estimada', 'instagram', 'calif_positivo', 'calif_emprendedor', 'calif_dinero', 'calif_lider', 'calif_social'];
       const clean = {};
       Object.keys(updates || {}).forEach(k => { if (allowed.includes(k)) clean[k] = updates[k]; });
       clean.updated_at = new Date().toISOString();

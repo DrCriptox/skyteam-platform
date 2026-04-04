@@ -10226,6 +10226,14 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
       +'<button onclick="crmCompleteReminder(\''+r.id+'\')" style="background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2713</button></div>';});
   el.innerHTML=html;}
 
+function crmCalcStars(p) {
+  var f = ['calif_positivo','calif_emprendedor','calif_dinero','calif_lider','calif_social'];
+  var v = f.map(function(k){ return p[k]; }).filter(function(x){ return x !== null && x !== undefined && x > 0; });
+  if (v.length === 0) return 0;
+  var avg = v.reduce(function(a,b){return a+b;},0) / v.length;
+  return Math.min(5, Math.max(0, Math.round(avg * 5)));
+}
+
 function crmRenderKanban(){
   var kb=document.getElementById('crm-kanban');if(!kb)return;
   var filtered=crmFilter();
@@ -10247,7 +10255,7 @@ function crmCard(p){
   var temp=p.temperatura||50;var tc=temp<=33?'#C9A84C':temp<=66?'#FFD700':'#E24B4A';
   var d=new Date(p.updated_at);var now=new Date();var hh=d.getHours();var ampm=hh>=12?'pm':'am';var h12=hh%12||12;var timeStr=String(h12).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+ampm;var isToday=d.toDateString()===now.toDateString();var yest=new Date(now);yest.setDate(yest.getDate()-1);var isYest=d.toDateString()===yest.toDateString();var dl;if(isToday){dl='hoy, '+timeStr;}else if(isYest){dl='ayer, '+timeStr;}else{var dias=['dom','lun','mar','mie','jue','vie','sab'];var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];dl=dias[d.getDay()]+' '+d.getDate()+' '+meses[d.getMonth()]+', '+timeStr;}
   var ig=p.instagram?(p.instagram+'').replace('@','').trim():'';
-  var starsCount=Math.round(((p.calif_positivo||0)+(p.calif_emprendedor||0)+(p.calif_dinero||0)+(p.calif_lider||0))/4*5);var starsStr='';for(var si=0;si<5;si++)starsStr+=(si<starsCount)?'\u2B50':'\u2606';
+  var starsCount=crmCalcStars(p);var starsStr='';for(var si=0;si<5;si++)starsStr+=(si<starsCount)?'\u2B50':'\u2606';
     var tel=p.telefono&&p.telefono!=='null'?p.telefono:'';
   var fuente=(p.fuente||'manual').toLowerCase();
   var fLabel={manual:'Manual',instagram:'Instagram',whatsapp:'WhatsApp',facebook:'Facebook',referido:'Referido',web:'Web',otro:'Otro'};
@@ -10276,7 +10284,7 @@ function crmRenderList(){
   var filtered=crmFilter();
   if(!filtered.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(255,255,255,0.15);font-size:12px;">No hay prospectos</td></tr>';return;}
   var html='';filtered.forEach(function(p){
-    var calif=Math.round(((p.calif_positivo||0)+(p.calif_emprendedor||0)+(p.calif_dinero||0)+(p.calif_lider||0))/4);
+    var calif=crmCalcStars(p);
     var stars='';for(var s=1;s<=5;s++){stars+=s<=calif?'\u2B50':'\u2606';}
     var igIcon=p.instagram?'<a href="https://instagram.com/'+p.instagram+'" target="_blank" style="text-decoration:none;display:inline-flex;vertical-align:middle;" title="@'+p.instagram+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#E1306C" stroke="none"/></svg></a>':'';
     var waIcon=p.telefono?'<a href="https://wa.me/'+p.telefono.replace(/[^0-9]/g,'')+'" target="_blank" style="text-decoration:none;display:inline-flex;vertical-align:middle;" title="'+p.telefono+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg></a>':'';
@@ -11005,7 +11013,7 @@ function openCrmModalAdd(editId) {
 
   if (!isEditing) {
     form.reset();
-    crmRatingAnswers = { calif_positivo: 0, alif_emprendedor: 0, calif_dinero: 0, calif_lider: 0 };
+    crmRatingAnswers = { calif_positivo: 0, calif_emprendedor: 0, calif_dinero: 0, calif_lider: 0, calif_social: 0 };
     crmUpdateStarsDisplay();
     var calificarBtn = document.querySelector('#crm-btn-calificar');
     if (calificarBtn) calificarBtn.style.display = 'block';
@@ -11069,64 +11077,8 @@ function closeCrmModalAdd() {
   crmEditingId = null;
 }
 
-/* ========================================
-   FORM SUBMIT HANDLER
-   ======================================== */
-
-(function() {
-  var form = document.getElementById('crm-form-add');
-  if (form) {
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      var nameInput = document.getElementById('crm-input-nombre');
-      var telInput = document.getElementById('crm-input-telefono');
-      var emailInput = document.getElementById('crm-input-email');
-      var etapaInput = document.getElementById('crm-input-etapa');
-      var fuenteInput = document.getElementById('crm-input-fuente');
-      var tempInput = document.getElementById('crm-input-temperatura');
-      var notasInput = document.getElementById('crm-input-notas');
-      var valorInput = document.getElementById('crm-input-valor-estimado');
-      var fechaInput = document.getElementById('crm-input-fecha-cierre');
-      var igInput = document.getElementById('crm-input-instagram');
-
-      var prospecto = {
-        nombre: nameInput ? nameInput.value.trim() : '',
-        telefono: telInput ? telInput.value.trim() : '',
-        email: emailInput ? emailInput.value.trim() : '',
-        etapa: etapaInput ? etapaInput.value : '',
-        fuente: fuenteInput ? fuenteInput.value : '',
-        temperatura: tempInput ? parseInt(tempInput.value) || 50 : 50,
-        notas: notasInput ? notasInput.value.trim() : '',
-        valor_estimado: valorInput ? parseFloat(valorInput.value) || 0 : 0,
-        fecha_cierre_estimada: fechaInput ? fechaInput.value || null : null,
-        instagram: igInput ? igInput.value.replace(/^@/, '').trim() : '',
-        calif_positivo: crmRatingAnswers.calif_positivo,
-        calif_emprendedor: crmRatingAnswers.calif_emprendedor,
-        calif_dinero: crmRatingAnswers.calif_dinero,
-        calif_lider: crmRatingAnswers.calif_lider
-      };
-
-      if (!prospecto.nombre) {
-        crmToast('Ingresa el nombre del prospecto', 'error');
-        return;
-      }
-
-      var action = crmEditingId ? 'update' : 'add';
-      var payload = { prospecto: prospecto };
-      if (crmEditingId) payload.prospecto.id = crmEditingId;
-
-      var res = await crmApi(action, payload);
-      if (res && res.ok) {
-        closeCrmModalAdd();
-        crmToast(crmEditingId ? 'Prospecto actualizado' : 'Prospecto agregado', 'success');
-        await crmLoadData();
-        if (typeof crmDashAddXP === 'function' && !crmEditingId) crmDashAddXP('prospect_added', 15);
-      } else {
-        crmToast('Error al guardar', 'error');
-      }
-    });
-  }
-})();
+/* Handler A removed — was sending wrong payload format { prospecto: {...} }
+   All prospect saving handled by crmSaveProspect (Handler B at initSkyProspectos) */
 
 /* ========================================
    HELPER FALLBACKS
@@ -11160,9 +11112,7 @@ function openCrmDetail(id) {
 
   var nameHeader = modal.querySelector('h2') || modal.querySelector('h3');
   if (nameHeader) {
-    var starCount = (prospect.calif_positivo || 0) +
-      (prospect.calif_emprendedor || 0) + (prospect.calif_dinero || 0) +
-      (prospect.calif_lider || 0);
+    var starCount = crmCalcStars(prospect);
     nameHeader.textContent = prospect.nombre + ' ' + crmStarsText(starCount, 5);
     nameHeader.style.cursor = 'pointer';
     nameHeader.addEventListener('click', function() {

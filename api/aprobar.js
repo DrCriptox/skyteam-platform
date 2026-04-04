@@ -73,8 +73,8 @@ export default async function handler(req, res) {
     if (innovaCount >= 2) {
       return res.status(400).json({ error: 'Este usuario de Innova ya tiene 2 sociedades registradas. No se puede crear otra.' });
     }
-    // If innova_user already has 1 account, append _2 to username to differentiate
-    const finalUsername = innovaCount === 1 ? username + '_2' : username;
+    // If innova_user already has 1 account, append .2 to username to differentiate
+    const finalUsername = innovaCount === 1 ? username + '.2' : username;
 
     // Check if user already exists (prevent duplicates from race conditions)
     const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername) + '&limit=1', { headers: HEADERS });
