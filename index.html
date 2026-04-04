@@ -3491,11 +3491,20 @@ function renderSidebarUser() {
   const avatarHtml = savedPhoto
     ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;object-fit:cover;border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);cursor:pointer;flex-shrink:0;">'
     : '<div class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;background:rgba(201,168,76,0.08);border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:#C9A84C;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
+  // Calculate days remaining
+  var daysLeft = '';
+  if (CU.expiry) {
+    var msLeft = Number(CU.expiry) - Date.now();
+    var days = Math.max(0, Math.ceil(msLeft / 86400000));
+    var color = days > 30 ? '#25D366' : days > 7 ? '#FFD700' : '#E24B4A';
+    daysLeft = '<div style="font-size:8px;color:' + color + ';margin-top:2px;font-weight:600;letter-spacing:0.3px;">' + (days > 0 ? '⏱ ' + days + ' días restantes' : '⚠️ Membresía expirada') + '</div>';
+  }
   document.getElementById('sidebar-user').innerHTML = `
     ${avatarHtml}
     <div class="su-info">
       <div class="su-name">${CU.name}</div>
       ${rankBadge(CU.rank, 'tiny')}
+      ${daysLeft}
       <button class="sidebar-perfil-btn" style="margin-top:3px;font-size:8px;padding:2px 7px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.3px;width:fit-content;">👤 Ver perfil</button>
     </div>
   `;
