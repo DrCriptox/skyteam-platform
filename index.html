@@ -3571,6 +3571,41 @@ function showApp() {
     }, 3000);
   }
 
+  // Notification 3: Rank promotion check
+  if(CU && typeof RANKS !== 'undefined') {
+    var prevRank = parseInt(localStorage.getItem('skyteam_prev_rank_'+CU.username) || '0');
+    if(CU.rank > prevRank && prevRank > 0) {
+      var rk = RANKS[CU.rank] || RANKS[0];
+      pushNotification({
+        id:'rank_promo_'+CU.rank, type:'info', icon:'🏆',
+        title:'🏆 ¡Felicidades! Nuevo rango alcanzado',
+        subtitle: rk.icon + ' ' + rk.name,
+        msg: 'Has ascendido a ' + rk.name + '. ¡Sigue creciendo!'
+      });
+      showToast('🏆 ¡Nuevo rango: ' + rk.icon + ' ' + rk.name + '!');
+    }
+    localStorage.setItem('skyteam_prev_rank_'+CU.username, CU.rank);
+  }
+
+  // Notification 9: Onboarding progress reminder (once per day)
+  if(CU) {
+    var lastOnbReminder = localStorage.getItem('skyteam_onb_reminder_'+CU.username);
+    var _onbToday = new Date().toDateString();
+    if(lastOnbReminder !== _onbToday) {
+      setTimeout(function(){
+        if(CU && CU.rank <= 1) {
+          pushNotification({
+            id:'onb_reminder_'+_onbToday, type:'info', icon:'📋',
+            title:'📋 Continúa tu ruta de 7 días',
+            subtitle:'¡No te quedes atrás!',
+            msg:'Completa tus tareas del día para avanzar más rápido.'
+          });
+          localStorage.setItem('skyteam_onb_reminder_'+CU.username, _onbToday);
+        }
+      }, 8000);
+    }
+  }
+
   // Auto-prompt for notifications if not granted
   if (CU && Notification && Notification.permission === 'default') {
     setTimeout(function() {
@@ -5193,6 +5228,17 @@ function clearOldNotifications() {
   var cutoff = Date.now() - 48*3600000; // 48h max
   _notifQueue = _notifQueue.filter(function(n){ return n.timestamp > cutoff; });
   localStorage.setItem('skyteam_notif_queue_'+(CU?(CU.ref||CU.user):''), JSON.stringify(_notifQueue));
+}
+
+// Notification 10: Payment/renewal confirmed (placeholder — call when payment system is built)
+function notifyRenewalConfirmed(username, months) {
+  if(typeof pushNotification !== 'function') return;
+  pushNotification({
+    id:'renewal_confirmed_'+Date.now(), type:'info', icon:'✅',
+    title:'✅ ¡Membresía renovada!',
+    subtitle: months + ' meses adicionales',
+    msg:'Tu acceso ha sido extendido. ¡Gracias por confiar en SKYTEAM!'
+  });
 }
 
 function startNotifEngine() {
@@ -8443,6 +8489,20 @@ function renderAnuncios() {
       </div>
       <div class="anuncio-body">${_safe(a.body)}</div>
     </div>`).join('');
+  // Notification 8b: Detect new announcements for non-admin users
+  if(CU && typeof pushNotification === 'function' && ANUNCIOS.length > 0) {
+    var lastSeenCount = parseInt(localStorage.getItem('skyteam_anuncios_seen_'+CU.username) || '0');
+    if(ANUNCIOS.length > lastSeenCount && lastSeenCount > 0) {
+      var newest = ANUNCIOS[0];
+      pushNotification({
+        id:'anuncio_load_'+ANUNCIOS.length, type:'info', icon:'📢',
+        title:'📢 Nuevo anuncio',
+        subtitle: newest.title || 'SKYTEAM',
+        msg: newest.body ? newest.body.substring(0, 80) : 'Hay un nuevo anuncio del equipo.'
+      });
+    }
+    localStorage.setItem('skyteam_anuncios_seen_'+CU.username, ANUNCIOS.length);
+  }
 }
 
 /* ── CHAT ── */
@@ -8499,7 +8559,25 @@ function startChatPolling() {
         var newMsgs = msgs.length > _lastMsgCount ? msgs.length - _lastMsgCount : 0;
         _lastMsgCount = msgs.length;
         renderChat(msgs);
-        if(newMsgs > 0) updateComunidadBadge(newMsgs);
+        if(newMsgs > 0) {
+          updateComunidadBadge(newMsgs);
+          // Notification 2: New message in team chat
+          if(typeof pushNotification === 'function' && CU) {
+            var latestMsgs = msgs.slice(-newMsgs);
+            var otherMsgs = latestMsgs.filter(function(m){ return m.user !== CU.name; });
+            if(otherMsgs.length > 0) {
+              var lastMsg = otherMsgs[otherMsgs.length - 1];
+              var preview = lastMsg.text ? lastMsg.text.substring(0, 60) : 'Nuevo mensaje';
+              pushNotification({
+                id:'chat_msg_'+Date.now(), type:'info', icon:'💬',
+                title:'💬 Nuevo mensaje en el chat',
+                subtitle: lastMsg.user || 'Equipo',
+                msg: (lastMsg.user || 'Alguien') + ': ' + preview + (lastMsg.text && lastMsg.text.length > 60 ? '...' : ''),
+                action:{label:'Ver chat', url:'javascript:navigate("comunidad")'}
+              });
+            }
+          }
+        }
       }
     });
   }, 3000);
@@ -9368,12 +9446,22 @@ function publishAnuncio() {
   const title = document.getElementById('an-title').value.trim();
   const body  = document.getElementById('an-body').value.trim();
   if(!title||!body) { showToast('Completa el título y el mensaje','err'); return; }
-  ANUNCIOS.unshift({icon,title,date:'Ahora mismo',body});
+  var anuncioObj = {icon,title,date:'Ahora mismo',body};
+  ANUNCIOS.unshift(anuncioObj);
   renderAnuncios();
   renderAdminAnuncios();
   document.getElementById('an-title').value='';
   document.getElementById('an-body').value='';
   showToast('Anuncio publicado para todo el equipo');
+  // Notification 8: New announcement posted
+  if(typeof pushNotification === 'function') {
+    pushNotification({
+      id:'anuncio_'+Date.now(), type:'info', icon:'📢',
+      title:'📢 Nuevo anuncio',
+      subtitle: anuncioObj.title || 'SKYTEAM',
+      msg: anuncioObj.body ? anuncioObj.body.substring(0, 80) : 'Hay un nuevo anuncio del equipo.'
+    });
+  }
 }
 
 function deleteAnuncio(i) {
@@ -9916,6 +10004,15 @@ function sendSolicitud() {
           + '</div>'
           + '<div style="margin-top:14px;"><a href="https://skyteam.global" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;border-radius:10px;font-weight:900;font-size:14px;text-decoration:none;">Entrar a SKY SYSTEM →</a></div>';
         if(d.emailSent) sb.innerHTML += '<p style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;">📧 Te enviamos un correo de bienvenida.</p>';
+        // Notification 5: Welcome/activation push
+        if(typeof pushNotification === 'function') {
+          pushNotification({
+            id:'welcome_new', type:'info', icon:'🚀',
+            title:'🚀 ¡Bienvenido a SKYTEAM!',
+            subtitle:'Tu acceso está activo',
+            msg:'Explora la plataforma, activa tu agenda y genera tu primer link de ventas.'
+          });
+        }
       } else {
         sb.innerHTML = '<div style="font-size:28px;margin-bottom:8px;">❌</div>'
           + '<p style="color:#f87171;font-size:14px;">Error al activar: ' + (d.error || 'intenta de nuevo') + '</p>';
@@ -10751,10 +10848,24 @@ function crmSetupDrag(){
 
 async function crmMoveStage(id,etapa){
   if(etapa==='cerrado')etapa='cerrado_ganado';
-  var p=crmProspectos.find(function(x){return x.id===id;});if(p)p.etapa=etapa;
+  var p=crmProspectos.find(function(x){return x.id===id;});
+  var oldEtapa = p ? p.etapa : '';
+  if(p)p.etapa=etapa;
   crmRenderKanban();
   var res=await crmApi('moveStage',{id:id,etapa:etapa});
-  if(res&&res.ok)crmToast('Movido a '+(CRM_ETAPAS[etapa]?CRM_ETAPAS[etapa].label:etapa),'success');
+  if(res&&res.ok){
+    crmToast('Movido a '+(CRM_ETAPAS[etapa]?CRM_ETAPAS[etapa].label:etapa),'success');
+    // Notification 11: Prospect stage changed
+    if(typeof pushNotification === 'function' && p && oldEtapa !== etapa) {
+      var newEtapaLabel = CRM_ETAPAS[etapa] ? CRM_ETAPAS[etapa].label : etapa;
+      pushNotification({
+        id:'prospect_move_'+id+'_'+etapa, type:'info', icon:'💬',
+        title:'💬 Prospecto actualizado',
+        subtitle: p.nombre || 'Prospecto',
+        msg: (p.nombre || 'Prospecto') + ' avanzó a etapa: ' + newEtapaLabel
+      });
+    }
+  }
   crmLoadData();}
 /* ============================================================================
    SKY PROSPECTOS \u2014 GAMIFICATION + METRICS ENGINE
@@ -11891,7 +12002,23 @@ async function crmSaveProspect(e){
     valor_estimado:parseFloat(document.getElementById("crm-input-valor-estimado").value)||0,
     fecha_cierre_estimada:document.getElementById("crm-input-fecha-cierre").value||null,
     instagram:_igEl?_igEl.value.trim().replace(/^@/,'')||null:null};
-  var res;if(crmEditingId){res=await crmApi("update",{id:crmEditingId,updates:data});if(res&&res.ok)crmToast("Prospecto actualizado","success");
+  var res;if(crmEditingId){
+    // Check if etapa changed for Notification 11
+    var _prevProspect=crmProspectos.find(function(x){return x.id===crmEditingId;});
+    var _prevEtapa=_prevProspect?_prevProspect.etapa:'';
+    res=await crmApi("update",{id:crmEditingId,updates:data});if(res&&res.ok){
+      crmToast("Prospecto actualizado","success");
+      // Notification 11: Prospect etapa changed via edit form
+      if(typeof pushNotification==='function' && _prevEtapa && data.etapa && _prevEtapa!==data.etapa){
+        var _newEtapaLabel=CRM_ETAPAS[data.etapa]?CRM_ETAPAS[data.etapa].label:data.etapa;
+        pushNotification({
+          id:'prospect_edit_'+crmEditingId+'_'+data.etapa, type:'info', icon:'💬',
+          title:'💬 Prospecto actualizado',
+          subtitle: data.nombre||'Prospecto',
+          msg: (data.nombre||'Prospecto')+' avanzó a etapa: '+_newEtapaLabel
+        });
+      }
+    }
     closeCrmModalAdd();crmLoadData();}
   else{res=await crmApi("add",data);if(res&&res.ok){crmToast("Prospecto agregado!","success");
     closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){crmLoadData();crmStartRatingWizard(newId);}else crmLoadData();}

@@ -204,6 +204,135 @@ async function handleTriggers(req, res) {
       }
     }
 
+    // ── TRIGGER 6: New prospect registered via referral link (notify sponsor) ──
+    try {
+      const fifteenMinAgoISO = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+      const newUsers = await sb(
+        'users?select=username,name,sponsor,created_at' +
+        '&created_at=gte.' + fifteenMinAgoISO +
+        '&sponsor=not.is.null' +
+        '&order=created_at.desc&limit=20'
+      );
+
+      if (newUsers && newUsers.length > 0) {
+        const bySponsor = {};
+        for (const u of newUsers) {
+          if (!u.sponsor) continue;
+          const sponsorKey = u.sponsor.toLowerCase();
+          if (!bySponsor[sponsorKey]) bySponsor[sponsorKey] = [];
+          bySponsor[sponsorKey].push(u);
+        }
+
+        for (const [sponsor, recruits] of Object.entries(bySponsor)) {
+          const names = recruits.map(r => (r.name || r.username).split(' ')[0]).join(', ');
+          const body = recruits.length === 1
+            ? names + ' se acaba de registrar con tu link de referido. Dale la bienvenida!'
+            : recruits.length + ' personas se registraron con tu link: ' + names;
+
+          const r = await pushToUser(sponsor, '🎉 Nuevo registro en tu equipo', body, '/?nav=home', 'skyteam-newreg-' + now.toISOString().slice(0, 16));
+          results.triggers.push({ type: 'new_referral', sponsor, count: recruits.length, sent: r.sent });
+          results.sent += r.sent;
+        }
+      }
+    } catch (e) { results.errors.push('new_referral: ' + e.message); }
+
+    // ── TRIGGER 7: Daily motivational reminder (7-9am Colombia / UTC-5) ──
+    try {
+      const colombiaHour = (now.getUTCHours() - 5 + 24) % 24;
+      if (colombiaHour >= 7 && colombiaHour <= 9) {
+        const todayDate = now.toISOString().slice(0, 10);
+        // Get all users with push subscriptions
+        const allSubs = await sb('push_subscriptions?select=username&order=username');
+        if (allSubs && allSubs.length > 0) {
+          const uniqueUsers = [...new Set(allSubs.map(s => s.username))];
+          for (const username of uniqueUsers) {
+            // Check if already sent today (use tag dedup)
+            const tag = 'skyteam-morning-' + todayDate;
+            // Get prospect count for this user
+            let pendingCount = 0;
+            let citasCount = 0;
+            try {
+              const pending = await sb(
+                'prospectos?select=id&username=eq.' + encodeURIComponent(username) +
+                '&etapa=not.in.(cerrado_ganado,cerrado_perdido)&limit=100'
+              );
+              pendingCount = pending ? pending.length : 0;
+            } catch (e) {}
+            try {
+              const citas = await sb(
+                'bookings?select=id&username=eq.' + encodeURIComponent(username) +
+                '&fecha_iso=gte.' + todayDate + 'T00:00:00' +
+                '&fecha_iso=lte.' + todayDate + 'T23:59:59' +
+                '&status=eq.activa&limit=20'
+              );
+              citasCount = citas ? citas.length : 0;
+            } catch (e) {}
+
+            // Get user name
+            let userName = username;
+            try {
+              const u = await sb('users?username=eq.' + encodeURIComponent(username) + '&select=name&limit=1');
+              if (u && u[0] && u[0].name) userName = u[0].name.split(' ')[0];
+            } catch (e) {}
+
+            const body = 'Tienes ' + pendingCount + ' prospectos pendientes' + (citasCount > 0 ? ' y ' + citasCount + ' citas hoy' : '') + '. Vamos!';
+            const r = await pushToUser(username, '☀️ Buenos dias, ' + userName + '!', body, '/', tag);
+            results.triggers.push({ type: 'daily_motivation', user: username, sent: r.sent });
+            results.sent += r.sent;
+          }
+        }
+      }
+    } catch (e) { results.errors.push('daily_motivation: ' + e.message); }
+
+    // ── TRIGGER 8: Weekly summary (Monday 8-10am Colombia) ──
+    try {
+      const colombiaHour2 = (now.getUTCHours() - 5 + 24) % 24;
+      const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday
+      if (dayOfWeek === 1 && colombiaHour2 >= 8 && colombiaHour2 <= 10) {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const todayDate2 = now.toISOString().slice(0, 10);
+        const allSubs2 = await sb('push_subscriptions?select=username&order=username');
+        if (allSubs2 && allSubs2.length > 0) {
+          const uniqueUsers2 = [...new Set(allSubs2.map(s => s.username))];
+          for (const username of uniqueUsers2) {
+            let weekProspects = 0, weekCitas = 0, weekCerrados = 0;
+            try {
+              const wp = await sb(
+                'prospectos?select=id&username=eq.' + encodeURIComponent(username) +
+                '&created_at=gte.' + weekAgo + '&limit=200'
+              );
+              weekProspects = wp ? wp.length : 0;
+            } catch (e) {}
+            try {
+              const wc = await sb(
+                'bookings?select=id&username=eq.' + encodeURIComponent(username) +
+                '&created_at=gte.' + weekAgo + '&limit=200'
+              );
+              weekCitas = wc ? wc.length : 0;
+            } catch (e) {}
+            try {
+              const wg = await sb(
+                'prospectos?select=id&username=eq.' + encodeURIComponent(username) +
+                '&etapa=eq.cerrado_ganado&updated_at=gte.' + weekAgo + '&limit=200'
+              );
+              weekCerrados = wg ? wg.length : 0;
+            } catch (e) {}
+
+            const body = 'Esta semana: ' + weekProspects + ' prospectos, ' + weekCitas + ' citas, ' + weekCerrados + ' cerrados. Sigue asi!';
+            const tag = 'skyteam-weekly-' + todayDate2;
+            const r = await pushToUser(username, '📊 Tu resumen semanal', body, '/?nav=prospectos', tag);
+            results.triggers.push({ type: 'weekly_summary', user: username, sent: r.sent });
+            results.sent += r.sent;
+          }
+        }
+      }
+    } catch (e) { results.errors.push('weekly_summary: ' + e.message); }
+
+    // ── TRIGGER 9 (placeholder): New Academy content ──
+    // TODO: Implement when Academy content management system is built.
+    // Will query a content/lessons table for items published in last 15 min,
+    // then push to all subscribed users.
+
     return res.status(200).json({ ok: true, ...results, checkedAt: now.toISOString() });
   } catch (error) {
     results.errors.push(error.message);
