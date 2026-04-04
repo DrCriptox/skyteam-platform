@@ -225,7 +225,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
 
 /* ── LANDING PAGE — Luxury Redesign ── */
-#landing-page{--ld-bg:#050508;--ld-bg2:#0a0a12;--ld-gold:#C9A84C;--ld-gold-lt:#E8D48B;--ld-gold-pale:#F5E6B8;--ld-gold-dk:#8B7332;--ld-gold-glow:rgba(201,168,76,0.15);--ld-text:#F5F0E8;--ld-text2:rgba(255,255,255,0.55);--ld-text3:rgba(255,255,255,0.30);--ld-border:rgba(201,168,76,0.08);--ld-border2:rgba(201,168,76,0.20);--font-display:'Cormorant Garamond',Georgia,serif;--font-ui:'Outfit','Nunito',sans-serif;--font-body:'Nunito',sans-serif;min-height:100dvh;display:flex;flex-direction:column;background:var(--ld-bg);overflow-x:hidden;overflow-y:auto;color:var(--ld-text);}
+#landing-page{--ld-bg:#050508;--ld-bg2:#0a0a12;--ld-gold:#C9A84C;--ld-gold-lt:#E8D48B;--ld-gold-pale:#F5E6B8;--ld-gold-dk:#8B7332;--ld-gold-glow:rgba(201,168,76,0.15);--ld-text:#F5F0E8;--ld-text2:rgba(255,255,255,0.55);--ld-text3:rgba(255,255,255,0.30);--ld-border:rgba(201,168,76,0.08);--ld-border2:rgba(201,168,76,0.20);--font-display:'Cormorant Garamond',Georgia,serif;--font-ui:'Outfit','Nunito',sans-serif;--font-body:'Nunito',sans-serif;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--ld-bg);overflow-x:hidden;overflow-y:auto;color:var(--ld-text);}
 
 /* Animations */
 @keyframes goldShimmer{0%{background-position:0% center}100%{background-position:200% center}}
@@ -3018,14 +3018,15 @@ let CU = null;
 
 /* ── Landing scroll animations ── */
 (function(){
-  // IntersectionObserver for .landing-reveal elements
+  // IntersectionObserver for .landing-reveal elements (root = landing-page scroll container)
   var revealEls = document.querySelectorAll('.landing-reveal');
-  if ('IntersectionObserver' in window && revealEls.length) {
+  var lpRoot = document.getElementById('landing-page');
+  if ('IntersectionObserver' in window && revealEls.length && lpRoot) {
     var obs = new IntersectionObserver(function(entries) {
       entries.forEach(function(e) {
         if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    }, { root: lpRoot, threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
     revealEls.forEach(function(el) { obs.observe(el); });
   } else {
     revealEls.forEach(function(el) { el.classList.add('visible'); });
