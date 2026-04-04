@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/registro",
+      "destination": "/index.html"
+    },
+    {
       "source": "/manifest.json",
       "destination": "/manifest.json"
     },

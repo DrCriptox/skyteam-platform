@@ -2158,7 +2158,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <img src="/logo-vertical.png" alt="SKYTEAM">
     </div>
     <div class="logo-big"></div>
-    <p class="login-sub">Plataforma de la Franquicia Digital</p>
+    <p class="login-sub"><span style="font-weight:800;font-size:14px;display:block;margin-bottom:4px;color:var(--ld-gold);">Iniciar sesión</span>Accede a las mejores herramientas de la industria</p>
     <div class="login-field"><label>Usuario o Email</label><input type="text" id="lu" placeholder="tu_usuario o correo@email.com" autocomplete="username"></div>
     <div class="login-field"><label>Contraseña</label><div style="position:relative;"><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px;"><button type="button" onclick="var i=document.getElementById('lp');var s=this.querySelector('svg');if(i.type==='password'){i.type='text';s.innerHTML='<path d=\'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94\'/><path d=\'M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19\'/><line x1=\'1\' y1=\'1\' x2=\'23\' y2=\'23\'/>';}else{i.type='password';s.innerHTML='<path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/>';}" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
     <button class="btn-login" onclick="doLogin()">Acceder →</button>
@@ -2940,6 +2940,7 @@ function showLoginFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   window.scrollTo(0, 0);
+  history.replaceState(null, '', '/login');
   var lu = document.getElementById('lu');
   if (lu) lu.focus();
 }
@@ -2947,6 +2948,7 @@ function showRegisterFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   window.scrollTo(0, 0);
+  history.replaceState(null, '', '/registro');
   // Auto-open the solicitud box
   setTimeout(function() {
     var box = document.getElementById('solicitud-box');
@@ -2959,7 +2961,18 @@ function showRegisterFromLanding() {
 function showLanding() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('landing-page').style.display = 'flex';
+  history.replaceState(null, '', '/');
 }
+
+// URL routing — /login and /registro direct access
+(function() {
+  var path = window.location.pathname.toLowerCase();
+  if (path === '/login') {
+    setTimeout(function() { showLoginFromLanding(); }, 100);
+  } else if (path === '/registro') {
+    setTimeout(function() { showRegisterFromLanding(); }, 100);
+  }
+})();
 
 function doLogin() {
   try {
