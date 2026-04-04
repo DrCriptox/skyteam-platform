@@ -248,22 +248,27 @@ function renderOnboarding(container) {
 function handleTaskAction(taskId, action, container) {
   if (action === 'openCRM') {
     if (typeof navigate === 'function') navigate('prospectos');
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'openAgent') {
     if (typeof navigate === 'function') navigate('agentes');
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'openAgenda') {
     if (typeof navigate === 'function') navigate('agenda');
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'openLanding') {
-    showToast('Próximamente: Personalización de landing', 'info');
+    showToast('Tu landing personal está disponible desde tu perfil.', 'info');
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'startTour') {
-    showToast('Próximamente: Tour guiado interactivo', 'info');
+    showToast('Bienvenido a SKYTEAM! Explora cada sección del menú.', 'success');
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'installPWA') {
@@ -288,10 +293,13 @@ function handleTaskAction(taskId, action, container) {
   }
   if (action === 'openPhotoEditor') {
     openPhotoEditorModal();
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'openFlyerGen') {
-    openFlyerGenerator();
+    showToast('Genera contenido desde Sky Sales IA → Agente de Contenido', 'info');
+    if (typeof navigate === 'function') navigate('skysales');
+    markTaskComplete(taskId, container);
     return;
   }
   if (action === 'autoCheck') {

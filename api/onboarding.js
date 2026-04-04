@@ -141,13 +141,13 @@ async function completeTask(username, taskId) {
   // Calculate current day based on completed tasks
   // Day 5 = Launch Day (moved from day 6 per Yonfer's request)
   const dayTasks = {
-    1: ['day1_photo', 'day1_profile', 'day1_landing'],
-    2: ['day2_tour', 'day2_pwa', 'day2_push'],
-    3: ['day3_prospects', 'day3_qualify'],
-    4: ['day4_scripts', 'day4_message', 'day4_interaction'],
-    5: ['day5_flyer', 'day5_date', 'day5_stories'],
-    6: ['day6_publish', 'day6_stories', 'day6_contacts'],
-    7: ['day7_respond', 'day7_meeting', 'day7_prepare']
+    1: ['d1_tour', 'd1_video', 'd1_pwa', 'd1_photo'],
+    2: ['d2_photo', 'd2_bio', 'd2_push'],
+    3: ['d3_scripts', 'd3_personaliza', 'd3_practica'],
+    4: ['d4_lista', 'd4_enviar', 'd4_seguimiento'],
+    5: ['d5_agenda', 'd5_guion', 'd5_seguimiento'],
+    6: ['d6_landing', 'd6_flyer', 'd6_post'],
+    7: ['d7_seguimiento', 'd7_cierre', 'd7_plan']
   };
 
   let maxCompletedDay = 0;
