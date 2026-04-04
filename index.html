@@ -118,6 +118,17 @@ html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-a
 @keyframes skyCardIn{from{opacity:0;transform:translateY(16px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
 .sky-animate-card{animation:skyCardIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;}
 
+/* ── Scroll-Driven Animations (progressive enhancement) ── */
+@keyframes skyScrollReveal{from{opacity:0;transform:translateY(30px) scale(0.96);filter:blur(4px);}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}}
+@keyframes skyScrollSlide{from{opacity:0;transform:translateX(-30px);}to{opacity:1;transform:translateX(0);}}
+@keyframes skyParallaxFloat{from{transform:translateY(20px);}to{transform:translateY(-20px);}}
+@supports (animation-timeline:scroll()){
+  .sky-scroll-reveal{animation:skyScrollReveal linear both;animation-timeline:view();animation-range:entry 0% entry 100%;}
+  .sky-scroll-slide{animation:skyScrollSlide linear both;animation-timeline:view();animation-range:entry 0% entry 80%;}
+  .sky-scroll-parallax{animation:skyParallaxFloat linear both;animation-timeline:scroll();animation-range:0% 100%;}
+  #sky-nebula{animation:nebulaDrift 30s ease-in-out infinite,skyParallaxFloat linear both;animation-timeline:auto,scroll();animation-range:normal,0% 100%;}
+}
+
 /* ── Counter animation ── */
 @property --num{syntax:'<integer>';initial-value:0;inherits:false;}
 .sky-counter{transition:--num 1.5s cubic-bezier(0.22,1,0.36,1);counter-reset:num var(--num);font-variant-numeric:tabular-nums;}
@@ -3272,13 +3283,32 @@ function showLanding() {
   setTimeout(function(){clearInterval(poll)}, 10000);
   // Also re-scan on any click (navigation)
   document.addEventListener('click', function(){
-    // Reset flags for hidden elements on nav change
     document.querySelectorAll('[data-sky-r]').forEach(function(el){
-      if (el.offsetHeight < 1) { el.classList.remove('sky-reveal','visible'); delete el.dataset.skyR; }
+      if (el.offsetHeight < 1) { el.classList.remove('sky-reveal','visible','sky-scroll-reveal','sky-scroll-slide'); delete el.dataset.skyR; }
     });
     setTimeout(skyRevealScan, 200);
     setTimeout(skyRevealScan, 600);
   });
+
+  // ── Scroll-Driven Animation Classes (progressive enhancement) ──
+  var supportsScrollTimeline = CSS.supports && CSS.supports('animation-timeline','scroll()');
+  if (supportsScrollTimeline) {
+    function applyScrollDriven() {
+      var c = document.getElementById('content');
+      if (!c) return;
+      c.querySelectorAll('div').forEach(function(d) {
+        if (d.dataset.skySd) return;
+        var s = d.style;
+        if (!s.borderRadius || !(s.background || s.backgroundColor)) return;
+        if (d.offsetHeight < 40 || d.offsetWidth < 80) return;
+        d.dataset.skySd = '1';
+        // Alternate between reveal and slide for visual variety
+        d.classList.add(Math.random() > 0.5 ? 'sky-scroll-reveal' : 'sky-scroll-slide');
+      });
+    }
+    setInterval(applyScrollDriven, 1000);
+    document.addEventListener('click', function(){ setTimeout(applyScrollDriven, 300); });
+  }
 })();
 
 function doLogin() {
