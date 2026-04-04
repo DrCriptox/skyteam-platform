@@ -591,7 +591,7 @@ function showCoachNudge() {
   html += '<p style="margin:0 0 12px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;">' + ctaText + '</p>';
   // Action button with name
   var btnLabel = nombre ? ('💪 ¡Vamos, ' + nombre + '!') : '💪 ¡Vamos!';
-  html += '<button onclick="openCoachFromNudge()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif;">' + btnLabel + '</button>';
+  html += '<button onclick="openCoachFromNudge()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">' + btnLabel + '</button>';
 
   bubble.innerHTML = html;
   document.body.appendChild(bubble);
@@ -682,7 +682,7 @@ function createCoachPanel() {
   messages += '</div>';
 
   var input = '<div style="padding:8px 12px;border-top:1px solid ' + C.border + ';display:flex;gap:6px;">';
-  input += '<input id="ob-coach-input" type="text" placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 12px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;font-family:Nunito,sans-serif;" />';
+  input += '<input id="ob-coach-input" type="text" placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 12px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;font-family:Outfit,Nunito,sans-serif;" />';
   input += '<button id="ob-coach-send" style="padding:8px 12px;border:none;border-radius:8px;background:' + C.accent + ';color:#000;font-weight:700;font-size:12px;cursor:pointer;">→</button>';
   input += '</div>';
 
@@ -948,7 +948,7 @@ function renderScriptBank(container) {
   // Prospect name input
   html += '<div style="margin-bottom:14px;padding:10px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:10px;">';
   html += '<label style="font-size:10px;color:' + C.textSub + ';display:block;margin-bottom:3px;">Nombre del prospecto</label>';
-  html += '<input id="ob-script-name" type="text" placeholder="Ej: Carlos" style="width:100%;padding:7px 10px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:13px;outline:none;font-family:Nunito,sans-serif;box-sizing:border-box;" />';
+  html += '<input id="ob-script-name" type="text" placeholder="Ej: Carlos" style="width:100%;padding:7px 10px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:13px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" />';
   html += '</div>';
 
   // Group by category
@@ -1323,7 +1323,7 @@ function renderHomeTabs(homeEl) {
 
   // Welcome header — compact
   html += '<div style="margin-bottom:14px;">';
-  html += '<div style="font-family:Nunito,sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:2px;">Bienvenido, ' + CU.name.split(' ')[0] + ' 👋</div>';
+  html += '<div style="font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:2px;">Bienvenido, ' + CU.name.split(' ')[0] + ' 👋</div>';
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);">' + rk.icon + ' ' + rk.name + '</div>';
   html += '</div>';
 
@@ -1344,7 +1344,7 @@ function renderHomeTabs(homeEl) {
     html += 'border:1px solid ' + borderColor + ';';
     html += 'font-size:12px;font-weight:' + fontWeight + ';';
     html += 'cursor:pointer;white-space:nowrap;';
-    html += 'font-family:Nunito,sans-serif;';
+    html += 'font-family:Outfit,Nunito,sans-serif;';
     html += 'transition:all 0.2s ease;';
     html += '">';
     html += '<span style="font-size:14px;">' + tab.icon + '</span>';
