@@ -2451,7 +2451,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <button class="nav-item" data-sec="admin" id="nav-admin-btn" onclick="navigate('admin')" style="display:none;"><span class="nav-icon">⚙️</span>Panel Admin</button>
     </div>
     <div class="sidebar-bottom">
-      <button id="pwa-install-menu-btn" onclick="installPWA()" style="display:none;width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;">📲 Instalar como App</button>
+      <button id="pwa-install-menu-btn" onclick="installPWA()" style="display:none !important;">📲 Instalar como App</button>
       <button class="btn-logout" onclick="doLogout()">← Cerrar sesión</button>
     </div>
   </nav>
@@ -4744,6 +4744,8 @@ function showNativeNotification(title, body, icon, url) {
 }
 
 function showNotifBanner() {
+  // Notification banner disabled
+  return;
   if(!_nativeNotifEnabled) return;
   if(_nativeNotifPermission === 'granted') return;
   if(_nativeNotifPermission === 'denied') return;
@@ -10005,6 +10007,8 @@ function showInstallMenuBtn() {
 }
 
 function showInstallBanner() {
+  // Install banner disabled
+  return;
   if(_pwaInstalled) return;
   if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
   if(document.getElementById('pwa-install-banner')) return;
