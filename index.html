@@ -2075,8 +2075,8 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
   <div class="landing-stats-area">
     <img src="/logo-skyteam-white.png" class="landing-stats-watermark" alt="">
     <div class="landing-stats-bar landing-reveal">
-      <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1,339</div><div class="landing-stat-label">Socios Activos</div></div>
-      <div class="landing-stat"><div class="landing-stat-num">8</div><div class="landing-stat-label">Países</div></div>
+      <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1,340</div><div class="landing-stat-label">Socios Activos</div></div>
+      <div class="landing-stat"><div class="landing-stat-num" id="paises-counter">9</div><div class="landing-stat-label">Países</div></div>
       <div class="landing-stat"><div class="landing-stat-num">100<span>%</span></div><div class="landing-stat-label">Digital</div></div>
       <div class="landing-stat"><div class="landing-stat-num">24/7</div><div class="landing-stat-label">Acceso</div></div>
     </div>
@@ -2909,7 +2909,7 @@ let CU = null;
 // ── LANDING PAGE NAVIGATION ──
 /* ── Socios counter — +1 every 90 minutes from a fixed epoch ── */
 (function(){
-  var base = 1339;
+  var base = 1340;
   var epoch = new Date('2026-04-03T00:00:00').getTime();
   var el = document.getElementById('socios-counter');
   if (!el) return;
@@ -2921,6 +2921,22 @@ let CU = null;
   }
   update();
   setInterval(update, 90 * 60000);
+})();
+
+/* ── Países counter — +1 on the 1st of each month starting April 2026 = 9 ── */
+(function(){
+  var baseMonth = 3; // April = month index 3 (0-based)
+  var baseYear = 2026;
+  var basePaises = 9;
+  var el = document.getElementById('paises-counter');
+  if (!el) return;
+  var now = new Date();
+  var currentMonth = now.getMonth();
+  var currentYear = now.getFullYear();
+  var monthsElapsed = (currentYear - baseYear) * 12 + (currentMonth - baseMonth);
+  if (monthsElapsed < 0) monthsElapsed = 0;
+  var total = basePaises + monthsElapsed;
+  el.textContent = total;
 })();
 
 /* ── Landing scroll animations ── */
