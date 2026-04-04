@@ -3492,6 +3492,36 @@ function showApp() {
     if(ab) ab.style.display='flex';
     try { renderAdminPanel(); } catch(e) { console.error('[SKY] Admin init failed:', e); }
   }
+
+  // Birthday check — notify admins and rank >= 5 (Nova 10K+)
+  if(CU && (CU.isAdmin || CU.rank >= 5) && typeof USERS !== 'undefined') {
+    setTimeout(function(){
+      try {
+        var today = new Date();
+        var mm = String(today.getMonth()+1).padStart(2,'0');
+        var dd = String(today.getDate()).padStart(2,'0');
+        var birthdayUsers = [];
+        Object.keys(USERS).forEach(function(k){
+          var u = USERS[k];
+          var bday = u.birthday || localStorage.getItem('skyteam_birthday_'+k) || '';
+          if(bday && bday.substring(5) === mm+'-'+dd) {
+            birthdayUsers.push(u.name || k);
+          }
+        });
+        if(birthdayUsers.length > 0) {
+          showToast('🎂 ¡Hoy cumple años: ' + birthdayUsers.join(', ') + '!');
+          if(typeof pushNotification === 'function') {
+            pushNotification({
+              id:'birthday_'+dd+mm, type:'info', icon:'🎂',
+              title:'🎂 Cumpleaños hoy',
+              subtitle: birthdayUsers.join(', '),
+              msg: birthdayUsers.length === 1 ? birthdayUsers[0]+' está de cumpleaños hoy. ¡Celébralo!' : birthdayUsers.length+' personas cumplen años hoy.'
+            });
+          }
+        }
+      } catch(e) { console.warn('Birthday check error:', e); }
+    }, 3000);
+  }
 }
 
 function rankBadge(r, small) {
@@ -9896,6 +9926,7 @@ function renderPerfil() {
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:10px;word-break:break-all;">skyteam.global?ref='+(CU.ref||CU.username)+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
+    + '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">🎂 Cumpleaños</span><input type="date" id="pf-birthday" value="'+(localStorage.getItem('skyteam_birthday_'+CU.username)||CU.birthday||'')+'" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>'
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
@@ -9906,15 +9937,6 @@ function renderPerfil() {
     + '<select onchange="saveTZ(this.value)" style="width:100%;background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">'
     + tzOptions
     + '</select>'
-    + '</div>'
-    + '</div>'
-    + '<div class="perfil-data-card">'
-    + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
-    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.40);text-transform:uppercase;">🎂 Fecha de cumpleaños</span>'
-    + '</div>'
-    + '<div style="padding:14px 18px;">'
-    + '<p style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:10px;">Tu equipo te celebrará ese día especial.</p>'
-    + '<input type="date" id="pf-birthday" value="'+(localStorage.getItem('skyteam_birthday_'+CU.username)||'')+'" onchange="saveBirthday(this.value)" style="width:100%;background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">'
     + '</div>'
     + '</div>'
     + '<div style="display:flex;gap:10px;">'
