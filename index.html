@@ -3018,18 +3018,31 @@ let CU = null;
 
 /* ── Landing scroll animations ── */
 (function(){
-  // IntersectionObserver for .landing-reveal elements
+  // Scroll-based reveal for .landing-reveal (IntersectionObserver fails because
+  // #landing-page has overflow-y:auto — it's its own scroll container)
   var revealEls = document.querySelectorAll('.landing-reveal');
-  if ('IntersectionObserver' in window && revealEls.length) {
-    var obs = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
-        if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-    revealEls.forEach(function(el) { obs.observe(el); });
-  } else {
-    revealEls.forEach(function(el) { el.classList.add('visible'); });
+  var lp = document.getElementById('landing-page');
+
+  function checkLandingReveals() {
+    var wh = window.innerHeight;
+    revealEls.forEach(function(el) {
+      if (el.classList.contains('visible')) return;
+      var r = el.getBoundingClientRect();
+      if (r.top < wh - 30 && r.bottom > 0 && r.height > 0) {
+        el.classList.add('visible');
+      }
+    });
   }
+
+  // Listen on both window and landing-page scroll
+  window.addEventListener('scroll', checkLandingReveals, { passive: true });
+  if (lp) lp.addEventListener('scroll', checkLandingReveals, { passive: true });
+  // Initial check + poll for first 5 seconds
+  checkLandingReveals();
+  setTimeout(checkLandingReveals, 300);
+  setTimeout(checkLandingReveals, 1000);
+  var _lpPoll = setInterval(function() { checkLandingReveals(); if (document.querySelectorAll('.landing-reveal:not(.visible)').length === 0) clearInterval(_lpPoll); }, 500);
+  setTimeout(function() { clearInterval(_lpPoll); }, 5000);
   // Nav scroll effect
   var nav = document.getElementById('landing-nav');
   if (nav) {
