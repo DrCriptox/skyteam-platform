@@ -489,6 +489,13 @@ function renderDashboard(container) {
 
 function initCoachButton() {
   if (document.getElementById('ob-coach-btn')) return;
+  // Don't show on landing or login screens
+  var lp = document.getElementById('landing-page');
+  var ls = document.getElementById('login-screen');
+  if ((lp && lp.style.display !== 'none') || (ls && ls.style.display !== 'none' && ls.style.display !== '')) {
+    setTimeout(initCoachButton, 3000);
+    return;
+  }
 
   var btn = document.createElement('div');
   btn.id = 'ob-coach-btn';
