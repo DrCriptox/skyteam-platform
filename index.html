@@ -3094,79 +3094,79 @@ function showLanding() {
     glow.classList.remove('active'); glowActive = false;
   });
 
-  // ── 2. IntersectionObserver Reveals (robust for dynamic content) ──
-  if ('IntersectionObserver' in window) {
-    var revealObs = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          revealObs.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
+  // ── 2. Scroll Reveals (getBoundingClientRect — works with overflow:hidden) ──
+  var REVEAL_SELECTORS = '.card,.stat-card,.module-card,.video-card,.crm-prospect-card,.notif-card,[class*="crm-dash"],[class*="crm-col"]';
+  var revealTicking = false;
 
-    // Selectors for all dynamic content containers
-    var REVEAL_SELECTORS = '.card,.stat-card,.module-card,.video-card,.crm-prospect-card,.notif-card,[class*="crm-dash"],[class*="crm-col"]';
-
-    function isVisible(el) {
-      return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-    }
-
-    function observeElements() {
-      // Find all revealable elements via selectors
-      document.querySelectorAll(REVEAL_SELECTORS).forEach(function(el) {
-        if (el.classList.contains('visible') || el.dataset.skyObs) return;
-        if (!isVisible(el)) return; // skip hidden elements
+  function tagRevealables() {
+    document.querySelectorAll(REVEAL_SELECTORS).forEach(function(el) {
+      if (!el.dataset.skyObs && !el.classList.contains('visible')) {
         el.dataset.skyObs = '1';
         el.classList.add('sky-reveal');
-        revealObs.observe(el);
-      });
-      // Also find any div children of #content that look like cards (inline styled with background + border)
-      var content = document.getElementById('content');
-      if (content) {
-        var divs = content.querySelectorAll('div');
-        for (var i = 0; i < divs.length; i++) {
-          var d = divs[i];
-          if (d.classList.contains('visible') || d.dataset.skyObs) continue;
-          if (!isVisible(d)) continue;
-          var s = d.style;
-          // Match card-like elements: has background, border, border-radius, and reasonable size
-          if (s.borderRadius && s.background && d.offsetHeight > 50 && d.offsetHeight < 600 && d.offsetWidth > 100) {
-            d.dataset.skyObs = '1';
-            d.classList.add('sky-reveal');
-            revealObs.observe(d);
-          }
+      }
+    });
+    // Also find card-like inline-styled elements
+    var content = document.getElementById('content');
+    if (content) {
+      var divs = content.querySelectorAll('div');
+      for (var i = 0; i < divs.length; i++) {
+        var d = divs[i];
+        if (d.dataset.skyObs || d.classList.contains('visible')) continue;
+        var s = d.style;
+        if (s.borderRadius && s.background && d.offsetHeight > 50 && d.offsetHeight < 600 && d.offsetWidth > 100) {
+          d.dataset.skyObs = '1';
+          d.classList.add('sky-reveal');
         }
       }
     }
-
-    // Watch for DOM changes to catch dynamically created elements
-    var domObs = new MutationObserver(function() {
-      setTimeout(observeElements, 80);
-    });
-    domObs.observe(document.body, { childList: true, subtree: true });
-
-    // Re-observe after navigation
-    if (typeof navigate === 'function') {
-      var _wrappedNav = navigate;
-      navigate = function(s) {
-        _wrappedNav(s);
-        // Clear old sky-obs flags so elements get re-evaluated
-        document.querySelectorAll('[data-sky-obs]').forEach(function(el) {
-          if (!el.classList.contains('visible')) {
-            el.classList.remove('sky-reveal');
-            delete el.dataset.skyObs;
-          }
-        });
-        setTimeout(observeElements, 150);
-        setTimeout(observeElements, 600);
-      };
-    }
-
-    // Initial
-    setTimeout(observeElements, 300);
-    setTimeout(observeElements, 1000);
   }
+
+  function checkReveals() {
+    var wh = window.innerHeight;
+    document.querySelectorAll('.sky-reveal:not(.visible)').forEach(function(el) {
+      var r = el.getBoundingClientRect();
+      if (r.top < wh - 20 && r.bottom > 0 && r.height > 0) {
+        el.classList.add('visible');
+      }
+    });
+  }
+
+  function revealTick() {
+    if (!revealTicking) {
+      revealTicking = true;
+      requestAnimationFrame(function() {
+        tagRevealables();
+        checkReveals();
+        revealTicking = false;
+      });
+    }
+  }
+
+  // Listen on both scroll targets and DOM mutations
+  var scrollEl = document.getElementById('content') || window;
+  scrollEl.addEventListener('scroll', revealTick, { passive: true });
+  window.addEventListener('scroll', revealTick, { passive: true });
+  window.addEventListener('resize', revealTick, { passive: true });
+
+  var domObs = new MutationObserver(function() { setTimeout(revealTick, 60); });
+  domObs.observe(document.body, { childList: true, subtree: true });
+
+  // Re-tag after navigation
+  if (typeof navigate === 'function') {
+    var _wrappedNav = navigate;
+    navigate = function(s) {
+      _wrappedNav(s);
+      document.querySelectorAll('[data-sky-obs]').forEach(function(el) {
+        if (!el.classList.contains('visible')) { el.classList.remove('sky-reveal'); delete el.dataset.skyObs; }
+      });
+      setTimeout(revealTick, 100);
+      setTimeout(revealTick, 400);
+    };
+  }
+
+  // Initial reveals
+  setTimeout(revealTick, 200);
+  setTimeout(revealTick, 800);
 
   // ── 2b. Scroll Progress Bar ──
   var scrollBar = document.createElement('div');
