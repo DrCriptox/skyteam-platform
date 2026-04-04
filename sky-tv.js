@@ -10,11 +10,12 @@ css.textContent = [
   '.skytv-header{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px;}',
   '.skytv-header h2{margin:0;font-size:22px;font-weight:700;display:flex;align-items:center;gap:8px;}',
   '.skytv-header-actions{display:flex;gap:8px;}',
-  '.skytv-btn{padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#F0EDE6;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;}',
-  '.skytv-btn:hover{background:rgba(255,255,255,0.12);}',
-  '.skytv-btn-primary{background:linear-gradient(135deg,#C9A84C,#E8D48B);border-color:rgba(255,255,255,0.10);}',
-  '.skytv-btn-primary:hover{background:linear-gradient(135deg,#E8D48B,#C9A84C);}',
-  '.skytv-countdown{background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03));border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}',
+  '.skytv-btn{padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#F0EDE6;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
+  '.skytv-btn:hover{background:rgba(255,255,255,0.12);transform:translateY(-1px);}',
+  '.skytv-btn-primary{background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 6s linear infinite;border-color:rgba(201,168,76,0.20);color:#0a0a12;font-weight:700;}',
+  '.skytv-btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(201,168,76,0.25);}',
+  '.skytv-countdown{background:rgba(255,255,255,0.025);border:1px solid rgba(201,168,76,0.12);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,0.2);position:relative;overflow:hidden;}',
+  '.skytv-countdown::before{content:\"\";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.2),transparent);}',
   '.skytv-countdown-timer{font-size:28px;font-weight:800;color:#E8D48B;min-width:120px;text-align:center;}',
   '.skytv-countdown-info{flex:1;}',
   '.skytv-countdown-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:rgba(240,237,230,0.5);margin-bottom:2px;}',
@@ -29,14 +30,15 @@ css.textContent = [
   '.skytv-today-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid rgba(201,168,76,0.20);background:rgba(255,255,255,0.05);color:#E8D48B;cursor:pointer;font-weight:600;}',
   '.skytv-cartelera{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}',
   '@media(max-width:768px){.skytv-cartelera{grid-template-columns:1fr;}}',
-  '.skytv-day{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;min-height:120px;transition:all 0.2s;}',
-  '.skytv-day.today{border-color:rgba(201,168,76,0.20);background:rgba(255,255,255,0.03);}',
+  '.skytv-day{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:12px;min-height:120px;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
+  '.skytv-day:hover{border-color:rgba(255,255,255,0.10);transform:translateY(-2px);}',
+  '.skytv-day.today{border-color:rgba(201,168,76,0.25);background:rgba(201,168,76,0.03);box-shadow:0 0 20px rgba(201,168,76,0.06);}',
   '.skytv-day-header{text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);}',
   '.skytv-day-name{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:rgba(240,237,230,0.5);font-weight:700;}',
   '.skytv-day-num{font-size:20px;font-weight:800;margin-top:2px;}',
   '.skytv-day.today .skytv-day-num{color:#E8D48B;}',
-  '.skytv-event{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;}',
-  '.skytv-event:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);}',
+  '.skytv-event{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}',
+  '.skytv-event:hover{background:rgba(255,255,255,0.08);border-color:rgba(201,168,76,0.20);transform:translateX(3px);}',
   '.skytv-event-time{font-size:11px;color:#E8D48B;font-weight:700;margin-bottom:3px;}',
   '.skytv-event-title{font-size:13px;font-weight:600;line-height:1.3;}',
   '.skytv-event-cat{display:inline-block;font-size:10px;padding:2px 8px;border-radius:6px;margin-top:4px;font-weight:600;}',
@@ -47,15 +49,17 @@ css.textContent = [
   '.skytv-cat-default{background:rgba(255,255,255,0.1);color:rgba(240,237,230,0.7);}',
   '.skytv-event-live{border-color:rgba(255,40,40,0.4);background:rgba(255,40,40,0.08);}',
   '.skytv-no-events{text-align:center;padding:16px 8px;color:rgba(240,237,230,0.3);font-size:12px;font-style:italic;}',
-  '.skytv-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}',
-  '.skytv-modal{background:#0a0a12;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;}',
+  '.skytv-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}',
+  '.skytv-modal{background:rgba(10,10,18,0.95);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 24px 64px rgba(0,0,0,0.5);animation:skyModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;}',
+  '@keyframes skyModalIn{from{opacity:0;transform:scale(0.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}',
   '.skytv-modal h3{margin:0 0 16px;font-size:18px;font-weight:700;}',
   '.skytv-modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:#F0EDE6;font-size:24px;cursor:pointer;}',
   '.skytv-detail-field{margin-bottom:12px;}',
   '.skytv-detail-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:rgba(240,237,230,0.4);margin-bottom:2px;}',
   '.skytv-detail-value{font-size:14px;}',
-  '.skytv-zoom-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:all 0.2s;}',
-  '.skytv-zoom-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,255,255,0.15);}'
+  '.skytv-zoom-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:12px;background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 6s linear infinite;border:none;color:#0a0a12;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}',
+  '.skytv-zoom-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px rgba(201,168,76,0.3);}',
+  '@keyframes goldShimmer{to{background-position:200% center;}}'
 ].join('');
 document.head.appendChild(css);
 
@@ -728,7 +732,7 @@ function checkLiveBanner() {
     // Create floating banner
     var b = document.createElement('div');
     b.id = 'sky-live-float';
-    b.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9995;background:rgba(10,10,18,0.95);border:1.5px solid rgba(220,38,38,0.6);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(220,38,38,0.25),0 0 60px rgba(220,38,38,0.08);cursor:pointer;animation:skyLivePulse 2s ease-in-out infinite;max-width:340px;';
+    b.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9995;background:rgba(10,10,18,0.92);border:1.5px solid rgba(220,38,38,0.5);border-radius:18px;padding:16px 20px;display:flex;align-items:center;gap:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 12px 40px rgba(220,38,38,0.2),0 0 80px rgba(220,38,38,0.06);cursor:pointer;animation:skyLivePulse 2.5s ease-in-out infinite;max-width:360px;font-family:Outfit,Nunito,sans-serif;';
     b.innerHTML = '<div style="width:12px;height:12px;border-radius:50%;background:#DC2626;box-shadow:0 0 8px rgba(220,38,38,0.8);flex-shrink:0;animation:skyLiveDot 1.5s ease-in-out infinite;"></div>'
       + '<div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:800;color:#DC2626;text-transform:uppercase;letter-spacing:1.5px;">● EN VIVO AHORA</div>'
       + '<div style="font-size:14px;font-weight:700;color:#fff;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (liveEv.titulo || 'Evento en vivo') + '</div>'
