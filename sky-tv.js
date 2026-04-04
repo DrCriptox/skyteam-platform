@@ -170,13 +170,18 @@ function renderCountdown(container) {
   if (diff < 0) { container.innerHTML = ''; return; }
   var hours = Math.floor(diff / 3600000);
   var mins = Math.floor((diff % 3600000) / 60000);
+  var secs = Math.floor((diff % 60000) / 1000);
 
   container.innerHTML = '';
   var cd = document.createElement('div');
   cd.className = 'skytv-countdown';
   var timer = document.createElement('div');
   timer.className = 'skytv-countdown-timer';
-  timer.textContent = hours + 'h ' + mins + 'm';
+  if (hours > 0) {
+    timer.textContent = hours + 'h ' + mins + 'm ' + secs + 's';
+  } else {
+    timer.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+  }
   var info2 = document.createElement('div');
   info2.className = 'skytv-countdown-info';
   var label = document.createElement('div');
@@ -336,7 +341,7 @@ function renderCartelera() {
   window._skytvCountdownInterval = setInterval(function() {
     var cdDiv = document.getElementById('skytv-countdown');
     if (cdDiv) renderCountdown(cdDiv);
-  }, 60000);
+  }, 1000);
 }
 
 // --- EVENT DETAIL MODAL ---
@@ -416,6 +421,23 @@ function openEventDetail(ev) {
     recBtn.onclick = function() { window.open(ev.grabacion_url, '_blank'); };
     modal.appendChild(recBtn);
   }
+
+  // Add to Calendar button (Google Calendar) — for all users
+  var calBtn = document.createElement('button');
+  calBtn.className = 'skytv-btn skytv-btn-primary';
+  calBtn.style.cssText = 'margin-top:8px;width:100%;';
+  calBtn.textContent = '\uD83D\uDCC5 Agregar a mi calendario';
+  calBtn.onclick = function() {
+    var startDate = ev.fecha.replace(/-/g,'') + 'T' + (ev.hora_inicio||'09:00').replace(':','') + '00';
+    var endDate = ev.fecha.replace(/-/g,'') + 'T' + (ev.hora_fin||ev.hora_inicio||'10:00').replace(':','') + '00';
+    var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      + '&text=' + encodeURIComponent(ev.titulo || 'Evento SkyTeam')
+      + '&dates=' + startDate + '/' + endDate
+      + '&details=' + encodeURIComponent((ev.descripcion || '') + (ev.zoom_link ? '\n\nZoom: ' + ev.zoom_link : ''))
+      + '&location=' + encodeURIComponent(ev.zoom_link || 'Zoom');
+    window.open(gcalUrl, '_blank');
+  };
+  modal.appendChild(calBtn);
 
   // Admin actions
   if (skyTvState.userIsAdmin) {
@@ -541,8 +563,10 @@ function openAdminEventForm(existingEvent) {
     }
     if (ev.id) {
       data.id = ev.id;
+      if (typeof CU !== 'undefined' && CU && CU.username) data.username = CU.username;
       saveEvento(data, 'update', function() { overlay.remove(); loadEventos(); });
     } else {
+      if (typeof CU !== 'undefined' && CU && CU.username) data.created_by = CU.username;
       saveEvento(data, 'create', function() { overlay.remove(); loadEventos(); });
     }
   };
@@ -588,7 +612,7 @@ function deleteEvento(id, callback) {
   fetch('/api/eventos.js?action=delete', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id: id})
+    body: JSON.stringify({id: id, username: (typeof CU !== 'undefined' && CU && CU.username) ? CU.username : undefined})
   })
     .then(function(r) { return r.json(); })
     .then(function() {
@@ -604,7 +628,7 @@ function toggleLive(id, isLive, callback) {
   fetch('/api/eventos.js?action=toggle-live', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id: id, en_vivo: isLive})
+    body: JSON.stringify({id: id, en_vivo: isLive, username: (typeof CU !== 'undefined' && CU && CU.username) ? CU.username : undefined})
   })
     .then(function(r) { return r.json(); })
     .then(function() {
@@ -628,11 +652,35 @@ function checkSkyTvNotifications() {
   skyTvState.eventos.forEach(function(ev) {
     if (!ev.fecha || !ev.hora_inicio) return;
     var dt = new Date(ev.fecha + 'T' + ev.hora_inicio);
-    var diff = dt - now;
+    var diff = (dt - now) / 60000; // diff in minutes
     var evId = ev.id || ev.titulo;
 
+    // 8 hours before
+    if (diff > 7*60 && diff <= 8*60 && !_skyTvNotifSent['8h_' + evId]) {
+      _skyTvNotifSent['8h_' + evId] = true;
+      pushNotification({
+        id: 'skytv_8h_'+evId, type: 'event', icon: '\uD83D\uDCC5',
+        title: '\uD83D\uDCC5 Evento en 8 horas',
+        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
+        msg: 'Prep\u00e1rate para la sesi\u00f3n de hoy.',
+        action: ev.zoom_link ? {label: '\uD83D\uDCF9 Unirse a Zoom', url: ev.zoom_link} : {label: '\uD83D\uDCFA Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+      });
+    }
+
+    // 4 hours before
+    if (diff > 3*60 && diff <= 4*60 && !_skyTvNotifSent['4h_' + evId]) {
+      _skyTvNotifSent['4h_' + evId] = true;
+      pushNotification({
+        id: 'skytv_4h_'+evId, type: 'event', icon: '\u23F0',
+        title: '\u23F0 Evento en 4 horas',
+        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
+        msg: 'No olvides conectarte.',
+        action: ev.zoom_link ? {label: '\uD83D\uDCF9 Unirse a Zoom', url: ev.zoom_link} : {label: '\uD83D\uDCFA Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+      });
+    }
+
     // 1 hour before — reminder
-    if (diff > 30*60000 && diff <= 60*60000 && !_skyTvNotifSent['1h_'+evId]) {
+    if (diff > 30 && diff <= 60 && !_skyTvNotifSent['1h_'+evId]) {
       _skyTvNotifSent['1h_'+evId] = true;
       pushNotification({
         id: 'skytv_1h_'+evId, type: 'event', icon: '📺',
@@ -644,7 +692,7 @@ function checkSkyTvNotifications() {
     }
 
     // 15 minutes before — urgent reminder
-    if (diff > 0 && diff <= 15*60000 && !_skyTvNotifSent['15m_'+evId]) {
+    if (diff > 0 && diff <= 15 && !_skyTvNotifSent['15m_'+evId]) {
       _skyTvNotifSent['15m_'+evId] = true;
       pushNotification({
         id: 'skytv_15m_'+evId, type: 'event', icon: '⏰',
@@ -681,8 +729,7 @@ window.initSkyTv = function() {
   if (container && !container.querySelector('.sky-tv-loaded')) {
     container.insertAdjacentHTML('afterbegin', '<div class="sky-tv-loading" style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.4);font-size:14px;">Cargando Sky TV...</div>');
   }
-  var adminBtn = document.getElementById('nav-admin-btn') || document.querySelector('[onclick*="admin"]');
-  skyTvState.userIsAdmin = !!adminBtn;
+  skyTvState.userIsAdmin = !!(typeof CU !== 'undefined' && CU && CU.isAdmin);
   skyTvState.selectedWeek = new Date();
   loadEventos(function() { startSkyTvNotifEngine(); });
 };
