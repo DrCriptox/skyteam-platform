@@ -4075,7 +4075,30 @@ function loadPlanDiario() {
   var ws = fmtDate(dates[0]), we = fmtDate(dates[6]);
   fetch('/api/plan-diario?user='+(CU.ref||CU.user||'')+'&weekStart='+ws+'&weekEnd='+we)
     .then(function(r){return r.json();})
-    .then(function(d){ planDiarioBlocks=d.blocks||[]; renderPlanDiarioCalendar(); })
+    .then(function(d){
+      planDiarioBlocks=d.blocks||[];
+      // Also sync agenda bookings as "Cierre" blocks
+      fetch('/api/agenda?action=list&user='+(CU.ref||CU.username||''))
+        .then(function(r){return r.json();})
+        .then(function(bkData){
+          var bookings = Array.isArray(bkData) ? bkData : (bkData.bookings||bkData.data||[]);
+          bookings.forEach(function(bk){
+            if(!bk.fecha_iso) return;
+            var dt = new Date(bk.fecha_iso);
+            if(isNaN(dt.getTime())) return;
+            var fecha = dt.toISOString().split('T')[0];
+            var hi = String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+            var dur = (typeof agendaConfig!=='undefined' && agendaConfig && agendaConfig.duracion) ? agendaConfig.duracion : 60;
+            var endDt = new Date(dt.getTime()+dur*60000);
+            var hf = String(endDt.getHours()).padStart(2,'0')+':'+String(endDt.getMinutes()).padStart(2,'0');
+            var exists = planDiarioBlocks.some(function(pb){ return pb.fecha===fecha && pb.hora_inicio===hi && pb.titulo && pb.titulo.indexOf('Cierre')>-1; });
+            if(!exists){
+              planDiarioBlocks.push({fecha:fecha, hora_inicio:hi, hora_fin:hf, titulo:'\uD83D\uDD34 Cierre: '+(bk.nombre||'Prospecto'), categoria:'cierre', _isBooking:true, _bookingId:bk.id});
+            }
+          });
+          renderPlanDiarioCalendar();
+        }).catch(function(){ renderPlanDiarioCalendar(); });
+    })
     .catch(function(){ planDiarioBlocks=[]; renderPlanDiarioCalendar(); });
 }
 
@@ -4152,17 +4175,20 @@ function renderPlanDiarioCalendar() {
       var dateStr = fmtDate(d);
       var hStr = String(h).padStart(2,'0')+':00';
       var hEnd = String(h).padStart(2,'0')+':59';
-      // Find blocks in this hour
+      // Find blocks that START in this hour only (not overlap)
+      var nextHStr = String(h+1).padStart(2,'0')+':00';
       var cellBlocks = planDiarioBlocks.filter(function(b){
-        return b.fecha===dateStr && b.hora_inicio<String(h+1).padStart(2,'0')+':00' && b.hora_fin>hStr;
+        return b.fecha===dateStr && b.hora_inicio>=hStr && b.hora_inicio<nextHStr;
       });
       html += '<div class="pd-cell" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+hStr+'\')">';
       cellBlocks.forEach(function(b){
         var cat = b.categoria||'personal';
-        var catColors = {personal:'#C9A84C',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C'};
-        var color = catColors[cat]||'#C9A84C';
-        html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+color+'15;" onclick="event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')">';
-        html += '<span class="pd-block-title">'+b.titulo+'</span>';
+        var isBooking = cat==='cierre' || b._isBooking;
+        var catColors = {personal:'#C9A84C',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C',cierre:'#DC2626'};
+        var color = isBooking ? '#DC2626' : (catColors[cat]||'#C9A84C');
+        var bgAlpha = isBooking ? 'rgba(220,38,38,0.10)' : color+'15';
+        html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';" onclick="event.stopPropagation();'+(b._isBooking?'':'openPlanDiarioEdit(\''+b.id+'\')')+'">';
+        html += '<span class="pd-block-title" style="'+(isBooking?'color:#DC2626;font-weight:700;':'')+'">'+b.titulo+'</span>';
         html += '<span class="pd-block-time">'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+'</span>';
         html += '</div>';
       });
@@ -4622,11 +4648,11 @@ function addBookingToPlanDiario(booking) {
     var fd = new Date(booking.fechaISO);
     var fecha = fd.getFullYear()+'-'+String(fd.getMonth()+1).padStart(2,'0')+'-'+String(fd.getDate()).padStart(2,'0');
     var hIni = String(fd.getHours()).padStart(2,'0')+':'+String(fd.getMinutes()).padStart(2,'0');
-    var dur = (agendaConfig && agendaConfig.duracion) || 30;
+    var dur = (agendaConfig && agendaConfig.duracion) || 60;
     var endDate = new Date(fd.getTime() + dur*60000);
     var hFin = String(endDate.getHours()).padStart(2,'0')+':'+String(endDate.getMinutes()).padStart(2,'0');
-    var titulo = '🤝 Cierre: ' + (booking.nombre || 'Prospecto');
-    var block = {fecha:fecha, hora_inicio:hIni, hora_fin:hFin, titulo:titulo, categoria:'trabajo'};
+    var titulo = '🔴 Cierre: ' + (booking.nombre || 'Prospecto');
+    var block = {fecha:fecha, hora_inicio:hIni, hora_fin:hFin, titulo:titulo, categoria:'cierre'};
     fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:CU.ref||CU.user||'',blocks:[block]})})
       .then(function(r){return r.json();})
       .then(function(d){ if(d.ok) console.log('[SKY] Booking added to Plan Diario'); })
