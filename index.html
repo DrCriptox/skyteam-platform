@@ -2111,6 +2111,18 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 </head>
 <body>
 
+<script>
+// Ensure landing page is scrollable: hide #app, remove nebula overlays on landing
+document.addEventListener('DOMContentLoaded',function(){
+  var lp=document.getElementById('landing-page');
+  if(lp && lp.style.display!=='none'){
+    var app=document.getElementById('app');if(app)app.style.display='none';
+    var n=document.getElementById('sky-nebula');if(n)n.style.display='none';
+    var ns=document.getElementById('sky-noise');if(ns)ns.style.display='none';
+    var g=document.getElementById('sky-cursor-glow');if(g)g.style.display='none';
+  }
+});
+</script>
 <!-- ══════════════ LANDING PAGE ══════════════ -->
 <div id="landing-page">
   <!-- NAV -->
