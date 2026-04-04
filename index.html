@@ -2076,7 +2076,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
     <img src="/logo-skyteam-white.png" class="landing-stats-watermark" alt="">
     <div class="landing-stats-bar landing-reveal">
       <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1.340</div><div class="landing-stat-label">Socios Activos</div></div>
-      <div class="landing-stat"><div class="landing-stat-num" id="paises-counter">8</div><div class="landing-stat-label">Países</div></div>
+      <div class="landing-stat"><div class="landing-stat-num" id="paises-counter">6</div><div class="landing-stat-label">Países</div></div>
       <div class="landing-stat"><div class="landing-stat-num">100<span>%</span></div><div class="landing-stat-label">Digital</div></div>
       <div class="landing-stat"><div class="landing-stat-num">24/7</div><div class="landing-stat-label">Acceso</div></div>
     </div>
@@ -2925,7 +2925,7 @@ let CU = null;
 
 /* ── Países counter — +1 on the 1st of each month starting April 2026 = 9 ── */
 (function(){
-  var basePaises = 8;
+  var basePaises = 6;
   var el = document.getElementById('paises-counter');
   if (!el) return;
   var now = new Date();
@@ -2934,7 +2934,7 @@ let CU = null;
   // +1 each month starting May 2026 (month index 4), cap at November (month 10)
   var monthsElapsed = (currentYear - 2026) * 12 + (currentMonth - 4);
   if (monthsElapsed < 0) monthsElapsed = 0;
-  if (monthsElapsed > 7) monthsElapsed = 7; // max: May-Nov = 7 months added
+  if (monthsElapsed > 7) monthsElapsed = 7; // max: May=7, Jun=8... Nov=13, stop
   var total = basePaises + monthsElapsed;
   el.textContent = total;
 })();
