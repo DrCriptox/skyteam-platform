@@ -2,7 +2,7 @@
 <html lang="es">
 <head> 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>SKYTEAM — Franquicia Digital Global</title>
 <meta name="description" content="SKYTEAM es la franquicia digital #1 en Latinoamérica. Educación, tecnología e inteligencia artificial para construir tu negocio global. Únete a +500 emprendedores.">
 <meta name="keywords" content="SKYTEAM, franquicia digital, negocio online, emprendimiento, network marketing, ingresos pasivos, Latinoamérica">
@@ -9881,6 +9881,15 @@ function renderPerfil() {
     + '</select>'
     + '</div>'
     + '</div>'
+    + '<div class="perfil-data-card">'
+    + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
+    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.40);text-transform:uppercase;">🎂 Fecha de cumpleaños</span>'
+    + '</div>'
+    + '<div style="padding:14px 18px;">'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:10px;">Tu equipo te celebrará ese día especial.</p>'
+    + '<input type="date" id="pf-birthday" value="'+(localStorage.getItem('skyteam_birthday_'+CU.username)||'')+'" onchange="saveBirthday(this.value)" style="width:100%;background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">'
+    + '</div>'
+    + '</div>'
     + '<div style="display:flex;gap:10px;">'
     + '<button class="btn-main" style="flex:1;font-size:13px;" onclick="copyText(document.getElementById(\'perfil-content\').dataset.ref||\'ref\');showToast(\'Link copiado ✓\')">📋 Copiar mi link</button>'
     + '<button style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="navigate(\'home\')">← Volver</button>'
@@ -10082,6 +10091,20 @@ function saveTZ(tz) {
   localStorage.setItem('skyteam_tz', tz);
   if(CU) { CU.timezone = tz; localStorage.setItem('skyteam_u', JSON.stringify(CU)); }
   showToast('Zona horaria guardada ✓');
+}
+function saveBirthday(val) {
+  if(!CU) return;
+  localStorage.setItem('skyteam_birthday_'+CU.username, val);
+  if(CU) { CU.birthday = val; localStorage.setItem('skyteam_u', JSON.stringify(CU)); }
+  // Save to server
+  fetch('/api/update-user', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: CU.username, updates: { birthday: val } })
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.ok) showToast('🎂 Cumpleaños guardado ✓');
+    else showToast('Error guardando cumpleaños','error');
+  }).catch(function(){ showToast('Error de conexión','error'); });
 }
 
 /* ── INIT ── */

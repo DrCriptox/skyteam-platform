@@ -132,6 +132,7 @@ export default async function handler(req, res) {
     }
 
     let emailSent = false;
+    console.log('[APROBAR] Email check — sol.email:', sol.email || 'EMPTY', '| RESEND_KEY exists:', !!process.env.RESEND_API_KEY);
     if (sol.email && process.env.RESEND_API_KEY) {
       const logoUrl = 'https://skyteam.global/logo-skyteam.png';
       const FROM = 'SKYTEAM <soporte@skyteam.global>';
@@ -141,20 +142,24 @@ export default async function handler(req, res) {
       const html2 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;"><div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);"><img src="' + logoUrl + '" alt="SKYTEAM" style="height:44px;max-width:240px;" /></div><div style="padding:32px;"><h2 style="color:#FFD700;font-size:22px;text-align:center;margin:0 0 20px;">🚀 Tu link de duplicación está listo</h2><p style="color:rgba(255,255,255,0.8);line-height:1.7;">Hola <strong>' + primerNombre + '</strong>, este es tu link personalizado:</p><div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:20px;text-align:center;margin:20px 0;"><p style="font-family:monospace;color:#FFD700;font-size:15px;word-break:break-all;margin:0;">' + refLink + '</p></div><ol style="color:rgba(255,255,255,0.7);font-size:13px;line-height:2.2;padding-left:18px;"><li>Comparte este link con personas que quieran ingresos extra</li><li>Quien se registre quedará en tu red automáticamente</li><li>Usa los Agentes IA para responder objeciones</li><li>Revisa la Academia para capacitarte</li></ol><div style="text-align:center;margin:24px 0;"><a href="' + refLink + '" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Ver mi landing →</a></div></div><div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p></div></div>';
 
       try {
+        console.log('[APROBAR] Sending welcome email to:', sol.email);
         const e1 = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY },
-          body: JSON.stringify({ from: FROM, to: [sol.email], subject: '🎉 ¡Bienvenido a SKY SYSTEM, ' + primerNombre + '! Tu acceso está activo', html: html1 })
+          body: JSON.stringify({ from: FROM, to: [sol.email], subject: '🎉 ¡Bienvenido a SKYTEAM, ' + primerNombre + '! Tu acceso está activo', html: html1 })
         });
+        const e1Body = await e1.text();
+        console.log('[APROBAR] Email 1 status:', e1.status, 'response:', e1Body);
         if (e1.ok) {
           emailSent = true;
-          fetch('https://api.resend.com/emails', {
+          const e2 = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY },
             body: JSON.stringify({ from: FROM, to: [sol.email], subject: '🔗 Tu link de duplicación personalizado — SKYTEAM', html: html2 })
           });
+          console.log('[APROBAR] Email 2 status:', e2.status);
         }
-      } catch (e) { /* email is best-effort */ }
+      } catch (e) { console.error('[APROBAR] Email error:', e.message); }
     }
 
     return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent, refLink });
