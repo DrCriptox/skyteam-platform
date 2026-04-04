@@ -37,7 +37,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>if(window.navigator.standalone===true)document.documentElement.classList.add('ios-standalone');</script>
 <style>
-html,body{margin:0;padding:0;min-height:100%;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}}
+html,body{height:100%;margin:0;padding:0;}
+body.landing-active{height:auto;min-height:100%;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}}
 :root{--gold:#C9A84C;--gold2:#B8943F;--gold-d:rgba(255,255,255,0.03);--gold-b:rgba(255,255,255,0.08);--gold-1:#E8D48B;--bg:#050508;--bg2:#0a0a12;--bg3:#0f0f18;--bg4:#14141f;--border:rgba(255,255,255,0.04);--border2:rgba(255,255,255,0.08);--text:#F5F0E8;--muted:rgba(255,255,255,0.40);--muted2:rgba(255,255,255,0.22);--blue:#C9A84C;--blue-d:rgba(255,255,255,0.03);--blue-b:rgba(255,255,255,0.08);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;
 /* Design tokens — spacing */
 --sp-xs:4px;--sp-sm:8px;--sp-md:14px;--sp-lg:20px;--sp-xl:28px;--sp-2xl:40px;
@@ -2118,6 +2119,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 document.addEventListener('DOMContentLoaded',function(){
   var lp=document.getElementById('landing-page');
   if(lp && lp.style.display!=='none'){
+    document.body.classList.add('landing-active');
     var app=document.getElementById('app');if(app)app.style.display='none';
     var n=document.getElementById('sky-nebula');if(n)n.style.display='none';
     var ns=document.getElementById('sky-noise');if(ns)ns.style.display='none';
@@ -3049,11 +3051,9 @@ let CU = null;
 
 function showLoginFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
+  document.body.classList.remove('landing-active');
   var ls = document.getElementById('login-screen');
   ls.style.display = 'flex';
-  // Restore body height for login screen
-  document.body.style.height = '100%';
-  document.documentElement.style.height = '100%';
   window.scrollTo(0, 0);
   history.replaceState(null, '', '/login');
   var lu = document.getElementById('lu');
@@ -3061,10 +3061,9 @@ function showLoginFromLanding() {
 }
 function showRegisterFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
+  document.body.classList.remove('landing-active');
   var ls = document.getElementById('login-screen');
   ls.style.display = 'flex';
-  document.body.style.height = '100%';
-  document.documentElement.style.height = '100%';
   window.scrollTo(0, 0);
   history.replaceState(null, '', '/registro');
   // Auto-open the solicitud box
