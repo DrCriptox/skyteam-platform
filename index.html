@@ -3164,9 +3164,13 @@ function showLanding() {
     };
   }
 
-  // Initial reveals
-  setTimeout(revealTick, 200);
-  setTimeout(revealTick, 800);
+  // Initial reveals — aggressive polling until content appears, then stop
+  var initPoll = setInterval(function() {
+    tagRevealables();
+    checkReveals();
+    if (document.querySelectorAll('.sky-reveal.visible').length > 0) clearInterval(initPoll);
+  }, 200);
+  setTimeout(function() { clearInterval(initPoll); }, 8000);
 
   // ── 2b. Scroll Progress Bar ──
   var scrollBar = document.createElement('div');
