@@ -717,10 +717,70 @@ function checkSkyTvNotifications() {
   });
 }
 
+// --- FLOATING LIVE BANNER (appears on ANY page when event is live) ---
+var _skyTvLiveBanner = null;
+
+function checkLiveBanner() {
+  if (!skyTvState.eventos || !skyTvState.eventos.length) return;
+  var liveEv = skyTvState.eventos.find(function(ev) { return ev.en_vivo; });
+
+  if (liveEv && !_skyTvLiveBanner) {
+    // Create floating banner
+    var b = document.createElement('div');
+    b.id = 'sky-live-float';
+    b.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9995;background:rgba(10,10,18,0.95);border:1.5px solid rgba(220,38,38,0.6);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(220,38,38,0.25),0 0 60px rgba(220,38,38,0.08);cursor:pointer;animation:skyLivePulse 2s ease-in-out infinite;max-width:340px;';
+    b.innerHTML = '<div style="width:12px;height:12px;border-radius:50%;background:#DC2626;box-shadow:0 0 8px rgba(220,38,38,0.8);flex-shrink:0;animation:skyLiveDot 1.5s ease-in-out infinite;"></div>'
+      + '<div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:800;color:#DC2626;text-transform:uppercase;letter-spacing:1.5px;">● EN VIVO AHORA</div>'
+      + '<div style="font-size:14px;font-weight:700;color:#fff;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (liveEv.titulo || 'Evento en vivo') + '</div>'
+      + (liveEv.host_nombre ? '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:1px;">con ' + liveEv.host_nombre + '</div>' : '')
+      + '</div>'
+      + '<div style="background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:0.5px;">Unirse →</div>';
+
+    b.onclick = function() {
+      if (liveEv.zoom_link) {
+        window.open(liveEv.zoom_link, '_blank');
+      } else if (typeof navigate === 'function') {
+        navigate('sky-tv');
+      }
+    };
+
+    // Close button
+    var closeBtn = document.createElement('div');
+    closeBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,0.5);cursor:pointer;';
+    closeBtn.textContent = '✕';
+    closeBtn.onclick = function(e) {
+      e.stopPropagation();
+      b.remove();
+      _skyTvLiveBanner = 'dismissed';
+    };
+    b.appendChild(closeBtn);
+
+    document.body.appendChild(b);
+    _skyTvLiveBanner = b;
+
+    // Add animations if not already
+    if (!document.getElementById('sky-live-css')) {
+      var css = document.createElement('style');
+      css.id = 'sky-live-css';
+      css.textContent = '@keyframes skyLivePulse{0%,100%{box-shadow:0 8px 32px rgba(220,38,38,0.25),0 0 60px rgba(220,38,38,0.08);}50%{box-shadow:0 8px 32px rgba(220,38,38,0.4),0 0 80px rgba(220,38,38,0.15);}}@keyframes skyLiveDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.7);}}@media(max-width:768px){#sky-live-float{bottom:80px;right:12px;left:12px;max-width:none;}}';
+      document.head.appendChild(css);
+    }
+
+  } else if (!liveEv && _skyTvLiveBanner && _skyTvLiveBanner !== 'dismissed') {
+    // Remove banner when event is no longer live
+    if (_skyTvLiveBanner.remove) _skyTvLiveBanner.remove();
+    _skyTvLiveBanner = null;
+  }
+}
+
 function startSkyTvNotifEngine() {
   if (_skyTvNotifInterval) clearInterval(_skyTvNotifInterval);
   checkSkyTvNotifications();
-  _skyTvNotifInterval = setInterval(checkSkyTvNotifications, 60000);
+  checkLiveBanner();
+  _skyTvNotifInterval = setInterval(function() {
+    checkSkyTvNotifications();
+    checkLiveBanner();
+  }, 60000);
 }
 
 // --- INIT ---
