@@ -3100,10 +3100,10 @@ function showLanding() {
 
   function tagRevealables() {
     document.querySelectorAll(REVEAL_SELECTORS).forEach(function(el) {
-      if (!el.dataset.skyObs && !el.classList.contains('visible')) {
-        el.dataset.skyObs = '1';
-        el.classList.add('sky-reveal');
-      }
+      if (el.dataset.skyObs || el.classList.contains('visible')) return;
+      if (el.offsetHeight < 20 || el.offsetWidth < 20) return; // skip hidden
+      el.dataset.skyObs = '1';
+      el.classList.add('sky-reveal');
     });
     // Also find card-like inline-styled elements
     var content = document.getElementById('content');
