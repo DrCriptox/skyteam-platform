@@ -204,7 +204,7 @@ async function handleTriggers(req, res) {
       }
     }
 
-    // ── TRIGGER 6: New prospect registered via referral link (notify sponsor) ──
+    // ── TRIGGER 6: New registration — notify up to 4 levels of upline ──
     try {
       const fifteenMinAgoISO = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
       const newUsers = await sb(
@@ -215,23 +215,33 @@ async function handleTriggers(req, res) {
       );
 
       if (newUsers && newUsers.length > 0) {
-        const bySponsor = {};
-        for (const u of newUsers) {
-          if (!u.sponsor) continue;
-          const sponsorKey = u.sponsor.toLowerCase();
-          if (!bySponsor[sponsorKey]) bySponsor[sponsorKey] = [];
-          bySponsor[sponsorKey].push(u);
-        }
+        // Get all users to resolve sponsor chain
+        const allUsers = await sb('users?select=username,name,sponsor&limit=5000');
+        const userMap = {};
+        if (allUsers) allUsers.forEach(u => { userMap[u.username.toLowerCase()] = u; });
 
-        for (const [sponsor, recruits] of Object.entries(bySponsor)) {
-          const names = recruits.map(r => (r.name || r.username).split(' ')[0]).join(', ');
-          const body = recruits.length === 1
-            ? names + ' se acaba de registrar con tu link de referido. Dale la bienvenida!'
-            : recruits.length + ' personas se registraron con tu link: ' + names;
+        for (const newUser of newUsers) {
+          const fullName = newUser.name || newUser.username;
+          const tag = 'skyteam-newreg-' + newUser.username + '-' + now.toISOString().slice(0, 16);
 
-          const r = await pushToUser(sponsor, '🎉 Nuevo registro en tu equipo', body, '/?nav=home', 'skyteam-newreg-' + now.toISOString().slice(0, 16));
-          results.triggers.push({ type: 'new_referral', sponsor, count: recruits.length, sent: r.sent });
-          results.sent += r.sent;
+          // Walk up to 4 levels of sponsor chain
+          let currentSponsor = newUser.sponsor ? newUser.sponsor.toLowerCase() : null;
+          const levels = ['1ra línea (directo)', '2da línea', '3ra línea', '4ta línea'];
+
+          for (let level = 0; level < 4 && currentSponsor; level++) {
+            const sponsorData = userMap[currentSponsor];
+            if (!sponsorData) break;
+
+            const title = '🎉 Nuevo socio en tu red';
+            const body = fullName + ' se registró en tu ' + levels[level] + '. ¡Tu equipo crece!';
+
+            const r = await pushToUser(currentSponsor, title, body, '/?nav=home', tag + '-L' + (level+1));
+            results.triggers.push({ type: 'new_referral_L' + (level+1), sponsor: currentSponsor, newUser: newUser.username, sent: r.sent });
+            results.sent += r.sent;
+
+            // Move to next level
+            currentSponsor = sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;
+          }
         }
       }
     } catch (e) { results.errors.push('new_referral: ' + e.message); }
