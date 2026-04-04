@@ -340,6 +340,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
   .landing-stat{flex:1 1 40%;min-width:140px;}
   .landing-stat{padding:16px 20px;}
   .landing-stat-num{font-size:40px;}
+}
 
 /* ── LOGIN — Luxury Redesign ── */
 #login-screen{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow-y:auto;overflow-x:hidden;background-image:linear-gradient(135deg,rgba(5,5,8,0.72) 0%,rgba(5,5,8,0.55) 50%,rgba(5,5,8,0.72) 100%),url('/jet2-vertical.png');background-size:cover;background-position:center;}
@@ -4140,7 +4141,7 @@ function renderPlanDiarioUI() {
   // Week navigation
   var dates = getPlanDiarioWeekDates(planDiarioWeekOffset);
   var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var weekLabel = dates[0].getDate()+' '+MESES[dates[0].getMonth()]+' — '+dates[6].getDate()+' '+MESES[dates[6].getMonth()]+' '+dates[6].getFullYear();
+  var weekLabel = dates[0].getDate()+' '+MESES[dates[0].getMonth()]+' — '+dates[dates.length-1].getDate()+' '+MESES[dates[dates.length-1].getMonth()]+' '+dates[dates.length-1].getFullYear();
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
   html += '<button onclick="planDiarioWeekOffset--;loadPlanDiario()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;">◀</button>';
   html += '<div style="text-align:center;">';
@@ -4411,12 +4412,12 @@ function processPlanDiarioInput() {
 
   // Build context of existing blocks for delete/modify
   var existingCtx = '';
-  var weekBlocks = planDiarioBlocks.filter(function(b){ return b.fecha>=fmtDate(dates[0]) && b.fecha<=fmtDate(dates[6]) && !b._isBooking; });
+  var weekBlocks = planDiarioBlocks.filter(function(b){ return b.fecha>=fmtDate(dates[0]) && b.fecha<=fmtDate(dates[dates.length-1]) && !b._isBooking; });
   if(weekBlocks.length>0) {
     existingCtx = ' Bloques existentes esta semana: ' + weekBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
   }
 
-  var systemPrompt = 'Eres un asistente de calendario personal. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Semana: '+fmtDate(dates[0])+' a '+fmtDate(dates[6])+'.'+existingCtx+' Responde SOLO con un JSON object (no array), sin explicación. Formato: {"action":"add|delete|delete_all|modify","blocks":[...]}. ACCIONES: (1) "add": blocks con {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro. (2) "delete": blocks con {id} del bloque a borrar. Si el usuario dice "borra el gimnasio del lunes" busca el id en los bloques existentes. (3) "delete_all": blocks con {fecha} para borrar TODOS los bloques de ese día. Si dice "borra toda la agenda de hoy" usa fecha de hoy. (4) "modify": blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria} — borra el viejo y crea el nuevo. Si no especifica fecha usa hoy. Si dice "todos los lunes" genera uno por cada lunes de la semana. IMPORTANTE: Siempre responde con el JSON object, nunca texto adicional.';
+  var systemPrompt = 'Eres un asistente de calendario personal. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Semana: '+fmtDate(dates[0])+' a '+fmtDate(dates[dates.length-1])+'.'+existingCtx+' Responde SOLO con un JSON object (no array), sin explicación. Formato: {"action":"add|delete|delete_all|modify","blocks":[...]}. ACCIONES: (1) "add": blocks con {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro. (2) "delete": blocks con {id} del bloque a borrar. Si el usuario dice "borra el gimnasio del lunes" busca el id en los bloques existentes. (3) "delete_all": blocks con {fecha} para borrar TODOS los bloques de ese día. Si dice "borra toda la agenda de hoy" usa fecha de hoy. (4) "modify": blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria} — borra el viejo y crea el nuevo. Si no especifica fecha usa hoy. Si dice "todos los lunes" genera uno por cada lunes de la semana. IMPORTANTE: Siempre responde con el JSON object, nunca texto adicional.';
 
   fetch('/api/chat', {
     method:'POST',
