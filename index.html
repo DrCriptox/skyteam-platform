@@ -163,7 +163,7 @@ select option{background:#040f28;color:#F0EDE6;}
 .landing-reveal-d1{transition-delay:0.1s;}.landing-reveal-d2{transition-delay:0.2s;}.landing-reveal-d3{transition-delay:0.3s;}
 
 /* Nav */
-.landing-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 48px;position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,5,8,0.7);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-bottom:1px solid rgba(201,168,76,0.04);transition:all 0.4s cubic-bezier(0.22,1,0.36,1);}
+.landing-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 48px;position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,5,8,0.7);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-bottom:1px solid rgba(201,168,76,0.04);transition:all 0.4s cubic-bezier(0.22,1,0.36,1);}
 .landing-nav.scrolled{background:rgba(5,5,8,0.92);border-bottom-color:rgba(201,168,76,0.1);box-shadow:0 4px 30px rgba(0,0,0,0.3);}
 .landing-nav-logo{display:flex;align-items:center;gap:0;}
 .landing-nav-logo img{height:36px;filter:drop-shadow(0 0 20px rgba(201,168,76,0.08));}
@@ -175,8 +175,8 @@ select option{background:#040f28;color:#F0EDE6;}
 
 /* Hero */
 .landing-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:100vh;padding:140px 40px 100px;position:relative;overflow:hidden;}
-.landing-hero::before{content:'';position:absolute;inset:0;background-image:url('/hero-arena.png');background-size:cover;background-position:center top;filter:brightness(0.28) saturate(0.35);z-index:0;}
-.landing-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,5,8,0.88) 0%,rgba(5,5,8,0.78) 30%,rgba(5,5,8,0.72) 55%,rgba(5,5,8,0.92) 100%);z-index:1;}
+.landing-hero::before{content:'';position:absolute;inset:0;background-image:url('/hero-arena.png');background-size:115%;background-position:center 15%;filter:brightness(0.42) saturate(0.50);z-index:0;}
+.landing-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,5,8,0.84) 0%,rgba(5,5,8,0.68) 30%,rgba(5,5,8,0.62) 55%,rgba(5,5,8,0.90) 100%);z-index:1;}
 .landing-hero-diamond{position:absolute;width:380px;height:380px;top:50%;left:50%;opacity:0.035;animation:diamondFloat 10s ease-in-out infinite;pointer-events:none;z-index:0;object-fit:contain;}
 .landing-tagline{font-family:var(--font-ui);font-size:12px;font-weight:500;letter-spacing:5px;text-transform:uppercase;color:var(--ld-gold);margin-bottom:12px;position:relative;z-index:2;text-shadow:0 1px 4px rgba(0,0,0,0.5);}
 .landing-tagline-line{display:block;width:40px;height:1px;background:var(--ld-gold);margin:14px auto 0;}
@@ -2026,7 +2026,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
   <!-- NAV -->
   <nav class="landing-nav" id="landing-nav">
     <div class="landing-nav-logo">
-      <img src="/logo-skyteam-white.png" alt="SKYTEAM" style="height:96px;">
+      <img src="/logo-skyteam-white.png" alt="SKYTEAM" style="height:67px;">
     </div>
     <div class="landing-nav-btns">
       <button class="landing-btn-login" onclick="showLoginFromLanding()">Ingresar</button>
