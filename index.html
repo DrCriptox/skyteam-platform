@@ -264,8 +264,10 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .landing-hero-cta .btn-secondary:hover{color:var(--ld-gold-lt);border-color:rgba(201,168,76,0.4);}
 
 /* Stats bar — glassmorphism floating */
+/* ── Landing Nebula (inline, not overlay — preserves scroll) ── */
+.landing-vision::before,.landing-values::before,.landing-cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 600px 400px at 15% 25%,rgba(201,168,76,0.10) 0%,transparent 65%),radial-gradient(ellipse 500px 350px at 85% 75%,rgba(127,119,221,0.06) 0%,transparent 65%);background-size:200% 200%;animation:nebulaDrift 25s ease-in-out infinite;pointer-events:none;z-index:0;}
 .landing-stats-area{position:relative;display:flex;align-items:center;justify-content:center;padding:80px 20px;background:var(--ld-bg);overflow:hidden;}
-.landing-stats-watermark{position:absolute;width:100%;height:100%;top:0;left:0;object-fit:contain;opacity:0.15;pointer-events:none;mix-blend-mode:screen;padding:5px 5%;}
+.landing-stats-watermark{position:absolute;width:100%;height:100%;top:2cm;left:0;object-fit:contain;opacity:0.15;pointer-events:none;mix-blend-mode:screen;padding:5px 5%;}
 .landing-stats-bar{display:flex;justify-content:center;gap:20px;max-width:1050px;width:100%;margin:0 auto;position:relative;z-index:2;}
 .landing-stat{background:rgba(10,10,18,0.10);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--ld-border);border-radius:20px;transition:all 0.4s;position:relative;overflow:hidden;}
 .landing-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);opacity:0;transition:opacity 0.4s;}
@@ -2153,8 +2155,8 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="landing-stats-area">
     <img src="/logo-skyteam-white.png" class="landing-stats-watermark" alt="">
     <div class="landing-stats-bar landing-reveal">
-      <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1.340</div><div class="landing-stat-label">Socios Activos</div></div>
-      <div class="landing-stat"><div class="landing-stat-num" id="paises-counter">6</div><div class="landing-stat-label">Países</div></div>
+      <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1.351</div><div class="landing-stat-label">Socios Activos</div></div>
+      <div class="landing-stat"><div class="landing-stat-num" id="paises-counter">7</div><div class="landing-stat-label">Países</div></div>
       <div class="landing-stat"><div class="landing-stat-num">100<span>%</span></div><div class="landing-stat-label">Digital</div></div>
       <div class="landing-stat"><div class="landing-stat-num">24/7</div><div class="landing-stat-label">Acceso</div></div>
     </div>
@@ -2985,15 +2987,15 @@ let CU = null;
 // Public agenda check runs after all functions load (see bottom of script)
 
 // ── LANDING PAGE NAVIGATION ──
-/* ── Socios counter — +1 every 90 minutes from a fixed epoch ── */
+/* ── Socios counter — starts at 1351, +1 every 90 minutes ── */
 (function(){
-  var base = 1340;
-  var epoch = new Date('2026-04-03T20:30:00').getTime();
+  var base = 1351;
+  var epoch = new Date('2026-04-05T10:00:00').getTime();
   var el = document.getElementById('socios-counter');
   if (!el) return;
   function update() {
     var elapsed = Date.now() - epoch;
-    var added = Math.floor(elapsed / (90 * 60000));
+    var added = Math.max(0, Math.floor(elapsed / (90 * 60000)));
     var total = base + added;
     el.textContent = total.toLocaleString('es');
   }
@@ -3001,18 +3003,18 @@ let CU = null;
   setInterval(update, 90 * 60000);
 })();
 
-/* ── Países counter — +1 on the 1st of each month starting April 2026 = 9 ── */
+/* ── Países counter — starts at 7, +1 on 1st of each month starting May 2026 ── */
 (function(){
-  var basePaises = 6;
+  var basePaises = 7;
   var el = document.getElementById('paises-counter');
   if (!el) return;
   var now = new Date();
   var currentMonth = now.getMonth();
   var currentYear = now.getFullYear();
-  // +1 each month starting May 2026 (month index 4), cap at November (month 10)
+  // +1 each month starting May 2026 (month index 4): May=8, Jun=9, Jul=10...
   var monthsElapsed = (currentYear - 2026) * 12 + (currentMonth - 4);
   if (monthsElapsed < 0) monthsElapsed = 0;
-  if (monthsElapsed > 7) monthsElapsed = 7; // max: May=7, Jun=8... Nov=13, stop
+  if (monthsElapsed > 7) monthsElapsed = 7;
   var total = basePaises + monthsElapsed;
   el.textContent = total;
 })();
@@ -3047,7 +3049,11 @@ let CU = null;
 
 function showLoginFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  var ls = document.getElementById('login-screen');
+  ls.style.display = 'flex';
+  // Restore body height for login screen
+  document.body.style.height = '100%';
+  document.documentElement.style.height = '100%';
   window.scrollTo(0, 0);
   history.replaceState(null, '', '/login');
   var lu = document.getElementById('lu');
@@ -3055,7 +3061,10 @@ function showLoginFromLanding() {
 }
 function showRegisterFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  var ls = document.getElementById('login-screen');
+  ls.style.display = 'flex';
+  document.body.style.height = '100%';
+  document.documentElement.style.height = '100%';
   window.scrollTo(0, 0);
   history.replaceState(null, '', '/registro');
   // Auto-open the solicitud box
