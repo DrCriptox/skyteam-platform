@@ -4150,9 +4150,9 @@ function renderPlanDiarioCalendar() {
   var hoy = fmtDate(new Date());
   var html = '';
 
-  // Hours from 5am to 11pm
-  var hours = [];
-  for(var h=5;h<=23;h++) hours.push(h);
+  // 30-minute slots from 5:00 to 23:30
+  var slots = [];
+  for(var h=5;h<=23;h++) { slots.push(h+':00'); slots.push(h+':30'); }
 
   // Day headers
   html += '<div class="pd-grid-header">';
@@ -4166,40 +4166,47 @@ function renderPlanDiarioCalendar() {
   });
   html += '</div>';
 
-  // Grid body
+  // Grid body — 30-minute rows
   html += '<div class="pd-grid-body">';
-  hours.forEach(function(h){
-    html += '<div class="pd-grid-row">';
-    html += '<div class="pd-time-label">'+String(h).padStart(2,'0')+':00</div>';
+  slots.forEach(function(slot){
+    var parts = slot.split(':');
+    var slotH = parseInt(parts[0]);
+    var slotM = parseInt(parts[1]);
+    var slotStr = String(slotH).padStart(2,'0')+':'+String(slotM).padStart(2,'0');
+    var nextM = slotM + 30;
+    var nextH = slotH;
+    if(nextM >= 60) { nextM = 0; nextH++; }
+    var nextSlotStr = String(nextH).padStart(2,'0')+':'+String(nextM).padStart(2,'0');
+    var isHour = slotM === 0;
+
+    html += '<div class="pd-grid-row" style="'+(isHour?'':'border-top:1px dashed rgba(255,255,255,0.03);')+'">';
+    html += '<div class="pd-time-label" style="font-size:'+(isHour?'11px':'9px')+';color:rgba(255,255,255,'+(isHour?'0.5':'0.25')+');">'+(isHour ? slotStr : ':30')+'</div>';
     dates.forEach(function(d){
       var dateStr = fmtDate(d);
-      var hStr = String(h).padStart(2,'0')+':00';
-      var nextHStr = String(h+1).padStart(2,'0')+':00';
-      // Find blocks that OVERLAP this hour (start before next hour AND end after this hour start)
+      // Find blocks that OVERLAP this 30-min slot
       var cellBlocks = planDiarioBlocks.filter(function(b){
-        return b.fecha===dateStr && b.hora_inicio<nextHStr && b.hora_fin>hStr;
+        return b.fecha===dateStr && b.hora_inicio<nextSlotStr && b.hora_fin>slotStr;
       });
-      html += '<div class="pd-cell" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+hStr+'\')">';
+      html += '<div class="pd-cell" style="min-height:'+(isHour?'28px':'24px')+';" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+slotStr+'\')">';
       cellBlocks.forEach(function(b){
         var cat = b.categoria||'personal';
         var isBooking = cat==='cierre' || b._isBooking;
         var catColors = {personal:'#C9A84C',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C',cierre:'#DC2626'};
         var color = isBooking ? '#DC2626' : (catColors[cat]||'#C9A84C');
         var bgAlpha = isBooking ? 'rgba(220,38,38,0.10)' : color+'15';
-        // Check if this is the starting row or a continuation row
-        var startsHere = b.hora_inicio>=hStr && b.hora_inicio<nextHStr;
+        var startsHere = b.hora_inicio>=slotStr && b.hora_inicio<nextSlotStr;
         var blockClick = isBooking
           ? 'event.stopPropagation();if(confirm(\'¿Cancelar esta cita de cierre?\\n\'+decodeURIComponent(\''+encodeURIComponent(b.titulo)+'\')))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')'
           : 'event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')';
         if(startsHere) {
-          html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';position:relative;" onclick="'+blockClick+'">';
-          html += '<span class="pd-block-title" style="'+(isBooking?'color:#DC2626;font-weight:700;':'')+'">'+b.titulo+'</span>';
-          html += '<span class="pd-block-time">'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+'</span>';
+          html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';position:relative;padding:4px 6px;" onclick="'+blockClick+'">';
+          html += '<span class="pd-block-title" style="font-size:11px;'+(isBooking?'color:#DC2626;font-weight:700;':'')+'">'+b.titulo+'</span>';
+          html += '<span class="pd-block-time" style="font-size:9px;">'+b.hora_inicio.substring(0,5)+'-'+b.hora_fin.substring(0,5)+'</span>';
+          if(isBooking) html += '<span style="position:absolute;top:2px;right:4px;font-size:8px;color:rgba(220,38,38,0.5);" title="Cancelar">✕</span>';
         } else {
-          // Continuation bar — just a thin colored strip
-          html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';padding:3px 6px;opacity:0.6;" onclick="'+blockClick+'">';
-          html += '<span class="pd-block-time" style="font-size:9px;color:'+color+';">↕ '+b.titulo+'</span>';
-        if(isBooking) html += '<span style="position:absolute;top:3px;right:5px;font-size:9px;color:rgba(220,38,38,0.5);cursor:pointer;" title="Cancelar cita">✕</span>';
+          html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';padding:2px 6px;opacity:0.5;" onclick="'+blockClick+'">';
+          html += '<span style="font-size:8px;color:'+color+';">↕</span>';
+        }
         html += '</div>';
       });
       html += '</div>';
