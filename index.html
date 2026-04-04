@@ -3486,6 +3486,34 @@ function showApp() {
     if(task[1]) { try { task[1](); } catch(e) { console.error('[SKY] ' + task[0] + ' init failed:', e); } }
   });
 
+  // Renewal warning: grace period banner + notifications
+  if(CU && CU.expiry && Number(CU.expiry) > 0) {
+    var _msLeft = Number(CU.expiry) - Date.now();
+    var _daysLeft = Math.ceil(_msLeft / 86400000);
+    // Show renewal banner when 7 days or less (including grace period)
+    if(_daysLeft <= 7) {
+      var _isGrace = _daysLeft <= 0;
+      var _graceDays = _isGrace ? Math.max(0, 3 + _daysLeft) : 0;
+      var _bannerColor = _isGrace ? '#E24B4A' : '#FFD700';
+      var _bannerMsg = _isGrace
+        ? (_graceDays > 0 ? '⚠️ Tu membresía expiró. Tienes ' + _graceDays + ' día' + (_graceDays>1?'s':'') + ' de gracia para renovar.' : '🚫 Tu acceso será bloqueado hoy. ¡Renueva ahora!')
+        : '⏰ Tu membresía vence en ' + _daysLeft + ' día' + (_daysLeft>1?'s':'') + '. Renueva para no perder acceso.';
+      var _banner = document.createElement('div');
+      _banner.style.cssText = 'position:fixed;top:0;left:var(--sidebar-w);right:0;z-index:98;padding:10px 20px;background:' + _bannerColor + ';color:#0a0a12;font-size:13px;font-weight:800;text-align:center;font-family:Outfit,Nunito,sans-serif;' + (_isGrace ? 'animation:skytvPulse 2s infinite;' : '');
+      _banner.innerHTML = _bannerMsg + ' <button onclick="this.parentElement.style.display=\'none\'" style="background:rgba(0,0,0,0.2);border:none;color:#0a0a12;border-radius:6px;padding:3px 10px;margin-left:10px;font-size:11px;font-weight:700;cursor:pointer;">✕</button>';
+      document.body.appendChild(_banner);
+      // Push notification
+      if(typeof pushNotification === 'function') {
+        pushNotification({
+          id: 'renewal_' + _daysLeft, type: 'event', icon: _isGrace ? '🚨' : '⏰',
+          title: _isGrace ? '🚨 ¡Renueva tu membresía!' : '⏰ Membresía por vencer',
+          subtitle: _isGrace ? 'Período de gracia: ' + _graceDays + ' día(s)' : _daysLeft + ' días restantes',
+          msg: _bannerMsg
+        });
+      }
+    }
+  }
+
   // Only show admin if truly admin
   if(CU && (CU.isAdmin === true || CU.rank === 8)) {
     if(al) al.style.display='block';
@@ -3542,9 +3570,17 @@ function renderSidebarUser() {
   var daysLeft = '';
   if (CU.expiry && Number(CU.expiry) > 0) {
     var msLeft = Number(CU.expiry) - Date.now();
-    var days = Math.max(0, Math.ceil(msLeft / 86400000));
-    var color = days > 30 ? '#25D366' : days > 7 ? '#FFD700' : '#E24B4A';
-    daysLeft = '<div style="font-size:8px;color:' + color + ';margin-top:2px;font-weight:600;letter-spacing:0.3px;">' + (days > 0 ? '⏱ ' + days + ' días restantes' : '⚠️ Membresía expirada') + '</div>';
+    var days = Math.ceil(msLeft / 86400000);
+    var color = days >= 31 ? '#25D366' : days >= 8 ? '#FFD700' : '#E24B4A';
+    if (days > 0) {
+      daysLeft = '<div style="font-size:8px;color:' + color + ';margin-top:2px;font-weight:600;letter-spacing:0.3px;">⏱ ' + days + ' días restantes</div>';
+    } else if (days >= -3) {
+      // Grace period: 0 to -3 days (expired but 3 days grace)
+      var graceDays = 3 + days; // days is negative, so 3+(-1)=2, 3+(-2)=1, 3+(-3)=0
+      daysLeft = '<div style="font-size:9px;color:#E24B4A;margin-top:2px;font-weight:800;letter-spacing:0.3px;animation:skytvPulse 1.5s infinite;">⚠️ ¡Renueva! ' + (graceDays > 0 ? graceDays + ' día' + (graceDays>1?'s':'') + ' de gracia' : '¡Último día!') + '</div>';
+    } else {
+      daysLeft = '<div style="font-size:9px;color:#E24B4A;margin-top:2px;font-weight:800;">🚫 Acceso bloqueado</div>';
+    }
   } else {
     daysLeft = '<div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;font-weight:600;">⏱ Sin vencimiento</div>';
   }
