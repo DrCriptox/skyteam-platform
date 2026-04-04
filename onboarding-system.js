@@ -16,7 +16,7 @@ var C = {
   bg: '#050508', bgCard: 'rgba(255,255,255,0.025)', bgCardHover: 'rgba(255,255,255,0.05)',
   accent: '#C9A84C', gold: '#C9A84C', green: '#1D9E75', red: '#E24B4A',
   orange: '#E8D48B', textMain: '#FFFFFF', textSub: 'rgba(255,255,255,0.5)',
-  border: 'rgba(255,255,255,0.05)', glow: 'rgba(201,168,76,0.15)'
+  border: 'rgba(255,255,255,0.05)', glow: 'rgba(255,255,255,0.08)'
 };
 
 // ── Estado local ──
@@ -184,8 +184,8 @@ function renderOnboarding(container) {
       var isLocked = day > currentDay && !dayComplete;
       var isPast = day < currentDay;
 
-      var cardBg = isActive ? 'rgba(201,168,76,0.06)' : C.bgCard;
-      var cardBorder = isActive ? '1px solid rgba(201,168,76,0.3)' : dayComplete ? '1px solid rgba(0,230,118,0.3)' : '1px solid ' + C.border;
+      var cardBg = isActive ? 'rgba(255,255,255,0.04)' : C.bgCard;
+      var cardBorder = isActive ? '1px solid rgba(255,255,255,0.12)' : dayComplete ? '1px solid rgba(0,230,118,0.3)' : '1px solid ' + C.border;
       var opacity = isLocked ? '0.45' : '1';
 
       html += '<div style="background:' + cardBg + ';border:' + cardBorder + ';border-radius:14px;padding:16px;margin-bottom:10px;opacity:' + opacity + ';transition:all 0.3s;">';
@@ -197,7 +197,7 @@ function renderOnboarding(container) {
       html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
       html += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:' + (dayComplete ? C.green : isActive ? C.accent : C.textSub) + ';letter-spacing:1px;">Día ' + day + '</span>';
       if (dayComplete) html += '<span style="font-size:9px;background:rgba(0,230,118,0.15);color:' + C.green + ';padding:2px 6px;border-radius:8px;">✓ Listo</span>';
-      if (isActive) html += '<span style="font-size:9px;background:rgba(201,168,76,0.15);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">← Aquí</span>';
+      if (isActive) html += '<span style="font-size:9px;background:rgba(255,255,255,0.10);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">← Aquí</span>';
       html += '</div>';
       html += '<h3 style="font-size:14px;font-weight:700;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cfg.name + '</h3>';
       html += '</div>';
@@ -222,7 +222,7 @@ function renderOnboarding(container) {
 
     // Completed banner
     if (completedDays >= 7) {
-      html += '<div style="text-align:center;padding:24px;background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(255,215,0,0.1));border:1px solid rgba(255,215,0,0.3);border-radius:14px;margin-top:12px;">';
+      html += '<div style="text-align:center;padding:24px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03));border:1px solid rgba(255,255,255,0.10);border-radius:14px;margin-top:12px;">';
       html += '<div style="font-size:40px;margin-bottom:6px;">🏆</div>';
       html += '<h3 style="font-size:16px;color:' + C.gold + ';margin:0 0 4px;">¡RUTA COMPLETADA!</h3>';
       html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Has completado los 7 días. ¡Ahora a crecer!</p>';
@@ -341,7 +341,7 @@ function renderAchievements(container) {
       var def = obState.achievementDefs[key];
       var isUnlocked = !!unlocked[key];
       var opacity = isUnlocked ? '1' : '0.35';
-      var bg = isUnlocked ? 'linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.05))' : C.bgCard;
+      var bg = isUnlocked ? 'linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))' : C.bgCard;
       var border = isUnlocked ? '1px solid rgba(255,215,0,0.25)' : '1px solid ' + C.border;
 
       html += '<div style="background:' + bg + ';border:' + border + ';border-radius:12px;padding:14px;text-align:center;opacity:' + opacity + ';transition:all 0.3s;">';
@@ -451,7 +451,7 @@ function renderDashboard(container) {
     if (data.onboarding && !data.onboarding.completed_at) {
       var ob = data.onboarding;
       var dayPct = Math.round(((ob.current_day - 1) / 7) * 100);
-      html += '<div style="background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:14px;margin-bottom:12px;">';
+      html += '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:12px;">';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
       html += '<span style="font-size:12px;font-weight:700;">🗺️ Ruta de 7 Días</span>';
       html += '<span style="font-size:11px;color:' + C.accent + ';font-weight:700;">Día ' + ob.current_day + '/7</span>';
@@ -468,7 +468,7 @@ function renderDashboard(container) {
     html += '<div style="background:' + C.bgCard + ';border:1px solid ' + C.border + ';border-radius:12px;padding:14px;">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
     html += '<span style="font-size:12px;font-weight:700;">🏆 Logros</span>';
-    html += '<span style="font-size:11px;color:' + C.gold + ';font-weight:700;">' + (data.achievementCount || 0) + '/' + (data.totalAchievements || 12) + '</span>';
+    html += '<span style="font-size:11px;color:#fff;font-weight:700;">' + (data.achievementCount || 0) + '/' + (data.totalAchievements || 12) + '</span>';
     html += '</div>';
     var achPct = Math.round(((data.achievementCount || 0) / (data.totalAchievements || 12)) * 100);
     html += '<div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">';
@@ -579,13 +579,13 @@ function showCoachNudge() {
   // Create floating bubble next to coach button
   var bubble = document.createElement('div');
   bubble.id = 'coach-nudge-bubble';
-  bubble.style.cssText = 'position:fixed;bottom:80px;right:20px;width:280px;background:linear-gradient(135deg,rgba(5,5,8,0.97),rgba(10,25,55,0.97));border:1px solid rgba(201,168,76,0.25);border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px rgba(201,168,76,0.1);z-index:9989;animation:obSlideUp 0.4s ease;cursor:default;';
+  bubble.style.cssText = 'position:fixed;bottom:80px;right:20px;width:280px;background:linear-gradient(135deg,rgba(5,5,8,0.97),rgba(10,25,55,0.97));border:1px solid rgba(255,255,255,0.10);border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px rgba(255,255,255,0.05);z-index:9989;animation:obSlideUp 0.4s ease;cursor:default;';
 
   var html = '';
   // Close button
   html += '<div onclick="dismissCoachNudge()" style="position:absolute;top:8px;right:10px;cursor:pointer;color:rgba(255,255,255,0.3);font-size:14px;padding:4px;">✕</div>';
   // Phrase
-  html += '<p style="margin:0 0 10px;font-size:13px;color:#C9A84C;font-weight:700;line-height:1.5;font-style:italic;padding-right:18px;">' + nudge.frase + '</p>';
+  html += '<p style="margin:0 0 10px;font-size:13px;color:rgba(255,255,255,0.65);font-weight:700;line-height:1.5;font-style:italic;padding-right:18px;">' + nudge.frase + '</p>';
   // CTA message (personalized with name)
   var ctaText = nombre ? (nombre + ', ' + nudge.cta.charAt(0).toLowerCase() + nudge.cta.slice(1)) : nudge.cta;
   html += '<p style="margin:0 0 12px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.5;">' + ctaText + '</p>';
@@ -668,9 +668,9 @@ window.toggleCoachPanel = toggleCoachPanel;
 function createCoachPanel() {
   var panel = document.createElement('div');
   panel.id = 'ob-coach-panel';
-  panel.style.cssText = 'position:fixed;bottom:82px;right:20px;width:320px;max-height:420px;background:' + C.bg + ';border:1px solid rgba(201,168,76,0.2);border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,0.6);z-index:9991;display:flex;flex-direction:column;overflow:hidden;animation:obSlideUp 0.3s ease;';
+  panel.style.cssText = 'position:fixed;bottom:82px;right:20px;width:320px;max-height:420px;background:' + C.bg + ';border:1px solid rgba(255,255,255,0.08);border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,0.6);z-index:9991;display:flex;flex-direction:column;overflow:hidden;animation:obSlideUp 0.3s ease;';
 
-  var header = '<div style="padding:12px 14px;background:rgba(201,168,76,0.06);border-bottom:1px solid ' + C.border + ';display:flex;align-items:center;gap:8px;">';
+  var header = '<div style="padding:12px 14px;background:rgba(255,255,255,0.03);border-bottom:1px solid ' + C.border + ';display:flex;align-items:center;gap:8px;">';
   header += '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,' + C.accent + ',#8B7332);display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>';
   header += '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">Coach IA</div>';
   header += '<div style="font-size:9px;color:' + C.green + ';">● En línea</div></div>';
@@ -678,7 +678,7 @@ function createCoachPanel() {
   header += '</div>';
 
   var messages = '<div id="ob-coach-messages" style="flex:1;overflow-y:auto;padding:12px;min-height:180px;">';
-  messages += '<div style="text-align:center;padding:10px;"><div style="display:inline-block;background:rgba(201,168,76,0.06);border-radius:10px;padding:8px 12px;font-size:12px;color:' + C.textSub + ';">Cargando...</div></div>';
+  messages += '<div style="text-align:center;padding:10px;"><div style="display:inline-block;background:rgba(255,255,255,0.03);border-radius:10px;padding:8px 12px;font-size:12px;color:' + C.textSub + ';">Cargando...</div></div>';
   messages += '</div>';
 
   var input = '<div style="padding:8px 12px;border-top:1px solid ' + C.border + ';display:flex;gap:6px;">';
@@ -747,8 +747,8 @@ function loadCoachContext() {
 function renderCoachBubble(text, role) {
   var isBot = role === 'bot' || role === 'assistant';
   var align = isBot ? 'flex-start' : 'flex-end';
-  var bg = isBot ? 'rgba(201,168,76,0.08)' : 'rgba(255,255,255,0.08)';
-  var border = isBot ? 'rgba(201,168,76,0.15)' : C.border;
+  var bg = isBot ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)';
+  var border = isBot ? 'rgba(255,255,255,0.06)' : C.border;
   return '<div style="display:flex;justify-content:' + align + ';margin-bottom:6px;">' +
     '<div style="max-width:85%;padding:8px 12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;font-size:12px;line-height:1.5;">' + text + '</div></div>';
 }
@@ -866,7 +866,7 @@ function sendCoachMessage() {
   obState.coachMessages.push({ role: 'user', content: text });
   saveCoachHistory();
 
-  msgArea.innerHTML += '<div id="ob-coach-typing" style="display:flex;justify-content:flex-start;margin-bottom:6px;"><div style="padding:8px 12px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.15);border-radius:10px;font-size:12px;color:' + C.textSub + ';">Pensando...</div></div>';
+  msgArea.innerHTML += '<div id="ob-coach-typing" style="display:flex;justify-content:flex-start;margin-bottom:6px;"><div style="padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12px;color:' + C.textSub + ';">Pensando...</div></div>';
   msgArea.scrollTop = msgArea.scrollHeight;
 
   var ctx = obState.coachContext || {};
@@ -932,7 +932,7 @@ var CATEGORY_LABELS = {
   seguimiento_2: { label: 'Seguimiento — Día 2', icon: '📩', color: C.orange },
   seguimiento_5: { label: 'Seguimiento — Día 5+', icon: '🔄', color: '#FF6B6B' },
   invitar_zoom: { label: 'Invitación a Zoom', icon: '📹', color: C.green },
-  post_zoom: { label: 'Post-Zoom cierre', icon: '🎯', color: C.gold },
+  post_zoom: { label: 'Post-Zoom cierre', icon: '🎯', color: 'rgba(255,255,255,0.55)' },
   reactivacion: { label: 'Reactivación', icon: '🧊', color: '#90CAF9' }
 };
 
@@ -946,7 +946,7 @@ function renderScriptBank(container) {
   html += '</div>';
 
   // Prospect name input
-  html += '<div style="margin-bottom:14px;padding:10px;background:rgba(201,168,76,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:10px;">';
+  html += '<div style="margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">';
   html += '<label style="font-size:10px;color:' + C.textSub + ';display:block;margin-bottom:3px;">Nombre del prospecto</label>';
   html += '<input id="ob-script-name" type="text" placeholder="Ej: Carlos" style="width:100%;padding:7px 10px;border:1px solid ' + C.border + ';border-radius:8px;background:rgba(255,255,255,0.04);color:#fff;font-size:13px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" />';
   html += '</div>';
@@ -971,7 +971,7 @@ function renderScriptBank(container) {
       html += '<div style="background:' + C.bgCard + ';border:1px solid ' + C.border + ';border-radius:10px;padding:12px;margin-bottom:5px;">';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
       html += '<span style="font-size:11px;font-weight:700;">' + script.title + '</span>';
-      html += '<button data-script-idx="' + cat + '-' + idx + '" class="ob-copy-btn" style="padding:3px 10px;border:1px solid rgba(201,168,76,0.2);border-radius:6px;background:rgba(201,168,76,0.06);color:' + C.accent + ';font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;">Copiar</button>';
+      html += '<button data-script-idx="' + cat + '-' + idx + '" class="ob-copy-btn" style="padding:3px 10px;border:1px solid rgba(255,255,255,0.10);border-radius:6px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.65);font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;">Copiar</button>';
       html += '</div>';
       html += '<div class="ob-script-text" data-raw="' + encodeURIComponent(script.message) + '" style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.4;">' + script.message.replace(/\[NOMBRE\]/g, '<span style="color:' + C.accent + ';font-weight:600;">[NOMBRE]</span>') + '</div>';
       html += '</div>';
@@ -997,7 +997,7 @@ function renderScriptBank(container) {
           btn.textContent = '✓ Copiado';
           btn.style.color = C.green;
           btn.style.borderColor = C.green;
-          setTimeout(function() { btn.textContent = 'Copiar'; btn.style.color = C.accent; btn.style.borderColor = 'rgba(201,168,76,0.2)'; }, 2000);
+          setTimeout(function() { btn.textContent = 'Copiar'; btn.style.color = 'rgba(255,255,255,0.65)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }, 2000);
         });
       }
     });
@@ -1048,7 +1048,7 @@ function openPhotoEditorModal() {
   content += '</div>';
 
   // Upload
-  content += '<div id="ob-photo-upload" style="border:2px dashed rgba(201,168,76,0.3);border-radius:14px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById(\'ob-photo-input\').click()">';
+  content += '<div id="ob-photo-upload" style="border:2px dashed rgba(255,255,255,0.15);border-radius:14px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById(\'ob-photo-input\').click()">';
   content += '<div style="font-size:32px;margin-bottom:6px;opacity:0.5;">📷</div>';
   content += '<div style="color:' + C.textSub + ';font-size:11px;">Toca para subir tu selfie</div>';
   content += '<input id="ob-photo-input" type="file" accept="image/*" style="display:none;" />';
@@ -1066,14 +1066,14 @@ function openPhotoEditorModal() {
   // Gender
   content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Género</div>';
   content += '<div style="display:flex;gap:8px;margin-bottom:10px;">';
-  content += '<button data-gender="male" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(201,168,76,0.1);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">👨 Hombre</button>';
+  content += '<button data-gender="male" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">👨 Hombre</button>';
   content += '<button data-gender="female" class="ob-gender-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:11px;font-weight:700;cursor:pointer;">👩 Mujer</button>';
   content += '</div>';
 
   // Style selector (juvenil/elegante/cl\u00e1sico)
   content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Estilo</div>';
   content += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
-  content += '<button data-style="clasico" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(201,168,76,0.1);color:#fff;font-size:10px;font-weight:700;cursor:pointer;">\ud83c\udfdb Cl\u00e1sico</button>';
+  content += '<button data-style="clasico" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:10px;font-weight:700;cursor:pointer;">\ud83c\udfdb Cl\u00e1sico</button>';
   content += '<button data-style="elegante" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:10px;font-weight:700;cursor:pointer;">\u2728 Elegante</button>';
   content += '<button data-style="juvenil" class="ob-style-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:10px;font-weight:700;cursor:pointer;">\ud83d\udd25 Juvenil</button>';
   content += '</div>';
@@ -1101,7 +1101,7 @@ function openPhotoEditorModal() {
   content += '<div id="ob-tie-section">';
   content += '<div style="font-size:11px;font-weight:700;color:' + C.textSub + ';margin-bottom:5px;">Corbata</div>';
   content += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
-  content += '<button data-tie="yes" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(201,168,76,0.1);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Con corbata</button>';
+  content += '<button data-tie="yes" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid ' + C.accent + ';border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">Con corbata</button>';
   content += '<button data-tie="no" class="ob-tie-opt" style="flex:1;padding:7px;border:2px solid transparent;border-radius:8px;background:rgba(255,255,255,0.04);color:' + C.textSub + ';font-size:11px;font-weight:700;cursor:pointer;">Sin corbata</button>';
   content += '</div>';
   content += '</div>';
@@ -1158,7 +1158,7 @@ function openPhotoEditorModal() {
         document.querySelectorAll(selector).forEach(function(b) {
           b.style.borderColor = 'transparent'; b.style.background = 'rgba(255,255,255,0.04)'; b.style.color = C.textSub;
         });
-        btn.style.borderColor = C.accent; btn.style.background = 'rgba(201,168,76,0.1)'; btn.style.color = '#fff';
+        btn.style.borderColor = C.accent; btn.style.background = 'rgba(255,255,255,0.05)'; btn.style.color = '#fff';
       });
     });
   }
@@ -1418,7 +1418,7 @@ function injectStyles() {
     '#ob-coach-panel ::-webkit-scrollbar { width:4px }',
     '#ob-coach-panel ::-webkit-scrollbar-track { background:transparent }',
     '#ob-coach-panel ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1);border-radius:2px }',
-    '.ob-copy-btn:hover { background:rgba(201,168,76,0.15)!important }',
+    '.ob-copy-btn:hover { background:rgba(255,255,255,0.08)!important }',
 
     // Tab bar
     '.ob-tab-bar { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:2px 0; }',

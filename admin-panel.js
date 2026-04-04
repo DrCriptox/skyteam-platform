@@ -53,7 +53,7 @@
 
       .admin-modal {
         background: var(--bg2, #0a0a12);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid var(--border, rgba(255,255,255,0.06));
         border-radius: 12px;
         padding: 28px;
         max-width: 600px;
@@ -75,12 +75,12 @@
         height: 64px;
         border-radius: 50%;
         background: var(--bg3, #14141f);
-        border: 2px solid var(--gold, #C9A84C);
+        border: 2px solid rgba(255,255,255,0.15);
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        color: var(--gold, #C9A84C);
+        color: rgba(255,255,255,0.6);
         font-size: 20px;
         flex-shrink: 0;
       }
@@ -143,7 +143,7 @@
         width: 100%;
         padding: 10px 12px;
         background: var(--bg3, #14141f);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid var(--border, rgba(255,255,255,0.06));
         border-radius: 6px;
         color: var(--text, #F0EDE6);
         font-size: 14px;
@@ -156,8 +156,8 @@
       .admin-form-group select:focus,
       .admin-form-group textarea:focus {
         outline: none;
-        border-color: var(--gold, #C9A84C);
-        box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+        border-color: rgba(255,255,255,0.25);
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
       }
 
       .admin-form-row {
@@ -198,11 +198,11 @@
       .admin-btn-secondary {
         background: var(--bg3, #14141f);
         color: var(--text, #F0EDE6);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid rgba(255,255,255,0.08);
       }
 
       .admin-btn-secondary:hover {
-        background: var(--border, rgba(201,168,76,0.08));
+        background: rgba(255,255,255,0.06);
       }
 
       /* Tab Navigation */
@@ -210,7 +210,7 @@
         display: flex;
         gap: 8px;
         margin-bottom: 20px;
-        border-bottom: 1px solid var(--border, rgba(201,168,76,0.08));
+        border-bottom: 1px solid rgba(255,255,255,0.06);
         overflow-x: auto;
         padding-bottom: 12px;
       }
@@ -248,7 +248,7 @@
         width: 100%;
         padding: 10px 12px;
         background: var(--bg3, #14141f);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid rgba(255,255,255,0.06);
         border-radius: 6px;
         color: var(--text, #F0EDE6);
         font-size: 13px;
@@ -256,7 +256,7 @@
 
       .admin-message-item {
         background: var(--bg3, #14141f);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid rgba(255,255,255,0.06);
         border-radius: 6px;
         padding: 12px;
         margin-bottom: 10px;
@@ -270,12 +270,12 @@
         height: 40px;
         border-radius: 50%;
         background: var(--bg2, #0a0a12);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid rgba(255,255,255,0.06);
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 500;
-        color: var(--gold, #C9A84C);
+        color: rgba(255,255,255,0.6);
         font-size: 12px;
         flex-shrink: 0;
       }
@@ -340,14 +340,14 @@
         text-align: left;
         font-size: 12px;
         font-weight: 600;
-        border-bottom: 1px solid var(--border, rgba(201,168,76,0.08));
+        border-bottom: 1px solid rgba(255,255,255,0.06);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
 
       .admin-membership-table td {
         padding: 12px;
-        border-bottom: 1px solid var(--border, rgba(201,168,76,0.08));
+        border-bottom: 1px solid rgba(255,255,255,0.06);
         font-size: 13px;
         color: var(--text, #F0EDE6);
       }
@@ -389,7 +389,7 @@
       .admin-membership-btn {
         padding: 6px 10px;
         background: var(--bg2, #0a0a12);
-        border: 1px solid var(--border, rgba(201,168,76,0.08));
+        border: 1px solid rgba(255,255,255,0.08);
         color: var(--gold, #C9A84C);
         border-radius: 4px;
         font-size: 11px;
@@ -404,7 +404,7 @@
 
       .admin-screenshot-area {
         background: var(--bg3, #14141f);
-        border: 2px dashed var(--border, rgba(201,168,76,0.08));
+        border: 2px dashed rgba(255,255,255,0.08);
         border-radius: 8px;
         padding: 20px;
         text-align: center;
@@ -414,8 +414,8 @@
       }
 
       .admin-screenshot-area.dragover {
-        border-color: var(--gold, #C9A84C);
-        background: rgba(201, 168, 76, 0.05);
+        border-color: rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.04);
       }
 
       .admin-screenshot-preview {

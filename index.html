@@ -35,7 +35,7 @@
 <script>if(window.navigator.standalone===true)document.documentElement.classList.add('ios-standalone');</script>
 <style>
 html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}}
-:root{--gold:#C9A84C;--gold2:#B8943F;--gold-d:rgba(201,168,76,0.06);--gold-b:rgba(201,168,76,0.20);--gold-1:#E8D48B;--bg:#050508;--bg2:#0a0a12;--bg3:#0f0f18;--bg4:#14141f;--border:rgba(255,255,255,0.04);--border2:rgba(255,255,255,0.08);--text:#F5F0E8;--muted:rgba(255,255,255,0.40);--muted2:rgba(255,255,255,0.22);--blue:#C9A84C;--blue-d:rgba(255,255,255,0.03);--blue-b:rgba(255,255,255,0.08);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;
+:root{--gold:#C9A84C;--gold2:#B8943F;--gold-d:rgba(255,255,255,0.03);--gold-b:rgba(255,255,255,0.08);--gold-1:#E8D48B;--bg:#050508;--bg2:#0a0a12;--bg3:#0f0f18;--bg4:#14141f;--border:rgba(255,255,255,0.04);--border2:rgba(255,255,255,0.08);--text:#F5F0E8;--muted:rgba(255,255,255,0.40);--muted2:rgba(255,255,255,0.22);--blue:#C9A84C;--blue-d:rgba(255,255,255,0.03);--blue-b:rgba(255,255,255,0.08);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;
 /* Design tokens — spacing */
 --sp-xs:4px;--sp-sm:8px;--sp-md:14px;--sp-lg:20px;--sp-xl:28px;--sp-2xl:40px;
 /* Design tokens — typography */
@@ -61,9 +61,9 @@ html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-a
 }
 #sky-nebula{position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(ellipse 600px 400px at 15% 20%,rgba(201,168,76,0.04) 0%,transparent 70%),
-    radial-gradient(ellipse 500px 350px at 85% 75%,rgba(127,119,221,0.03) 0%,transparent 70%),
-    radial-gradient(ellipse 400px 300px at 50% 50%,rgba(29,158,117,0.02) 0%,transparent 70%);
+    radial-gradient(ellipse 600px 400px at 15% 20%,rgba(201,168,76,0.07) 0%,transparent 70%),
+    radial-gradient(ellipse 500px 350px at 85% 75%,rgba(127,119,221,0.05) 0%,transparent 70%),
+    radial-gradient(ellipse 400px 300px at 50% 50%,rgba(29,158,117,0.04) 0%,transparent 70%);
   background-size:200% 200%,200% 200%,200% 200%;
   animation:nebulaDrift 30s ease-in-out infinite;
 }
@@ -73,14 +73,14 @@ html,body{height:100%;margin:0;padding:0;} @supports (padding-bottom: env(safe-a
 #sky-noise{position:fixed;inset:-10%;z-index:1;pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:128px 128px;
-  opacity:0.025;
+  opacity:0.04;
   animation:noiseShift 8s steps(10) infinite;
   mix-blend-mode:overlay;
 }
 
 /* ── Ambient Cursor Glow ── */
 #sky-cursor-glow{position:fixed;width:400px;height:400px;border-radius:50%;pointer-events:none;z-index:0;
-  background:radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(201,168,76,0.10) 0%,transparent 70%);
   transform:translate(-50%,-50%);transition:left 0.5s ease-out,top 0.5s ease-out;opacity:0;
 }
 #sky-cursor-glow.active{opacity:1;}
@@ -140,7 +140,7 @@ button:active:not(:disabled), .btn:active:not(:disabled){transform:scale(0.95);}
 button:hover:not(:disabled){filter:brightness(1.06);}
 
 /* ── Focus visible ── */
-*:focus-visible{outline:2px solid rgba(201,168,76,0.4);outline-offset:2px;border-radius:4px;}
+*:focus-visible{outline:2px solid rgba(255,255,255,0.20);outline-offset:2px;border-radius:4px;}
 
 /* ── Skeleton loading screens ── */
 @keyframes skyShimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
@@ -222,13 +222,13 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .landing-reveal-d1{transition-delay:0.1s;}.landing-reveal-d2{transition-delay:0.2s;}.landing-reveal-d3{transition-delay:0.3s;}
 
 /* Nav */
-.landing-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 48px;position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,5,8,0.7);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-bottom:1px solid rgba(201,168,76,0.04);transition:all 0.4s cubic-bezier(0.22,1,0.36,1);}
-.landing-nav.scrolled{background:rgba(5,5,8,0.92);border-bottom-color:rgba(201,168,76,0.1);box-shadow:0 4px 30px rgba(0,0,0,0.3);}
+.landing-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 48px;position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,5,8,0.7);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-bottom:1px solid rgba(255,255,255,0.04);transition:all 0.4s cubic-bezier(0.22,1,0.36,1);}
+.landing-nav.scrolled{background:rgba(5,5,8,0.92);border-bottom-color:rgba(255,255,255,0.06);box-shadow:0 4px 30px rgba(0,0,0,0.3);}
 .landing-nav-logo{display:flex;align-items:center;gap:0;}
-.landing-nav-logo img{height:36px;filter:drop-shadow(0 0 20px rgba(201,168,76,0.08));}
+.landing-nav-logo img{height:36px;filter:drop-shadow(0 0 20px rgba(255,255,255,0.05));}
 .landing-nav-btns{display:flex;gap:12px;align-items:center;}
 .landing-btn-login{padding:10px 28px;border-radius:50px;background:transparent;border:1px solid var(--ld-border2);color:var(--ld-gold);font-family:var(--font-ui);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.3s;letter-spacing:1.5px;text-transform:uppercase;}
-.landing-btn-login:hover{background:rgba(201,168,76,0.08);border-color:rgba(201,168,76,0.4);}
+.landing-btn-login:hover{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);}
 .landing-btn-cta{padding:10px 28px;border-radius:50px;background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 4s linear infinite;border:none;color:#0a0a12;font-family:var(--font-ui);font-size:11px;font-weight:700;cursor:pointer;transition:all 0.3s;letter-spacing:1.5px;text-transform:uppercase;}
 .landing-btn-cta:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(201,168,76,0.25);}
 
@@ -246,19 +246,19 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .landing-hero-cta .btn-big{padding:17px 48px;border-radius:50px;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.35s;border:none;letter-spacing:2px;text-transform:uppercase;}
 .landing-hero-cta .btn-primary{background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 4s linear infinite;color:#0a0a12;box-shadow:0 8px 40px rgba(201,168,76,0.2);}
 .landing-hero-cta .btn-primary:hover{transform:translateY(-3px);box-shadow:0 16px 50px rgba(201,168,76,0.3);}
-.landing-hero-cta .btn-secondary{background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(201,168,76,0.18);}
-.landing-hero-cta .btn-secondary:hover{color:var(--ld-gold-lt);border-color:rgba(201,168,76,0.4);}
+.landing-hero-cta .btn-secondary{background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.10);}
+.landing-hero-cta .btn-secondary:hover{color:var(--ld-gold-lt);border-color:rgba(255,255,255,0.20);}
 
 /* Stats bar — glassmorphism floating */
 .landing-stats-area{position:relative;display:flex;align-items:center;justify-content:center;padding:80px 20px;background:var(--ld-bg);overflow:hidden;}
 .landing-stats-watermark{position:absolute;width:100%;height:100%;top:0;left:0;object-fit:contain;opacity:0.15;pointer-events:none;mix-blend-mode:screen;padding:5px 5%;}
 .landing-stats-bar{display:flex;justify-content:center;gap:20px;max-width:1050px;width:100%;margin:0 auto;position:relative;z-index:2;}
 .landing-stat{background:rgba(10,10,18,0.10);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--ld-border);border-radius:20px;transition:all 0.4s;position:relative;overflow:hidden;}
-.landing-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);opacity:0;transition:opacity 0.4s;}
-.landing-stat:hover{border-color:var(--ld-border2);transform:translateY(-3px);box-shadow:0 0 40px rgba(201,168,76,0.05);}
+.landing-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent);opacity:0;transition:opacity 0.4s;}
+.landing-stat:hover{border-color:var(--ld-border2);transform:translateY(-3px);box-shadow:0 0 40px rgba(255,255,255,0.03);}
 .landing-stat:hover::before{opacity:1;}
 .landing-stat{text-align:center;padding:22px 48px;position:relative;flex:1;}
-.landing-stat:not(:last-child)::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:1px;height:40px;background:linear-gradient(180deg,transparent,rgba(201,168,76,0.12),transparent);}
+.landing-stat:not(:last-child)::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:1px;height:40px;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.06),transparent);}
 .landing-stat-num{font-size:56px;font-weight:500;color:var(--ld-gold-lt);letter-spacing:-1px;font-family:var(--font-display);}
 .landing-stat-num span{color:var(--ld-gold);}
 .landing-stat-label{font-size:14px;color:var(--ld-text3);text-transform:uppercase;letter-spacing:3px;margin-top:4px;font-weight:500;font-family:var(--font-ui);}
@@ -272,10 +272,10 @@ select option{background:#0a0a12;color:#F0EDE6;}
 /* Pillars — glassmorphism cards */
 .landing-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1000px;width:100%;position:relative;z-index:1;}
 .landing-pillar{background:rgba(10,10,18,0.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--ld-border);border-radius:20px;padding:48px 32px;text-align:center;transition:all 0.4s;position:relative;overflow:hidden;}
-.landing-pillar::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);opacity:0;transition:opacity 0.4s;}
-.landing-pillar:hover{border-color:var(--ld-border2);box-shadow:0 0 50px rgba(201,168,76,0.06);transform:translateY(-4px);}
+.landing-pillar::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent);opacity:0;transition:opacity 0.4s;}
+.landing-pillar:hover{border-color:var(--ld-border2);box-shadow:0 0 50px rgba(255,255,255,0.03);transform:translateY(-4px);}
 .landing-pillar:hover::before{opacity:1;}
-.landing-pillar-num{font-size:48px;font-weight:400;color:rgba(201,168,76,0.1);margin-bottom:16px;font-family:var(--font-display);}
+.landing-pillar-num{font-size:48px;font-weight:400;color:rgba(255,255,255,0.06);margin-bottom:16px;font-family:var(--font-display);}
 .landing-pillar-title{font-size:15px;font-weight:600;color:#fff;margin-bottom:10px;letter-spacing:0.5px;font-family:var(--font-ui);}
 .landing-pillar-desc{font-size:13px;color:var(--ld-text2);line-height:1.7;font-family:var(--font-body);}
 
@@ -286,10 +286,10 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .landing-values-sub{font-size:14px;color:var(--ld-text2);text-align:center;margin-bottom:56px;max-width:520px;font-family:var(--font-body);}
 .landing-values-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:880px;width:100%;}
 .landing-value-card{background:rgba(10,10,18,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--ld-border);border-radius:20px;padding:40px 32px;transition:all 0.4s;position:relative;overflow:hidden;}
-.landing-value-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);opacity:0;transition:opacity 0.4s;}
-.landing-value-card:hover{border-color:var(--ld-border2);transform:translateY(-3px);box-shadow:0 0 40px rgba(201,168,76,0.05);}
+.landing-value-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent);opacity:0;transition:opacity 0.4s;}
+.landing-value-card:hover{border-color:var(--ld-border2);transform:translateY(-3px);box-shadow:0 0 40px rgba(255,255,255,0.03);}
 .landing-value-card:hover::before{opacity:1;}
-.landing-value-icon{width:52px;height:52px;border-radius:50%;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;}
+.landing-value-icon{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;}
 .landing-value-title{font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;font-family:var(--font-ui);}
 .landing-value-desc{font-size:13px;color:var(--ld-text2);line-height:1.7;font-family:var(--font-body);}
 
@@ -300,7 +300,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .landing-cta-section p{font-size:15px;color:var(--ld-text2);margin-bottom:40px;position:relative;z-index:1;font-family:var(--font-body);}
 
 /* Footer */
-.landing-footer{padding:48px 40px 32px;border-top:1px solid transparent;border-image:linear-gradient(90deg,transparent,rgba(201,168,76,0.12),transparent) 1;display:flex;flex-direction:column;align-items:center;gap:16px;background:rgba(0,0,0,0.2);}
+.landing-footer{padding:48px 40px 32px;border-top:1px solid transparent;border-image:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent) 1;display:flex;flex-direction:column;align-items:center;gap:16px;background:rgba(0,0,0,0.2);}
 .landing-footer-logo{height:56px;opacity:0.3;margin-bottom:4px;object-fit:contain;}
 .landing-footer-tagline{font-family:var(--font-display);font-size:14px;font-style:italic;color:rgba(255,255,255,0.2);margin-bottom:8px;}
 .landing-footer-copy{font-size:10px;color:rgba(255,255,255,0.15);letter-spacing:0.5px;font-family:var(--font-ui);}
@@ -330,18 +330,18 @@ select option{background:#0a0a12;color:#F0EDE6;}
   .landing-hero h1{font-size:38px;}
   .landing-hero-cta{flex-direction:column;align-items:stretch;gap:10px;}
   .landing-hero-cta .btn-big{padding:16px;font-size:12px;width:100%;}
-  .landing-hero-cta .btn-secondary{display:block !important;color:rgba(255,255,255,0.6);border-color:rgba(201,168,76,0.15);}
+  .landing-hero-cta .btn-secondary{display:block !important;color:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.10);}
   .landing-hero-diamond{width:200px;height:200px;}
   .landing-stat-num{font-size:32px;}
 }
 
 /* ── LOGIN — Luxury Redesign ── */
 #login-screen{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow-y:auto;overflow-x:hidden;background-image:linear-gradient(135deg,rgba(5,5,8,0.72) 0%,rgba(5,5,8,0.55) 50%,rgba(5,5,8,0.72) 100%),url('/jet2-vertical.png');background-size:cover;background-position:center;}
-#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 600px 400px at 50% 40%,rgba(201,168,76,0.04) 0%,transparent 70%);pointer-events:none;}
-.login-box{width:100%;max-width:420px;background:rgba(10,10,18,0.22);border:1px solid rgba(201,168,76,0.10);border-radius:24px;padding:40px 28px 32px;position:relative;z-index:1;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 24px 80px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);}
-.login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.25),transparent);border-radius:24px 24px 0 0;}
+#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 600px 400px at 50% 40%,rgba(255,255,255,0.02) 0%,transparent 70%);pointer-events:none;}
+.login-box{width:100%;max-width:420px;background:rgba(10,10,18,0.22);border:1px solid rgba(255,255,255,0.06);border-radius:24px;padding:40px 28px 32px;position:relative;z-index:1;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 24px 80px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.04);}
+.login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent);border-radius:24px 24px 0 0;}
 .login-logo-centered{display:flex;flex-direction:column;align-items:center;margin-bottom:28px;}
-.login-logo-centered img{height:72px;margin-bottom:14px;filter:drop-shadow(0 0 30px rgba(201,168,76,0.1));}
+.login-logo-centered img{height:72px;margin-bottom:14px;filter:drop-shadow(0 0 30px rgba(255,255,255,0.05));}
 .login-logo-centered .login-brand{font-family:'Outfit','Nunito',sans-serif;font-size:20px;font-weight:400;color:#fff;letter-spacing:8px;text-transform:uppercase;}
 .login-logo-centered .login-gold-line{width:40px;height:1px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:12px 0;}
 @media(max-height:700px){
@@ -358,8 +358,8 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .login-sub{text-align:center;color:var(--ld-gold-dk);font-size:11px;margin-bottom:24px;letter-spacing:1px;font-weight:500;font-family:'Outfit','Nunito',sans-serif;}
 .login-field{margin-bottom:14px;}
 .login-field label{display:block;font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:500;font-family:'Outfit','Nunito',sans-serif;}
-.login-field input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.08);border-radius:12px;color:var(--text);font-size:14px;padding:13px 16px;outline:none;font-family:'Outfit','Nunito',sans-serif;transition:border-color 0.3s;box-sizing:border-box;}
-.login-field input:focus{border-color:rgba(201,168,76,0.3);}
+.login-field input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--text);font-size:14px;padding:13px 16px;outline:none;font-family:'Outfit','Nunito',sans-serif;transition:border-color 0.3s;box-sizing:border-box;}
+.login-field input:focus{border-color:rgba(255,255,255,0.20);}
 .login-field input::placeholder{color:var(--muted2);}
 .btn-login{width:100%;padding:14px;border-radius:50px;background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 4s linear infinite;color:#0a0a12;font-family:'Outfit','Nunito',sans-serif;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-top:8px;box-shadow:0 4px 24px rgba(201,168,76,0.2);letter-spacing:1px;text-transform:uppercase;transition:all 0.3s;}
 .btn-login:hover{transform:translateY(-1px);box-shadow:0 8px 36px rgba(201,168,76,0.3);}
@@ -388,7 +388,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .sidebar-nav{flex:1;padding:10px 0 16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:2px 8px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);cursor:pointer;border:none;background:transparent;width:calc(100% - 16px);text-align:left;font-family:'Outfit','Nunito',sans-serif;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);letter-spacing:0.2px;}
 .nav-item:hover{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.9);transform:translateX(4px);}
-.nav-item.active{background:rgba(255,255,255,0.05);color:#fff;font-weight:600;border:none;border-left:2px solid #C9A84C;border-radius:0 10px 10px 0;margin-left:0;padding-left:20px;box-shadow:inset 0 0 20px rgba(201,168,76,0.03);}
+.nav-item.active{background:rgba(255,255,255,0.05);color:#fff;font-weight:600;border:none;border-left:2px solid #C9A84C;border-radius:0 10px 10px 0;margin-left:0;padding-left:20px;box-shadow:inset 0 0 20px rgba(255,255,255,0.02);}
 .nav-item .nav-icon{font-size:14px;width:18px;text-align:center;}
 .nav-section-label{font-size:9px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,0.18);text-transform:uppercase;padding:14px 18px 5px;font-family:'Outfit','Nunito',sans-serif;}
 .sidebar-bottom{flex-shrink:0;padding:12px 10px;border-top:1px solid rgba(255,255,255,0.04);}
@@ -427,15 +427,15 @@ select option{background:#0a0a12;color:#F0EDE6;}
 
 /* ── CARDS — Elite Crystal Glassmorphism ── */
 .card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:20px;padding:20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 30px rgba(0,0,0,0.12);margin-bottom:14px;position:relative;overflow:hidden;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(201,168,76,0.2) 30%,rgba(255,255,255,0.1) 50%,rgba(201,168,76,0.2) 70%,transparent 100%);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
-.card:hover{border-color:rgba(255,255,255,0.10);box-shadow:0 12px 50px rgba(0,0,0,0.20),0 0 0 0.5px rgba(201,168,76,0.08);transform:translateY(-3px);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.08) 30%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.08) 70%,transparent 100%);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
+.card:hover{border-color:rgba(255,255,255,0.10);box-shadow:0 12px 50px rgba(0,0,0,0.20),0 0 0 0.5px rgba(255,255,255,0.05);transform:translateY(-3px);}
 .card:hover::before{opacity:1;}
-.card-gold{border-color:rgba(201,168,76,0.12);background:linear-gradient(135deg,rgba(10,10,18,0.35) 0%,rgba(201,168,76,0.03) 100%);}
+.card-gold{border-color:rgba(255,255,255,0.06);background:linear-gradient(135deg,rgba(10,10,18,0.35) 0%,rgba(255,255,255,0.02) 100%);}
 
 /* ── STATS GRID — Elite Crystal ── */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:24px;}
 .stat-card{background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.05);border-radius:16px;padding:18px 16px;text-align:center;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}
-.stat-card::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at center,rgba(201,168,76,0.04) 0%,transparent 60%);opacity:0;transition:opacity 0.4s;}
+.stat-card::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at center,rgba(255,255,255,0.03) 0%,transparent 60%);opacity:0;transition:opacity 0.4s;}
 .stat-card:hover{border-color:rgba(255,255,255,0.10);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,0.15);}
 .stat-card:hover::after{opacity:1;}
 .stat-num{font-family:'Cormorant Garamond','Georgia',serif;font-size:34px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.5px;}
@@ -495,7 +495,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .chat-input-bar{display:flex;gap:8px;padding:12px 16px;background:rgba(5,5,8,0.88);border-top:0.5px solid var(--border);align-items:center;position:relative;}
 .btn-emoji{background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 8px;font-size:20px;cursor:pointer;flex-shrink:0;transition:background 0.15s;line-height:1;}
 .btn-emoji:hover{background:rgba(255,255,255,0.12);}
-.emoji-picker{position:absolute;bottom:58px;left:12px;background:rgba(8,18,40,0.98);border:0.5px solid rgba(201,168,76,0.2);border-radius:16px;padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:3px;z-index:300;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.6);width:288px;}
+.emoji-picker{position:absolute;bottom:58px;left:12px;background:rgba(8,18,40,0.98);border:0.5px solid rgba(255,255,255,0.08);border-radius:16px;padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:3px;z-index:300;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.6);width:288px;}
 .emoji-picker button{background:none;border:none;font-size:21px;cursor:pointer;padding:3px;border-radius:6px;transition:background 0.12s;line-height:1;}
 .emoji-picker button:hover{background:rgba(255,255,255,0.1);}
 .emoji-category{grid-column:1/-1;font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;padding:4px 0 2px;font-weight:700;}
@@ -534,12 +534,12 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .resp-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--border);}
 .resp-tag{font-size:11px;font-weight:500;color:var(--gold);text-transform:uppercase;letter-spacing:0.8px;}
 .btn-copy{font-size:12px;padding:4px 12px;border-radius:6px;background:var(--gold-d);border:0.5px solid var(--gold-b);color:var(--gold);cursor:pointer;font-weight:500;transition:all 0.15s;}
-.btn-copy:hover{background:rgba(201,168,76,0.25);}
+.btn-copy:hover{background:rgba(255,255,255,0.10);}
 .btn-copy.ok{background:rgba(29,158,117,0.15);border-color:rgba(29,158,117,0.3);color:var(--success);}
 .resp-body{padding:16px;line-height:1.65;font-size:15px;white-space:pre-wrap;color:var(--text);}
 .resp-body.streaming::after{content:'▋';display:inline;animation:blink 0.7s step-end infinite;color:var(--gold);}
 @keyframes blink{50%{opacity:0}}
-.landing-alert{margin-top:14px;padding:14px 16px;background:rgba(201,168,76,0.08);border:0.5px solid var(--gold-b);border-radius:12px;}
+.landing-alert{margin-top:14px;padding:14px 16px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;}
 .landing-alert p{font-size:13px;color:var(--gold);margin-bottom:8px;font-weight:500;}
 .link-box{background:var(--bg2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0.5px solid var(--border);}
 .link-text{font-size:13px;color:var(--text);flex:1;word-break:break-all;}
@@ -553,8 +553,8 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .admin-table td{padding:12px;border-bottom:0.5px solid var(--border);font-size:13px;vertical-align:middle;}
 .admin-table tr:last-child td{border-bottom:none;}
 .admin-table tr:hover td{background:rgba(255,255,255,0.02);}
-.rank-select{background:#0a0a12;border:0.5px solid rgba(201,168,76,0.2);border-radius:6px;color:#F0EDE6;font-size:12px;padding:4px 8px;outline:none;cursor:pointer;}
-.rank-select:focus{border-color:rgba(201,168,76,0.4);}
+.rank-select{background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;color:#F0EDE6;font-size:12px;padding:4px 8px;outline:none;cursor:pointer;}
+.rank-select:focus{border-color:rgba(255,255,255,0.20);}
 .sol-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .sol-info{flex:1;min-width:200px;}
 .sol-name{font-size:14px;font-weight:500;color:var(--text);}
@@ -570,7 +570,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .content-row .ci-title{flex:2;min-width:160px;}
 .content-row .ci-url{flex:3;min-width:160px;}
 .btn-save-row{padding:6px 14px;border-radius:6px;background:var(--gold-d);border:0.5px solid var(--gold-b);color:var(--gold);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;}
-.btn-save-row:hover{background:rgba(201,168,76,0.25);}
+.btn-save-row:hover{background:rgba(255,255,255,0.10);}
 .admin-info-box{background:var(--bg3);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.6;}
 .admin-info-box strong{color:var(--gold);}
 
@@ -627,8 +627,8 @@ select option{background:#0a0a12;color:#F0EDE6;}
 
 /* ── PERFIL ── */
 .perfil-wrap{max-width:480px;margin:0 auto;}
-.perfil-avatar-card{display:flex;flex-direction:column;align-items:center;padding:28px 20px;background:rgba(10,10,18,0.30);border:0.5px solid rgba(201,168,76,0.10);border-radius:20px;margin-bottom:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(0,0,0,0.25);}
-.perfil-avatar{width:86px;height:86px;border-radius:50%;background:rgba(201,168,76,0.1);border:2px solid rgba(201,168,76,0.4);display:flex;align-items:center;justify-content:center;font-family:'Outfit','Nunito',sans-serif;font-size:30px;font-weight:900;color:#C9A84C;cursor:pointer;position:relative;overflow:hidden;margin-bottom:12px;}
+.perfil-avatar-card{display:flex;flex-direction:column;align-items:center;padding:28px 20px;background:rgba(10,10,18,0.30);border:0.5px solid rgba(255,255,255,0.06);border-radius:20px;margin-bottom:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(0,0,0,0.25);}
+.perfil-avatar{width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-family:'Outfit','Nunito',sans-serif;font-size:30px;font-weight:900;color:rgba(255,255,255,0.6);cursor:pointer;position:relative;overflow:hidden;margin-bottom:12px;}
 .perfil-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .perfil-avatar-overlay{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);font-size:10px;color:#fff;text-align:center;padding:5px 0;font-weight:600;}
 .perfil-name{font-family:'Outfit','Nunito',sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:3px;}
@@ -639,7 +639,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .perfil-data-row:last-child{border-bottom:none;}
 .perfil-data-label{font-size:11px;color:rgba(255,255,255,0.35);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
 .perfil-data-value{font-size:13px;color:#fff;font-weight:700;text-align:right;}
-.perfil-data-value.cyan{color:#C9A84C;}
+.perfil-data-value.cyan{color:#fff;}
 .perfil-data-value.gold{color:#FFD700;}
 .perfil-data-value.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,0.5);}
 
@@ -664,21 +664,21 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .crm-kanban-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch;}
 .crm-kanban-board::-webkit-scrollbar{height:4px;}
 .crm-kanban-board::-webkit-scrollbar-track{background:transparent;}
-.crm-kanban-board::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:2px;}
+.crm-kanban-board::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.10);border-radius:2px;}
 .crm-column{flex:0 0 208px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.05);border-radius:14px;padding:12px;min-height:400px;display:flex;flex-direction:column;transition:all 0.2s;}
 .crm-column:hover{border-color:rgba(255,255,255,0.08);}
-.crm-column.dragging-over{border-color:rgba(201,168,76,0.3);box-shadow:0 0 20px rgba(201,168,76,0.08);background:rgba(201,168,76,0.02);}
+.crm-column.dragging-over{border-color:rgba(255,255,255,0.15);box-shadow:0 0 20px rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);}
 .crm-column-header{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:10px;border-bottom:0.5px solid rgba(255,255,255,0.06);}
 .crm-column-emoji{font-size:16px;}
 .crm-column-name{font-size:13px;font-weight:800;color:#fff;flex:1;}
-.crm-column-count{font-size:11px;font-weight:800;min-width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(201,168,76,0.1);color:#C9A84C;}
+.crm-column-count{font-size:11px;font-weight:800;min-width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);}
 .crm-kanban-wrap{overflow-x:auto;padding-bottom:12px;}
 .crm-kanban-wrap::-webkit-scrollbar{height:14px;}
 .crm-kanban-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:7px;}
 .crm-kanban-wrap::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#C9A84C,#7F77DD);border-radius:7px;min-width:60px;}
 .crm-kanban-wrap::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,#C9A84C,#25D366);}
 input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date']::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer;}
-.crm-column[data-etapa="nuevo"] .crm-column-count{background:rgba(201,168,76,0.1);color:#C9A84C;}
+.crm-column[data-etapa="nuevo"] .crm-column-count{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);}
 .crm-column[data-etapa="contactado"] .crm-column-count{background:rgba(127,119,221,0.15);color:#7F77DD;}
 .crm-column[data-etapa="interesado"] .crm-column-count{background:rgba(255,215,0,0.1);color:#FFD700;}
 .crm-column[data-etapa="presentacion"] .crm-column-count{background:rgba(29,158,117,0.15);color:#1D9E75;}
@@ -736,7 +736,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 .crm-list-table{width:100%;border-collapse:collapse;min-width:700px;}
 .crm-list-table th{font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.6px;padding:10px 12px;text-align:left;border-bottom:0.5px solid rgba(255,255,255,0.07);font-weight:600;}
 .crm-list-table td{padding:12px;border-bottom:0.5px solid rgba(255,255,255,0.05);font-size:13px;color:rgba(255,255,255,0.7);}
-.crm-list-table tr:hover td{background:rgba(201,168,76,0.03);}
+.crm-list-table tr:hover td{background:rgba(255,255,255,0.015);}
 .crm-metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 @media(max-width:768px){
 .crm-control-bar{flex-direction:column;align-items:stretch;}
@@ -753,7 +753,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 :root {
   --crm-bg-dark: #050508;
   --crm-card-bg: #0a0a12;
-  --crm-border: rgba(201,168,76,0.08);
+  --crm-border: rgba(255,255,255,0.06);
   --crm-gold: #C9A84C;
   --crm-cyan: #C9A84C;
   --crm-green: #1D9E75;
@@ -2079,7 +2079,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 
 /* ── ACADEMIA ── */
 .module-card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:18px;padding:18px;margin-bottom:12px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);cursor:pointer;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}
-.module-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.15),transparent);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
+.module-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);background-size:200% 100%;opacity:0;transition:opacity 0.4s;animation:borderGlow 3s ease-in-out infinite;}
 .module-card:hover::after{opacity:1;}
 .module-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.12);}
 .module-progress-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:12px;}
@@ -2249,16 +2249,16 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
     </p>
 
     <!-- FORGOT PASSWORD -->
-    <div id="forgot-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(201,168,76,0.12);border-radius:12px;">
+    <div id="forgot-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;">
       <p style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:10px;">Escribe tu correo y te enviamos instrucciones:</p>
-      <input type="email" id="forgot-email" placeholder="tucorreo@email.com" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px 12px;outline:none;margin-bottom:10px;font-family:Outfit,Nunito,sans-serif;">
-      <button onclick="sendForgot()" style="width:100%;padding:10px;border-radius:8px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.2);color:#C9A84C;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Enviar instrucciones →</button>
+      <input type="email" id="forgot-email" placeholder="tucorreo@email.com" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px 12px;outline:none;margin-bottom:10px;font-family:Outfit,Nunito,sans-serif;">
+      <button onclick="sendForgot()" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Enviar instrucciones →</button>
     </div>
 
     <!-- SOLICITAR ACCESO -->
-    <div id="solicitud-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(201,168,76,0.12);border-radius:12px;">
+    <div id="solicitud-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;">
       <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:4px;">Solicitar acceso a SKYTEAM</p>
-      <p style="font-size:11px;color:rgba(201,168,76,0.6);margin-bottom:12px;">Sigue los pasos para crear tu cuenta.</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:12px;">Sigue los pasos para crear tu cuenta.</p>
 
       <!-- PASO 1: IMAGEN -->
       <div style="background:rgba(255,215,0,0.05);border:0.5px solid rgba(255,215,0,0.25);border-radius:10px;padding:12px;margin-bottom:10px;">
@@ -2302,12 +2302,12 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 
       <!-- PASO 2: AUTO-RELLENADO (aparece tras análisis) -->
       <div id="sol-autofill-section" style="display:none;">
-        <div style="width:100%;height:0.5px;background:rgba(201,168,76,0.1);margin:4px 0 10px;"></div>
+        <div style="width:100%;height:0.5px;background:rgba(255,255,255,0.06);margin:4px 0 10px;"></div>
         <p style="font-size:12px;color:#FFD700;font-weight:700;margin-bottom:8px;">PASO 2 — Datos detectados automáticamente</p>
         <div style="margin-bottom:6px;">
           <label style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.6px;">👤 Tu usuario Innova</label>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-            <input type="text" id="sol-innova-user" readonly style="flex:1;background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.3);border-radius:8px;color:#C9A84C;font-size:14px;font-weight:700;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:1px;">
+            <input type="text" id="sol-innova-user" readonly style="flex:1;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.10);border-radius:8px;color:rgba(255,255,255,0.7);font-size:14px;font-weight:700;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:1px;">
             <span style="font-size:18px;">✅</span>
           </div>
         </div>
@@ -2327,13 +2327,13 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
         </div>
 
         <!-- PASO 3: DATOS MANUALES -->
-        <div style="width:100%;height:0.5px;background:rgba(201,168,76,0.1);margin:4px 0 10px;"></div>
+        <div style="width:100%;height:0.5px;background:rgba(255,255,255,0.06);margin:4px 0 10px;"></div>
         <p style="font-size:12px;color:#FFD700;font-weight:700;margin-bottom:8px;">PASO 3 — Completa tu información</p>
-        <input type="text" id="sol-name" placeholder="Nombre y apellido" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
-        <input type="email" id="sol-email" placeholder="Tu correo electrónico" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
+        <input type="text" id="sol-name" placeholder="Nombre y apellido" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
+        <input type="email" id="sol-email" placeholder="Tu correo electrónico" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
         <!-- WhatsApp con selector de país -->
         <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <select id="sol-country" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:12px;padding:10px 6px;outline:none;font-family:Outfit,Nunito,sans-serif;min-width:110px;">
+          <select id="sol-country" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:12px;padding:10px 6px;outline:none;font-family:Outfit,Nunito,sans-serif;min-width:110px;">
             <option value="+57">CO +57</option>
             <option value="+58">VE +58</option>
             <option value="+52">MX +52</option>
@@ -2356,17 +2356,17 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
             <option value="+351">PT +351</option>
             <option value="+1">US +1</option>
           </select>
-          <input type="tel" id="sol-wa-num" placeholder="300 123 4567" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;">
+          <input type="tel" id="sol-wa-num" placeholder="300 123 4567" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;">
         </div>
-        <div style="width:100%;height:0.5px;background:rgba(201,168,76,0.1);margin:6px 0 10px;"></div>
-        <p style="font-size:11px;color:rgba(201,168,76,0.7);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">🔑 Crea tu contraseña de acceso</p>
+        <div style="width:100%;height:0.5px;background:rgba(255,255,255,0.06);margin:6px 0 10px;"></div>
+        <p style="font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">🔑 Crea tu contraseña de acceso</p>
         <div style="position:relative;margin-bottom:8px;">
-          <input type="password" id="sol-pass" placeholder="Mínimo 6 caracteres" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" oninput="checkPassStrength(this.value)">
+          <input type="password" id="sol-pass" placeholder="Mínimo 6 caracteres" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" oninput="checkPassStrength(this.value)">
           <button type="button" onclick="togglePassVis('sol-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
         </div>
         <div id="sol-pass-strength" style="display:none;height:3px;border-radius:2px;margin-bottom:6px;transition:all 0.3s;"></div>
         <div style="position:relative;margin-bottom:14px;">
-          <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
+          <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
           <button type="button" onclick="togglePassVis('sol-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
         </div>
         <button onclick="sendSolicitud()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.5px;">Solicitar acceso →</button>
@@ -2374,22 +2374,22 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
     </div>
 
     <!-- RESET PASSWORD MODAL -->
-    <div id="reset-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(201,168,76,0.15);border-radius:12px;">
+    <div id="reset-box" style="display:none;margin-top:14px;padding:16px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;">
       <p style="font-size:13px;color:#F0EDE6;font-weight:700;margin-bottom:6px;">🔑 Crear nueva contraseña</p>
       <p style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;">Ingresa y confirma tu nueva contraseña.</p>
       <div style="position:relative;margin-bottom:8px;">
-        <input type="password" id="reset-pass" placeholder="Nueva contraseña (mín. 6 caracteres)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
+        <input type="password" id="reset-pass" placeholder="Nueva contraseña (mín. 6 caracteres)" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
         <button type="button" onclick="togglePassVis('reset-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
       </div>
       <div style="position:relative;margin-bottom:12px;">
-        <input type="password" id="reset-pass2" placeholder="Repite la nueva contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
+        <input type="password" id="reset-pass2" placeholder="Repite la nueva contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
         <button type="button" onclick="togglePassVis('reset-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
       </div>
       <button onclick="submitResetPassword()" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:13px;font-weight:900;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Guardar contraseña →</button>
     </div>
 
     <!-- SUCCESS MESSAGE -->
-    <div id="solicitud-success" style="display:none;margin-top:14px;padding:18px;background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.2);border-radius:14px;text-align:center;">
+    <div id="solicitud-success" style="display:none;margin-top:14px;padding:18px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:14px;text-align:center;">
       <div style="font-size:26px;margin-bottom:8px;">🎉</div>
       <p style="font-family:Outfit,Nunito,sans-serif;font-size:15px;font-weight:900;color:#C9A84C;margin-bottom:8px;">¡Felicidades!</p>
       <p style="font-size:12px;color:#F0EDE6;line-height:1.7;margin-bottom:6px;">Ya estás muy cerca de tener tu acceso. Ingresarás con el rango <strong style="color:#C9A84C;">🤝 Cliente</strong> y el administrador te irá asignando tu rango según tu membresía.</p>
@@ -2462,9 +2462,9 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
       <div id="agente-chat-wrap" style="display:flex;flex-direction:column;height:calc(100vh - 64px);">
         <div id="agente-desc" style="padding:14px 20px 0;"></div>
         <div id="agente-msgs" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;"></div>
-        <div style="padding:12px 16px;background:rgba(5,5,8,0.9);border-top:0.5px solid rgba(201,168,76,0.08);display:flex;gap:10px;align-items:flex-end;">
+        <div style="padding:12px 16px;background:rgba(5,5,8,0.9);border-top:0.5px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;">
           <textarea id="agente-input" placeholder="Escribe aquí..." rows="2"
-            style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.15);border-radius:12px;color:#F0EDE6;font-size:14px;padding:10px 14px;outline:none;resize:none;font-family:Outfit,Nunito,sans-serif;line-height:1.5;"></textarea>
+            style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;color:#F0EDE6;font-size:14px;padding:10px 14px;outline:none;resize:none;font-family:Outfit,Nunito,sans-serif;line-height:1.5;"></textarea>
           <button id="agente-send-btn" onclick="sendAgentMsg()"
             style="background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:900;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Enviar →</button>
         </div>
@@ -2817,7 +2817,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 <!-- GLOBAL NOTIFICATION BELL — injected into topbars via JS -->
 
 <!-- NOTIFICATION PANEL -->
-<div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:rgba(8,18,42,0.97);border:0.5px solid rgba(201,168,76,0.15);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Outfit,Nunito,sans-serif;">
+<div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:rgba(8,18,42,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Outfit,Nunito,sans-serif;">
   <div style="padding:16px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(255,255,255,0.06);">
     <span style="font-size:15px;font-weight:800;color:#fff;">🔔 Notificaciones</span>
     <button onclick="toggleNotifPanel()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;">✕</button>
@@ -3315,14 +3315,14 @@ function renderSidebarUser() {
   const savedPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
   const initials = CU.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
   const avatarHtml = savedPhoto
-    ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,168,76,0.5);cursor:pointer;flex-shrink:0;">'
-    : '<div class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;background:rgba(201,168,76,0.1);border:2px solid rgba(201,168,76,0.4);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:#C9A84C;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
+    ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.15);cursor:pointer;flex-shrink:0;">'
+    : '<div class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:rgba(255,255,255,0.6);cursor:pointer;flex-shrink:0;">' + initials + '</div>';
   document.getElementById('sidebar-user').innerHTML = `
     ${avatarHtml}
     <div class="su-info">
       <div class="su-name">${CU.name}</div>
       ${rankBadge(CU.rank, 'tiny')}
-      <button class="sidebar-perfil-btn" style="margin-top:3px;font-size:8px;padding:2px 7px;border-radius:12px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.3px;width:fit-content;">👤 Ver perfil</button>
+      <button class="sidebar-perfil-btn" style="margin-top:3px;font-size:8px;padding:2px 7px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.3px;width:fit-content;">👤 Ver perfil</button>
     </div>
   `;
   document.querySelectorAll('.sidebar-perfil-btn').forEach(function(el) {
@@ -3390,29 +3390,29 @@ function renderAgendaUI(el) {
   var fotoActual = agendaConfig && agendaConfig.foto ? agendaConfig.foto : '';
   html += '<div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:14px;">';
   if(fotoActual) {
-    html += '<img src="' + fotoActual + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,168,76,0.4);flex-shrink:0;" />';
+    html += '<img src="' + fotoActual + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.15);flex-shrink:0;" />';
   } else {
-    html += '<div style="width:64px;height:64px;border-radius:50%;background:rgba(201,168,76,0.08);border:2px dashed rgba(201,168,76,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:22px;">👤</span></div>';
+    html += '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:22px;">👤</span></div>';
   }
   html += '<div style="flex:1;">';
   html += '<p style="margin:0;font-size:14px;font-weight:800;color:#F0EDE6;">' + (CU ? CU.name : '') + '</p>';
-  html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);color:#C9A84C;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📷 ' + (fotoActual ? 'Cambiar foto' : 'Agregar foto') + '<br><span style="font-size:10px;font-weight:400;opacity:0.7;">(imagen que verá el prospecto al reservar)</span><input type="file" accept="image/*" id="agenda-foto-btn" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
+  html += '<label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📷 ' + (fotoActual ? 'Cambiar foto' : 'Agregar foto') + '<br><span style="font-size:10px;font-weight:400;opacity:0.7;">(imagen que verá el prospecto al reservar)</span><input type="file" accept="image/*" id="agenda-foto-btn" style="display:none;" onchange="previewAgendaFoto(this)"></label>';
   html += '<p style="font-size:10px;color:rgba(255,255,255,0.3);margin:5px 0 0;">Formato JPG o PNG · Máx. 10 MB · Se recorta en círculo</p>';
   html += '</div></div>';
 
   html += '<div id="agenda-crop-container" style="display:none;margin-bottom:14px;">';
-  html += '<div style="position:relative;width:80px;height:80px;margin:0 auto 10px;border-radius:50%;overflow:hidden;border:3px solid rgba(201,168,76,0.4);">';
+  html += '<div style="position:relative;width:80px;height:80px;margin:0 auto 10px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,0.15);">';
   html += '<img id="agenda-crop-img" style="width:100%;height:100%;object-fit:cover;"></div>';
-  html += '<button onclick="confirmarAgendaFoto()" style="width:100%;padding:10px;border-radius:8px;background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">✅ Usar esta foto</button>';
+  html += '<button onclick="confirmarAgendaFoto()" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">✅ Usar esta foto</button>';
   html += '</div>';
 
   // Header — link de agenda
-  html += '<div class="card" style="background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.05));border-color:rgba(201,168,76,0.25);margin-bottom:16px;">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;">🔗 Tu link público de agenda</p>';
+  html += '<div class="card" style="background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border-color:rgba(255,255,255,0.06);margin-bottom:16px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;">🔗 Tu link público de agenda</p>';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">';
-  html += '<span style="font-family:monospace;font-size:12px;color:#C9A84C;flex:1;word-break:break-all;">' + bookingLink + '</span>';
+  html += '<span style="font-family:monospace;font-size:12px;color:#fff;flex:1;word-break:break-all;">' + bookingLink + '</span>';
   html += '<div style="display:flex;gap:6px;flex-shrink:0;">';
-  html += '<button onclick="copiarAgendaLink()" style="background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📋</button>';
+  html += '<button onclick="copiarAgendaLink()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📋</button>';
   html += '<button onclick="compartirAgendaWA()" style="background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">💬</button>';
   html += '</div></div></div>';
 
@@ -3454,7 +3454,7 @@ function renderAgendaConfigUI() {
   // ── CSS for this section ──────────────────────────────────
   html += `<style>
 .ag-card{background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.07);border-radius:14px;padding:18px 20px;margin-bottom:12px;}
-.ag-label{font-size:10px;font-weight:800;color:rgba(201,168,76,0.55);text-transform:uppercase;letter-spacing:1.8px;margin:0 0 14px;display:flex;align-items:center;gap:6px;}
+.ag-label{font-size:10px;font-weight:800;color:rgba(255,255,255,0.50);text-transform:uppercase;letter-spacing:1.8px;margin:0 0 14px;display:flex;align-items:center;gap:6px;}
 .ag-toggle-wrap{display:flex;align-items:center;cursor:pointer;gap:0;}
 .ag-toggle{width:38px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s;}
 .ag-toggle .knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
@@ -3469,14 +3469,14 @@ function renderAgendaConfigUI() {
 .ag-day-label.off{color:rgba(255,255,255,0.25);}
 .ag-blocks{flex:1;display:flex;flex-direction:column;gap:6px;}
 .ag-block-row{display:flex;align-items:center;gap:6px;}
-.ag-time-input{background:rgba(0,0,0,0.25);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:7px 10px;outline:none;width:110px;font-family:Outfit,Nunito,sans-serif;transition:border-color 0.15s;color-scheme:dark;}
-.ag-time-input:focus{border-color:rgba(201,168,76,0.4);}
+.ag-time-input{background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:7px 10px;outline:none;width:110px;font-family:Outfit,Nunito,sans-serif;transition:border-color 0.15s;color-scheme:dark;}
+.ag-time-input:focus{border-color:rgba(255,255,255,0.20);}
 .ag-time-sep{color:rgba(255,255,255,0.3);font-size:12px;flex-shrink:0;}
 .ag-del-btn{background:none;border:none;color:rgba(255,80,80,0.4);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;transition:all 0.15s;line-height:1;flex-shrink:0;}
 .ag-del-btn:hover{background:rgba(255,60,60,0.1);color:rgba(255,80,80,0.8);}
 .ag-del-btn:disabled{opacity:0.15;cursor:not-allowed;}
-.ag-add-btn{background:none;border:none;color:rgba(201,168,76,0.45);cursor:pointer;font-size:12px;font-weight:700;padding:4px 0;font-family:Outfit,Nunito,sans-serif;transition:color 0.15s;display:inline-flex;align-items:center;gap:4px;width:fit-content;}
-.ag-add-btn:hover{color:rgba(201,168,76,0.8);}
+.ag-add-btn{background:none;border:none;color:rgba(255,255,255,0.40);cursor:pointer;font-size:12px;font-weight:700;padding:4px 0;font-family:Outfit,Nunito,sans-serif;transition:color 0.15s;display:inline-flex;align-items:center;gap:4px;width:fit-content;}
+.ag-add-btn:hover{color:rgba(255,255,255,0.75);}
 .ag-day-row.off .ag-blocks{opacity:0.3;pointer-events:none;}
 
 /* Closed day placeholder */
@@ -3486,10 +3486,10 @@ function renderAgendaConfigUI() {
 .ag-dur-btn{flex:1;padding:9px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:0.5px solid;font-family:Outfit,Nunito,sans-serif;transition:all 0.15s;}
 .ag-dur-btn.on{background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.4);color:#C9A84C;}
 .ag-dur-btn.off{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);}
-.ag-input-field{width:100%;background:rgba(0,0,0,0.2);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;transition:border-color 0.15s;}
-.ag-input-field:focus{border-color:rgba(201,168,76,0.35);}
-.ag-copy-btn{background:rgba(201,168,76,0.07);border:0.5px solid rgba(201,168,76,0.2);color:rgba(201,168,76,0.7);border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.15s;white-space:nowrap;}
-.ag-copy-btn:hover{background:rgba(201,168,76,0.12);color:#C9A84C;}
+.ag-input-field{width:100%;background:rgba(0,0,0,0.2);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;transition:border-color 0.15s;}
+.ag-input-field:focus{border-color:rgba(255,255,255,0.20);}
+.ag-copy-btn{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.15s;white-space:nowrap;}
+.ag-copy-btn:hover{background:rgba(255,255,255,0.08);color:#fff;}
 .ag-save-btn{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.3px;transition:opacity 0.15s;}
 .ag-save-btn:hover{opacity:0.9;}
 
@@ -3555,13 +3555,13 @@ function renderAgendaConfigUI() {
     if(isOn) {
       dd.bloques.forEach(function(b, bi) {
         html += '<div class="ag-block-row" data-day="' + d + '" data-idx="' + bi + '">';
-        html += '<div class="ag-time-wrap" style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;">';
-        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;width:100%;pointer-events:none;"><span class="ag-time-text">' + agFmtTimeStr(b.ini||'09:00') + '</span><span style="color:rgba(201,168,76,0.7);font-size:12px;">⏱</span></div>';
+        html += '<div class="ag-time-wrap" style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;">';
+        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;width:100%;pointer-events:none;"><span class="ag-time-text">' + agFmtTimeStr(b.ini||'09:00') + '</span><span style="color:rgba(255,255,255,0.50);font-size:12px;">⏱</span></div>';
         html += '<input type="time" lang="en-US" class="bloque-ini ag-time-input" value="' + (b.ini||'09:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;z-index:10;" oninput="agFmtTime(this);agValidateDayFromInput(this)" onchange="agFmtTime(this);agValidateDayFromInput(this)" onblur="agValidateDayFromInput(this)">';
         html += '</div>';
         html += '<span class="ag-time-sep">–</span>';
-        html += '<div class="ag-time-wrap" style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;">';
-        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;width:100%;pointer-events:none;"><span class="ag-time-text">' + agFmtTimeStr(b.fin||'18:00') + '</span><span style="color:rgba(201,168,76,0.7);font-size:12px;">⏱</span></div>';
+        html += '<div class="ag-time-wrap" style="display:flex;align-items:center;width:115px;flex-shrink:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;">';
+        html += '<div class="ag-time-display" style="padding:6px 10px;font-size:13px;color:#F0EDE6;user-select:none;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;width:100%;pointer-events:none;"><span class="ag-time-text">' + agFmtTimeStr(b.fin||'18:00') + '</span><span style="color:rgba(255,255,255,0.50);font-size:12px;">⏱</span></div>';
         html += '<input type="time" lang="en-US" class="bloque-fin ag-time-input" value="' + (b.fin||'18:00') + '" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;z-index:10;" oninput="agFmtTime(this);agValidateDayFromInput(this)" onchange="agFmtTime(this);agValidateDayFromInput(this)" onblur="agValidateDayFromInput(this)">';
         html += '</div>';
         html += '<button class="ag-del-btn" onclick="eliminarBloqueDia(' + d + ',' + bi + ')"' + (dd.bloques.length<=1?' disabled':'') + '>✕</button>';
@@ -3634,7 +3634,7 @@ function agFmtTime(inp) {
   if(display && display.classList.contains('ag-time-display')) {
     var textSpan = display.querySelector('.ag-time-text');
     if(textSpan) { textSpan.textContent = agFmtTimeStr(inp.value); }
-    else { display.innerHTML = '<span class="ag-time-text">' + agFmtTimeStr(inp.value) + '</span><span style="color:rgba(201,168,76,0.7);font-size:12px;">⏱</span>'; }
+    else { display.innerHTML = '<span class="ag-time-text">' + agFmtTimeStr(inp.value) + '</span><span style="color:rgba(255,255,255,0.50);font-size:12px;">⏱</span>'; }
   }
 }
 
@@ -3804,7 +3804,7 @@ function renderAgendaCitasUI() {
       html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
       html += '<a href="https://wa.me/'+waNum+'?text='+m2h+'" target="_blank" class="reminder-btn">⏰ 2h antes</a>';
       html += '<a href="https://wa.me/'+waNum+'?text='+m30+'" target="_blank" class="reminder-btn">⏰ 30 min</a>';
-      if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">🚀 Sala abierta</a>';
+      if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">🚀 Sala abierta</a>';
       html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;">✕ Cancelar</button>';
       html += '</div>';
     }
@@ -3823,9 +3823,9 @@ function injectAgendaCSS() {
 function renderBloqueHTML(b, i, total) {
   var html = '<div class="bloque-row" id="bloque-'+i+'" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
   html += '<div style="flex:1;display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;">';
-  html += '<input type="time" id="bloque-ini-'+i+'" value="'+(b.ini||'09:00')+'" style="background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px;outline:none;width:100%;box-sizing:border-box;">';
+  html += '<input type="time" id="bloque-ini-'+i+'" value="'+(b.ini||'09:00')+'" style="background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px;outline:none;width:100%;box-sizing:border-box;">';
   html += '<span style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;">→</span>';
-  html += '<input type="time" id="bloque-fin-'+i+'" value="'+(b.fin||'10:00')+'" style="background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px;outline:none;width:100%;box-sizing:border-box;">';
+  html += '<input type="time" id="bloque-fin-'+i+'" value="'+(b.fin||'10:00')+'" style="background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px;outline:none;width:100%;box-sizing:border-box;">';
   html += '</div>';
   if(total > 1) {
     html += '<button onclick="eliminarBloqueAgenda('+i+')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;width:34px;height:34px;font-size:14px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">✕</button>';
@@ -3892,9 +3892,9 @@ function agregarBloque() {
   var div = document.createElement('div');
   div.className = 'bloque-row';
   div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
-  div.innerHTML = '<input type="time" class="bloque-ini" value="09:00" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">'
+  div.innerHTML = '<input type="time" class="bloque-ini" value="09:00" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">'
     + '<span style="color:rgba(255,255,255,0.4);font-size:13px;">→</span>'
-    + '<input type="time" class="bloque-fin" value="18:00" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">'
+    + '<input type="time" class="bloque-fin" value="18:00" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:9px;outline:none;box-sizing:border-box;">'
     + '<button onclick="eliminarBloque(this)" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">✕</button>';
   container.appendChild(div);
 }
@@ -3939,14 +3939,14 @@ function renderPlanDiarioUI() {
   html += '</div>';
 
   // Voice + text input card
-  html += '<div class="card pd-input-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(201,168,76,0.04));border-color:rgba(201,168,76,0.2);">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.55);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 10px;">🎙️ Agregar actividad con voz o texto</p>';
+  html += '<div class="card pd-input-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border-color:rgba(255,255,255,0.06);">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.50);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 10px;">🎙️ Agregar actividad con voz o texto</p>';
   html += '<div style="display:flex;gap:8px;align-items:stretch;">';
-  html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio de 7 a 8 am todos los lunes y miércoles" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
-  html += '<button id="pd-mic-btn" onclick="togglePlanDiarioVoice()" style="background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:10px;padding:0 16px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.3s;" title="Hablar">🎙️</button>';
+  html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio de 7 a 8 am todos los lunes y miércoles" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
+  html += '<button id="pd-mic-btn" onclick="togglePlanDiarioVoice()" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:10px;padding:0 16px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.3s;" title="Hablar">🎙️</button>';
   html += '<button onclick="processPlanDiarioInput()" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">Agregar</button>';
   html += '</div>';
-  html += '<p id="pd-voice-status" style="font-size:11px;color:rgba(201,168,76,0.5);margin:8px 0 0;display:none;"></p>';
+  html += '<p id="pd-voice-status" style="font-size:11px;color:rgba(255,255,255,0.45);margin:8px 0 0;display:none;"></p>';
   html += '<p id="pd-ai-status" style="font-size:11px;color:rgba(255,215,0,0.6);margin:6px 0 0;display:none;">🤖 Procesando con IA...</p>';
   html += '</div>';
 
@@ -3958,7 +3958,7 @@ function renderPlanDiarioUI() {
   html += '<button onclick="planDiarioWeekOffset--;loadPlanDiario()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;">◀</button>';
   html += '<div style="text-align:center;">';
   html += '<span style="font-size:14px;font-weight:800;color:#F0EDE6;">'+weekLabel+'</span>';
-  if(planDiarioWeekOffset!==0) html += ' <button onclick="planDiarioWeekOffset=0;loadPlanDiario()" style="background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.2);color:#C9A84C;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:8px;">Hoy</button>';
+  if(planDiarioWeekOffset!==0) html += ' <button onclick="planDiarioWeekOffset=0;loadPlanDiario()" style="background:rgba(201,168,76,0.1);border:0.5px solid rgba(255,255,255,0.08);color:#C9A84C;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:8px;">Hoy</button>';
   html += '</div>';
   html += '<button onclick="planDiarioWeekOffset++;loadPlanDiario()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;">▶</button>';
   html += '</div>';
@@ -4032,7 +4032,7 @@ function renderPlanDiarioCalendar() {
   html += '</div>';
 
   // Sync notice
-  html += '<div style="margin-top:12px;padding:10px 14px;background:rgba(201,168,76,0.05);border:0.5px solid rgba(201,168,76,0.15);border-radius:10px;font-size:11px;color:rgba(201,168,76,0.5);">🔗 Los bloques personales se sincronizan automáticamente con tu agenda de cierres. Nadie podrá agendar una cita durante tus actividades personales.</div>';
+  html += '<div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;font-size:11px;color:rgba(255,255,255,0.45);">🔗 Los bloques personales se sincronizan automáticamente con tu agenda de cierres. Nadie podrá agendar una cita durante tus actividades personales.</div>';
 
   container.innerHTML = html;
 }
@@ -4040,7 +4040,7 @@ function renderPlanDiarioCalendar() {
 function openPlanDiarioAdd(fecha, hora) {
   var hEnd = String(parseInt(hora.split(':')[0])+1).padStart(2,'0')+':00';
   var html = '<div id="pd-modal-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.remove()">';
-  html += '<div style="background:#0a0a12;border:0.5px solid rgba(201,168,76,0.2);border-radius:16px;padding:24px;width:100%;max-width:380px;">';
+  html += '<div style="background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;width:100%;max-width:380px;">';
   html += '<p style="font-size:16px;font-weight:900;color:#F0EDE6;margin:0 0 16px;">➕ Nueva actividad</p>';
   html += '<p style="font-size:11px;color:rgba(255,255,255,0.3);margin:0 0 14px;">📅 '+fecha+'</p>';
   html += '<label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Título</label>';
@@ -4081,7 +4081,7 @@ function openPlanDiarioEdit(id) {
   var block = planDiarioBlocks.find(function(b){return b.id===id;});
   if(!block) return;
   var html = '<div id="pd-modal-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.remove()">';
-  html += '<div style="background:#0a0a12;border:0.5px solid rgba(201,168,76,0.2);border-radius:16px;padding:24px;width:100%;max-width:380px;">';
+  html += '<div style="background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;width:100%;max-width:380px;">';
   html += '<p style="font-size:16px;font-weight:900;color:#F0EDE6;margin:0 0 16px;">✏️ Editar actividad</p>';
   html += '<label style="font-size:11px;color:rgba(255,255,255,0.4);font-weight:700;">Título</label>';
   html += '<input type="text" id="pd-edit-titulo" value="'+block.titulo+'" style="width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px 12px;margin:6px 0 12px;outline:none;box-sizing:border-box;font-family:Outfit,Nunito,sans-serif;">';
@@ -4153,7 +4153,7 @@ function togglePlanDiarioVoice() {
   planDiarioRecognition.onend = function() {
     // If user explicitly stopped (planDiarioRecording already false), process text
     if(!planDiarioRecording) {
-      if(btn){btn.style.background='rgba(201,168,76,0.12)';btn.style.borderColor='rgba(201,168,76,0.3)';btn.innerHTML='\uD83C\uDF99\uFE0F';}
+      if(btn){btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.10)';btn.innerHTML='\uD83C\uDF99\uFE0F';}
       if(status){status.style.display='none';}
       var input = document.getElementById('pd-text-input');
       if(input && input.value.trim()) processPlanDiarioInput();
@@ -4162,13 +4162,13 @@ function togglePlanDiarioVoice() {
     // Continuous mode: auto-restart to keep listening
     try { planDiarioRecognition.start(); } catch(ex) {
       planDiarioRecording = false;
-      if(btn){btn.style.background='rgba(201,168,76,0.12)';btn.style.borderColor='rgba(201,168,76,0.3)';btn.innerHTML='\uD83C\uDF99\uFE0F';}
+      if(btn){btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.10)';btn.innerHTML='\uD83C\uDF99\uFE0F';}
       if(status){status.style.display='none';}
     }
   }
   planDiarioRecognition.onerror = function(e) {
     planDiarioRecording = false;
-    if(btn){btn.style.background='rgba(201,168,76,0.12)';btn.style.borderColor='rgba(201,168,76,0.3)';btn.innerHTML='🎙️';}
+    if(btn){btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.10)';btn.innerHTML='🎙️';}
     if(status){status.style.display='none';}
     if(e.error!=='no-speech') showToast('Error de voz: '+e.error);
   };
@@ -4238,7 +4238,7 @@ function processPlanDiarioInput() {
 function injectPlanDiarioCSS() {
   if(document.getElementById('plan-diario-css')) return;
   var s = document.createElement('style'); s.id = 'plan-diario-css';
-  s.textContent = '.pd-grid-header{display:grid;grid-template-columns:48px repeat(7,1fr);gap:2px;margin-bottom:4px;}.pd-day-header{text-align:center;padding:8px 2px;}.pd-day-name{display:block;font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;}.pd-day-num{display:block;font-size:16px;font-weight:900;color:#F0EDE6;margin-top:2px;}.pd-today .pd-day-name{color:#C9A84C;}.pd-today-num{color:#0a0a12;background:#C9A84C;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;}.pd-time-col{width:48px;}.pd-grid-body{max-height:500px;overflow-y:auto;border-radius:10px;border:0.5px solid rgba(255,255,255,0.06);}.pd-grid-row{display:grid;grid-template-columns:48px repeat(7,1fr);gap:0;border-bottom:0.5px solid rgba(255,255,255,0.04);}.pd-time-label{font-size:10px;color:rgba(255,255,255,0.25);padding:8px 4px 8px 2px;text-align:right;font-weight:600;border-right:0.5px solid rgba(255,255,255,0.06);}.pd-cell{min-height:48px;border-right:0.5px solid rgba(255,255,255,0.04);padding:2px;cursor:pointer;transition:background 0.15s;}.pd-cell:hover{background:rgba(201,168,76,0.04);}.pd-block{border-radius:6px;padding:3px 5px;margin:1px 0;cursor:pointer;transition:transform 0.1s;}.pd-block:hover{transform:scale(1.03);}.pd-block-title{display:block;font-size:9px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.pd-block-time{display:block;font-size:8px;color:rgba(255,255,255,0.4);}.pd-input-card{transition:all 0.3s;}@media(max-width:600px){.pd-grid-header,.pd-grid-row{grid-template-columns:36px repeat(7,1fr);}.pd-day-name{font-size:8px;}.pd-day-num{font-size:13px;}.pd-time-label{font-size:8px;padding:6px 2px;}.pd-cell{min-height:36px;}.pd-block-title{font-size:8px;}.pd-block-time{font-size:7px;}}';
+  s.textContent = '.pd-grid-header{display:grid;grid-template-columns:48px repeat(7,1fr);gap:2px;margin-bottom:4px;}.pd-day-header{text-align:center;padding:8px 2px;}.pd-day-name{display:block;font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;}.pd-day-num{display:block;font-size:16px;font-weight:900;color:#F0EDE6;margin-top:2px;}.pd-today .pd-day-name{color:#C9A84C;}.pd-today-num{color:#0a0a12;background:#C9A84C;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;}.pd-time-col{width:48px;}.pd-grid-body{max-height:500px;overflow-y:auto;border-radius:10px;border:0.5px solid rgba(255,255,255,0.06);}.pd-grid-row{display:grid;grid-template-columns:48px repeat(7,1fr);gap:0;border-bottom:0.5px solid rgba(255,255,255,0.04);}.pd-time-label{font-size:10px;color:rgba(255,255,255,0.25);padding:8px 4px 8px 2px;text-align:right;font-weight:600;border-right:0.5px solid rgba(255,255,255,0.06);}.pd-cell{min-height:48px;border-right:0.5px solid rgba(255,255,255,0.04);padding:2px;cursor:pointer;transition:background 0.15s;}.pd-cell:hover{background:rgba(255,255,255,0.02);}.pd-block{border-radius:6px;padding:3px 5px;margin:1px 0;cursor:pointer;transition:transform 0.1s;}.pd-block:hover{transform:scale(1.03);}.pd-block-title{display:block;font-size:9px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.pd-block-time{display:block;font-size:8px;color:rgba(255,255,255,0.4);}.pd-input-card{transition:all 0.3s;}@media(max-width:600px){.pd-grid-header,.pd-grid-row{grid-template-columns:36px repeat(7,1fr);}.pd-day-name{font-size:8px;}.pd-day-num{font-size:13px;}.pd-time-label{font-size:8px;padding:6px 2px;}.pd-cell{min-height:36px;}.pd-block-title{font-size:8px;}.pd-block-time{font-size:7px;}}';
   document.head.appendChild(s);
 }
 // ═══════════════════════════════════════════════════════════════
@@ -4256,9 +4256,9 @@ function agregarBloqueHorario() {
   div.className = 'bloque-row';
   div.id = 'bloque-' + idx;
   div.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;';
-  div.innerHTML = '<input type="time" value="09:00" class="bloque-ini" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:8px;outline:none;">'
+  div.innerHTML = '<input type="time" value="09:00" class="bloque-ini" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:8px;outline:none;">'
     + '<span style="color:rgba(255,255,255,0.3);font-size:12px;">→</span>'
-    + '<input type="time" value="11:00" class="bloque-fin" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:8px;outline:none;">'
+    + '<input type="time" value="11:00" class="bloque-fin" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:8px;outline:none;">'
     + '<button onclick="this.parentElement.remove()" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">✕</button>';
   list.appendChild(div);
 }
@@ -4603,7 +4603,7 @@ function showNotifBanner() {
   if(existing) return;
   var banner = document.createElement('div');
   banner.id = 'notif-permission-banner';
-  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.08));border-top:1px solid rgba(201,168,76,0.3);backdrop-filter:blur(20px);padding:16px 20px;font-family:Outfit,Nunito,sans-serif;animation:slideUp 0.4s ease-out;';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03));border-top:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);padding:16px 20px;font-family:Outfit,Nunito,sans-serif;animation:slideUp 0.4s ease-out;';
   banner.innerHTML = '<div style="max-width:480px;margin:0 auto;display:flex;align-items:center;gap:12px;">'
     + '<div style="font-size:28px;flex-shrink:0;">🔔</div>'
     + '<div style="flex:1;"><p style="margin:0 0 2px;font-size:13px;font-weight:800;color:#F0EDE6;">Activa las notificaciones</p><p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);line-height:1.4;">Recibe alertas cuando un prospecto agende contigo o cuando tengas citas próximas.</p></div>'
@@ -4938,24 +4938,24 @@ function renderNotifList(notifs) {
     html += '<div style="font-size:13px;font-weight:800;color:#fff;">' + n.title + '</div>';
     html += '<span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:600;flex-shrink:0;margin-left:8px;">' + _timeStr + '</span>';
     html += '</div>';
-    html += '<div style="font-size:11px;color:' + (n.type==='urgent'?'#FF6B6B':n.type==='soon'?'#FFB347':'rgba(201,168,76,0.7)') + ';font-weight:700;margin-bottom:6px;">' + n.subtitle + '</div>';
+    html += '<div style="font-size:11px;color:' + (n.type==='urgent'?'#FF6B6B':n.type==='soon'?'#FFB347':'rgba(255,255,255,0.55)') + ';font-weight:700;margin-bottom:6px;">' + n.subtitle + '</div>';
     html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 10px;line-height:1.5;">' + n.msg + '</p>';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
     if(waNum && n.waMsg) {
       html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent(n.waMsg) + '" target="_blank" class="notif-wa-btn">💬 Enviar WhatsApp</a>';
     }
     if(n.type === 'urgent' && agendaConfig && agendaConfig.linkReunion) {
-      html += '<a href="' + agendaConfig.linkReunion + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;">🖥️ Abrir sala</a>';
+      html += '<a href="' + agendaConfig.linkReunion + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;">🖥️ Abrir sala</a>';
     }
     // Generic action button — use data attribute to avoid quote-breaking in onclick
     if(n.action && n.action.url) {
       var _url = n.action.url;
       if(_url.startsWith('http')) {
-        html += '<a href="' + _url + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
+        html += '<a href="' + _url + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;">' + (n.action.label||'Ver') + '</a>';
       } else {
         // Store JS in data attribute, execute via _notifAction() to avoid quote conflicts
         var _sec = _url.replace('javascript:navigate(','').replace(')','').replace(/['"]/g,'').split(';')[0].trim();
-        html += '<button data-navsec="' + _sec + '" data-notifid="' + n.id + '" onclick="_notifNav(this)" style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">' + (n.action.label||'Ver') + '</button>';
+        html += '<button data-navsec="' + _sec + '" data-notifid="' + n.id + '" onclick="_notifNav(this)" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">' + (n.action.label||'Ver') + '</button>';
       }
     }
     html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Descartar</button>';
@@ -5148,25 +5148,25 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     #pb-task-wa,#pb-task-gcal,#pb-all-done{width:100%!important;max-width:100%!important;overflow:hidden!important;}
     #pb-task-wa a,#pb-task-gcal a{max-width:100%!important;flex-wrap:wrap!important;}
     .day-btn{flex-shrink:0;text-align:center;padding:11px 14px;border-radius:12px;cursor:pointer;min-width:62px;transition:all 0.15s;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);}
-    .day-btn.active{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.5);}
+    .day-btn.active{background:rgba(201,168,76,0.15);border-color:rgba(255,255,255,0.40);}
     .day-btn .dname{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);}
     .day-btn.active .dname{color:#C9A84C;}
     .day-btn .dnum{font-size:20px;font-weight:900;color:rgba(255,255,255,0.65);margin-top:3px;}
     .day-btn.active .dnum{color:#C9A84C;}
     .slot-row{width:100%;max-width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:8px;transition:all 0.15s;box-sizing:border-box;}
-    .slot-row:hover{border-color:rgba(201,168,76,0.3);background:rgba(201,168,76,0.06);}
+    .slot-row:hover{border-color:rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);}
     .slot-row.active{background:rgba(201,168,76,0.12);border:1.5px solid rgba(201,168,76,0.5);}
     .slot-row .s-time{font-size:16px;font-weight:900;color:rgba(255,255,255,0.8);}
     .slot-row.active .s-time{color:#C9A84C;}
     .slot-row .s-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);}
     .slot-row.active .s-dot{background:#C9A84C;}
-    .tz-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(201,168,76,0.8);}
-    input[type=text]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;box-sizing:border-box;}
-    input[type=text]:focus,input[type=tel]:focus{border-color:rgba(201,168,76,0.5);}
-    input[type=tel]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;}
+    .tz-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,0.60);}
+    input[type=text]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;margin-bottom:10px;box-sizing:border-box;}
+    input[type=text]:focus,input[type=tel]:focus{border-color:rgba(255,255,255,0.40);}
+    input[type=tel]{width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;}
     #pb-wa-code option{background:#0a0a12;color:#F0EDE6;padding:8px;}
     /* Verified badge */
-    .pb-verified{display:inline-flex;align-items:center;gap:4px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px;color:#C9A84C;font-weight:700;margin-top:6px;}
+    .pb-verified{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px;color:#C9A84C;font-weight:700;margin-top:6px;}
     .pb-verified svg{flex-shrink:0;}
     /* Scarcity pill on day tabs */
     .day-pill{font-size:8px;font-weight:800;padding:2px 6px;border-radius:10px;margin-top:4px;display:inline-block;letter-spacing:0.3px;}
@@ -5174,13 +5174,13 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     .day-pill.last{background:rgba(255,60,60,0.15);color:rgba(255,100,100,0.9);animation:pulse-pill 1.5s infinite;}
     @keyframes pulse-pill{0%,100%{opacity:1;}50%{opacity:0.5;}}
     /* Toast notification */
-    .pb-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(10,10,18,0.95);border:0.5px solid rgba(201,168,76,0.25);border-radius:12px;padding:12px 18px;font-size:13px;color:#F0EDE6;z-index:9999;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);max-width:340px;text-align:center;}
+    .pb-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(10,10,18,0.95);border:0.5px solid rgba(255,255,255,0.10);border-radius:12px;padding:12px 18px;font-size:13px;color:#F0EDE6;z-index:9999;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);max-width:340px;text-align:center;}
     .pb-toast.show{transform:translateX(-50%) translateY(0);}
     /* Countdown timer */
     .pb-countdown{display:flex;align-items:center;gap:6px;background:rgba(255,160,0,0.08);border:0.5px solid rgba(255,160,0,0.2);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:rgba(255,180,0,0.9);max-width:100%;box-sizing:border-box;}
     .pb-countdown .timer{font-weight:900;font-size:14px;font-family:monospace;color:#FFD700;}
     /* Micro-commitment screen */
-    .pb-commit-card{text-align:center;padding:36px 20px;background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(201,168,76,0.03));border:0.5px solid rgba(201,168,76,0.2);border-radius:18px;margin-bottom:20px;}
+    .pb-commit-card{text-align:center;padding:36px 20px;background:linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015));border:0.5px solid rgba(255,255,255,0.08);border-radius:18px;margin-bottom:20px;}
     .pb-commit-btn{width:100%;max-width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:16px;font-weight:900;border:none;cursor:pointer;font-family:inherit;letter-spacing:0.3px;transition:all 0.2s;box-shadow:0 6px 24px rgba(201,168,76,0.3);box-sizing:border-box;}
     .pb-commit-btn:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(201,168,76,0.4);}
     /* Google Calendar button */
@@ -5197,17 +5197,17 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   var html = '<div style="min-height:100vh;background:#0a0a12;color:#F0EDE6;width:100%;max-width:100vw;overflow-x:hidden;">';
 
   // Header — inner wrapper centered
-  html += '<div style="background:linear-gradient(135deg,rgba(201,168,76,0.09),rgba(201,168,76,0.04));border-bottom:0.5px solid rgba(201,168,76,0.18);padding:24px 20px 18px;">';
+  html += '<div style="background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));border-bottom:0.5px solid rgba(255,255,255,0.08);padding:24px 20px 18px;">';
   html += '<div style="max-width:480px;margin:0 auto;">';
   html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
   if(fotoActual) {
-    html += '<img src="'+fotoActual+'" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2.5px solid rgba(201,168,76,0.45);flex-shrink:0;" />';
+    html += '<img src="'+fotoActual+'" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2.5px solid rgba(255,255,255,0.20);flex-shrink:0;" />';
   } else {
-    html += '<div style="width:60px;height:60px;border-radius:50%;background:rgba(201,168,76,0.12);border:2.5px solid rgba(201,168,76,0.4);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">👤</div>';
+    html += '<div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.05);border:2.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">👤</div>';
   }
   html += '<div>';
   html += '<p style="font-size:18px;font-weight:900;margin:0;display:flex;align-items:center;gap:6px;">'+(cfg.nombre||username)+' <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#0a0a12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 1l3.09 3.26L19 3.64l-.64 3.91L21.5 12l-3.14 4.45.64 3.91-3.91.64L12 23l-3.09-3.26L5 20.36l.64-3.91L2.5 12l3.14-4.45L5 3.64l3.91-.64L12 1z" fill="#C9A84C"/><path d="M9 12l2 2 4-4" stroke="#0a0a12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></p>';
-  html += '<p style="font-size:12px;color:rgba(201,168,76,0.8);margin:3px 0 0;">SKYTEAM · Franquicia Digital</p>';
+  html += '<p style="font-size:12px;color:rgba(255,255,255,0.60);margin:3px 0 0;">SKYTEAM · Franquicia Digital</p>';
   html += '<div class="pb-verified"><svg width="14" height="14" viewBox="0 0 24 24" fill="#C9A84C"><path d="M12 1l3.09 3.26L19 3.64l-.64 3.91L21.5 12l-3.14 4.45.64 3.91-3.91.64L12 23l-3.09-3.26L5 20.36l.64-3.91L2.5 12l3.14-4.45L5 3.64l3.91-.64L12 1z"/><path d="M9 12l2 2 4-4" stroke="#0a0a12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Asesor verificado</div>';
   html += '</div></div>';
   html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
@@ -5279,7 +5279,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   } else {
     // Step 1: day + slot picker
     html += '<div id="pb-s1">';
-    html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Elige un día</p>';
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Elige un día</p>';
 
     // Day tabs
     html += '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px;" id="day-tabs">';
@@ -5298,7 +5298,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     });
     html += '</div>';
 
-    html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Horario disponible</p>';
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Horario disponible</p>';
     html += '<div id="slots-container">';
     html += renderSlotList(grouped.groups[firstDay]||[], prospectTZ, ipHash);
     html += '</div>';
@@ -5312,7 +5312,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '<h2 style="color:#F0EDE6;font-size:20px;margin:0 0 8px;">¿Estás listo para dar el primer paso?</h2>';
     html += '<p style="color:rgba(255,255,255,0.45);font-size:13px;margin:0 0 6px;">En esta reunión conocerás cómo empezar a generar ingresos desde tu celular.</p>';
     html += '<p style="color:rgba(255,255,255,0.35);font-size:12px;margin:0 0 24px;">Sin compromiso · Sin presión · '+(cfg.duracion||60)+' minutos</p>';
-    html += '<div style="background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);border-radius:10px;padding:12px 16px;margin-bottom:20px;">';
+    html += '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;margin-bottom:20px;">';
     html += '<p style="margin:0;font-size:14px;font-weight:800;color:#C9A84C;" id="pb-commit-slot-label"></p>';
     html += '</div>';
     html += '<button class="pb-commit-btn" onclick="pbShowForm()">Sí, quiero agendar mi reunión →</button>';
@@ -5322,14 +5322,14 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     // Step 2: confirm form
     html += '<div id="pb-s2" style="display:none;">';
     html += '<div class="pb-countdown" id="pb-countdown"><span>⏱ Este horario se libera en</span><span class="timer" id="pb-timer">5:00</span></div>';
-    html += '<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:13px 16px;margin-bottom:18px;max-width:100%;box-sizing:border-box;">';
+    html += '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:13px 16px;margin-bottom:18px;max-width:100%;box-sizing:border-box;">';
     html += '<p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#C9A84C;" id="pb-slot-label"></p>';
     html += '<button onclick="pbVolverSlots()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;padding:6px 0 0;font-family:inherit;">← Cambiar horario</button>';
     html += '</div>';
-    html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
+    html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:2px;margin:0 0 11px;">Tus datos</p>';
     html += '<input type="text" id="pb-nombre" placeholder="Tu nombre completo" />';
     html += '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:stretch;height:46px;">';
-    html += '<div style="position:relative;flex-shrink:0;width:108px;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;overflow:hidden;">';
+    html += '<div style="position:relative;flex-shrink:0;width:108px;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;">';
     html += '<div id="pb-wa-label" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;gap:6px;z-index:1;"><img id="pb-wa-flag" src="https://flagcdn.com/w40/co.png" style="width:24px;height:16px;border-radius:2px;object-fit:cover;display:block;" /><span id="pb-wa-codetext" style="font-size:14px;font-weight:700;color:#F0EDE6;">+57</span><span style="font-size:9px;color:rgba(255,255,255,0.35);">\u25BE</span></div>';
     html += '<select id="pb-wa-code" onchange="var o=this.options[this.selectedIndex];document.getElementById(\'pb-wa-flag\').src=\'https://flagcdn.com/w40/\'+o.getAttribute(\'data-iso\')+\'.png\';document.getElementById(\'pb-wa-codetext\').textContent=\'+\'+o.value;" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;z-index:2;">';
     html += '<option value="57" data-iso="co" selected>Colombia (+57)</option>';
@@ -5360,7 +5360,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '<option value="351" data-iso="pt">Portugal (+351)</option>';
     html += '</select>';
     html += '</div>';
-    html += '<input type="tel" id="pb-wa" placeholder="300 123 4567" style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;" />';
+    html += '<input type="tel" id="pb-wa" placeholder="300 123 4567" style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;" />';
     html += '</div>';
     html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;max-width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;box-sizing:border-box;">✅ Confirmar reunión</button>';
     html += '</div>';
@@ -5401,7 +5401,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '<a id="pb-gcal-btn" href="#" target="_blank" onclick="pbCheckTask(\'gcal\');return true;" style="display:inline-flex;align-items:center;gap:6px;background:rgba(66,133,244,0.15);border:1px solid rgba(66,133,244,0.3);color:#F0EDE6;padding:9px 18px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:800;transition:all 0.15s;position:relative;z-index:10;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Guardar en Google Calendar</a>';
     html += '</div></div></div>';
     // Completion message (hidden initially)
-    html += '<div id="pb-all-done" style="display:none;text-align:center;padding:12px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:12px;margin-top:6px;">';
+    html += '<div id="pb-all-done" style="display:none;text-align:center;padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;margin-top:6px;">';
     html += '<p style="margin:0;font-size:14px;font-weight:900;color:#C9A84C;">✅ ¡Listo! Estás 100% preparado</p>';
     html += '<p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,0.4);">Tu asesor ya sabe que vienes. ¡Nos vemos!</p>';
     html += '</div>';
@@ -6072,7 +6072,7 @@ function phoneCountrySelectHTML(idPrefix, currentWa, disabled) {
   var dis = disabled ? ' disabled' : '';
   var disStyle = disabled ? 'opacity:0.5;cursor:not-allowed;' : '';
   var h = '<div style="display:flex;gap:8px;align-items:stretch;height:42px;'+disStyle+'">';
-  h += '<div style="position:relative;flex-shrink:0;width:100px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;overflow:hidden;">';
+  h += '<div style="position:relative;flex-shrink:0;width:100px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;">';
   h += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;gap:5px;z-index:1;">';
   h += '<img id="'+idPrefix+'-flag" src="https://flagcdn.com/w40/'+savedIso+'.png" style="width:20px;height:14px;border-radius:2px;object-fit:cover;display:block;" />';
   h += '<span id="'+idPrefix+'-codetext" style="font-size:12px;font-weight:700;color:#F0EDE6;">+'+savedCode+'</span>';
@@ -6084,7 +6084,7 @@ function phoneCountrySelectHTML(idPrefix, currentWa, disabled) {
     h+='<option value="'+c.code+'" data-iso="'+c.iso+'"'+(c.code===savedCode?' selected':'')+'>'+c.name+' (+'+c.code+')</option>';
   }
   h += '</select></div>';
-  h += '<input type="tel" id="'+idPrefix+'-num"'+dis+' placeholder="300 123 4567" value="'+savedNum+'" style="flex:1;min-width:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" />';
+  h += '<input type="tel" id="'+idPrefix+'-num"'+dis+' placeholder="300 123 4567" value="'+savedNum+'" style="flex:1;min-width:0;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" />';
   h += '</div>';
   return h;
 }
@@ -6113,14 +6113,14 @@ function renderSkySales() {
   var html = '<div class="sc-sub">Genera tu link, usa tus agentes IA y cierra más prospectos</div>';
   html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
   html += '<div style="max-width:700px;">';
-  html += '<div class="card" style="background:rgba(201,168,76,0.05);border-color:rgba(201,168,76,0.2);margin-bottom:20px;">';
-  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.5);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
+  html += '<div class="card" style="background:rgba(255,255,255,0.025);border-color:rgba(255,255,255,0.06);margin-bottom:20px;">';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
   html += '<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;line-height:1.6;">Completa tus datos y genera tu link único para compartir. Cada persona que se registre desde tu link llegará directo a tu WhatsApp.</p>';
   html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
 
   html += '<div>';
   html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">👤 Nombre completo</p>';
-  html += '<input id="ss-ref-nombre" placeholder="Ej: María Ayala" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.name||'') + '">';
+  html += '<input id="ss-ref-nombre" placeholder="Ej: María Ayala" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;" value="' + (CU.name||'') + '">';
   html += '</div>';
 
   html += '<div>';
@@ -6149,7 +6149,7 @@ function renderSkySales() {
 
   html += '<div>';
   html += '<p style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 0 5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">🔑 Tu código de referido</p>';
-  html += '<div style="width:100%;background:rgba(201,168,76,0.04);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#C9A84C;font-size:14px;font-weight:700;padding:9px 12px;font-family:monospace;box-sizing:border-box;display:flex;align-items:center;gap:8px;">';
+  html += '<div style="width:100%;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:14px;font-weight:700;padding:9px 12px;font-family:monospace;box-sizing:border-box;display:flex;align-items:center;gap:8px;">';
   html += '<span>🔑</span><span id="ss-ref-code-display">' + (CU.ref||CU.user||'') + '</span>';
   html += '<input type="hidden" id="ss-ref-code" value="' + (CU.ref||CU.user||'') + '">';
   html += '</div>';
@@ -6172,11 +6172,11 @@ function renderSkySales() {
     // Show existing link if saved
     var savedLink = localStorage.getItem('skyteam_ref_link_' + (CU.ref||CU.user||''));
     if(savedLink) {
-      html += '<div style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:16px;margin-bottom:10px;">';
-      html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">🔗 Tu link activo</p>';
+      html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin-bottom:10px;">';
+      html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">🔗 Tu link activo</p>';
       html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
-      html += '<span style="font-family:monospace;font-size:12px;color:#C9A84C;flex:1;word-break:break-all;">' + savedLink + '</span>';
-      html += '<button id="ss-locked-copy-btn" data-link="' + savedLink + '" onclick="var l=this.getAttribute(\'data-link\');navigator.clipboard.writeText(l).then(function(){showToast(\'🔗 Link copiado ✓\');}).catch(function(){var t=document.createElement(\'textarea\');t.value=l;document.body.appendChild(t);t.select();document.execCommand(\'copy\');document.body.removeChild(t);showToast(\'🔗 Link copiado ✓\');});" style="background:rgba(201,168,76,0.15);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
+      html += '<span style="font-family:monospace;font-size:12px;color:#fff;flex:1;word-break:break-all;">' + savedLink + '</span>';
+      html += '<button id="ss-locked-copy-btn" data-link="' + savedLink + '" onclick="var l=this.getAttribute(\'data-link\');navigator.clipboard.writeText(l).then(function(){showToast(\'🔗 Link copiado ✓\');}).catch(function(){var t=document.createElement(\'textarea\');t.value=l;document.body.appendChild(t);t.select();document.execCommand(\'copy\');document.body.removeChild(t);showToast(\'🔗 Link copiado ✓\');});" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
       html += '</div></div>';
     }
   } else {
@@ -6184,11 +6184,11 @@ function renderSkySales() {
   }
 
   html += '<div id="ss-link-result" style="display:none;margin-bottom:4px;">';
-  html += '<div style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:16px;margin-bottom:10px;">';
-  html += '<p style="font-size:10px;font-weight:800;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">✅ Tu link personalizado</p>';
+  html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin-bottom:10px;">';
+  html += '<p style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">✅ Tu link personalizado</p>';
   html += '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;margin-bottom:10px;">';
-  html += '<span id="ss-link-text" style="font-family:monospace;font-size:12px;color:#C9A84C;flex:1;word-break:break-all;"></span>';
-  html += '<button onclick="copiarLinkVentas()" style="background:rgba(201,168,76,0.15);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
+  html += '<span id="ss-link-text" style="font-family:monospace;font-size:12px;color:#fff;flex:1;word-break:break-all;"></span>';
+  html += '<button onclick="copiarLinkVentas()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">📋 Copiar</button>';
   html += '</div>';
   html += '<a id="ss-wa-btn" href="#" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:13px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:900;font-family:Outfit,Nunito,sans-serif;">💬 Compartir por WhatsApp</a>';
   html += '</div>';
@@ -6883,7 +6883,7 @@ function initAgentChat(id) {
   if(!msgs) return;
   if(!agentHistory[id] || agentHistory[id].length === 0) {
     msgs.innerHTML = '<div style="display:flex;gap:10px;align-items:flex-start;">'
-      + '<div style="width:34px;height:34px;border-radius:50%;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
+      + '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
       + '<div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:0 14px 14px 14px;padding:12px 16px;max-width:80%;font-size:14px;color:#F0EDE6;line-height:1.6;">' + cfg.welcome + '</div>'
       + '</div>';
   } else {
@@ -6892,7 +6892,7 @@ function initAgentChat(id) {
   // Show description badge
   var desc = document.getElementById('agente-desc');
   if(desc) {
-    desc.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.15);font-size:11px;font-weight:700;color:rgba(201,168,76,0.7);margin-bottom:8px;">'
+    desc.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);font-size:11px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:8px;">'
       + cfg.icon + ' ' + cfg.name + ' — Potenciado por Claude IA'
       + '</div>';
   }
@@ -6908,11 +6908,11 @@ function renderAgentHistory(id) {
   agentHistory[id].forEach(function(m) {
     if(m.role === 'user') {
       html += '<div style="display:flex;justify-content:flex-end;">'
-        + '<div style="background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);border-radius:14px 0 14px 14px;padding:12px 16px;max-width:80%;font-size:14px;color:#F0EDE6;line-height:1.6;">' + m.content + '</div>'
+        + '<div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:14px 0 14px 14px;padding:12px 16px;max-width:80%;font-size:14px;color:#F0EDE6;line-height:1.6;">' + m.content + '</div>'
         + '</div>';
     } else {
       html += '<div style="display:flex;gap:10px;align-items:flex-start;">'
-        + '<div style="width:34px;height:34px;border-radius:50%;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
+        + '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
         + '<div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:0 14px 14px 14px;padding:12px 16px;max-width:80%;font-size:14px;color:#F0EDE6;line-height:1.6;white-space:pre-wrap;">' + m.content + '</div>'
         + '</div>';
     }
@@ -6946,7 +6946,7 @@ async function sendAgentMsg() {
   var typing = document.createElement('div');
   typing.id = typingId;
   typing.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
-  typing.innerHTML = '<div style="width:34px;height:34px;border-radius:50%;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
+  typing.innerHTML = '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
     + '<div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:0 14px 14px 14px;padding:12px 16px;"><span class="loading-dots"><span></span><span></span><span></span></span></div>';
   msgs.appendChild(typing);
   msgs.scrollTop = msgs.scrollHeight;
@@ -7039,8 +7039,8 @@ function renderDownline() {
   downline.forEach(function(d) {
     var pad = (d.level - 1) * 20;
     var isGen1 = d.level === 1;
-    var bg = isGen1 ? 'rgba(201,168,76,0.08)' : 'rgba(255,255,255,0.03)';
-    var border = isGen1 ? 'rgba(201,168,76,0.2)' : 'rgba(255,255,255,0.05)';
+    var bg = isGen1 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.03)';
+    var border = isGen1 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)';
     var color = isGen1 ? '#C9A84C' : 'rgba(255,255,255,0.5)';
     // Find name from pending or users
     var name = d.ref;
@@ -7426,7 +7426,7 @@ function openVideo(academyId, moduleId, videoId, contentId, titleId, backBtnId) 
   // Progress card
   html += '<div class="card" style="margin-bottom:14px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
-  html += '<div style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:rgba(201,168,76,0.5);text-transform:uppercase;">Progreso del video</div>';
+  html += '<div style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,0.40);text-transform:uppercase;">Progreso del video</div>';
   html += '<div id="vid-pct-display" style="font-size:18px;font-weight:900;color:#C9A84C;">' + existingPct + '%</div>';
   html += '</div>';
   html += '<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;">';
@@ -7687,17 +7687,17 @@ function renderHome() {
     // Premium stat cards with gradients and icons
     + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;">'
 
-    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.04));border:0.5px solid rgba(201,168,76,0.15);backdrop-filter:blur(10px);">'
+    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));border:0.5px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px);">'
     + '<div style="position:absolute;top:-8px;right:-8px;font-size:40px;opacity:0.08;">📊</div>'
-    + '<div style="font-size:11px;font-weight:700;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Ventas</div>'
+    + '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Ventas</div>'
     + '<div class="sky-count-num" data-target="' + (CU.ventas||0) + '" style="font-size:28px;font-weight:900;color:#C9A84C;line-height:1;">0</div>'
     + '<div style="font-size:10px;color:var(--muted2);margin-top:4px;">totales acumuladas</div>'
     + '</div>'
 
-    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04));border:0.5px solid rgba(255,215,0,0.15);backdrop-filter:blur(10px);">'
+    + '<div style="position:relative;overflow:hidden;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));border:0.5px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px);">'
     + '<div style="position:absolute;top:-8px;right:-8px;font-size:40px;opacity:0.08;">🌐</div>'
-    + '<div style="font-size:11px;font-weight:700;color:rgba(255,215,0,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Red Total</div>'
-    + '<div class="sky-count-num" data-target="' + downline.length + '" style="font-size:28px;font-weight:900;color:#FFD700;line-height:1;">0</div>'
+    + '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Red Total</div>'
+    + '<div class="sky-count-num" data-target="' + downline.length + '" style="font-size:28px;font-weight:900;color:#fff;line-height:1;">0</div>'
     + '<div style="font-size:10px;color:var(--muted2);margin-top:4px;">personas en tu red</div>'
     + '</div>'
 
@@ -7729,15 +7729,15 @@ function renderHome() {
     + '</div>' : '')
 
     // My link card
-    + '<div style="position:relative;overflow:hidden;padding:18px;border-radius:14px;background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(201,168,76,0.03));border:0.5px solid rgba(201,168,76,0.15);margin-bottom:14px;">'
-    + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.5);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>'
+    + '<div style="position:relative;overflow:hidden;padding:18px;border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,0.025),rgba(255,255,255,0.015));border:0.5px solid rgba(255,255,255,0.06);margin-bottom:14px;">'
+    + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:10px;">🔗 Mi link de ventas</div>'
     + '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 12px;line-height:1.6;">Genera tu link personalizado con tu usuario y WhatsApp para empezar a duplicar.</p>'
     + '<button onclick="navigate(\'skysales\')" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.5px;">⚡ Generar mi link de ventas →</button>'
     + '</div>'
 
     // Downline tree
     + '<div class="card">'
-    + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,215,0,0.5);text-transform:uppercase;margin-bottom:14px;">🌳 Mi red de referidos (' + downline.length + ' personas · hasta 8 generaciones)</div>'
+    + '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:14px;">🌳 Mi red de referidos (' + downline.length + ' personas · hasta 8 generaciones)</div>'
     + renderDownline()
     + '</div>';
 
@@ -7776,7 +7776,7 @@ function renderMateriales() {
     + matCard('💬', 'Scripts de Ventas WhatsApp', 'PDF · Próximamente')
     + matCard('🎯', 'Guión de Presentación del Negocio', 'PDF · Próximamente')
     + matCard('🖼️', 'Imágenes y Plantillas para Redes', 'ZIP · Próximamente')
-    + '<div style="margin-top:16px;padding:14px;background:rgba(201,168,76,0.05);border:0.5px solid rgba(201,168,76,0.15);border-radius:12px;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;">📥 Los materiales se irán cargando. El admin los agrega desde el Panel Admin.</div>'
+    + '<div style="margin-top:16px;padding:14px;background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;">📥 Los materiales se irán cargando. El admin los agrega desde el Panel Admin.</div>'
     + '</div>';
 }
 
@@ -8006,19 +8006,19 @@ function renderChat(msgs) {
     var timeStr = m.time || (m.ts ? new Date(m.ts).toLocaleDateString('es',{weekday:'short'})+' '+new Date(m.ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '');
 
     // Own messages: blue gradient, aligned right. Others: dark, aligned left
-    var bubbleBg = own ? 'background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.08));border:0.5px solid rgba(201,168,76,0.2);' : 'background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.06);';
+    var bubbleBg = own ? 'background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03));border:0.5px solid rgba(255,255,255,0.08);' : 'background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.06);';
     var bubbleRadius = own ? 'border-radius:14px 14px 4px 14px;' : 'border-radius:14px 14px 14px 4px;';
 
     return '<div class="chat-msg' + (own?' own':'') + '" style="' + (own?'flex-direction:row-reverse;':'') + '">'
-      + '<div class="chat-avatar" style="background:' + mRk.bg + ';color:' + mRk.color + ';border:' + (own?'2px':'0.5px') + ' solid ' + (own?'rgba(201,168,76,0.4)':mRk.border) + ';overflow:hidden;flex-shrink:0;">' + avatarContent + '</div>'
+      + '<div class="chat-avatar" style="background:' + mRk.bg + ';color:' + mRk.color + ';border:' + (own?'2px':'0.5px') + ' solid ' + (own?'rgba(255,255,255,0.15)':mRk.border) + ';overflow:hidden;flex-shrink:0;">' + avatarContent + '</div>'
       + '<div class="chat-bubble" style="' + bubbleBg + bubbleRadius + 'max-width:75%;padding:10px 14px;">'
       + '<div class="chat-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
-      + '<span class="chat-sender" style="font-weight:700;font-size:12px;color:' + (own?'#C9A84C':mRk.color) + ';">' + _safe(m.user) + '</span>'
+      + '<span class="chat-sender" style="font-weight:700;font-size:12px;color:' + (own?'#fff':mRk.color) + ';">' + _safe(m.user) + '</span>'
       + '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:' + mRk.bg + ';border:0.5px solid ' + mRk.border + ';color:' + mRk.color + ';font-weight:700;">' + mRk.icon + ' ' + mRk.name + '</span>'
       + '<span class="chat-time" style="font-size:10px;color:var(--muted2);margin-left:auto;">' + timeStr + '</span>'
       + '</div>'
       + '<div class="chat-text" style="font-size:13px;line-height:1.5;color:' + (own?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.7)') + ';">' + _safe(m.text) + '</div>'
-      + (own ? '<div style="text-align:right;margin-top:2px;font-size:9px;color:rgba(201,168,76,0.4);">✓✓</div>' : '')
+      + (own ? '<div style="text-align:right;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.30);">✓✓</div>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -8266,7 +8266,7 @@ function renderSolicitudes() {
     })
     .slice(0, 50); // Show last 50
 
-  var html = '<div class="admin-info-box" style="border-color:rgba(201,168,76,0.2);">'
+  var html = '<div class="admin-info-box" style="border-color:rgba(255,255,255,0.08);">'
     + '✅ <strong>Registro automático activo.</strong> Los accesos se aprueban al instante. Aquí puedes revisar los últimos ingresos y cancelar si detectas inconsistencias.'
     + '</div>';
 
@@ -8408,7 +8408,7 @@ function _doAprobar(sol, id) {
     var html1 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;border-radius:20px;overflow:hidden;">'
 
       // Header con gradiente
-      + '<div style="background:linear-gradient(135deg,#0a0a12 0%,#0f0f18 50%,#050508 100%);padding:36px 32px 28px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);">'
+      + '<div style="background:linear-gradient(135deg,#0a0a12 0%,#0f0f18 50%,#050508 100%);padding:36px 32px 28px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">'
       + '<img src="https://skyteam.global/logo-skyteam.png" alt="SKYTEAM" style="height:48px;max-width:260px;object-fit:contain;" />'
       + '<p style="color:rgba(255,255,255,0.35);font-size:12px;margin:6px 0 0;letter-spacing:1px;text-transform:uppercase;">Plataforma del Equipo SKYTEAM</p>'
       + '</div>'
@@ -8422,8 +8422,8 @@ function _doAprobar(sol, id) {
       + '</div>'
 
       // Credenciales
-      + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:14px;padding:22px;margin:20px 0;">'
-      + '<p style="font-size:11px;font-weight:700;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 14px;">🔐 Tus datos de acceso</p>'
+      + '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:22px;margin:20px 0;">'
+      + '<p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 14px;">🔐 Tus datos de acceso</p>'
       + '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;text-decoration:none;">skyteam.global</a></p>'
       + '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">👤 <strong>Usuario:</strong> <span style="background:rgba(255,255,255,0.08);padding:2px 10px;border-radius:6px;font-family:monospace;">' + username + '</span></p>'
       + '<p style="margin:10px 0;font-size:14px;color:#F0EDE6;">🔑 <strong>Contraseña:</strong> <span style="background:rgba(255,255,255,0.08);padding:2px 10px;border-radius:6px;font-family:monospace;">' + (sol.password || 'skyteam2026') + '</span></p>'
@@ -8554,13 +8554,13 @@ function renderAdminUsuarios() {
   html += '<div style="font-size:22px;font-weight:900;color:#1D9E75;">' + activeUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Activos</div></div>';
   html += '<div style="flex:1;min-width:120px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:10px;padding:12px 16px;text-align:center;">';
   html += '<div style="font-size:22px;font-weight:900;color:#E24B4A;">' + expiredUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Expirados</div></div>';
-  html += '<div style="flex:1;min-width:120px;background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);border-radius:10px;padding:12px 16px;text-align:center;">';
+  html += '<div style="flex:1;min-width:120px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;text-align:center;">';
   html += '<div style="font-size:22px;font-weight:900;color:#C9A84C;">' + totalUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Total</div></div>';
   html += '</div>';
 
   // Search bar
   html += '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">';
-  html += '<input type="text" id="admin-user-search" placeholder="Buscar por nombre, usuario o WhatsApp..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:10px;color:var(--text);font-size:13px;padding:10px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
+  html += '<input type="text" id="admin-user-search" placeholder="Buscar por nombre, usuario o WhatsApp..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);font-size:13px;padding:10px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
   html += '<button onclick="addUserPrompt()" style="padding:10px 16px;border-radius:10px;background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">+ Nuevo Usuario</button>';
   html += '</div>';
 
@@ -8699,11 +8699,11 @@ function renderAdminContenido() {
   }
 
   var html = '<div style="max-width:700px;">';
-  html += '<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px;padding:12px 14px;background:rgba(201,168,76,0.04);border:0.5px solid rgba(201,168,76,0.1);border-radius:10px;">🔒 Bloquea módulos o videos individuales. Los usuarios verán el candado y no podrán acceder al contenido bloqueado.</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:16px;padding:12px 14px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;">🔒 Bloquea módulos o videos individuales. Los usuarios verán el candado y no podrán acceder al contenido bloqueado.</div>';
 
   // Academia de Servicios
   html += '<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">';
-  html += '<div style="padding:13px 16px;background:rgba(201,168,76,0.06);border-bottom:0.5px solid rgba(201,168,76,0.12);font-size:13px;font-weight:800;color:#C9A84C;display:flex;align-items:center;gap:8px;">🎓 Academia de Servicios</div>';
+  html += '<div style="padding:13px 16px;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.06);font-size:13px;font-weight:800;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:8px;">🎓 Academia de Servicios</div>';
   var servMods = MODULES_DATA['servicios'] || [];
   servMods.forEach(function(mod) {
     html += lockRow(mod.icon + ' ' + mod.title, 'm_servicios_' + mod.id, 12);
@@ -8758,9 +8758,9 @@ function renderAdminAnuncios() {
   const savedFrom = localStorage.getItem('skyteam_from_email') || 'lideres@skyteam.global';
   el.innerHTML = `
     <div class="admin-info-box">Publica un nuevo anuncio para todo el equipo. Aparecerá en la sección <strong>Anuncios</strong>.</div>
-    <div style="background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);border-radius:12px;padding:14px;margin-bottom:20px;">
-      <p style="font-size:11px;font-weight:700;color:rgba(201,168,76,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📧 Correo remitente para notificaciones</p>
-      <select id="from-email-select" onchange="localStorage.setItem('skyteam_from_email',this.value)" style="width:100%;background:rgba(255,255,255,0.06);border:0.5px solid rgba(201,168,76,0.2);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">
+    <div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:20px;">
+      <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📧 Correo remitente para notificaciones</p>
+      <select id="from-email-select" onchange="localStorage.setItem('skyteam_from_email',this.value)" style="width:100%;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">
         <option value="lideres@skyteam.global" ${savedFrom==='lideres@skyteam.global'?'selected':''}>👑 lideres@skyteam.global — Bienvenidas, liderazgo & ventas</option>
         <option value="soporte@skyteam.global" ${savedFrom==='soporte@skyteam.global'?'selected':''}>🛠️ soporte@skyteam.global — Soporte técnico y accesos</option>
         <option value="academy@skyteam.global" ${savedFrom==='academy@skyteam.global'?'selected':''}>📬 academy@skyteam.global — Sesiones academia & comunicados</option>
@@ -8778,7 +8778,7 @@ function renderAdminAnuncios() {
     </div>
 
     <div class="card" style="margin-top:20px;">
-      <p style="font-size:11px;font-weight:700;color:rgba(201,168,76,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">📡 Recordatorio de sesión en vivo</p>
+      <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">📡 Recordatorio de sesión en vivo</p>
       <select id="session-type" style="width:100%;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 12px;outline:none;margin-bottom:8px;font-family:Outfit,Nunito,sans-serif;">
         <option value="lideres">👑 Liderazgo & Ventas — lideres@skyteam.global</option>
         <option value="academy">🎓 Sesión Innova / Academia — academy@skyteam.global</option>
@@ -8853,7 +8853,7 @@ function showToast(msg, type) {
   var colors = {
     err: {bg:'rgba(226,75,74,0.12)', border:'rgba(226,75,74,0.35)', text:'#FF6B6B', icon:'#E24B4A'},
     success: {bg:'rgba(29,158,117,0.12)', border:'rgba(29,158,117,0.35)', text:'#2ECC71', icon:'#1D9E75'},
-    info: {bg:'rgba(201,168,76,0.12)', border:'rgba(201,168,76,0.35)', text:'#C9A84C', icon:'#C9A84C'},
+    info: {bg:'rgba(255,255,255,0.06)', border:'rgba(255,255,255,0.12)', text:'rgba(255,255,255,0.7)', icon:'rgba(255,255,255,0.7)'},
     warn: {bg:'rgba(255,215,0,0.12)', border:'rgba(255,215,0,0.35)', text:'#FFD700', icon:'#FFD700'}
   };
   var c = colors[type] || colors.success;
@@ -8958,7 +8958,7 @@ function renderAdminConfig() {
   html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;margin-bottom:16px;">';
   html += '<div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:14px;letter-spacing:0.5px;">ESTADO DE LA PLATAFORMA</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">';
-  html += '<div style="text-align:center;padding:12px;background:rgba(201,168,76,0.05);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#C9A84C;">' + totalUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Usuarios</div></div>';
+  html += '<div style="text-align:center;padding:12px;background:rgba(255,255,255,0.025);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#C9A84C;">' + totalUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Usuarios</div></div>';
   html += '<div style="text-align:center;padding:12px;background:rgba(255,215,0,0.05);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:var(--gold);">' + Object.keys(RANKS).length + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Rangos</div></div>';
   html += '<div style="text-align:center;padding:12px;background:rgba(29,158,117,0.05);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#1D9E75;">' + (typeof ANUNCIOS !== 'undefined' ? ANUNCIOS.length : 0) + '</div><div style="font-size:10px;color:rgba(255,255,255,0.3);">Anuncios</div></div>';
   html += '</div></div>';
@@ -8975,7 +8975,7 @@ function renderAdminConfig() {
 function _cfgField(label, id, value, type, placeholder) {
   var ph = placeholder ? ' placeholder="' + placeholder + '"' : '';
   return '<div style="margin-bottom:12px;"><label style="display:block;font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;font-weight:600;">' + label + '</label>' +
-    '<input type="' + type + '" id="' + id + '" value="' + (value||'') + '"' + ph + ' style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.12);border-radius:8px;color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>';
+    '<input type="' + type + '" id="' + id + '" value="' + (value||'') + '"' + ph + ' style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--text);font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>';
 }
 
 function _cfgToggle(label, id, checked) {
@@ -9371,7 +9371,7 @@ function sendSolicitud() {
         sb.innerHTML = '<div style="font-size:32px;margin-bottom:10px;">🚀</div>'
           + '<p style="font-family:Outfit,Nunito,sans-serif;font-size:17px;font-weight:900;color:#C9A84C;margin-bottom:10px;">¡Bienvenido, ' + name.split(' ')[0] + '!</p>'
           + '<p style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:14px;">Tu acceso está activo. Ya puedes iniciar sesión.</p>'
-          + '<div style="background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.25);border-radius:12px;padding:16px;text-align:left;">'
+          + '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;text-align:left;">'
           + '<p style="font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.8px;margin:0 0 10px;">Tus credenciales de acceso</p>'
           + '<p style="font-size:13px;margin:6px 0;">👤 <span style="color:rgba(255,255,255,0.5);">Usuario:</span> <strong style="color:#C9A84C;font-family:monospace;font-size:15px;">' + finalUser + '</strong></p>'
           + '<p style="font-size:13px;margin:6px 0;">🔑 <span style="color:rgba(255,255,255,0.5);">Contraseña:</span> <strong style="color:#FFD700;font-family:monospace;font-size:15px;">' + pass + '</strong></p>'
@@ -9455,7 +9455,7 @@ function renderPerfil() {
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
-    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.4);text-transform:uppercase;">Datos de registro</span>'
+    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.40);text-transform:uppercase;">Datos de registro</span>'
     + '</div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Usuario</span><span class="perfil-data-value mono">'+CU.username+'</span></div>'
@@ -9472,8 +9472,8 @@ function renderPerfil() {
           + (emailLocked
               ? '<span class="perfil-data-value mono" style="font-size:11px;flex:1;">'+(CU.email||'—')+'</span><span style="font-size:9px;color:rgba(255,255,255,0.2);">🔒 '+emailDays+'d</span>'
               : '<div style="display:flex;gap:6px;flex:1;align-items:center;min-width:0;">'
-                + '<input id="pf-email" type="email" value="'+(CU.email||'')+'" placeholder="tu@correo.com" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(201,168,76,0.2);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;">'
-                + '<button onclick="guardarEmailPerfil()" style="background:rgba(201,168,76,0.15);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Guardar</button>'
+                + '<input id="pf-email" type="email" value="'+(CU.email||'')+'" placeholder="tu@correo.com" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;">'
+                + '<button onclick="guardarEmailPerfil()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Guardar</button>'
                 + '</div>')
           + '</div>';
         var waRow = '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;">'
@@ -9493,11 +9493,11 @@ function renderPerfil() {
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
-    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.4);text-transform:uppercase;">🌍 País / Zona horaria</span>'
+    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.40);text-transform:uppercase;">🌍 País / Zona horaria</span>'
     + '</div>'
     + '<div style="padding:14px 18px;">'
     + '<p style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:10px;">El calendario se ajusta automáticamente a tu zona horaria.</p>'
-    + '<select onchange="saveTZ(this.value)" style="width:100%;background:#0a0a12;border:0.5px solid rgba(201,168,76,0.2);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">'
+    + '<select onchange="saveTZ(this.value)" style="width:100%;background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">'
     + tzOptions
     + '</select>'
     + '</div>'
@@ -9563,12 +9563,12 @@ function openCropModal(dataUrl) {
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;';
   modal.innerHTML =
     '<p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px;">Ajusta tu foto de perfil</p>'
-  + '<div id="crop-viewport" style="position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;border:3px solid #C9A84C;cursor:grab;touch-action:none;background:#000;">'
+  + '<div id="crop-viewport" style="position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,0.20);cursor:grab;touch-action:none;background:#000;">'
   + '  <canvas id="crop-canvas" style="position:absolute;top:0;left:0;"></canvas>'
   + '</div>'
   + '<div style="display:flex;gap:10px;margin-top:16px;align-items:center;">'
   + '  <span style="color:rgba(255,255,255,0.4);font-size:11px;">🔍</span>'
-  + '  <input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1" style="width:160px;accent-color:#C9A84C;" oninput="_cropDraw()">'
+  + '  <input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1" style="width:160px;accent-color:rgba(255,255,255,0.5);" oninput="_cropDraw()">'
   + '  <span style="color:rgba(255,255,255,0.4);font-size:13px;">🔍</span>'
   + '</div>'
   + '<p style="color:rgba(255,255,255,0.3);font-size:10px;margin:8px 0 16px;">Arrastra para mover · Desliza para hacer zoom</p>'
@@ -9860,10 +9860,10 @@ function showInstallBanner() {
   if(document.getElementById('pwa-install-banner')) return;
   var banner = document.createElement('div');
   banner.id = 'pwa-install-banner';
-  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;background:linear-gradient(135deg,#C9A84C,#E8D48B);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(201,168,76,0.3);font-family:Outfit,Nunito,sans-serif;max-width:360px;width:calc(100% - 32px);animation:fadeSlideUp 0.4s ease;';
-  banner.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:#0a0a12;">📲 Instala SKYTEAM</div><div style="font-size:11px;color:rgba(5,5,8,0.6);margin-top:2px;">Accede más rápido desde tu pantalla de inicio</div></div>'
-    + '<button onclick="installPWA()" style="background:#0a0a12;color:#C9A84C;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Instalar</button>'
-    + '<button onclick="this.parentElement.remove();localStorage.setItem(\'skyteam_dismiss_install\',Date.now())" style="background:none;border:none;color:rgba(5,5,8,0.4);font-size:16px;cursor:pointer;padding:4px;">✕</button>';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;background:linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.06));border:0.5px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);font-family:Outfit,Nunito,sans-serif;max-width:360px;width:calc(100% - 32px);animation:fadeSlideUp 0.4s ease;backdrop-filter:blur(20px);';
+  banner.innerHTML = '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:#F0EDE6;">📲 Instala SKYTEAM</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Accede más rápido desde tu pantalla de inicio</div></div>'
+    + '<button onclick="installPWA()" style="background:rgba(255,255,255,0.08);color:#F0EDE6;border:0.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Instalar</button>'
+    + '<button onclick="this.parentElement.remove();localStorage.setItem(\'skyteam_dismiss_install\',Date.now())" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:16px;cursor:pointer;padding:4px;">✕</button>';
   document.body.appendChild(banner);
 }
 
@@ -9954,7 +9954,7 @@ function showInstallTutorial() {
 
   var stepsHtml = steps.map(function(s, i) {
     return '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;'+(i<steps.length-1?'border-bottom:0.5px solid rgba(255,255,255,0.06);':'')+'">'
-      + '<div style="width:36px;height:36px;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+(i+1)+'</div>'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+(i+1)+'</div>'
       + '<div style="flex:1;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;padding-top:6px;">'+s.text+'</div>'
       + '</div>';
   }).join('');
@@ -9964,7 +9964,7 @@ function showInstallTutorial() {
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;font-family:Outfit,Nunito,sans-serif;';
   modal.innerHTML = '<div style="background:linear-gradient(180deg,#0a0a12,#050508);border-radius:24px 24px 0 0;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;padding:24px 20px 32px;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-    + '<div><div style="font-size:18px;font-weight:900;color:#fff;">📲 '+title+'</div><div style="font-size:12px;color:rgba(201,168,76,0.7);font-weight:700;margin-top:2px;">'+subtitle+'</div></div>'
+    + '<div><div style="font-size:18px;font-weight:900;color:#fff;">📲 '+title+'</div><div style="font-size:12px;color:rgba(255,255,255,0.55);font-weight:700;margin-top:2px;">'+subtitle+'</div></div>'
     + '<button onclick="document.getElementById(\'install-tutorial-modal\').remove()" style="background:rgba(255,255,255,0.06);border:none;border-radius:50%;width:32px;height:32px;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>'
     + '</div>'
     + '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:16px;padding:4px 16px;">'+stepsHtml+'</div>'
@@ -10120,7 +10120,7 @@ function crmCard(p){
     +(tel?'<button onclick="event.stopPropagation();crmQuickWA(\''+p.id+'\')" title="WhatsApp '+crmEsc(tel)+'" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(37,211,102,0.1);border:0.5px solid rgba(37,211,102,0.25);cursor:pointer;padding:0;"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"#25D366\"><path d=\"M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z\"/></svg></button>':'')
     +'</div>'
     +'<span style="color:rgba(255,255,255,0.25);font-size:10px;">'+dl+'</span>'
-    +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" title="Editar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.18);color:#C9A84C;cursor:pointer;font-size:12px;padding:0;">\u270F\uFE0F</button>'
+    +'<button onclick="event.stopPropagation();crmOpenEdit(\''+p.id+'\')" title="Editar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px;padding:0;">\u270F\uFE0F</button>'
     
     +'</div></div>';}
 
@@ -10144,7 +10144,7 @@ function crmRenderList(){
       +'<td><span style="color:'+tColor+';font-weight:800;">'+temp+'%</span></td>'
       +'<td style="font-weight:700;">$'+((p.valor_estimado||0).toLocaleString())+'</td>'
       +'<td><span style="background:'+etapaInfo.color+';color:#000;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;">'+etapaInfo.label+'</span></td>'
-      +'<td><button onclick="event.stopPropagation();crmOpenDetail(\''+p.id+'\')" style="background:rgba(201,168,76,0.1);color:#C9A84C;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;">Ver</button></td></tr>';
+      +'<td><button onclick="event.stopPropagation();crmOpenDetail(\''+p.id+'\')" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;">Ver</button></td></tr>';
   });tb.innerHTML=html;
 }
 function crmRenderMetricsDashboard(){
@@ -11404,7 +11404,7 @@ function crmStartRatingWizard(prospectoId,onComplete){
   function renderStep(){
     if(step>=questions.length){
       var stars=Object.values(answers).reduce(function(s,v){return s+v;},0);
-      overlay.innerHTML='<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(201,168,76,0.2);border-radius:24px;padding:36px 30px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+      overlay.innerHTML='<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px;padding:36px 30px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
         +'<div style="font-size:48px;margin-bottom:14px;">\u2B50</div>'
         +'<div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:6px;">Calificacion: '+stars+'/5</div>'
         +'<div style="font-size:28px;margin-bottom:6px;letter-spacing:4px;">'+("\u2B50".repeat(stars))+("\u2606".repeat(5-stars))+'</div>'
@@ -11415,7 +11415,7 @@ function crmStartRatingWizard(prospectoId,onComplete){
       return;
     }
     var q=questions[step];var progress=Math.round(((step)/questions.length)*100);
-    overlay.innerHTML='<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(201,168,76,0.2);border-radius:24px;padding:36px 30px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+    overlay.innerHTML='<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px;padding:36px 30px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
       +'<div style="font-size:10px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:3px;margin-bottom:8px;">Calificar Prospecto</div>'
       +'<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:20px;overflow:hidden;"><div style="width:'+progress+'%;height:100%;background:linear-gradient(90deg,#C9A84C,#E8D48B);border-radius:2px;transition:width 0.3s;"></div></div>'
       +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:16px;">Pregunta '+(step+1)+' de '+questions.length+'</div>'
@@ -11423,7 +11423,7 @@ function crmStartRatingWizard(prospectoId,onComplete){
       +'<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:28px;line-height:1.5;">'+q.desc+'</div>'
       +'<div style="display:flex;gap:14px;justify-content:center;">'
       +'<button id="crm-wiz-no" style="flex:1;max-width:140px;background:rgba(226,75,74,0.12);border:0.5px solid rgba(226,75,74,0.25);color:#E24B4A;border-radius:14px;padding:16px;font-size:18px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2717 No</button>'
-      +'<button id="crm-wiz-yes" style="flex:1;max-width:140px;background:rgba(201,168,76,0.12);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;border-radius:14px;padding:16px;font-size:18px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2713 Si</button>'
+      +'<button id="crm-wiz-yes" style="flex:1;max-width:140px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:14px;padding:16px;font-size:18px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2713 Si</button>'
       +'</div></div>';
     overlay.querySelector("#crm-wiz-yes").onclick=function(){answers[q.key]=1;step++;renderStep();};
     overlay.querySelector("#crm-wiz-no").onclick=function(){answers[q.key]=0;step++;renderStep();};
@@ -11504,7 +11504,7 @@ function openCrmModalIg(){
       +'<div id="crm-ig-msg-text" style="color:#F0EDE6;font-size:13px;line-height:1.5;white-space:pre-wrap;"></div></div>'
       +'<div style="display:flex;gap:8px;">'
       +'<button id="crm-ig-gen-btn" onclick="crmGenIgMsg()" style="flex:1;background:linear-gradient(135deg,#E1306C,#C13584);border:none;color:#fff;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Generar Mensaje</button>'
-      +'<button id="crm-ig-copy-btn" onclick="crmCopyIgMsg()" style="display:none;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:#C9A84C;padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Copiar</button>'
+      +'<button id="crm-ig-copy-btn" onclick="crmCopyIgMsg()" style="display:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Copiar</button>'
       +'<button id="crm-ig-go-btn" onclick="crmGoIg()" style="display:none;background:rgba(225,48,108,0.15);border:1px solid rgba(225,48,108,0.3);color:#E1306C;padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Ir a IG</button>'
       +'</div></div>';
     document.body.appendChild(modal);
@@ -11700,7 +11700,7 @@ var lbActiveTab = 'weekly';
     + '.lb-tabs{display:flex;gap:6px;margin-bottom:16px;}'
     + '.lb-tab{flex:1;padding:10px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.3s;font-family:Outfit,Nunito,sans-serif;}'
     + '.lb-tab.active{background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(110,87,224,0.15));border-color:rgba(201,168,76,0.4);color:#C9A84C;}'
-    + '.lb-tab:hover{border-color:rgba(201,168,76,0.25);}'
+    + '.lb-tab:hover{border-color:rgba(255,255,255,0.10);}'
     + '.lb-podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin-bottom:20px;padding:16px 0;}'
     + '.lb-podium-item{text-align:center;border-radius:14px;padding:12px 10px;min-width:90px;position:relative;}'
     + '.lb-podium-1{background:linear-gradient(180deg,rgba(255,215,0,0.15),rgba(255,215,0,0.03));border:1px solid rgba(255,215,0,0.3);order:2;min-height:140px;}'
@@ -11711,7 +11711,7 @@ var lbActiveTab = 'weekly';
     + '.lb-podium-score{font-size:18px;font-weight:900;background:linear-gradient(135deg,#C9A84C,#6E57E0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}'
     + '.lb-podium-detail{font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;}'
     + '.lb-row{display:flex;align-items:center;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);transition:all 0.3s;}'
-    + '.lb-row:hover{background:rgba(201,168,76,0.04);border-color:rgba(201,168,76,0.15);}'
+    + '.lb-row:hover{background:rgba(255,255,255,0.02);border-color:rgba(201,168,76,0.15);}'
     + '.lb-rank{width:28px;font-size:14px;font-weight:900;color:rgba(255,255,255,0.3);}'
     + '.lb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(110,87,224,0.2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#C9A84C;margin-right:12px;flex-shrink:0;}'
     + '.lb-info{flex:1;}'
@@ -11735,7 +11735,7 @@ var lbActiveTab = 'weekly';
     + '.lb-ac-suspicious{background:rgba(255,170,51,0.06);border-color:rgba(255,170,51,0.2);}'
     + '.lb-ac-flagged{background:rgba(226,75,74,0.06);border-color:rgba(226,75,74,0.2);}'
     + '.lb-proof-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10002;align-items:center;justify-content:center;}'
-    + '.lb-proof-modal-inner{background:rgba(6,18,53,0.95);border:1px solid rgba(201,168,76,0.2);border-radius:16px;padding:24px;max-width:420px;width:90%;backdrop-filter:blur(20px);}'
+    + '.lb-proof-modal-inner{background:rgba(6,18,53,0.95);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px;max-width:420px;width:90%;backdrop-filter:blur(20px);}'
     + '.lb-animate-in{animation:lbSlideIn 0.4s ease;}@keyframes lbSlideIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}'
     + '.lb-pulse{animation:lbPulse 2s infinite;}@keyframes lbPulse{0%,100%{opacity:1;}50%{opacity:0.6;}}';
   document.head.appendChild(s);
@@ -11775,7 +11775,7 @@ function lbRenderList(ranking) {
   for (var i = 3; i < ranking.length; i++) {
     var r = ranking[i];
     var isMe = CU && CU.username === r.username;
-    html += '<div class="lb-row lb-animate-in" style="animation-delay:' + (i * 0.05) + 's;' + (isMe ? 'border-color:rgba(201,168,76,0.3);background:rgba(201,168,76,0.05);' : '') + '">'
+    html += '<div class="lb-row lb-animate-in" style="animation-delay:' + (i * 0.05) + 's;' + (isMe ? 'border-color:rgba(201,168,76,0.3);background:rgba(255,255,255,0.025);' : '') + '">'
       + '<div class="lb-rank">#' + (i + 1) + '</div>'
       + '<div class="lb-avatar">' + lbInitials(r.name).toUpperCase() + '</div>'
       + '<div class="lb-info"><div class="lb-name">' + crmEsc(r.name) + (isMe ? ' <span style="color:#C9A84C;font-size:10px;">(Tu)</span>' : '') + '</div>'
@@ -11827,7 +11827,7 @@ function lbRenderDaily(container) {
   lbDailyData.ranking.forEach(function(r, i) {
     var isMe = CU && CU.username === r.username;
     var colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#C9A84C', '#6E57E0'];
-    html += '<div class="lb-row lb-animate-in" style="animation-delay:' + (i * 0.08) + 's;' + (isMe ? 'border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.06);' : '') + '">'
+    html += '<div class="lb-row lb-animate-in" style="animation-delay:' + (i * 0.08) + 's;' + (isMe ? 'border-color:rgba(201,168,76,0.4);background:rgba(255,255,255,0.03);' : '') + '">'
       + '<div class="lb-rank" style="color:' + colors[i] + ';font-size:18px;">' + (i < 3 ? lbMedals[i + 1] : '#' + (i + 1)) + '</div>'
       + '<div class="lb-avatar">' + lbInitials(r.name).toUpperCase() + '</div>'
       + '<div class="lb-info"><div class="lb-name">' + crmEsc(r.name) + (isMe ? ' <span style="color:#C9A84C;font-size:10px;">(Tu)</span>' : '') + '</div>'
@@ -11941,7 +11941,7 @@ function lbHandleProofFile(input) {
   reader.onload = function(e) {
     window._lbProofData = e.target.result;
     var preview = document.getElementById('lb-proof-preview');
-    preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:200px;border-radius:10px;border:1px solid rgba(201,168,76,0.2);">';
+    preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:200px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);">';
     preview.style.display = 'block';
     document.getElementById('lb-proof-submit-btn').style.display = 'block';
     document.getElementById('lb-proof-drop').style.display = 'none';
@@ -12135,7 +12135,7 @@ lbRenderList = function(ranking) {
     var pos = i + 4;
     var initial = (r.name || '?')[0].toUpperCase();
     var isMe = r.username === CU;
-    var meBg = isMe ? 'background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);' : 'border:1px solid rgba(255,255,255,0.06);';
+    var meBg = isMe ? 'background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.3);' : 'border:1px solid rgba(255,255,255,0.06);';
     // IP flag badge
     var ipBadge = '';
     if (r.ipDupes && r.ipDupes > 0) {
@@ -12203,7 +12203,7 @@ lbRenderDaily = function(container) {
     data.ranking.forEach(function(r, i) {
       var initial = (r.name || '?')[0].toUpperCase();
       var isMe = r.username === CU;
-      var meBorder = isMe ? 'border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.06);' : 'border:1px solid rgba(255,255,255,0.08);';
+      var meBorder = isMe ? 'border:1px solid rgba(201,168,76,0.4);background:rgba(255,255,255,0.03);' : 'border:1px solid rgba(255,255,255,0.08);';
       // IP flag
       var ipBadge = '';
       if (r.ipDupes && r.ipDupes > 0) {
