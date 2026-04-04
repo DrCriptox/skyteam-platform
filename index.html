@@ -4187,9 +4187,13 @@ function renderPlanDiarioCalendar() {
         var catColors = {personal:'#C9A84C',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C',cierre:'#DC2626'};
         var color = isBooking ? '#DC2626' : (catColors[cat]||'#C9A84C');
         var bgAlpha = isBooking ? 'rgba(220,38,38,0.10)' : color+'15';
-        html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';" onclick="event.stopPropagation();'+(b._isBooking?'':'openPlanDiarioEdit(\''+b.id+'\')')+'">';
+        var blockClick = isBooking
+          ? 'event.stopPropagation();if(confirm(\'¿Cancelar esta cita de cierre?\\n\'+decodeURIComponent(\''+encodeURIComponent(b.titulo)+'\')))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')'
+          : 'event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')';
+        html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';position:relative;" onclick="'+blockClick+'">';
         html += '<span class="pd-block-title" style="'+(isBooking?'color:#DC2626;font-weight:700;':'')+'">'+b.titulo+'</span>';
         html += '<span class="pd-block-time">'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+'</span>';
+        if(isBooking) html += '<span style="position:absolute;top:3px;right:5px;font-size:9px;color:rgba(220,38,38,0.5);cursor:pointer;" title="Cancelar cita">✕</span>';
         html += '</div>';
       });
       html += '</div>';
@@ -4631,6 +4635,22 @@ function cancelarCitaAgenda(id) {
   fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancelBooking',user:CU.ref||CU.user||'',id:id})})
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok){showToast('Cita cancelada');agendaBookings=agendaBookings.filter(function(b){return b.id!==id;});renderAgendaUI(document.getElementById('agenda-content'));}});
+}
+
+function cancelarCitaPlanDiario(bookingId) {
+  if(!bookingId) { showToast('No se puede cancelar esta cita','error'); return; }
+  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancelBooking',user:CU.ref||CU.user||'',id:bookingId})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        showToast('✅ Cita cancelada — horario liberado');
+        // Remove from local arrays
+        agendaBookings=agendaBookings.filter(function(b){return b.id!==bookingId;});
+        planDiarioBlocks=planDiarioBlocks.filter(function(b){return b._bookingId!==bookingId;});
+        renderPlanDiarioCalendar();
+      } else { showToast('Error al cancelar','error'); }
+    })
+    .catch(function(){ showToast('Error de conexión','error'); });
 }
 
 function copiarAgendaLink() {
