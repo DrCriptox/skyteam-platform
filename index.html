@@ -141,7 +141,12 @@ html.ios-standalone #login-logo-wrap{top:calc(24px + max(env(safe-area-inset-top
 html.ios-standalone #login-screen{padding-top:calc(180px + max(env(safe-area-inset-top,50px),50px)) !important;}
 /* Landing nav safe area for iOS PWA */
 html.ios-standalone .landing-nav{padding-top:max(env(safe-area-inset-top,50px),50px) !important;}
-html.ios-standalone .landing-hero{padding-top:calc(140px + max(env(safe-area-inset-top,50px),50px)) !important;}
+html.ios-standalone .landing-hero{padding-top:calc(178px + max(env(safe-area-inset-top,50px),50px)) !important;}
+html.ios-standalone .landing-hero::before{background-position:center 60% !important;}
+@media all and (display-mode: standalone){
+  .landing-hero{padding-top:383px !important;}
+  .landing-hero::before{background-position:center 60% !important;}
+}
 body{background:var(--bg);background-image:radial-gradient(ellipse 500px 350px at 0% 0%,rgba(28,232,255,0.05) 0%,transparent 60%),radial-gradient(ellipse 400px 300px at 100% 15%,rgba(255,215,0,0.04) 0%,transparent 60%),radial-gradient(ellipse 350px 280px at 50% 100%,rgba(0,85,204,0.06) 0%,transparent 60%);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;min-height:100vh;}
 input,textarea,select,button{font-family:'Nunito',sans-serif;}
 select{background:#040f28 !important;color:#F0EDE6 !important;}
