@@ -4150,9 +4150,9 @@ function renderPlanDiarioCalendar() {
   var hoy = fmtDate(new Date());
   var html = '';
 
-  // 30-minute slots from 5:00 to 23:30
-  var slots = [];
-  for(var h=5;h<=23;h++) { slots.push(h+':00'); slots.push(h+':30'); }
+  // Hours from 5am to 11pm — clean hourly rows
+  var hours = [];
+  for(var h=5;h<=23;h++) hours.push(h);
 
   // Day headers
   html += '<div class="pd-grid-header">';
@@ -4166,47 +4166,44 @@ function renderPlanDiarioCalendar() {
   });
   html += '</div>';
 
-  // Grid body — 30-minute rows
-  html += '<div class="pd-grid-body">';
-  slots.forEach(function(slot){
-    var parts = slot.split(':');
-    var slotH = parseInt(parts[0]);
-    var slotM = parseInt(parts[1]);
-    var slotStr = String(slotH).padStart(2,'0')+':'+String(slotM).padStart(2,'0');
-    var nextM = slotM + 30;
-    var nextH = slotH;
-    if(nextM >= 60) { nextM = 0; nextH++; }
-    var nextSlotStr = String(nextH).padStart(2,'0')+':'+String(nextM).padStart(2,'0');
-    var isHour = slotM === 0;
+  // Helper: convert HH:MM to minutes since midnight
+  function toMin(t){ var p=t.split(':'); return parseInt(p[0])*60+parseInt(p[1]); }
 
-    html += '<div class="pd-grid-row" style="'+(isHour?'':'border-top:1px dashed rgba(255,255,255,0.03);')+'">';
-    html += '<div class="pd-time-label" style="font-size:'+(isHour?'11px':'9px')+';color:rgba(255,255,255,'+(isHour?'0.5':'0.25')+');">'+(isHour ? slotStr : ':30')+'</div>';
+  // Grid body — hourly rows with positioned blocks inside
+  html += '<div class="pd-grid-body">';
+  hours.forEach(function(h){
+    var hStr = String(h).padStart(2,'0')+':00';
+    var nextHStr = String(h+1).padStart(2,'0')+':00';
+    var rowStartMin = h*60;
+
+    html += '<div class="pd-grid-row">';
+    html += '<div class="pd-time-label">'+hStr+'</div>';
     dates.forEach(function(d){
       var dateStr = fmtDate(d);
-      // Find blocks that OVERLAP this 30-min slot
+      // Find blocks that OVERLAP this hour
       var cellBlocks = planDiarioBlocks.filter(function(b){
-        return b.fecha===dateStr && b.hora_inicio<nextSlotStr && b.hora_fin>slotStr;
+        return b.fecha===dateStr && toMin(b.hora_inicio)<(h+1)*60 && toMin(b.hora_fin)>h*60;
       });
-      html += '<div class="pd-cell" style="min-height:'+(isHour?'28px':'24px')+';" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+slotStr+'\')">';
+      html += '<div class="pd-cell" style="position:relative;min-height:48px;" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+hStr+'\')">';
       cellBlocks.forEach(function(b){
         var cat = b.categoria||'personal';
         var isBooking = cat==='cierre' || b._isBooking;
         var catColors = {personal:'#C9A84C',gym:'#FFD700',estudio:'#A78BFA',trabajo:'#34D399',salud:'#F472B6',otro:'#FB923C',cierre:'#DC2626'};
         var color = isBooking ? '#DC2626' : (catColors[cat]||'#C9A84C');
-        var bgAlpha = isBooking ? 'rgba(220,38,38,0.10)' : color+'15';
-        var startsHere = b.hora_inicio>=slotStr && b.hora_inicio<nextSlotStr;
+        var bgAlpha = isBooking ? 'rgba(220,38,38,0.12)' : color+'18';
+        // Calculate position within the hour cell (0-100%)
+        var bStart = Math.max(toMin(b.hora_inicio), rowStartMin);
+        var bEnd = Math.min(toMin(b.hora_fin), rowStartMin+60);
+        var topPct = ((bStart - rowStartMin) / 60 * 100).toFixed(1);
+        var heightPct = ((bEnd - bStart) / 60 * 100).toFixed(1);
         var blockClick = isBooking
-          ? 'event.stopPropagation();if(confirm(\'¿Cancelar esta cita de cierre?\\n\'+decodeURIComponent(\''+encodeURIComponent(b.titulo)+'\')))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')'
+          ? 'event.stopPropagation();if(confirm(\'¿Cancelar esta cita de cierre?\'))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')'
           : 'event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')';
-        if(startsHere) {
-          html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';position:relative;padding:4px 6px;" onclick="'+blockClick+'">';
-          html += '<span class="pd-block-title" style="font-size:11px;'+(isBooking?'color:#DC2626;font-weight:700;':'')+'">'+b.titulo+'</span>';
-          html += '<span class="pd-block-time" style="font-size:9px;">'+b.hora_inicio.substring(0,5)+'-'+b.hora_fin.substring(0,5)+'</span>';
-          if(isBooking) html += '<span style="position:absolute;top:2px;right:4px;font-size:8px;color:rgba(220,38,38,0.5);" title="Cancelar">✕</span>';
-        } else {
-          html += '<div class="pd-block" style="border-left:3px solid '+color+';background:'+bgAlpha+';padding:2px 6px;opacity:0.5;" onclick="'+blockClick+'">';
-          html += '<span style="font-size:8px;color:'+color+';">↕</span>';
-        }
+        html += '<div class="pd-block" style="position:absolute;top:'+topPct+'%;height:'+heightPct+'%;left:2px;right:2px;border-left:3px solid '+color+';background:'+bgAlpha+';border-radius:4px;padding:1px 4px;overflow:hidden;z-index:2;cursor:pointer;" onclick="'+blockClick+'">';
+        html += '<span class="pd-block-title" style="font-size:9px;line-height:1.1;'+(isBooking?'color:#DC2626;font-weight:700;':'')+'">'+b.titulo+'</span>';
+        // Only show time if block is tall enough
+        if(parseFloat(heightPct) > 40) html += '<span class="pd-block-time" style="font-size:8px;">'+b.hora_inicio.substring(0,5)+'-'+b.hora_fin.substring(0,5)+'</span>';
+        if(isBooking) html += '<span style="position:absolute;top:1px;right:3px;font-size:7px;color:rgba(220,38,38,0.5);">✕</span>';
         html += '</div>';
       });
       html += '</div>';
@@ -4375,6 +4372,8 @@ function stopPlanDiarioVoice() {
 
 // ── AI interpretation via /api/chat ──
 function processPlanDiarioInput() {
+  // Stop recording if active
+  if(planDiarioRecording) { planDiarioRecording = false; if(planDiarioRecognition) try{planDiarioRecognition.stop();}catch(e){} var _btn=document.getElementById('pd-mic-btn'); if(_btn){_btn.style.background='rgba(255,255,255,0.04)';_btn.style.borderColor='rgba(255,255,255,0.10)';_btn.innerHTML='\uD83C\uDF99\uFE0F';} var _st=document.getElementById('pd-voice-status'); if(_st)_st.style.display='none'; }
   var input = document.getElementById('pd-text-input');
   if(!input || !input.value.trim()) { showToast('Escribe o dicta una actividad'); return; }
   var text = input.value.trim();
