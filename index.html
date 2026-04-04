@@ -3113,7 +3113,7 @@ function showLanding() {
         var d = divs[i];
         if (d.dataset.skyObs || d.classList.contains('visible')) continue;
         var s = d.style;
-        if (s.borderRadius && s.background && d.offsetHeight > 50 && d.offsetHeight < 600 && d.offsetWidth > 100) {
+        if (s.borderRadius && (s.background || s.backgroundColor) && d.offsetHeight > 50 && d.offsetHeight < 600 && d.offsetWidth > 100) {
           d.dataset.skyObs = '1';
           d.classList.add('sky-reveal');
         }
