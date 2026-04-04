@@ -1,5 +1,5 @@
 // SKYTEAM - Service Worker v16
-var CACHE_NAME = 'skyteam-v85';
+var CACHE_NAME = 'skyteam-v86';
 var OFFLINE_URL = '/';
 
 // Install: cache the shell
@@ -86,6 +86,7 @@ self.addEventListener('push', function(event) {
     data: data.data || { url: data.url || '/' },
     actions: data.actions || [],
     requireInteraction: data.requireInteraction !== false,
+    silent: false,
     image: data.image || null,
     dir: 'ltr',
     lang: 'es'
