@@ -3521,21 +3521,41 @@ function showApp() {
     try { renderAdminPanel(); } catch(e) { console.error('[SKY] Admin init failed:', e); }
   }
 
-  // Birthday check — notify admins and rank >= 5 (Nova 10K+)
-  if(CU && (CU.isAdmin || CU.rank >= 5) && typeof USERS !== 'undefined') {
+  // Birthday check — notify admins, rank>=5, sponsors
+  if(CU && typeof USERS !== 'undefined') {
     setTimeout(function(){
       try {
         var today = new Date();
         var mm = String(today.getMonth()+1).padStart(2,'0');
         var dd = String(today.getDate()).padStart(2,'0');
+        var todayMD = mm+'-'+dd;
         var birthdayUsers = [];
+        var myUsername = CU.username || '';
+        var isLeader = CU.isAdmin || CU.rank >= 5;
+
         Object.keys(USERS).forEach(function(k){
           var u = USERS[k];
           var bday = u.birthday || localStorage.getItem('skyteam_birthday_'+k) || '';
-          if(bday && bday.substring(5) === mm+'-'+dd) {
-            birthdayUsers.push(u.name || k);
+          if(bday && bday.substring(5) === todayMD) {
+            // Check if I should be notified:
+            // 1. I'm admin or rank>=5 (Nova 10K+)
+            // 2. I'm their sponsor
+            // 3. I'm the sponsor of their sponsor
+            var isSponsor = u.sponsor && u.sponsor.toLowerCase() === myUsername.toLowerCase();
+            var isSponsorOfSponsor = false;
+            if(u.sponsor && USERS[u.sponsor.toLowerCase()]) {
+              var sponsorUser = USERS[u.sponsor.toLowerCase()];
+              if(sponsorUser.sponsor && sponsorUser.sponsor.toLowerCase() === myUsername.toLowerCase()) {
+                isSponsorOfSponsor = true;
+              }
+            }
+            if(isLeader || isSponsor || isSponsorOfSponsor) {
+              var relation = isSponsor ? ' (tu directo)' : isSponsorOfSponsor ? ' (2da línea)' : '';
+              birthdayUsers.push((u.name || k) + relation);
+            }
           }
         });
+
         if(birthdayUsers.length > 0) {
           showToast('🎂 ¡Hoy cumple años: ' + birthdayUsers.join(', ') + '!');
           if(typeof pushNotification === 'function') {
