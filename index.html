@@ -39,7 +39,7 @@
 <style>
 html,body{height:100%;margin:0;padding:0;}
 body.landing-active{height:auto;min-height:100%;} @supports (padding-bottom: env(safe-area-inset-bottom)){.sc{padding:28px;padding-bottom:140px;}}
-:root{--gold:#C9A84C;--gold2:#B8943F;--gold-d:rgba(255,255,255,0.03);--gold-b:rgba(255,255,255,0.08);--gold-1:#E8D48B;--bg:#050508;--bg2:#0a0a12;--bg3:#0f0f18;--bg4:#14141f;--border:rgba(255,255,255,0.04);--border2:rgba(255,255,255,0.08);--text:#F5F0E8;--muted:rgba(255,255,255,0.40);--muted2:rgba(255,255,255,0.22);--blue:#C9A84C;--blue-d:rgba(255,255,255,0.03);--blue-b:rgba(255,255,255,0.08);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:220px;
+:root{--gold:#C9A84C;--gold2:#B8943F;--gold-d:rgba(255,255,255,0.03);--gold-b:rgba(255,255,255,0.08);--gold-1:#E8D48B;--bg:#050508;--bg2:#0a0a12;--bg3:#0f0f18;--bg4:#14141f;--border:rgba(255,255,255,0.04);--border2:rgba(255,255,255,0.08);--text:#F5F0E8;--muted:rgba(255,255,255,0.40);--muted2:rgba(255,255,255,0.22);--blue:#C9A84C;--blue-d:rgba(255,255,255,0.03);--blue-b:rgba(255,255,255,0.08);--teal:#1D9E75;--teal-d:rgba(29,158,117,0.1);--teal-b:rgba(29,158,117,0.2);--purple:#7F77DD;--purple-d:rgba(127,119,221,0.1);--purple-b:rgba(127,119,221,0.2);--danger:#E24B4A;--success:#1D9E75;--sidebar-w:232px;
 /* Design tokens — spacing */
 --sp-xs:4px;--sp-sm:8px;--sp-md:14px;--sp-lg:20px;--sp-xl:28px;--sp-2xl:40px;
 /* Design tokens — typography */
@@ -3536,8 +3536,8 @@ function renderSidebarUser() {
   const savedPhoto = localStorage.getItem('skyteam_photo_' + CU.username) || '';
   const initials = CU.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
   const avatarHtml = savedPhoto
-    ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;object-fit:cover;border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);cursor:pointer;flex-shrink:0;">'
-    : '<div class="sidebar-perfil-btn" style="width:67px;height:67px;border-radius:50%;background:rgba(201,168,76,0.08);border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:#C9A84C;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
+    ? '<img src="' + savedPhoto + '" class="sidebar-perfil-btn" style="width:74px;height:74px;border-radius:50%;object-fit:cover;border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);cursor:pointer;flex-shrink:0;">'
+    : '<div class="sidebar-perfil-btn" style="width:74px;height:74px;border-radius:50%;background:rgba(201,168,76,0.08);border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:#C9A84C;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
   // Calculate days remaining
   var daysLeft = '';
   if (CU.expiry) {
