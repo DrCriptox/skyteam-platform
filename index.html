@@ -3053,6 +3053,9 @@ let CU = null;
 function showLoginFromLanding() {
   document.getElementById('landing-page').style.display = 'none';
   document.body.classList.remove('landing-active');
+  // Hide solicitud box if it was open
+  var solBox = document.getElementById('solicitud-box');
+  if (solBox) solBox.style.display = 'none';
   var ls = document.getElementById('login-screen');
   ls.style.display = 'flex';
   window.scrollTo(0, 0);
@@ -3078,6 +3081,10 @@ function showRegisterFromLanding() {
 }
 function showLanding() {
   document.getElementById('login-screen').style.display = 'none';
+  // Hide solicitud box when returning to landing
+  var solBox = document.getElementById('solicitud-box');
+  if (solBox) solBox.style.display = 'none';
+  document.body.classList.add('landing-active');
   document.getElementById('landing-page').style.display = 'flex';
   history.replaceState(null, '', '/');
 }
