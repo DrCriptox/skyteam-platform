@@ -982,6 +982,15 @@
       }
       membresiaDiv.style.display = 'block';
       renderMembresiaTab();
+    } else if (tab === 'sociedades') {
+      let sociedadesDiv = document.getElementById('admin-sociedades-content');
+      if (!sociedadesDiv) {
+        sociedadesDiv = document.createElement('div');
+        sociedadesDiv.id = 'admin-sociedades-content';
+        adminContent.appendChild(sociedadesDiv);
+      }
+      sociedadesDiv.style.display = 'block';
+      renderSociedadesTab();
     }
   };
 
@@ -1057,8 +1066,149 @@
       window.switchAdminTab('membresia');
     });
 
+    const sociedadesBtn = document.createElement('button');
+    sociedadesBtn.className = 'admin-tab-btn';
+    sociedadesBtn.dataset.tab = 'sociedades';
+    sociedadesBtn.textContent = 'Sociedades';
+    sociedadesBtn.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+      sociedadesBtn.classList.add('active');
+      window.switchAdminTab('sociedades');
+    });
+
     tabsNav.appendChild(comunidadBtn);
     tabsNav.appendChild(membresiaBtn);
+    tabsNav.appendChild(sociedadesBtn);
+  };
+
+  // ============================================================================
+  // SOCIEDADES TAB
+  // ============================================================================
+
+  const renderSociedadesTab = () => {
+    const container = document.getElementById('admin-sociedades-content');
+    if (!container) return;
+
+    const users = window.USERS || USERS_REF || {};
+
+    // Group users by innova_user
+    const groups = {};
+    Object.keys(users).forEach(uid => {
+      const u = users[uid];
+      const iu = (u.innova_user || '').trim();
+      if (!iu) return;
+      if (!groups[iu]) groups[iu] = [];
+      groups[iu].push({ id: uid, ...u });
+    });
+
+    // Filter only groups with 2+ accounts (sociedades)
+    const sociedades = {};
+    let totalPaired = 0;
+    Object.keys(groups).forEach(iu => {
+      if (groups[iu].length >= 2) {
+        sociedades[iu] = groups[iu];
+        totalPaired += groups[iu].length;
+      }
+    });
+
+    const totalSociedades = Object.keys(sociedades).length;
+
+    // Status badge helper
+    const statusBadge = (status) => {
+      const colors = {
+        active: { bg: 'rgba(74,222,128,0.15)', text: '#4ade80', label: 'Activo' },
+        pending: { bg: 'rgba(250,204,21,0.15)', text: '#facc15', label: 'Pendiente' },
+        suspended: { bg: 'rgba(248,113,113,0.15)', text: '#f87171', label: 'Suspendido' }
+      };
+      const c = colors[status] || colors.pending;
+      return '<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:' + c.bg + ';color:' + c.text + ';">' + c.label + '</span>';
+    };
+
+    // Build HTML
+    let html = '';
+
+    // Stats cards
+    html += '<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">';
+    html += '<div style="flex:1;min-width:140px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:16px;text-align:center;">';
+    html += '<div style="font-size:28px;font-weight:900;color:#C9A84C;">' + totalSociedades + '</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Total Sociedades</div>';
+    html += '</div>';
+    html += '<div style="flex:1;min-width:140px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:10px;padding:16px;text-align:center;">';
+    html += '<div style="font-size:28px;font-weight:900;color:#4ade80;">' + totalPaired + '</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Usuarios Emparejados</div>';
+    html += '</div>';
+    html += '</div>';
+
+    if (totalSociedades === 0) {
+      html += '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4);font-size:14px;">No hay sociedades registradas aun.</div>';
+      container.innerHTML = html;
+      return;
+    }
+
+    // Table
+    html += '<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.06);">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    html += '<thead><tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.08);">';
+    html += '<th style="padding:10px 12px;text-align:left;color:rgba(255,255,255,0.5);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Innova User</th>';
+    html += '<th style="padding:10px 12px;text-align:left;color:rgba(255,255,255,0.5);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Cuenta 1</th>';
+    html += '<th style="padding:10px 12px;text-align:center;color:rgba(255,255,255,0.5);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Estado</th>';
+    html += '<th style="padding:10px 12px;text-align:left;color:rgba(255,255,255,0.5);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Cuenta 2</th>';
+    html += '<th style="padding:10px 12px;text-align:center;color:rgba(255,255,255,0.5);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Estado</th>';
+    html += '<th style="padding:10px 12px;text-align:center;color:rgba(255,255,255,0.5);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Acciones</th>';
+    html += '</tr></thead><tbody>';
+
+    Object.keys(sociedades).sort().forEach(iu => {
+      const accts = sociedades[iu];
+      const a1 = accts[0] || {};
+      const a2 = accts[1] || {};
+
+      html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<td style="padding:10px 12px;color:#C9A84C;font-weight:700;">' + escapeHtml(iu) + '</td>';
+      html += '<td style="padding:10px 12px;color:var(--text,#F0EDE6);">' + escapeHtml(a1.name || a1.username || '-') + '</td>';
+      html += '<td style="padding:10px 12px;text-align:center;">' + statusBadge(a1.status || 'pending') + '</td>';
+      html += '<td style="padding:10px 12px;color:var(--text,#F0EDE6);">' + escapeHtml(a2.name || a2.username || '-') + '</td>';
+      html += '<td style="padding:10px 12px;text-align:center;">' + statusBadge(a2.status || 'pending') + '</td>';
+      html += '<td style="padding:10px 12px;text-align:center;white-space:nowrap;">';
+
+      if (a1.id) {
+        html += '<button onclick="(function(){' +
+          'var fn=document.querySelector(\'[data-sociedades-edit]\');' +
+          'if(fn) fn.click();' +
+          '})()" data-edit-user="' + escapeHtml(a1.id) + '" style="background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:#C9A84C;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;margin-right:4px;">Editar 1</button>';
+      }
+      if (a2.id) {
+        html += '<button data-edit-user="' + escapeHtml(a2.id) + '" style="background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:#C9A84C;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Editar 2</button>';
+      }
+
+      html += '</td></tr>';
+
+      // If more than 2 accounts, show extra rows
+      for (let i = 2; i < accts.length; i++) {
+        const ax = accts[i];
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);background:rgba(248,113,113,0.03);">';
+        html += '<td style="padding:10px 12px;color:rgba(201,168,76,0.5);font-size:11px;">  (extra)</td>';
+        html += '<td colspan="2" style="padding:10px 12px;color:var(--text,#F0EDE6);">' + escapeHtml(ax.name || ax.username || '-') + ' ' + statusBadge(ax.status || 'pending') + '</td>';
+        html += '<td colspan="2" style="padding:10px 12px;color:rgba(248,113,113,0.7);font-size:11px;">Excede limite de 2 cuentas</td>';
+        html += '<td style="padding:10px 12px;text-align:center;">';
+        if (ax.id) {
+          html += '<button data-edit-user="' + escapeHtml(ax.id) + '" style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#f87171;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;">Editar</button>';
+        }
+        html += '</td></tr>';
+      }
+    });
+
+    html += '</tbody></table></div>';
+
+    container.innerHTML = html;
+
+    // Attach click handlers to edit buttons
+    container.querySelectorAll('[data-edit-user]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const userId = btn.dataset.editUser;
+        if (userId) createUserEditModal(userId);
+      });
+    });
   };
 
   // ============================================================================

@@ -65,13 +65,24 @@ export default async function handler(req, res) {
     const password = hashPassword(sol.password); // Always hash before storing
     const rank = mapInnovaRank(sol.classification || null); // Auto-assign rank from Innova classification
 
+    // Check innova_user count — max 2 sociedades per innova_user
+    const innovaUser = (sol.innova_user || username).toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
+    const innovaCheck = await fetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username', { headers: HEADERS });
+    const innovaRows = await innovaCheck.json();
+    const innovaCount = Array.isArray(innovaRows) ? innovaRows.length : 0;
+    if (innovaCount >= 2) {
+      return res.status(400).json({ error: 'Este usuario de Innova ya tiene 2 sociedades registradas. No se puede crear otra.' });
+    }
+    // If innova_user already has 1 account, append _2 to username to differentiate
+    const finalUsername = innovaCount === 1 ? username + '_2' : username;
+
     // Check if user already exists (prevent duplicates from race conditions)
-    const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&limit=1', { headers: HEADERS });
+    const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername) + '&limit=1', { headers: HEADERS });
     const existUsers = await existCheck.json();
     if (existUsers && existUsers.length > 0) {
       // User already exists — just delete solicitud and return success
       await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
-      return res.status(200).json({ ok: true, username, nombre: sol.name, emailSent: false, refLink, alreadyExisted: true });
+      return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent: false, refLink, alreadyExisted: true });
     }
 
     // Delete the solicitud (only if it came from DB)
@@ -80,13 +91,13 @@ export default async function handler(req, res) {
     }
 
     // Create user in users table — try progressively minimal payloads if columns are missing
-    const fullPayload = { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password, expiry: expiryTs || null, email: sol.email || null, whatsapp: sol.whatsapp || null, rank };
+    const fullPayload = { username: finalUsername, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || finalUsername, password, expiry: expiryTs || null, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, innova_user: innovaUser };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
       { ...fullPayload, rank: undefined },                                                         // 2. no rank
       { ...fullPayload, email: undefined },                                                        // 3. no email
       { ...fullPayload, rank: undefined, email: undefined },                                       // 4. no rank, no email
-      { username, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || username, password }, // 5. guaranteed columns only
+      { username: finalUsername, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || finalUsername, password, innova_user: innovaUser }, // 5. guaranteed columns + innova_user
     ].map(o => Object.fromEntries(Object.entries(o).filter(([,v]) => v !== undefined)));
     let insertR = null;
     for (let i = 0; i < attempts.length; i++) {
@@ -107,7 +118,7 @@ export default async function handler(req, res) {
     await fetch(SUPABASE_URL + '/rest/v1/agenda_configs', {
       method: 'POST',
       headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ username, config: {} })
+      body: JSON.stringify({ username: finalUsername, config: {} })
     });
 
     // Send emails
@@ -125,7 +136,7 @@ export default async function handler(req, res) {
       const logoUrl = 'https://skyteam.global/logo-skyteam.png';
       const FROM = 'SKYTEAM <soporte@skyteam.global>';
 
-      const html1 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;"><div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);"><img src="' + logoUrl + '" alt="SKYTEAM" style="height:44px;max-width:240px;" /></div><div style="padding:32px;"><div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;">🚀</div><h2 style="color:#fff;font-size:22px;margin:8px 0;">¡Bienvenido al equipo, ' + primerNombre + '!</h2><p style="color:#C9A84C;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:0;">Tu acceso ha sido aprobado</p></div><div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:20px 0;"><p style="margin:8px 0;font-size:14px;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p><p style="margin:8px 0;font-size:14px;">👤 <strong>Usuario:</strong> <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;">' + username + '</span></p><p style="margin:8px 0;font-size:14px;">🔑 <strong>Contraseña:</strong> <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;">' + sol.password + '</span></p>' + expiryHtml + (sol.sponsor && sol.sponsor !== 'Sin especificar' ? '<p style="margin:8px 0;font-size:14px;">🤝 <strong>Sponsor:</strong> ' + sol.sponsor + '</p>' : '') + '</div><div style="text-align:center;margin:24px 0;"><a href="https://skyteam.global" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Entrar a SKY SYSTEM →</a></div><div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;"><p style="color:#FFD700;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;">⚡ Empieza hoy</p><p style="color:rgba(255,255,255,0.8);font-size:13px;line-height:1.9;margin:0;">🤖 <strong style="color:#C9A84C;">Activa Sky Sales IA</strong> — 6 agentes entrenados.<br>🎓 <strong style="color:#C9A84C;">Entra a la Academia</strong> — de cero a resultados.<br>🔗 <strong style="color:#FFD700;">Tu link personalizado</strong> llega en el próximo email.</p></div></div><div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p></div></div>';
+      const html1 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;"><div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);"><img src="' + logoUrl + '" alt="SKYTEAM" style="height:44px;max-width:240px;" /></div><div style="padding:32px;"><div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;">🚀</div><h2 style="color:#fff;font-size:22px;margin:8px 0;">¡Bienvenido al equipo, ' + primerNombre + '!</h2><p style="color:#C9A84C;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:0;">Tu acceso ha sido aprobado</p></div><div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:20px 0;"><p style="margin:8px 0;font-size:14px;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p><p style="margin:8px 0;font-size:14px;">👤 <strong>Usuario:</strong> <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;">' + finalUsername + '</span></p><p style="margin:8px 0;font-size:14px;">🔑 <strong>Contraseña:</strong> <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;">' + sol.password + '</span></p>' + expiryHtml + (sol.sponsor && sol.sponsor !== 'Sin especificar' ? '<p style="margin:8px 0;font-size:14px;">🤝 <strong>Sponsor:</strong> ' + sol.sponsor + '</p>' : '') + '</div><div style="text-align:center;margin:24px 0;"><a href="https://skyteam.global" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Entrar a SKY SYSTEM →</a></div><div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;"><p style="color:#FFD700;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;">⚡ Empieza hoy</p><p style="color:rgba(255,255,255,0.8);font-size:13px;line-height:1.9;margin:0;">🤖 <strong style="color:#C9A84C;">Activa Sky Sales IA</strong> — 6 agentes entrenados.<br>🎓 <strong style="color:#C9A84C;">Entra a la Academia</strong> — de cero a resultados.<br>🔗 <strong style="color:#FFD700;">Tu link personalizado</strong> llega en el próximo email.</p></div></div><div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p></div></div>';
 
       const html2 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;"><div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);"><img src="' + logoUrl + '" alt="SKYTEAM" style="height:44px;max-width:240px;" /></div><div style="padding:32px;"><h2 style="color:#FFD700;font-size:22px;text-align:center;margin:0 0 20px;">🚀 Tu link de duplicación está listo</h2><p style="color:rgba(255,255,255,0.8);line-height:1.7;">Hola <strong>' + primerNombre + '</strong>, este es tu link personalizado:</p><div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:20px;text-align:center;margin:20px 0;"><p style="font-family:monospace;color:#FFD700;font-size:15px;word-break:break-all;margin:0;">' + refLink + '</p></div><ol style="color:rgba(255,255,255,0.7);font-size:13px;line-height:2.2;padding-left:18px;"><li>Comparte este link con personas que quieran ingresos extra</li><li>Quien se registre quedará en tu red automáticamente</li><li>Usa los Agentes IA para responder objeciones</li><li>Revisa la Academia para capacitarte</li></ol><div style="text-align:center;margin:24px 0;"><a href="' + refLink + '" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Ver mi landing →</a></div></div><div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p></div></div>';
 
@@ -146,7 +157,7 @@ export default async function handler(req, res) {
       } catch (e) { /* email is best-effort */ }
     }
 
-    return res.status(200).json({ ok: true, username, nombre: sol.name, emailSent, refLink });
+    return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent, refLink });
 
   } catch (error) {
     console.error('aprobar error:', error.message);

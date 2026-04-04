@@ -34,7 +34,8 @@ export default async function handler(req, res) {
         equipo: row.equipo || 0,
         expiry: row.expiry || null,
         createdAt: row.created_at || null,
-        isAdmin: row.is_admin || false
+        isAdmin: row.is_admin || false,
+        innova_user: row.innova_user || null
       };
     }
 
