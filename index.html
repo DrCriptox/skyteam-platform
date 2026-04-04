@@ -3540,11 +3540,13 @@ function renderSidebarUser() {
     : '<div class="sidebar-perfil-btn" style="width:74px;height:74px;border-radius:50%;background:rgba(201,168,76,0.08);border:3px solid #C9A84C;box-shadow:0 0 12px rgba(201,168,76,0.4),0 0 24px rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:#C9A84C;cursor:pointer;flex-shrink:0;">' + initials + '</div>';
   // Calculate days remaining
   var daysLeft = '';
-  if (CU.expiry) {
+  if (CU.expiry && Number(CU.expiry) > 0) {
     var msLeft = Number(CU.expiry) - Date.now();
     var days = Math.max(0, Math.ceil(msLeft / 86400000));
     var color = days > 30 ? '#25D366' : days > 7 ? '#FFD700' : '#E24B4A';
     daysLeft = '<div style="font-size:8px;color:' + color + ';margin-top:2px;font-weight:600;letter-spacing:0.3px;">' + (days > 0 ? '⏱ ' + days + ' días restantes' : '⚠️ Membresía expirada') + '</div>';
+  } else {
+    daysLeft = '<div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;font-weight:600;">⏱ Sin vencimiento</div>';
   }
   document.getElementById('sidebar-user').innerHTML = `
     ${avatarHtml}
@@ -9926,7 +9928,18 @@ function renderPerfil() {
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:10px;word-break:break-all;">skyteam.global?ref='+(CU.ref||CU.username)+'</span></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
-    + '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">🎂 Cumpleaños</span><input type="date" id="pf-birthday" value="'+(localStorage.getItem('skyteam_birthday_'+CU.username)||CU.birthday||'')+'" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>'
+    + (function(){
+        var bday = localStorage.getItem('skyteam_birthday_'+CU.username) || CU.birthday || '';
+        if(bday) {
+          // Locked — show date as text, not editable
+          var parts = bday.split('-');
+          var meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+          var label = parseInt(parts[2])+' '+meses[parseInt(parts[1])]+' '+parts[0];
+          return '<div class="perfil-data-row"><span class="perfil-data-label">🎂 Cumpleaños</span><span class="perfil-data-value" style="font-size:12px;">'+label+' <span style="font-size:8px;color:rgba(255,255,255,0.2);">🔒</span></span></div>';
+        } else {
+          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">🎂 Cumpleaños</span><input type="date" id="pf-birthday" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>';
+        }
+      })()
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
