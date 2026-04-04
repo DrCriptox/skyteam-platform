@@ -3236,6 +3236,51 @@ function showLanding() {
 
 })();
 
+// ═══ STANDALONE REVEAL ENGINE (outside IIFE for reliability) ═══
+(function(){
+  function skyRevealScan() {
+    var wh = window.innerHeight;
+    var c = document.getElementById('content');
+    if (!c) return;
+    c.querySelectorAll('div').forEach(function(d) {
+      if (d.dataset.skyR || d.classList.contains('visible')) return;
+      var s = d.style;
+      if (!s.borderRadius || !(s.background || s.backgroundColor)) return;
+      if (d.offsetHeight < 40 || d.offsetHeight > 700 || d.offsetWidth < 80) return;
+      d.dataset.skyR = '1';
+      d.classList.add('sky-reveal');
+      var r = d.getBoundingClientRect();
+      if (r.top < wh && r.bottom > 0 && r.height > 0) d.classList.add('visible');
+    });
+    // Reveal on scroll
+    document.querySelectorAll('.sky-reveal:not(.visible)').forEach(function(el) {
+      var r = el.getBoundingClientRect();
+      if (r.top < wh - 10 && r.bottom > 0 && r.height > 0) el.classList.add('visible');
+    });
+  }
+  // Poll until reveals appear, then switch to event-driven
+  var poll = setInterval(function(){
+    skyRevealScan();
+    if (document.querySelectorAll('.sky-reveal.visible').length > 0) {
+      clearInterval(poll);
+      // Switch to scroll + mutation driven
+      var ct = document.getElementById('content');
+      if (ct) ct.addEventListener('scroll', skyRevealScan, {passive:true});
+      new MutationObserver(function(){setTimeout(skyRevealScan,100)}).observe(document.body,{childList:true,subtree:true});
+    }
+  }, 250);
+  setTimeout(function(){clearInterval(poll)}, 10000);
+  // Also re-scan on any click (navigation)
+  document.addEventListener('click', function(){
+    // Reset flags for hidden elements on nav change
+    document.querySelectorAll('[data-sky-r]').forEach(function(el){
+      if (el.offsetHeight < 1) { el.classList.remove('sky-reveal','visible'); delete el.dataset.skyR; }
+    });
+    setTimeout(skyRevealScan, 200);
+    setTimeout(skyRevealScan, 600);
+  });
+})();
+
 function doLogin() {
   try {
     var u = document.getElementById('lu').value.trim().toLowerCase();
