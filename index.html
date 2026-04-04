@@ -191,7 +191,9 @@ select option{background:#040f28;color:#F0EDE6;}
 .landing-hero-cta .btn-secondary:hover{color:var(--ld-gold-lt);border-color:rgba(201,168,76,0.4);}
 
 /* Stats bar — glassmorphism floating */
-.landing-stats-bar{display:flex;justify-content:center;gap:0;max-width:1050px;margin:-48px auto 0;position:relative;z-index:2;background:rgba(10,10,18,0.5);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--ld-border);border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,0.4);}
+.landing-stats-area{position:relative;display:flex;align-items:center;justify-content:center;padding:60px 20px;background:var(--ld-bg);overflow:hidden;}
+.landing-stats-watermark{position:absolute;width:55%;max-width:650px;opacity:0.07;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.landing-stats-bar{display:flex;justify-content:center;gap:0;max-width:1050px;width:100%;margin:0 auto;position:relative;z-index:2;background:rgba(10,10,18,0.5);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--ld-border);border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,0.4);}
 .landing-stat{text-align:center;padding:22px 48px;position:relative;flex:1;}
 .landing-stat:not(:last-child)::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:1px;height:40px;background:linear-gradient(180deg,transparent,rgba(201,168,76,0.12),transparent);}
 .landing-stat-num{font-size:56px;font-weight:500;color:var(--ld-gold-lt);letter-spacing:-1px;font-family:var(--font-display);}
@@ -249,7 +251,8 @@ select option{background:#040f28;color:#F0EDE6;}
   .landing-vision{background-attachment:scroll;}
   .landing-pillars{grid-template-columns:1fr;max-width:400px;}
   .landing-values-grid{grid-template-columns:1fr;max-width:400px;}
-  .landing-stats-bar{flex-wrap:wrap;margin:-32px 20px 0;border-radius:16px;}
+  .landing-stats-area{padding:40px 16px;}
+  .landing-stats-bar{flex-wrap:wrap;margin:0;border-radius:16px;}
   .landing-stat{padding:16px 20px;}
   .landing-stat-num{font-size:40px;}
   .landing-stat:not(:last-child)::after{display:none;}
@@ -2048,12 +2051,15 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
     </div>
   </section>
 
-  <!-- STATS BAR -->
-  <div class="landing-stats-bar landing-reveal">
-    <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1,339</div><div class="landing-stat-label">Socios Activos</div></div>
-    <div class="landing-stat"><div class="landing-stat-num">8</div><div class="landing-stat-label">Países</div></div>
-    <div class="landing-stat"><div class="landing-stat-num">100<span>%</span></div><div class="landing-stat-label">Digital</div></div>
-    <div class="landing-stat"><div class="landing-stat-num">24/7</div><div class="landing-stat-label">Acceso</div></div>
+  <!-- STATS AREA with watermark -->
+  <div class="landing-stats-area">
+    <img src="/logo-skyteam-white.png" class="landing-stats-watermark" alt="">
+    <div class="landing-stats-bar landing-reveal">
+      <div class="landing-stat"><div class="landing-stat-num" id="socios-counter">1,339</div><div class="landing-stat-label">Socios Activos</div></div>
+      <div class="landing-stat"><div class="landing-stat-num">8</div><div class="landing-stat-label">Países</div></div>
+      <div class="landing-stat"><div class="landing-stat-num">100<span>%</span></div><div class="landing-stat-label">Digital</div></div>
+      <div class="landing-stat"><div class="landing-stat-num">24/7</div><div class="landing-stat-label">Acceso</div></div>
+    </div>
   </div>
 
   <!-- VISION -->
