@@ -91,7 +91,13 @@ export default async function handler(req, res) {
     }
 
     // Create user in users table — try progressively minimal payloads if columns are missing
-    const fullPayload = { username: finalUsername, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || finalUsername, password, expiry: expiryTs || null, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, innova_user: innovaUser };
+    // Migration grace: if expiry is past or null, give 8 days from now
+    let finalExpiry = expiryTs || null;
+    if (!finalExpiry || finalExpiry < Date.now()) {
+      finalExpiry = Date.now() + (8 * 86400000); // 8 days from now
+      console.log('[APROBAR] Migration grace: user expired/no expiry, granting 8 days. New expiry:', new Date(finalExpiry).toISOString());
+    }
+    const fullPayload = { username: finalUsername, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, innova_user: innovaUser, birthday: sol.birthday || null };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
       { ...fullPayload, rank: undefined },                                                         // 2. no rank
@@ -124,10 +130,10 @@ export default async function handler(req, res) {
     // Send emails
     // Format expiry for display
     let expiryHtml = '';
-    if (expiryTs) {
-      const d = new Date(expiryTs);
+    if (finalExpiry) {
+      const d = new Date(finalExpiry);
       const label = d.getUTCDate().toString().padStart(2,'0') + '/' + (d.getUTCMonth()+1).toString().padStart(2,'0') + '/' + d.getUTCFullYear();
-      const days = Math.max(0, Math.ceil((expiryTs - Date.now()) / 86400000));
+      const days = Math.max(0, Math.ceil((finalExpiry - Date.now()) / 86400000));
       expiryHtml = '<p style="margin:8px 0;font-size:14px;">📅 <strong>Acceso hasta:</strong> <span style="color:#4ade80;font-weight:700;">' + label + '</span> <span style="color:rgba(255,255,255,0.4);font-size:12px;">(' + days + ' días)</span></p>';
     }
 
