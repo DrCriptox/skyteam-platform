@@ -1687,11 +1687,15 @@ window.mentorToggleVoice = function() {
   };
 
   _mentorVoiceRec.onend = function() {
+    // If user didn't press stop, keep listening (continuous mode)
+    if (_mentorVoiceRec) {
+      try { _mentorVoiceRec.start(); } catch(e) {
+        if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; btn.innerHTML = '🎤'; }
+        _mentorVoiceRec = null;
+      }
+      return;
+    }
     if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; btn.innerHTML = '🎤'; }
-    // Auto-send what was recorded
-    var input = document.getElementById('mentor-chat-input');
-    if(input && input.value.trim()) mentorSendChat();
-    _mentorVoiceRec = null;
   };
 
   _mentorVoiceRec.start();

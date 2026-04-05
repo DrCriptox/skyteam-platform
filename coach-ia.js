@@ -1265,8 +1265,8 @@ function toggleVoice() {
 
   var recognition = new SpeechRecognition();
   recognition.lang = 'es-MX';
-  recognition.continuous = false;
-  recognition.interimResults = false;
+  recognition.continuous = true;
+  recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
   recognition.onstart = function() {
@@ -1276,27 +1276,30 @@ function toggleVoice() {
 
   recognition.onresult = function(event) {
     var transcript = '';
-    for (var i = event.resultIndex; i < event.results.length; i++) {
+    for (var i = 0; i < event.results.length; i++) {
       transcript += event.results[i][0].transcript;
     }
-    transcript = transcript.trim();
-    if (transcript) {
-      var input = document.getElementById('coach-input');
-      if (input) {
-        input.value = transcript;
-      }
-      sendCoachMessage(transcript);
-    }
+    // Only put text in input — do NOT auto-send
+    var input = document.getElementById('coach-input');
+    if (input) input.value = transcript.trim();
   };
 
   recognition.onerror = function(event) {
+    if (event.error === 'no-speech') return; // Ignore silence errors
     console.warn('[Coach IA] Voice error:', event.error);
     coachState.recording = false;
     updateMicButton();
   };
 
   recognition.onend = function() {
-    coachState.recording = false;
+    // If still recording (user didn't press stop), restart to keep listening
+    if (coachState.recording) {
+      try { recognition.start(); } catch(e) {
+        coachState.recording = false;
+        updateMicButton();
+      }
+      return;
+    }
     updateMicButton();
   };
 
@@ -1854,7 +1857,7 @@ window.coachStartVoiceNote = function() {
     return;
   }
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (_coachVoiceRec) { _coachVoiceRec.stop(); _coachVoiceRec = null; return; }
+  if (_coachVoiceRec) { var rec = _coachVoiceRec; _coachVoiceRec = null; rec.stop(); var b=document.getElementById('coach-voice-rec-btn'); if(b){b.style.background='rgba(255,255,255,0.06)';b.style.borderColor='rgba(255,255,255,0.15)';b.innerHTML='\uD83C\uDFA4';} var st=document.getElementById('coach-voice-status'); if(st)st.textContent='Toca para grabar'; return; }
 
   _coachVoiceRec = new SR();
   _coachVoiceRec.lang = 'es-MX';
@@ -1879,9 +1882,17 @@ window.coachStartVoiceNote = function() {
   };
 
   _coachVoiceRec.onend = function() {
+    // Keep listening until user presses stop
+    if (_coachVoiceRec) {
+      try { _coachVoiceRec.start(); } catch(e) {
+        if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; btn.innerHTML = '\uD83C\uDFA4'; }
+        if(status) status.textContent = 'Toca para grabar';
+        _coachVoiceRec = null;
+      }
+      return;
+    }
     if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; btn.innerHTML = '\uD83C\uDFA4'; }
     if(status) status.textContent = 'Toca para grabar';
-    _coachVoiceRec = null;
   };
 
   _coachVoiceRec.start();
