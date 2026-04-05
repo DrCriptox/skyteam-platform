@@ -2468,6 +2468,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <button class="nav-item" data-sec="prospectos" onclick="navigate('prospectos')"><span class="nav-icon">👥</span>Sky Prospectos</button>
 
       <div class="nav-section-label">Equipo</div>
+        <button class="nav-item" data-sec="skyteam" onclick="navigate('skyteam')"><span class="nav-icon">🚀</span>Sky Team</button>
       <button class="nav-item" data-sec="ranking" onclick="navigate('ranking')"><span class="nav-icon">🏆</span>Ranking</button>
       <button class="nav-item" data-sec="viajes" onclick="navigate('viajes')"><span class="nav-icon">✈️</span>Viajes</button>
       <button class="nav-item" data-sec="comunidad" onclick="navigate('comunidad')"><span class="nav-icon">💬</span>Comunidad<span id="comunidad-badge" style="display:none;margin-left:6px;background:#FF3B30;color:#fff;font-size:9px;font-weight:900;min-width:16px;height:16px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;font-family:Outfit,Nunito,sans-serif;border:2px solid #0a0a12;animation:notifPulse 2s infinite;"></span></button>
@@ -2528,6 +2529,14 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="section" id="section-materiales">
       <div class="topbar"><div class="topbar-title">Materiales Descargables</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
       <div class="sc" id="materiales-content"></div>
+    </div>
+
+    <!-- SKY TEAM -->
+    <div class="section" id="section-skyteam">
+      <div class="topbar"><div class="topbar-title">🚀 Sky Team</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+      <div class="sc" id="skyteam-content">
+        <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">Cargando Sky Team...</div>
+      </div>
     </div>
 
     <!-- RANKING -->
@@ -3480,7 +3489,8 @@ function showApp() {
     ['Chat', loadChat],
     ['Notifs', typeof startNotifEngine==='function' ? startNotifEngine : null],
     ['SkyTV', typeof initSkyTv==='function' ? initSkyTv : null],
-    ['Config', typeof applyPlatformConfig==='function' ? applyPlatformConfig : null]
+    ['Config', typeof applyPlatformConfig==='function' ? applyPlatformConfig : null],
+    ['SkyTeam', typeof initSkyTeam==='function' ? initSkyTeam : null]
   ];
   initTasks.forEach(function(task) {
     if(task[1]) { try { task[1](); } catch(e) { console.error('[SKY] ' + task[0] + ' init failed:', e); } }
@@ -8216,6 +8226,7 @@ function navigate(sec) {
     renderAgenda();
   } else { stopAgendaPoll(); }
   if(sec==='perfil') renderPerfil();
+  if(sec==='skyteam' && typeof initSkyTeam==='function') initSkyTeam();
   if(sec==='academia-liderazgo') renderAcadLid();
   if(sec==='agente') { if(typeof currentAgent!=='undefined'&&currentAgent) initAgentChat(currentAgent); }
   if(sec==='skysales') renderSkySales();
@@ -12975,5 +12986,6 @@ function renderAntiCheatResults(container, results) {
 <script src="patch-v3.js"></script>
 <script src="onboarding-system.js"></script>
 <script src="admin-panel.js"></script>
+<script src="sky-team.js"></script>
 </body>
 </html>

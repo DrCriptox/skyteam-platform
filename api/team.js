@@ -1,0 +1,262 @@
+// SKYTEAM – Team / Red API (Vercel Serverless + Supabase REST)
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
+
+async function sb(path, opts) {
+  const url = SUPABASE_URL + '/rest/v1/' + path;
+  const r = await fetch(url, {
+    method: (opts && opts.method) || 'GET',
+    headers: { ...HEADERS, ...(opts && opts.headers ? opts.headers : {}) },
+    body: opts && opts.body ? opts.body : undefined
+  });
+  if (!r.ok) return [];
+  const text = await r.text();
+  if (!text) return [];
+  return JSON.parse(text);
+}
+
+function getServerDownline(allUsers, userRef, maxLevel) {
+  var byRef = {};
+  var tree = {};
+  allUsers.forEach(function(u) {
+    if (u.ref) byRef[u.ref.toLowerCase()] = u;
+    if (u.sponsor) {
+      var sk = u.sponsor.toLowerCase();
+      if (!tree[sk]) tree[sk] = [];
+      tree[sk].push(u.ref ? u.ref.toLowerCase() : u.username);
+    }
+  });
+  var result = [];
+  function recurse(r, level) {
+    if (level > maxLevel) return;
+    (tree[r] || []).forEach(function(childRef) {
+      var child = byRef[childRef];
+      if (child) {
+        result.push(Object.assign({}, child, { level: level }));
+        recurse(childRef, level + 1);
+      }
+    });
+  }
+  recurse(userRef.toLowerCase(), 1);
+  return result;
+}
+
+async function handleDashboard(req, res, user, ref) {
+  if (!ref) return res.status(400).json({ error: 'Missing ref' });
+
+  // 1. Fetch ALL users
+  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,innova_user&limit=5000');
+
+  // 2. Get downline members (10 levels)
+  var members = getServerDownline(allUsers, ref, 10);
+
+  // 3. Batch queries for supplementary data
+  var gamData = [], onbData = [], prospData = [], bookData = [];
+  var usernames = members.map(function(m) { return m.username; });
+  if (usernames.length > 0) {
+    var uList = usernames.map(function(u) { return encodeURIComponent(u); }).join(',');
+    var results = await Promise.all([
+      sb('gamification?user_ref=in.(' + uList + ')&select=user_ref,xp,level,streak_current,streak_last_date'),
+      sb('onboarding_progress?username=in.(' + uList + ')&select=username,current_day,started_at'),
+      sb('prospectos?username=in.(' + uList + ')&select=username,etapa'),
+      sb('bookings?username=in.(' + uList + ')&status=neq.cancelada&select=username')
+    ]);
+    gamData = results[0] || [];
+    onbData = results[1] || [];
+    prospData = results[2] || [];
+    bookData = results[3] || [];
+  }
+
+  // 4. Calculate Sky Score per member
+  var now = Date.now();
+  members.forEach(function(m) {
+    var gam = gamData.find(function(g) { return g.user_ref === m.username; }) || {};
+    var onb = onbData.find(function(o) { return o.username === m.username; }) || {};
+    var prosCount = prospData.filter(function(p) { return p.username === m.username; }).length;
+    var closedCount = prospData.filter(function(p) { return p.username === m.username && p.etapa === 'cerrado_ganado'; }).length;
+    var bookCount = bookData.filter(function(b) { return b.username === m.username; }).length;
+
+    m.score_prospects = (prosCount * 2) + (closedCount * 5);
+    m.score_sales = (m.ventas || 0) * 10;
+    m.score_day = ((onb.current_day || 0) * 3) + ((gam.streak_current || 0) * 2) + (bookCount * 4);
+    m.sky_score = m.score_prospects + m.score_sales + m.score_day;
+    m.prospectos_count = prosCount;
+    m.bookings_count = bookCount;
+    m.streak_current = gam.streak_current || 0;
+    m.streak_last_date = gam.streak_last_date || null;
+    m.onboarding_day = onb.current_day || 0;
+    m.onboarding_started = onb.started_at || null;
+    m.xp = gam.xp || 0;
+
+    // Calculate status
+    var daysRemaining = m.expiry ? Math.ceil((Number(m.expiry) - now) / 86400000) : 999;
+    m.days_remaining = daysRemaining;
+    var lastActive = gam.streak_last_date ? Math.ceil((now - new Date(gam.streak_last_date).getTime()) / 86400000) : 999;
+
+    if (daysRemaining <= 7 || lastActive >= 14) m.status = 'inactive';
+    else if (daysRemaining <= 14 || lastActive >= 7) m.status = 'risk';
+    else m.status = 'active';
+  });
+
+  // 5. Generate alerts
+  var alerts = [];
+  members.forEach(function(m) {
+    if (m.days_remaining > 0 && m.days_remaining <= 7) {
+      alerts.push({ type: 'expiring', category: 'urgente', username: m.username, name: m.name, message: m.name + ' vence en ' + m.days_remaining + ' dias', action: 'contact' });
+    }
+    if (m.status === 'inactive' && m.days_remaining > 7) {
+      var daysInactive = m.streak_last_date ? Math.ceil((now - new Date(m.streak_last_date).getTime()) / 86400000) : 999;
+      alerts.push({ type: 'inactive', category: 'urgente', username: m.username, name: m.name, message: m.name + ' lleva ' + daysInactive + ' dias sin actividad', action: 'contact' });
+    }
+    if (m.onboarding_day <= 1 && m.onboarding_started) {
+      var daysSinceStart = Math.ceil((now - new Date(m.onboarding_started).getTime()) / 86400000);
+      if (daysSinceStart > 7) {
+        alerts.push({ type: 'no_onboarding', category: 'atencion', username: m.username, name: m.name, message: m.name + ' no ha avanzado en el onboarding', action: 'profile' });
+      }
+    }
+    if (m.prospectos_count === 0) {
+      var daysSinceReg = m.created_at ? Math.ceil((now - new Date(m.created_at).getTime()) / 86400000) : 0;
+      if (daysSinceReg > 14) {
+        alerts.push({ type: 'zero_prospects', category: 'atencion', username: m.username, name: m.name, message: m.name + ' no tiene prospectos', action: 'profile' });
+      }
+    }
+    if (m.created_at) {
+      var daysSinceReg2 = Math.ceil((now - new Date(m.created_at).getTime()) / 86400000);
+      if (daysSinceReg2 <= 7) {
+        alerts.push({ type: 'new_member', category: 'positivo', username: m.username, name: m.name, message: 'Nuevo socio: ' + m.name, action: 'profile' });
+      }
+    }
+    if (m.streak_current >= 7) {
+      alerts.push({ type: 'streak', category: 'positivo', username: m.username, name: m.name, message: m.name + ' tiene racha de ' + m.streak_current + ' dias', action: 'profile' });
+    }
+  });
+  // Sort: urgente first, then atencion, then positivo
+  var catOrder = { urgente: 0, atencion: 1, positivo: 2 };
+  alerts.sort(function(a, b) { return (catOrder[a.category] || 9) - (catOrder[b.category] || 9); });
+
+  // 6. Network stats
+  var active7d = members.filter(function(m) { return m.status === 'active'; }).length;
+  var thisMonth = new Date(); thisMonth.setDate(1); thisMonth.setHours(0, 0, 0, 0);
+  var newThisMonth = members.filter(function(m) { return m.created_at && new Date(m.created_at) >= thisMonth; }).length;
+  var directCount = members.filter(function(m) { return m.level === 1; }).length;
+
+  // Weekly growth (last 7 days)
+  var dias = ['Dom', 'Lun', 'Mar', 'Mi\u00e9', 'Jue', 'Vie', 'S\u00e1b'];
+  var growth = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+    var dEnd = new Date(d); dEnd.setDate(dEnd.getDate() + 1);
+    var count = members.filter(function(m) { return m.created_at && new Date(m.created_at) >= d && new Date(m.created_at) < dEnd; }).length;
+    growth.push({ label: dias[d.getDay()], count: count });
+  }
+
+  // 7. Return response
+  res.setHeader('Cache-Control', 's-maxage=30, max-age=10, stale-while-revalidate=60');
+  return res.status(200).json({
+    network: { total_members: members.length, active_7d: active7d, new_this_month: newThisMonth, direct_count: directCount, growth_weekly: growth },
+    members: members.sort(function(a, b) { return a.level - b.level || b.sky_score - a.sky_score; }),
+    alerts: alerts.slice(0, 50)
+  });
+}
+
+async function handleCoach(req, res, user, ref) {
+  if (!process.env.ANTHROPIC_API_KEY) return res.status(200).json({ recommendations: ['Configura ANTHROPIC_API_KEY para activar Coach IA'] });
+  if (!ref) return res.status(400).json({ error: 'Missing ref' });
+
+  // Get all users and build downline
+  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,innova_user&limit=5000');
+  var members = getServerDownline(allUsers, ref, 10);
+
+  // Batch queries for supplementary data
+  var gamData = [], onbData = [], prospData = [], bookData = [];
+  var usernames = members.map(function(m) { return m.username; });
+  if (usernames.length > 0) {
+    var uList = usernames.map(function(u) { return encodeURIComponent(u); }).join(',');
+    var results = await Promise.all([
+      sb('gamification?user_ref=in.(' + uList + ')&select=user_ref,xp,level,streak_current,streak_last_date'),
+      sb('onboarding_progress?username=in.(' + uList + ')&select=username,current_day,started_at'),
+      sb('prospectos?username=in.(' + uList + ')&select=username,etapa'),
+      sb('bookings?username=in.(' + uList + ')&status=neq.cancelada&select=username')
+    ]);
+    gamData = results[0] || [];
+    onbData = results[1] || [];
+    prospData = results[2] || [];
+    bookData = results[3] || [];
+  }
+
+  // Calculate scores
+  var now = Date.now();
+  members.forEach(function(m) {
+    var gam = gamData.find(function(g) { return g.user_ref === m.username; }) || {};
+    var onb = onbData.find(function(o) { return o.username === m.username; }) || {};
+    var prosCount = prospData.filter(function(p) { return p.username === m.username; }).length;
+    var closedCount = prospData.filter(function(p) { return p.username === m.username && p.etapa === 'cerrado_ganado'; }).length;
+    var bookCount = bookData.filter(function(b) { return b.username === m.username; }).length;
+
+    m.score_prospects = (prosCount * 2) + (closedCount * 5);
+    m.score_sales = (m.ventas || 0) * 10;
+    m.score_day = ((onb.current_day || 0) * 3) + ((gam.streak_current || 0) * 2) + (bookCount * 4);
+    m.sky_score = m.score_prospects + m.score_sales + m.score_day;
+
+    var daysRemaining = m.expiry ? Math.ceil((Number(m.expiry) - now) / 86400000) : 999;
+    var lastActive = gam.streak_last_date ? Math.ceil((now - new Date(gam.streak_last_date).getTime()) / 86400000) : 999;
+    if (daysRemaining <= 7 || lastActive >= 14) m.status = 'inactive';
+    else if (daysRemaining <= 14 || lastActive >= 7) m.status = 'risk';
+    else m.status = 'active';
+  });
+
+  // Sort by score
+  members.sort(function(a, b) { return b.sky_score - a.sky_score; });
+
+  // Build alerts count
+  var urgentAlerts = members.filter(function(m) { return m.status === 'inactive'; }).length;
+  var active7d = members.filter(function(m) { return m.status === 'active'; }).length;
+
+  // Build sanitized summary
+  var summary = 'Red de ' + user + ': ' + members.length + ' socios. ';
+  summary += 'Activos: ' + active7d + '. ';
+  summary += 'Top 3: ' + members.slice(0, 3).map(function(m) { return m.name + ' (score:' + m.sky_score + ')'; }).join(', ') + '. ';
+  summary += 'Alertas urgentes: ' + urgentAlerts + '. ';
+
+  var r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      system: 'Eres un coach experto en network marketing y liderazgo de equipos. Respondes en espa\u00f1ol. Analiza los datos del equipo y da 5 recomendaciones accionables, cortas y espec\u00edficas. Formato: JSON array de strings. Solo el array, sin explicaci\u00f3n.',
+      messages: [{ role: 'user', content: summary }]
+    })
+  });
+  var data = await r.json();
+  var text = data.content && data.content[0] ? data.content[0].text : '[]';
+  var recommendations = [];
+  try { recommendations = JSON.parse(text.match(/\[[\s\S]*\]/)[0]); } catch (e) { recommendations = [text]; }
+
+  return res.status(200).json({ recommendations: recommendations });
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  try {
+    const { action, user, ref } = req.body || {};
+    if (!action || !user) return res.status(400).json({ error: 'Missing action or user' });
+
+    if (action === 'dashboard') {
+      return handleDashboard(req, res, user, ref);
+    }
+    if (action === 'coach') {
+      return handleCoach(req, res, user, ref);
+    }
+    return res.status(400).json({ error: 'Invalid action' });
+  } catch (error) {
+    console.error('Team API error:', error.message);
+    return res.status(500).json({ error: error.message || 'Internal error' });
+  }
+}
