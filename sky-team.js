@@ -38,6 +38,7 @@ var stState = {
   rankPeriod: 'monthly',
   coachData: null,
   mentorTool: null,
+  mentorChat: [],
   loading: false,
   cache: null,
   cacheTime: 0
@@ -280,6 +281,8 @@ function injectSkyTeamCSS() {
 
     // ── Gold shimmer keyframe (shared) ──
     '@keyframes stGoldShimmer{to{background-position:200% center;}}',
+
+    '@keyframes mentorDot{0%,80%,100%{transform:scale(0.6);opacity:0.3}40%{transform:scale(1);opacity:1}}',
 
     '' // trailing empty for safe join
   ].join('\n');
@@ -1018,76 +1021,88 @@ function _renderAlertCard(al, borderColor, icon) {
 
 function renderSTMentor() {
   var d = stState.data;
-  if (!d) return '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);">Cargando...</div>';
-
-  // If a mentor tool is active, show it
-  if (stState.mentorTool) {
-    return renderMentorTool(stState.mentorTool, d);
-  }
 
   var html = '';
 
-  // Daily insight card
-  html += '<div style="background:linear-gradient(135deg,rgba(127,119,221,0.08),rgba(201,168,76,0.06));border:1px solid rgba(127,119,221,0.15);border-radius:16px;padding:16px;margin-bottom:16px;">';
-  html += '<div style="font-size:10px;color:#7F77DD;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px;">🧠 Insight del dia</div>';
-  var totalMembers = d.members ? d.members.length : 0;
-  var activeMembers = d.members ? d.members.filter(function(m){return m.status==='active';}).length : 0;
-  var pct = totalMembers > 0 ? Math.round(activeMembers/totalMembers*100) : 0;
-  html += '<div style="font-size:14px;color:#fff;font-weight:600;line-height:1.4;">';
-  if (pct >= 70) html += 'Tu equipo esta fuerte — '+pct+'% activos. Enfocate en duplicacion.';
-  else if (pct >= 40) html += activeMembers+' de '+totalMembers+' socios activos ('+pct+'%). Reactiva a los inactivos esta semana.';
-  else html += 'Solo '+pct+'% de tu equipo esta activo. Prioridad #1: llamar a tus directos inactivos hoy.';
-  html += '</div></div>';
+  // Chat header
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:16px;">';
+  html += '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🧠</div>';
+  html += '<div><div style="font-size:16px;font-weight:800;color:#fff;">Mentor IA</div>';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);">Tu coach de liderazgo personal · Disponible 24/7</div></div></div>';
 
-  // Tools sections
-  var sections = [
-    { title: '📊 ESTRATEGIA', tools: [
-      {id:'metas', icon:'🎯', name:'Metas'},
-      {id:'scorecard', icon:'📊', name:'Scorecard'},
-      {id:'proyeccion', icon:'📈', name:'Proyeccion'},
-      {id:'duplicacion', icon:'🔄', name:'Duplicacion'}
-    ]},
-    { title: '👥 EQUIPO', tools: [
-      {id:'analisis_red', icon:'🔍', name:'Analizar Red'},
-      {id:'alertas_pred', icon:'⚠️', name:'Alertas'},
-      {id:'bank_code', icon:'🏦', name:'Codigo BANK'},
-      {id:'onb_buddy', icon:'🤝', name:'Buddy'}
-    ]},
-    { title: '📅 EVENTOS', tools: [
-      {id:'home_meeting', icon:'🏠', name:'Home Meeting'},
-      {id:'evento_mensual', icon:'🎪', name:'Evento'},
-      {id:'zoom_semanal', icon:'💻', name:'Zoom'},
-      {id:'agenda_lider', icon:'📋', name:'Agenda Lider'}
-    ]},
-    { title: '💬 COMUNICACION', tools: [
-      {id:'lenguaje', icon:'💬', name:'Lenguaje'},
-      {id:'frases', icon:'🔥', name:'Frases'},
-      {id:'reconocimientos', icon:'🏆', name:'Celebrar'},
-      {id:'capacitacion', icon:'🎓', name:'Capacitacion'}
-    ]},
-    { title: '🧘 DESARROLLO', tools: [
-      {id:'emocional', icon:'🧘', name:'Emocional'},
-      {id:'patrones', icon:'🌟', name:'Patrones'},
-      {id:'plan_lider', icon:'📝', name:'Plan Semanal'},
-      {id:'resumen', icon:'📄', name:'Resumen'},
-      {id:'desafios_eq', icon:'🏆', name:'Desafios'}
-    ]}
-  ];
+  // Chat messages area
+  html += '<div id="mentor-chat-area" style="min-height:300px;max-height:50vh;overflow-y:auto;overscroll-behavior:contain;margin-bottom:16px;scroll-behavior:smooth;">';
 
-  sections.forEach(function(sec) {
-    html += '<div style="margin-bottom:16px;">';
-    html += '<div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.20);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">'+sec.title+'</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
-    sec.tools.forEach(function(t) {
-      html += '<div onclick="stSetMentorTool(\''+t.id+'\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);" onmouseover="this.style.borderColor=\'rgba(127,119,221,0.25)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,0.06)\';this.style.transform=\'none\'">';
-      html += '<div style="font-size:22px;margin-bottom:3px;">'+t.icon+'</div>';
-      html += '<div style="font-size:8px;color:rgba(255,255,255,0.45);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">'+t.name+'</div>';
-      html += '</div>';
+  // Show conversation history or welcome message
+  if (!stState.mentorChat || stState.mentorChat.length === 0) {
+    // Welcome message
+    html += renderMentorMessage('¡Hola' + (CU ? ', ' + CU.name.split(' ')[0] : '') + '! 👋 Soy tu Mentor IA. Estoy aquí para ayudarte a crecer como líder y hacer crecer tu equipo.\n\n¿En qué puedo ayudarte hoy?');
+
+    // Suggestion chips
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px 56px;">';
+    var chips = [
+      '¿Cómo está mi equipo?',
+      '¿Quién necesita ayuda?',
+      '¿Cómo me siento hoy?',
+      'Prepara mi Zoom semanal',
+      'Ayúdame con un cierre',
+      'Dame una frase motivacional'
+    ];
+    chips.forEach(function(c) {
+      html += '<button onclick="mentorSendChat(\''+c.replace(/'/g,"\\'")+'\')" style="padding:8px 14px;border-radius:20px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.20);color:#7F77DD;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(127,119,221,0.15)\'" onmouseout="this.style.background=\'rgba(127,119,221,0.08)\'">'+c+'</button>';
     });
-    html += '</div></div>';
-  });
+    html += '</div>';
+
+    // Capability hint (rotates)
+    var hints = [
+      '💡 Puedo analizar tu equipo completo y decirte quién necesita apoyo.',
+      '💡 Puedo ayudarte a preparar tu reunión de Zoom semanal con agenda incluida.',
+      '💡 Conozco el Código BANK — puedo decirte cómo comunicarte con cada socio.',
+      '💡 Puedo darte un plan de acción semanal personalizado para tu negocio.',
+      '💡 Si te sientes bloqueado, cuéntame — tengo técnicas para ayudarte.',
+      '💡 Puedo calcular tu proyección de rango y decirte qué te falta.',
+      '💡 Puedo preparar mensajes de reconocimiento para celebrar a tu equipo.',
+      '💡 Puedo planificar tus Home Meetings y Eventos del mes.'
+    ];
+    var hintIdx = Math.floor(Date.now() / 3600000) % hints.length; // changes every hour
+    html += '<div style="margin-left:56px;padding:10px 14px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;font-size:11px;color:rgba(201,168,76,0.7);line-height:1.4;">' + hints[hintIdx] + '</div>';
+
+  } else {
+    // Render conversation history
+    stState.mentorChat.forEach(function(msg) {
+      if (msg.role === 'user') {
+        html += renderUserMessage(msg.text);
+      } else {
+        html += renderMentorMessage(msg.text);
+      }
+    });
+  }
+
+  html += '</div>';
+
+  // Input bar
+  html += '<div style="display:flex;gap:8px;padding:12px 0;border-top:1px solid rgba(255,255,255,0.06);">';
+  html += '<input type="text" id="mentor-chat-input" placeholder="Escríbele a tu Mentor..." onkeydown="if(event.key===\'Enter\')mentorSendChat()" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;color:#F0EDE6;font-size:14px;padding:12px 16px;outline:none;font-family:Outfit,Nunito,sans-serif;" onfocus="this.style.borderColor=\'rgba(127,119,221,0.30)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.08)\'">';
+  html += '<button onclick="mentorToggleVoice()" id="mentor-mic-btn" style="width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">🎤</button>';
+  html += '<button onclick="mentorSendChat()" style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">➤</button>';
+  html += '</div>';
 
   return html;
+}
+
+function renderMentorMessage(text) {
+  var escaped = _safe(text).replace(/\n/g, '<br>');
+  return '<div style="display:flex;gap:10px;margin-bottom:14px;">'
+    + '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🧠</div>'
+    + '<div style="flex:1;background:rgba(127,119,221,0.06);border:1px solid rgba(127,119,221,0.12);border-radius:4px 16px 16px 16px;padding:12px 16px;font-size:13px;color:#F0EDE6;line-height:1.6;">' + escaped + '</div>'
+    + '</div>';
+}
+
+function renderUserMessage(text) {
+  var escaped = _safe(text).replace(/\n/g, '<br>');
+  return '<div style="display:flex;gap:10px;margin-bottom:14px;justify-content:flex-end;">'
+    + '<div style="max-width:80%;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.15);border-radius:16px 4px 16px 16px;padding:12px 16px;font-size:13px;color:#F0EDE6;line-height:1.5;">' + escaped + '</div>'
+    + '</div>';
 }
 
 // ── renderMentorTool: handles all 21 tools ──
@@ -1455,6 +1470,156 @@ window.mentorAIAnalysis = function(toolId) {
   } else {
     div.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:12px;">Funcion de IA no disponible.</div>';
   }
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+//  MENTOR IA CHAT FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+var _mentorVoiceRec = null;
+
+window.mentorSendChat = function(presetText) {
+  var input = document.getElementById('mentor-chat-input');
+  var text = presetText || (input ? input.value.trim() : '');
+  if (!text) return;
+
+  // Stop voice if recording
+  if (_mentorVoiceRec) { _mentorVoiceRec.stop(); _mentorVoiceRec = null; }
+
+  // Initialize chat array if needed
+  if (!stState.mentorChat) stState.mentorChat = [];
+
+  // Add user message
+  stState.mentorChat.push({ role: 'user', text: text });
+
+  // Clear input
+  if (input) input.value = '';
+
+  // Re-render to show user message
+  renderSkyTeam();
+
+  // Show typing indicator
+  setTimeout(function() {
+    var area = document.getElementById('mentor-chat-area');
+    if (area) {
+      area.innerHTML += '<div id="mentor-typing" style="display:flex;gap:10px;margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🧠</div><div style="background:rgba(127,119,221,0.06);border:1px solid rgba(127,119,221,0.12);border-radius:4px 16px 16px 16px;padding:12px 20px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);animation:mentorDot 1.4s infinite;animation-delay:0s;"></span><span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);animation:mentorDot 1.4s infinite;animation-delay:0.2s;"></span><span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);animation:mentorDot 1.4s infinite;animation-delay:0.4s;"></span></div></div></div>';
+      area.scrollTop = area.scrollHeight;
+    }
+  }, 100);
+
+  // Build context from team data
+  var d = stState.data;
+  var context = '';
+  if (d && d.members) {
+    context = 'RED DEL LIDER: ' + d.members.length + ' socios. ';
+    context += 'Activos 7d: ' + (d.network ? d.network.active_7d : 0) + '. ';
+    context += 'Directos: ' + d.members.filter(function(m){return m.level===1;}).length + '. ';
+    var top3 = d.members.sort(function(a,b){return (b.sky_score||0)-(a.sky_score||0);}).slice(0,3);
+    context += 'Top 3: ' + top3.map(function(m){return (m.name||m.username)+' (score:'+m.sky_score+', rango:'+m.rank+', dias:'+m.days_remaining+')';}).join(', ') + '. ';
+    var urgentes = (d.alerts||[]).filter(function(a){return a.category==='urgente';});
+    if (urgentes.length > 0) context += 'URGENTES: ' + urgentes.slice(0,3).map(function(a){return a.message;}).join('; ') + '. ';
+  }
+  if (CU) context += 'LIDER: ' + CU.name + ', rango ' + CU.rank + '. ';
+
+  // Build conversation for AI
+  var messages = [];
+  stState.mentorChat.forEach(function(m) {
+    messages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text });
+  });
+
+  var systemPrompt = 'Eres el Mentor IA de SKYTEAM — un coach de liderazgo experto en network marketing. Tu nombre es Mentor. Respondes en español, eres cercano, motivador, directo y siempre orientado a la ACCION.\n\n'
+    + 'REGLAS:\n'
+    + '- SIEMPRE orienta hacia la retencion, la accion y el crecimiento del negocio\n'
+    + '- NUNCA sugieras dejar el negocio o tomarse un break largo\n'
+    + '- Edifica a los lideres del equipo y al sistema SKYTEAM\n'
+    + '- Incluye gratitud (Dios, familia, lideres, equipo, sistema)\n'
+    + '- Usa nombres REALES del equipo cuando tengas datos\n'
+    + '- Si preguntan sobre emociones/pareja/dinero, escucha con empatia pero SIEMPRE vuelve a la accion\n'
+    + '- Cuenta historias de exito de lideres famosos (Jim Rohn, Eric Worre, Tony Robbins, etc)\n'
+    + '- De vez en cuando menciona una de tus capacidades: "Por cierto, yo puedo [capacidad]"\n\n'
+    + 'TUS CAPACIDADES (menciona 1 cada 3-4 mensajes de forma natural):\n'
+    + '- Analizar la red completa con nombres y scores\n'
+    + '- Codigo BANK (perfilar personalidades de socios)\n'
+    + '- Preparar Zoom semanal con agenda\n'
+    + '- Planificar Home Meetings\n'
+    + '- Proyeccion de rango (que falta para subir)\n'
+    + '- Plan de accion semanal personalizado\n'
+    + '- Coach emocional (bloqueos, miedos, motivacion)\n'
+    + '- Frases de poder de grandes lideres\n'
+    + '- Reconocimientos y celebraciones para el equipo\n'
+    + '- Reporte de duplicacion\n'
+    + '- Scorecard del lider\n'
+    + '- Metas con seguimiento y presion\n'
+    + '- Desafios gamificados para el equipo\n\n'
+    + 'DATOS DEL EQUIPO:\n' + context + '\n\n'
+    + 'Responde de forma concisa (max 3-4 parrafos). Usa emojis moderadamente. NO uses markdown.';
+
+  // Call AI
+  if (typeof _skyFetch === 'function') {
+    _skyFetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        system: systemPrompt,
+        messages: messages
+      })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      var responseText = data.content && data.content[0] ? data.content[0].text : 'Disculpa, no pude procesar tu mensaje. Intenta de nuevo.';
+      stState.mentorChat.push({ role: 'mentor', text: responseText });
+      renderSkyTeam();
+      // Scroll to bottom after render
+      setTimeout(function() {
+        var area = document.getElementById('mentor-chat-area');
+        if (area) area.scrollTop = area.scrollHeight;
+      }, 100);
+    }).catch(function(err) {
+      stState.mentorChat.push({ role: 'mentor', text: 'Error de conexion. Verifica tu internet e intenta de nuevo. 🙏' });
+      renderSkyTeam();
+    });
+  }
+};
+
+window.mentorToggleVoice = function() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if(typeof showToast === 'function') showToast('Tu navegador no soporta voz','error');
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var btn = document.getElementById('mentor-mic-btn');
+
+  if (_mentorVoiceRec) {
+    _mentorVoiceRec.stop();
+    _mentorVoiceRec = null;
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; btn.innerHTML = '🎤'; }
+    return;
+  }
+
+  _mentorVoiceRec = new SR();
+  _mentorVoiceRec.lang = 'es-MX';
+  _mentorVoiceRec.continuous = true;
+  _mentorVoiceRec.interimResults = true;
+
+  if(btn) { btn.style.background = 'rgba(220,38,38,0.2)'; btn.style.borderColor = 'rgba(220,38,38,0.4)'; btn.innerHTML = '🔴'; }
+
+  _mentorVoiceRec.onresult = function(e) {
+    var transcript = '';
+    for(var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    var input = document.getElementById('mentor-chat-input');
+    if(input) input.value = transcript;
+  };
+
+  _mentorVoiceRec.onend = function() {
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; btn.innerHTML = '🎤'; }
+    // Auto-send what was recorded
+    var input = document.getElementById('mentor-chat-input');
+    if(input && input.value.trim()) mentorSendChat();
+    _mentorVoiceRec = null;
+  };
+
+  _mentorVoiceRec.start();
 };
 
 
