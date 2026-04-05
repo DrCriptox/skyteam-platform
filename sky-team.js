@@ -1038,34 +1038,54 @@ function renderSTMentor() {
     // Welcome message
     html += renderMentorMessage('¡Hola' + (CU ? ', ' + CU.name.split(' ')[0] : '') + '! 👋 Soy tu Mentor IA. Estoy aquí para ayudarte a crecer como líder y hacer crecer tu equipo.\n\n¿En qué puedo ayudarte hoy?');
 
-    // Suggestion chips
+    // Smart suggestion chips — adapt to user's context
+    var chips = [];
+    if (d && d.alerts) {
+      var urgentes = d.alerts.filter(function(a){return a.category==='urgente';});
+      if (urgentes.length > 0) chips.push('🔴 Tengo '+urgentes.length+' alertas urgentes');
+    }
+    if (d && d.members) {
+      var inactivos = d.members.filter(function(m){return m.status==='inactive';});
+      if (inactivos.length > 0) chips.push('¿Quién necesita que lo reactive?');
+      var sinOnb = d.members.filter(function(m){return m.onboarding_day<=1 && m.level===1;});
+      if (sinOnb.length > 0) chips.push('Hay socios sin avanzar en onboarding');
+    }
+    if (typeof crmProspectos !== 'undefined' && crmProspectos) {
+      var calientes = crmProspectos.filter(function(p){return (p.temperatura||0)>=70 && p.etapa!=='cerrado_ganado';});
+      if (calientes.length > 0) chips.push('🔥 Tengo '+calientes.length+' prospectos calientes');
+      var sinContacto = crmProspectos.filter(function(p){var d2=p.updated_at?Math.ceil((Date.now()-new Date(p.updated_at).getTime())/86400000):999;return d2>=5 && p.etapa!=='cerrado_ganado' && p.etapa!=='cerrado_perdido';});
+      if (sinContacto.length > 0) chips.push('Prospectos sin seguimiento');
+    }
+    if (typeof agendaBookings !== 'undefined' && agendaBookings) {
+      var hoy = agendaBookings.filter(function(b){if(!b.fecha_iso)return false;var h=(new Date(b.fecha_iso).getTime()-Date.now())/3600000;return h>0&&h<=24;});
+      if (hoy.length > 0) chips.push('📅 Tengo citas hoy');
+    }
+    // Always include emotional + general
+    chips.push('¿Cómo me siento hoy?');
+    chips.push('Dame un plan de accion para hoy');
+    // Limit to 5 most relevant
+    chips = chips.slice(0, 5);
+
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 12px 56px;">';
-    var chips = [
-      '¿Cómo está mi equipo?',
-      '¿Quién necesita ayuda?',
-      '¿Cómo me siento hoy?',
-      'Prepara mi Zoom semanal',
-      'Ayúdame con un cierre',
-      'Dame una frase motivacional'
-    ];
     chips.forEach(function(c) {
       html += '<button onclick="mentorSendChat(\''+c.replace(/'/g,"\\'")+'\')" style="padding:8px 14px;border-radius:20px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.20);color:#7F77DD;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(127,119,221,0.15)\'" onmouseout="this.style.background=\'rgba(127,119,221,0.08)\'">'+c+'</button>';
     });
     html += '</div>';
 
-    // Capability hint (rotates)
-    var hints = [
-      '💡 Puedo analizar tu equipo completo y decirte quién necesita apoyo.',
-      '💡 Puedo ayudarte a preparar tu reunión de Zoom semanal con agenda incluida.',
-      '💡 Conozco el Código BANK — puedo decirte cómo comunicarte con cada socio.',
-      '💡 Puedo darte un plan de acción semanal personalizado para tu negocio.',
-      '💡 Si te sientes bloqueado, cuéntame — tengo técnicas para ayudarte.',
-      '💡 Puedo calcular tu proyección de rango y decirte qué te falta.',
-      '💡 Puedo preparar mensajes de reconocimiento para celebrar a tu equipo.',
-      '💡 Puedo planificar tus Home Meetings y Eventos del mes.'
-    ];
-    var hintIdx = Math.floor(Date.now() / 3600000) % hints.length; // changes every hour
-    html += '<div style="margin-left:56px;padding:10px 14px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;font-size:11px;color:rgba(201,168,76,0.7);line-height:1.4;">' + hints[hintIdx] + '</div>';
+    // Contextual capability hint — based on what the user needs right now
+    var hint = '';
+    if (d && d.members) {
+      var totalM = d.members.length;
+      var activeM = d.members.filter(function(m){return m.status==='active';}).length;
+      var pctActive = totalM > 0 ? Math.round(activeM/totalM*100) : 0;
+      if (pctActive < 50) hint = '💡 Puedo ayudarte a identificar quién necesita una llamada urgente y qué decirle según su personalidad (Código BANK).';
+      else if (d.alerts && d.alerts.filter(function(a){return a.category==='urgente';}).length > 2) hint = '💡 Tienes alertas urgentes. Pregúntame y te digo exactamente a quién llamar primero y qué decirle.';
+      else if (totalM < 10) hint = '💡 Tu equipo está creciendo. Puedo ayudarte a crear un plan de acción semanal para duplicar tu red este mes.';
+      else hint = '💡 Cuéntame cómo te sientes hoy — puedo ayudarte con lo emocional, lo estratégico, o lo operativo. Estoy aquí para todo.';
+    } else {
+      hint = '💡 Soy tu mentor personal. Puedo analizar tu equipo, preparar tus eventos, ayudarte con cierres, y hasta trabajar contigo en lo emocional. Pregúntame lo que quieras.';
+    }
+    html += '<div style="margin-left:56px;padding:10px 14px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;font-size:11px;color:rgba(201,168,76,0.7);line-height:1.4;">' + hint + '</div>';
 
   } else {
     // Render conversation history
