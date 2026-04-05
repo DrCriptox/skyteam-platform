@@ -328,6 +328,47 @@ function generateTasks() {
         }
       }
     });
+
+    // Prospects without follow-up reminder
+    crmProspectos.forEach(function(p) {
+      if (p.etapa === 'cerrado_ganado' || p.etapa === 'cerrado_perdido') return;
+      var lastUpdate = p.updated_at ? Math.ceil((Date.now() - new Date(p.updated_at).getTime()) / 86400000) : 999;
+      if (lastUpdate >= 5 && (p.temperatura || 0) < 70) {
+        tasks.push({
+          priority: 2, type: 'cold_prospect',
+          icon: '\u2744\uFE0F', title: _safe(p.nombre || 'Prospecto') + ' se est\u00e1 enfriando',
+          desc: 'Lleva ' + lastUpdate + ' d\u00edas sin actividad. Temperatura: ' + (p.temperatura||0) + '%',
+          action: { type: 'whatsapp', phone: p.telefono, name: p.nombre },
+          prospectId: p.id
+        });
+      }
+    });
+
+    // Suggest new prospect sources (if less than 5 active prospects)
+    var activeProspects = crmProspectos.filter(function(p) { return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; });
+    if (activeProspects.length < 5) {
+      tasks.push({
+        priority: 3, type: 'need_prospects',
+        icon: '\uD83C\uDFAF', title: 'Necesitas m\u00e1s prospectos',
+        desc: 'Solo tienes ' + activeProspects.length + ' prospectos activos. Toca para ver ideas.',
+        action: { type: 'tool', tool: 'prospect_ideas' }
+      });
+    }
+
+    // Prospects in "nuevo" stage for more than 3 days (not contacted)
+    crmProspectos.forEach(function(p) {
+      if (p.etapa !== 'nuevo') return;
+      var daysSinceAdd = p.created_at ? Math.ceil((Date.now() - new Date(p.created_at).getTime()) / 86400000) : 0;
+      if (daysSinceAdd >= 3) {
+        tasks.push({
+          priority: 1, type: 'contact_new',
+          icon: '\uD83D\uDCDE', title: 'Contacta a ' + _safe(p.nombre || 'Prospecto'),
+          desc: 'Lleva ' + daysSinceAdd + ' d\u00edas como Nuevo sin contactar. \u00a1No lo dejes enfriar!',
+          action: { type: 'whatsapp', phone: p.telefono, name: p.nombre },
+          prospectId: p.id
+        });
+      }
+    });
   }
 
   // ── Section: Agenda — empty day ──
@@ -588,16 +629,32 @@ function renderCurrentTask() {
 // ═══════════════════════════════════════════════════════════════
 
 function renderTools() {
-  var tools = [
-    { id: 'simulador', icon: '\uD83C\uDFAF', name: 'Simulador' },
-    { id: 'script',    icon: '\uD83D\uDCAC', name: 'Script IA' },
-    { id: 'roleplay',  icon: '\uD83C\uDFAD', name: 'Roleplay' },
-    { id: 'plan',      icon: '\uD83D\uDCCB', name: 'Plan Semanal' },
-    { id: 'desafios',  icon: '\uD83C\uDFC6', name: 'Desaf\u00edos' },
-    { id: 'voz',       icon: '\uD83C\uDFA4', name: 'Voz' },
-    { id: 'seguimiento', icon: '\uD83D\uDCF1', name: 'Seguimiento' },
-    { id: 'estado',    icon: '\uD83D\uDCCA', name: 'Mi Estado' }
-  ];
+  var sec = coachState.section;
+  var tools;
+
+  if (sec === 'prospectos') {
+    tools = [
+      { id: 'crm_analyze',    icon: '\uD83D\uDD0D', name: 'Analizar CRM' },
+      { id: 'crm_voice_note', icon: '\uD83C\uDFA4', name: 'Nota por Voz' },
+      { id: 'crm_message',    icon: '\uD83D\uDCAC', name: 'Generar Mensaje' },
+      { id: 'prospect_ideas', icon: '\uD83D\uDCA1', name: 'Ideas Prospectos' },
+      { id: 'crm_reminder',   icon: '\u23F0',       name: 'Recordatorio' },
+      { id: 'crm_rating',     icon: '\u2B50',       name: 'Calificar' },
+      { id: 'script',         icon: '\uD83D\uDCDD', name: 'Script Cierre' },
+      { id: 'estado',         icon: '\uD83D\uDCCA', name: 'Mi CRM' }
+    ];
+  } else {
+    tools = [
+      { id: 'simulador', icon: '\uD83C\uDFAF', name: 'Simulador' },
+      { id: 'script',    icon: '\uD83D\uDCAC', name: 'Script IA' },
+      { id: 'roleplay',  icon: '\uD83C\uDFAD', name: 'Roleplay' },
+      { id: 'plan',      icon: '\uD83D\uDCCB', name: 'Plan Semanal' },
+      { id: 'desafios',  icon: '\uD83C\uDFC6', name: 'Desaf\u00edos' },
+      { id: 'voz',       icon: '\uD83C\uDFA4', name: 'Voz' },
+      { id: 'seguimiento', icon: '\uD83D\uDCF1', name: 'Seguimiento' },
+      { id: 'estado',    icon: '\uD83D\uDCCA', name: 'Mi Estado' }
+    ];
+  }
 
   var html = '<div style="margin-top:20px;">';
   html += '<div class="coach-tools-label">Herramientas</div>';
@@ -627,7 +684,13 @@ function renderToolView(toolId) {
     desafios: '\uD83C\uDFC6 Desaf\u00edos',
     voz: '\uD83C\uDFA4 Entrenamiento de Voz',
     seguimiento: '\uD83D\uDCF1 Seguimiento',
-    estado: '\uD83D\uDCCA Mi Estado'
+    estado: '\uD83D\uDCCA Mi Estado',
+    crm_analyze: '\uD83D\uDD0D An\u00e1lisis de CRM',
+    crm_voice_note: '\uD83C\uDFA4 Nota por Voz',
+    crm_message: '\uD83D\uDCAC Generar Mensaje',
+    prospect_ideas: '\uD83D\uDCA1 Ideas Prospectos',
+    crm_reminder: '\u23F0 Recordatorio',
+    crm_rating: '\u2B50 Calificar Prospecto'
   };
 
   var html = '<div class="coach-toolview">';
@@ -648,6 +711,24 @@ function renderToolView(toolId) {
       break;
     case 'estado':
       html += renderToolEstado();
+      break;
+    case 'crm_analyze':
+      html += renderToolCrmAnalyze();
+      break;
+    case 'crm_voice_note':
+      html += renderToolCrmVoiceNote();
+      break;
+    case 'crm_message':
+      html += renderToolCrmMessage();
+      break;
+    case 'prospect_ideas':
+      html += renderToolProspectIdeas();
+      break;
+    case 'crm_reminder':
+      html += renderToolCrmReminder();
+      break;
+    case 'crm_rating':
+      html += renderToolCrmRating();
       break;
     default:
       html += renderToolPlaceholder(toolId);
@@ -1309,6 +1390,331 @@ function initCoachIA() {
 
   console.log('[Coach IA] Initialized');
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+//  CRM TOOL RENDERS
+// ═══════════════════════════════════════════════════════════════
+
+function renderToolCrmAnalyze() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos : [];
+  var total = pros.length;
+  var sinNotas = pros.filter(function(p) { return !p.notas || p.notas.trim() === ''; }).length;
+  var sinCalif = pros.filter(function(p) { return !p.calif_positivo && !p.calif_emprendedor; }).length;
+  var frios = pros.filter(function(p) { var lu = p.updated_at ? Math.ceil((Date.now()-new Date(p.updated_at).getTime())/86400000) : 999; return lu > 7 && p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }).length;
+  var calientes = pros.filter(function(p) { return (p.temperatura||0) >= 70 && p.etapa !== 'cerrado_ganado'; }).length;
+  var porEtapa = {};
+  pros.forEach(function(p) { porEtapa[p.etapa] = (porEtapa[p.etapa]||0)+1; });
+
+  var html = '';
+  html += '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;">\uD83D\uDD0D An\u00e1lisis de tu CRM</div>';
+
+  // Stats grid
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;">';
+  html += '<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#fff;">'+total+'</div><div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Total</div></div>';
+  html += '<div style="background:rgba(220,38,38,0.08);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#E24B4A;">'+frios+'</div><div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Fr\u00edos (7d+)</div></div>';
+  html += '<div style="background:rgba(201,168,76,0.08);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#C9A84C;">'+calientes+'</div><div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Calientes</div></div>';
+  html += '<div style="background:rgba(127,119,221,0.08);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#7F77DD;">'+sinNotas+'</div><div style="font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Sin notas</div></div>';
+  html += '</div>';
+
+  // Recommendations
+  html += '<div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:8px;">RECOMENDACIONES</div>';
+  if (sinNotas > 0) html += '<div style="background:rgba(201,168,76,0.06);border-left:3px solid #C9A84C;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:6px;font-size:12px;color:rgba(255,255,255,0.7);">\uD83D\uDCDD <strong>'+sinNotas+' prospectos sin notas</strong> \u2014 Documenta cada interacci\u00f3n para no perder contexto.</div>';
+  if (sinCalif > 0) html += '<div style="background:rgba(127,119,221,0.06);border-left:3px solid #7F77DD;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:6px;font-size:12px;color:rgba(255,255,255,0.7);">\u2B50 <strong>'+sinCalif+' sin calificar</strong> \u2014 Eval\u00faa el potencial de cada prospecto.</div>';
+  if (frios > 0) html += '<div style="background:rgba(220,38,38,0.06);border-left:3px solid #E24B4A;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:6px;font-size:12px;color:rgba(255,255,255,0.7);">\u2744\uFE0F <strong>'+frios+' prospectos fr\u00edos</strong> \u2014 Contacta antes de que se pierdan.</div>';
+  if (calientes > 0) html += '<div style="background:rgba(29,158,117,0.06);border-left:3px solid #1D9E75;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:6px;font-size:12px;color:rgba(255,255,255,0.7);">\uD83D\uDD25 <strong>'+calientes+' prospectos calientes</strong> \u2014 \u00a1Ci\u00e9rralos esta semana!</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function renderToolCrmVoiceNote() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+
+  var html = '';
+  html += '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">\uD83C\uDFA4 Nota por Voz</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Selecciona un prospecto y dicta tu nota. Se guardar\u00e1 autom\u00e1ticamente.</div>';
+
+  // Prospect selector
+  html += '<select id="coach-voice-prospect" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:12px;">';
+  html += '<option value="">Selecciona prospecto...</option>';
+  pros.forEach(function(p) {
+    html += '<option value="'+p.id+'">' + _safe(p.nombre || 'Sin nombre') + ' \u2014 ' + (p.etapa||'nuevo') + '</option>';
+  });
+  html += '</select>';
+
+  // Voice button
+  html += '<div style="text-align:center;margin:20px 0;">';
+  html += '<button id="coach-voice-rec-btn" onclick="coachStartVoiceNote()" style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5);font-size:32px;cursor:pointer;transition:all 0.3s;">\uD83C\uDFA4</button>';
+  html += '<div id="coach-voice-status" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;">Toca para grabar</div>';
+  html += '</div>';
+
+  // Transcript preview
+  html += '<div id="coach-voice-transcript" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;margin-bottom:12px;">';
+  html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:4px;">TRANSCRIPCI\u00d3N</div>';
+  html += '<div id="coach-voice-text" style="font-size:13px;color:#F0EDE6;line-height:1.4;"></div>';
+  html += '</div>';
+
+  // Save button
+  html += '<button id="coach-voice-save" onclick="coachSaveVoiceNote()" style="display:none;width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar nota en la tarjeta</button>';
+
+  html += '</div>';
+  return html;
+}
+
+function renderToolCrmMessage() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+
+  var html = '';
+  html += '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">\uD83D\uDCAC Generar Mensaje</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Selecciona un prospecto y el tipo de mensaje. La IA lo genera personalizado.</div>';
+
+  // Prospect selector
+  html += '<select id="coach-msg-prospect" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;">';
+  html += '<option value="">Selecciona prospecto...</option>';
+  pros.forEach(function(p) {
+    html += '<option value="'+p.id+'">' + _safe(p.nombre || 'Sin nombre') + '</option>';
+  });
+  html += '</select>';
+
+  // Message type
+  html += '<select id="coach-msg-type" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:12px;">';
+  html += '<option value="primer_contacto">\uD83D\uDCF2 Primer contacto</option>';
+  html += '<option value="seguimiento">\uD83D\uDD04 Seguimiento</option>';
+  html += '<option value="invitacion_reunion">\uD83D\uDCC5 Invitar a reuni\u00f3n</option>';
+  html += '<option value="cierre">\uD83D\uDCB0 Mensaje de cierre</option>';
+  html += '<option value="reactivar">\uD83D\uDD25 Reactivar contacto fr\u00edo</option>';
+  html += '<option value="felicitar">\uD83C\uDF89 Felicitar/Motivar</option>';
+  html += '</select>';
+
+  html += '<button onclick="coachGenerateMessage()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83E\uDD16 Generar mensaje</button>';
+
+  html += '<div id="coach-msg-result" style="margin-top:16px;"></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderToolProspectIdeas() {
+  var html = '';
+  html += '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:12px;">\uD83D\uDCA1 Ideas para Nuevos Prospectos</div>';
+
+  var ideas = [
+    { icon: '\uD83D\uDC65', title: 'Lista de contactos', desc: 'Revisa tus contactos de WhatsApp. Personas emprendedoras, que buscan ingresos extra, o que ya est\u00e1n en otro negocio.' },
+    { icon: '\uD83D\uDCF1', title: 'Redes sociales', desc: 'Publica historias sobre tu estilo de vida y resultados. Usa el Agente de Contenido para crear posts virales.' },
+    { icon: '\uD83C\uDFCB\uFE0F', title: 'Gimnasio / Actividades', desc: 'Personas en el gym, clases de yoga, grupos deportivos \u2014 suelen ser personas con mentalidad de crecimiento.' },
+    { icon: '\uD83C\uDF93', title: 'Grupos de estudio', desc: 'Compa\u00f1eros de universidad, cursos online, talleres \u2014 personas que invierten en educaci\u00f3n.' },
+    { icon: '\uD83D\uDCBC', title: 'LinkedIn / Profesionales', desc: 'Conecta con profesionales que buscan ingresos adicionales o independencia financiera.' },
+    { icon: '\uD83D\uDED2', title: 'Negocios locales', desc: 'Due\u00f1os de tiendas, emprendedores locales \u2014 ya tienen mentalidad de negocio.' },
+    { icon: '\uD83C\uDF89', title: 'Eventos y reuniones', desc: 'Asiste a eventos de networking, ferias, conferencias \u2014 conoce personas nuevas cada semana.' },
+    { icon: '\uD83D\uDCF2', title: 'Referidos de clientes', desc: 'Pide a tus prospectos cerrados que te recomienden 3 personas. La mejor fuente de prospectos.' }
+  ];
+
+  ideas.forEach(function(idea) {
+    html += '<div style="display:flex;gap:12px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;margin-bottom:8px;">';
+    html += '<div style="font-size:24px;flex-shrink:0;">' + idea.icon + '</div>';
+    html += '<div><div style="font-size:13px;font-weight:700;color:#fff;">' + idea.title + '</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;line-height:1.4;">' + idea.desc + '</div></div>';
+    html += '</div>';
+  });
+
+  html += '<button onclick="openCoachTool(\'script\')" style="width:100%;padding:12px;margin-top:12px;border-radius:10px;background:rgba(201,168,76,0.10);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCAC Genera un script para abordar</button>';
+  html += '</div>';
+  return html;
+}
+
+function renderToolCrmReminder() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+
+  var html = '';
+  html += '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">\u23F0 Agregar Recordatorio</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Programa un seguimiento para un prospecto.</div>';
+
+  html += '<select id="coach-rem-prospect" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;">';
+  html += '<option value="">Selecciona prospecto...</option>';
+  pros.forEach(function(p) { html += '<option value="'+p.id+'">' + _safe(p.nombre||'Sin nombre') + '</option>'; });
+  html += '</select>';
+
+  html += '<input type="date" id="coach-rem-date" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;box-sizing:border-box;">';
+  html += '<input type="text" id="coach-rem-msg" placeholder="Mensaje del recordatorio..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:12px;box-sizing:border-box;">';
+
+  html += '<button onclick="coachSaveReminder()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar recordatorio</button>';
+  html += '</div>';
+  return html;
+}
+
+function renderToolCrmRating() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+
+  var html = '';
+  html += '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;">\u2B50 Calificar Prospecto</div>';
+
+  // Show prospects without rating
+  var sinCalif = pros.filter(function(p) { return !p.calif_positivo && !p.calif_emprendedor; });
+  if (sinCalif.length === 0) {
+    html += '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u2705 Todos tus prospectos est\u00e1n calificados</div>';
+  } else {
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:12px;">' + sinCalif.length + ' prospectos sin calificar</div>';
+    sinCalif.slice(0, 5).forEach(function(p) {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:6px;">';
+      html += '<div style="font-size:13px;font-weight:600;color:#fff;">' + _safe(p.nombre||'Sin nombre') + '</div>';
+      html += '<button onclick="if(typeof crmStartRatingWizard===\'function\')crmStartRatingWizard(\''+p.id+'\');closeCoach();" style="padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2B50 Calificar</button>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  CRM TOOL FUNCTIONS (Voice, Message, Reminder)
+// ═══════════════════════════════════════════════════════════════
+
+var _coachVoiceRec = null;
+var _coachVoiceTranscript = '';
+
+window.coachStartVoiceNote = function() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if(typeof showToast === 'function') showToast('Tu navegador no soporta reconocimiento de voz','error');
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (_coachVoiceRec) { _coachVoiceRec.stop(); _coachVoiceRec = null; return; }
+
+  _coachVoiceRec = new SR();
+  _coachVoiceRec.lang = 'es-MX';
+  _coachVoiceRec.continuous = true;
+  _coachVoiceRec.interimResults = true;
+
+  var btn = document.getElementById('coach-voice-rec-btn');
+  var status = document.getElementById('coach-voice-status');
+  if(btn) { btn.style.background = 'rgba(220,38,38,0.2)'; btn.style.borderColor = 'rgba(220,38,38,0.5)'; btn.innerHTML = '\uD83D\uDD34'; }
+  if(status) status.textContent = 'Escuchando...';
+
+  _coachVoiceRec.onresult = function(e) {
+    var transcript = '';
+    for(var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    _coachVoiceTranscript = transcript;
+    var textEl = document.getElementById('coach-voice-text');
+    var transEl = document.getElementById('coach-voice-transcript');
+    var saveEl = document.getElementById('coach-voice-save');
+    if(textEl) textEl.textContent = transcript;
+    if(transEl) transEl.style.display = 'block';
+    if(saveEl) saveEl.style.display = 'block';
+  };
+
+  _coachVoiceRec.onend = function() {
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.15)'; btn.innerHTML = '\uD83C\uDFA4'; }
+    if(status) status.textContent = 'Toca para grabar';
+    _coachVoiceRec = null;
+  };
+
+  _coachVoiceRec.start();
+};
+
+window.coachSaveVoiceNote = function() {
+  var select = document.getElementById('coach-voice-prospect');
+  if (!select || !select.value) { if(typeof showToast === 'function') showToast('Selecciona un prospecto primero','error'); return; }
+  if (!_coachVoiceTranscript) { if(typeof showToast === 'function') showToast('Graba una nota primero','error'); return; }
+
+  var prospectId = select.value;
+  var note = _coachVoiceTranscript;
+  var dateStr = new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var fullNote = '[\uD83C\uDFA4 ' + dateStr + '] ' + note;
+
+  // Find prospect and update notes
+  if (typeof crmProspectos !== 'undefined') {
+    var p = crmProspectos.find(function(pr) { return pr.id == prospectId; });
+    if (p) {
+      var existingNotes = p.notas || '';
+      var newNotes = existingNotes ? existingNotes + '\n' + fullNote : fullNote;
+
+      // Save via CRM API
+      if (typeof crmApi === 'function') {
+        crmApi('update', { id: prospectId, updates: { notas: newNotes } }).then(function(r) {
+          if (r && r.ok) {
+            p.notas = newNotes;
+            if(typeof showToast === 'function') showToast('\u2705 Nota guardada en ' + (p.nombre || 'prospecto'));
+            _coachVoiceTranscript = '';
+            var textEl = document.getElementById('coach-voice-text');
+            var saveEl = document.getElementById('coach-voice-save');
+            if(textEl) textEl.textContent = '';
+            if(saveEl) saveEl.style.display = 'none';
+          } else {
+            if(typeof showToast === 'function') showToast('Error guardando nota','error');
+          }
+        });
+      }
+    }
+  }
+};
+
+window.coachGenerateMessage = function() {
+  var prospectSelect = document.getElementById('coach-msg-prospect');
+  var typeSelect = document.getElementById('coach-msg-type');
+  var resultDiv = document.getElementById('coach-msg-result');
+  if (!prospectSelect || !prospectSelect.value || !resultDiv) return;
+
+  var prospect = null;
+  if (typeof crmProspectos !== 'undefined') {
+    prospect = crmProspectos.find(function(p) { return p.id == prospectSelect.value; });
+  }
+  if (!prospect) return;
+
+  resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\uD83E\uDD16 Generando mensaje...</div>';
+
+  var msgType = typeSelect ? typeSelect.value : 'seguimiento';
+  var context = 'Prospecto: ' + (prospect.nombre||'') + '. Etapa: ' + (prospect.etapa||'nuevo') + '. Temperatura: ' + (prospect.temperatura||50) + '%. Notas: ' + (prospect.notas||'Sin notas') + '. Tipo de mensaje: ' + msgType;
+
+  var systemPrompt = 'Eres un experto en ventas y network marketing. Genera UN mensaje corto para WhatsApp (m\u00e1ximo 3 oraciones) personalizado para este prospecto. El mensaje debe ser natural, amigable, sin parecer robot. NO uses emojis excesivos (m\u00e1ximo 1-2). Responde SOLO con el mensaje, sin explicaci\u00f3n.';
+
+  if (typeof _skyFetch === 'function') {
+    _skyFetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: context }]
+      })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      var text = d.content && d.content[0] ? d.content[0].text : 'No se pudo generar el mensaje.';
+      resultDiv.innerHTML = '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;">'
+        + '<div id="coach-msg-text" style="font-size:13px;color:#F0EDE6;line-height:1.5;margin-bottom:12px;">' + _safe(text) + '</div>'
+        + '<div style="display:flex;gap:8px;">'
+        + '<button onclick="var t=document.getElementById(\'coach-msg-text\');if(t)navigator.clipboard.writeText(t.textContent);if(typeof showToast===\'function\')showToast(\'Mensaje copiado \u2713\')" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCCB Copiar</button>'
+        + '<button onclick="window.open(\'https://wa.me/' + ((prospect.telefono||'').replace(/[^0-9]/g,'')) + '?text='+encodeURIComponent(text)+'\',\'_blank\')" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCF1 Enviar WA</button>'
+        + '</div></div>';
+    }).catch(function() {
+      resultDiv.innerHTML = '<div style="color:#E24B4A;font-size:12px;">Error generando mensaje. Intenta de nuevo.</div>';
+    });
+  }
+};
+
+window.coachSaveReminder = function() {
+  var prospectId = document.getElementById('coach-rem-prospect');
+  var date = document.getElementById('coach-rem-date');
+  var msg = document.getElementById('coach-rem-msg');
+  if (!prospectId || !prospectId.value || !date || !date.value) { if(typeof showToast==='function') showToast('Completa los campos','error'); return; }
+
+  if (typeof crmApi === 'function') {
+    crmApi('addReminder', { prospecto_id: prospectId.value, fecha_recordatorio: date.value, mensaje: msg ? msg.value : 'Seguimiento' }).then(function(r) {
+      if (r && r.ok) {
+        if(typeof showToast==='function') showToast('\u23F0 Recordatorio programado \u2713');
+        openCoachTool(null); // Back to main
+      } else {
+        if(typeof showToast==='function') showToast('Error guardando','error');
+      }
+    });
+  }
+};
 
 
 // ═══════════════════════════════════════════════════════════════
