@@ -1505,7 +1505,7 @@ window.mentorSendChat = function(presetText) {
   if (!text) return;
 
   // Stop voice if recording
-  if (_mentorVoiceRec) { _mentorVoiceRec.stop(); _mentorVoiceRec = null; }
+  if (_mentorVoiceRec) { var r = _mentorVoiceRec; _mentorVoiceRec = null; r.stop(); var mb = document.getElementById('mentor-mic-btn'); if(mb){mb.style.background='rgba(255,255,255,0.06)';mb.style.borderColor='rgba(255,255,255,0.10)';mb.innerHTML='🎤';} }
 
   // Initialize chat array if needed
   if (!stState.mentorChat) stState.mentorChat = [];
@@ -1666,9 +1666,13 @@ window.mentorToggleVoice = function() {
   var btn = document.getElementById('mentor-mic-btn');
 
   if (_mentorVoiceRec) {
-    _mentorVoiceRec.stop();
+    var rec = _mentorVoiceRec;
     _mentorVoiceRec = null;
+    rec.stop();
     if(btn) { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; btn.innerHTML = '🎤'; }
+    // Auto-send on stop
+    var input = document.getElementById('mentor-chat-input');
+    if(input && input.value.trim()) mentorSendChat();
     return;
   }
 

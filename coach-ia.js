@@ -1005,6 +1005,12 @@ function renderChat() {
 }
 
 function sendCoachMsgFromInput() {
+  // Stop recording if active
+  if (coachState.recording && coachState.recognition) {
+    coachState.recording = false;
+    coachState.recognition.stop();
+    updateMicButton();
+  }
   var input = document.getElementById('coach-input');
   if (!input) return;
   var text = input.value.trim();
@@ -1257,9 +1263,12 @@ function toggleVoice() {
   }
 
   if (coachState.recording && coachState.recognition) {
-    coachState.recognition.stop();
     coachState.recording = false;
+    coachState.recognition.stop();
     updateMicButton();
+    // Auto-send on stop
+    var input = document.getElementById('coach-input');
+    if (input && input.value.trim()) sendCoachMessage(input.value.trim());
     return;
   }
 
