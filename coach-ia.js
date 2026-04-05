@@ -634,14 +634,18 @@ function renderTools() {
 
   if (sec === 'prospectos') {
     tools = [
-      { id: 'crm_analyze',    icon: '\uD83D\uDD0D', name: 'Analizar CRM' },
-      { id: 'crm_voice_note', icon: '\uD83C\uDFA4', name: 'Nota por Voz' },
-      { id: 'crm_message',    icon: '\uD83D\uDCAC', name: 'Generar Mensaje' },
-      { id: 'prospect_ideas', icon: '\uD83D\uDCA1', name: 'Ideas Prospectos' },
-      { id: 'crm_reminder',   icon: '\u23F0',       name: 'Recordatorio' },
-      { id: 'crm_rating',     icon: '\u2B50',       name: 'Calificar' },
-      { id: 'script',         icon: '\uD83D\uDCDD', name: 'Script Cierre' },
-      { id: 'estado',         icon: '\uD83D\uDCCA', name: 'Mi CRM' }
+      { id: 'crm_analyze', icon: '🔍', name: 'Analizar' },
+      { id: 'crm_voice_note', icon: '🎤', name: 'Voz→Nota' },
+      { id: 'crm_message', icon: '💬', name: 'Mensaje IA' },
+      { id: 'prospect_ideas', icon: '💡', name: 'Ideas' },
+      { id: 'crm_reminder', icon: '⏰', name: 'Recordar' },
+      { id: 'crm_rating', icon: '⭐', name: 'Calificar' },
+      { id: 'crm_agendar', icon: '📅', name: 'Agendar' },
+      { id: 'crm_pipeline', icon: '📊', name: 'Pipeline' },
+      { id: 'crm_mover', icon: '🔄', name: 'Mover Etapa' },
+      { id: 'crm_checklist', icon: '📋', name: 'Checklist' },
+      { id: 'crm_prediccion', icon: '🎯', name: 'Predicción' },
+      { id: 'crm_autoseg', icon: '🔔', name: 'Auto-Seguim.' }
     ];
   } else {
     tools = [
@@ -690,7 +694,13 @@ function renderToolView(toolId) {
     crm_message: '\uD83D\uDCAC Generar Mensaje',
     prospect_ideas: '\uD83D\uDCA1 Ideas Prospectos',
     crm_reminder: '\u23F0 Recordatorio',
-    crm_rating: '\u2B50 Calificar Prospecto'
+    crm_rating: '\u2B50 Calificar Prospecto',
+    crm_agendar: '📅 Agendar Cierre',
+    crm_pipeline: '📊 Pipeline',
+    crm_mover: '🔄 Mover Etapa',
+    crm_checklist: '📋 Checklist de Cierre',
+    crm_prediccion: '🎯 Predicción',
+    crm_autoseg: '🔔 Auto-Seguimiento'
   };
 
   var html = '<div class="coach-toolview">';
@@ -729,6 +739,24 @@ function renderToolView(toolId) {
       break;
     case 'crm_rating':
       html += renderToolCrmRating();
+      break;
+    case 'crm_agendar':
+      html += renderToolCrmAgendar();
+      break;
+    case 'crm_pipeline':
+      html += renderToolCrmPipeline();
+      break;
+    case 'crm_mover':
+      html += renderToolCrmMover();
+      break;
+    case 'crm_checklist':
+      html += renderToolCrmChecklist();
+      break;
+    case 'crm_prediccion':
+      html += renderToolCrmPrediccion();
+      break;
+    case 'crm_autoseg':
+      html += renderToolCrmAutoseg();
       break;
     default:
       html += renderToolPlaceholder(toolId);
@@ -1572,6 +1600,245 @@ function renderToolCrmRating() {
 }
 
 
+// ── Tool: Agendar Cierre ─────────────────────────────────────
+
+function renderToolCrmAgendar() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+  var agendaLink = CU ? (window.location.origin + '?agenda=' + (CU.ref || CU.username)) : '';
+  var sponsorName = CU && CU.sponsor ? CU.sponsor : null;
+  var isFirstTimer = pros.filter(function(p){ return p.etapa === 'cerrado_ganado'; }).length === 0;
+
+  var html = '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">📅 Agendar Cierre</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Envía tu agenda al prospecto para que reserve.</div>';
+
+  // First timer warning
+  if (isFirstTimer && sponsorName) {
+    html += '<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.20);border-radius:12px;padding:14px;margin-bottom:16px;">';
+    html += '<div style="font-size:13px;font-weight:700;color:#C9A84C;margin-bottom:4px;">💡 Es tu primer cierre</div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.4;">Apóyate con tu patrocinador <strong style="color:#fff;">' + _safe(sponsorName) + '</strong>. Invítalo a la reunión para que te guíe en tu primer cierre.</div>';
+    if (typeof USERS !== 'undefined' && USERS[sponsorName.toLowerCase()]) {
+      var sp = USERS[sponsorName.toLowerCase()];
+      var spWa = (sp.whatsapp || sp.wa || '').replace(/[^0-9]/g, '');
+      if (spWa) html += '<button onclick="window.open(\'https://wa.me/' + spWa + '?text=' + encodeURIComponent('Hola! Tengo mi primer cierre agendado. ¿Puedes apoyarme en la reunión?') + '\',\'_blank\')" style="margin-top:8px;padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📱 Contactar a ' + _safe(sponsorName) + '</button>';
+    }
+    html += '</div>';
+  }
+
+  // Prospect selector
+  html += '<select id="coach-agendar-prospect" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:12px;">';
+  html += '<option value="">Selecciona prospecto...</option>';
+  pros.forEach(function(p) { html += '<option value="'+p.id+'" data-phone="'+(p.telefono||'')+'" data-name="'+(p.nombre||'')+'">' + _safe(p.nombre || 'Sin nombre') + '</option>'; });
+  html += '</select>';
+
+  // Agenda link card
+  html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;margin-bottom:12px;">';
+  html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Tu link de agenda</div>';
+  html += '<div style="font-size:12px;color:#C9A84C;word-break:break-all;font-family:monospace;">' + agendaLink + '</div>';
+  html += '</div>';
+
+  // Generate message + send
+  html += '<button onclick="coachSendAgenda()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">📱 Enviar agenda por WhatsApp</button>';
+
+  html += '</div>';
+  return html;
+}
+
+
+// ── Tool: Pipeline de Ventas ─────────────────────────────────
+
+function renderToolCrmPipeline() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos : [];
+  var etapas = ['nuevo','contactado','interesado','presentacion','seguimiento','cerrado_ganado','cerrado_perdido'];
+  var labels = {nuevo:'Nuevo',contactado:'Contactado',interesado:'Interesado',presentacion:'Presentación',seguimiento:'Seguimiento',cerrado_ganado:'Ganado ✅',cerrado_perdido:'Perdido ❌'};
+  var colors = {nuevo:'#C9A84C',contactado:'#7F77DD',interesado:'#E8D48B',presentacion:'#1D9E75',seguimiento:'#FFD700',cerrado_ganado:'#25D366',cerrado_perdido:'#E24B4A'};
+
+  var counts = {};
+  var totalValor = 0;
+  etapas.forEach(function(e) { counts[e] = 0; });
+  pros.forEach(function(p) { counts[p.etapa] = (counts[p.etapa]||0)+1; totalValor += (p.valor_estimado||0); });
+
+  var maxCount = Math.max.apply(null, etapas.map(function(e){return counts[e];})) || 1;
+  var ganados = counts['cerrado_ganado'] || 0;
+  var total = pros.length || 1;
+  var tasa = Math.round(ganados / total * 100);
+
+  var html = '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;">📊 Pipeline de Ventas</div>';
+
+  // Summary stats
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">';
+  html += '<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:800;color:#fff;">'+pros.length+'</div><div style="font-size:8px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Total</div></div>';
+  html += '<div style="background:rgba(29,158,117,0.08);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:800;color:#1D9E75;">'+tasa+'%</div><div style="font-size:8px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Conversión</div></div>';
+  html += '<div style="background:rgba(201,168,76,0.08);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:800;color:#C9A84C;">$'+totalValor.toLocaleString()+'</div><div style="font-size:8px;color:rgba(255,255,255,0.4);text-transform:uppercase;">Pipeline</div></div>';
+  html += '</div>';
+
+  // Funnel bars
+  etapas.forEach(function(e) {
+    var pct = Math.max(5, counts[e] / maxCount * 100);
+    html += '<div style="margin-bottom:6px;">';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span style="font-size:11px;color:rgba(255,255,255,0.6);">'+(labels[e]||e)+'</span><span style="font-size:11px;font-weight:700;color:#fff;">'+counts[e]+'</span></div>';
+    html += '<div style="height:8px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;">';
+    html += '<div style="height:100%;width:'+pct+'%;background:'+(colors[e]||'#C9A84C')+';border-radius:4px;transition:width 0.5s;"></div>';
+    html += '</div></div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+
+// ── Tool: Mover Etapa ────────────────────────────────────────
+
+function renderToolCrmMover() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+  var etapas = [
+    {id:'nuevo',label:'📋 Nuevo'}, {id:'contactado',label:'📞 Contactado'},
+    {id:'interesado',label:'🔥 Interesado'}, {id:'presentacion',label:'📊 Presentación'},
+    {id:'seguimiento',label:'🔄 Seguimiento'}, {id:'cerrado_ganado',label:'✅ Ganado'},
+    {id:'cerrado_perdido',label:'❌ Perdido'}
+  ];
+
+  var html = '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;">🔄 Mover Etapa</div>';
+
+  html += '<select id="coach-mover-prospect" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;">';
+  html += '<option value="">Selecciona prospecto...</option>';
+  pros.forEach(function(p) { html += '<option value="'+p.id+'" data-etapa="'+(p.etapa||'nuevo')+'">' + _safe(p.nombre||'Sin nombre') + ' — ' + (p.etapa||'nuevo') + '</option>'; });
+  html += '</select>';
+
+  html += '<select id="coach-mover-etapa" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:12px;">';
+  etapas.forEach(function(e) { html += '<option value="'+e.id+'">'+e.label+'</option>'; });
+  html += '</select>';
+
+  html += '<button onclick="coachMoverEtapa()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">🔄 Mover</button>';
+  html += '</div>';
+  return html;
+}
+
+
+// ── Tool: Checklist de Cierre ────────────────────────────────
+
+function renderToolCrmChecklist() {
+  var checks = [
+    { id: 'link', text: '🔗 Tengo mi link de agenda listo', done: !!(CU && CU.ref) },
+    { id: 'script', text: '📝 Preparé mi script de cierre', done: false },
+    { id: 'sponsor', text: '🤝 Invité a mi patrocinador (si es mi primer cierre)', done: false },
+    { id: 'zoom', text: '📹 Tengo Zoom listo y probado', done: false },
+    { id: 'info', text: '📋 Revisé la info del prospecto', done: false },
+    { id: 'price', text: '💰 Tengo claros los precios y planes', done: false },
+    { id: 'objections', text: '🛡️ Preparé respuestas a objeciones comunes', done: false },
+    { id: 'followup', text: '📅 Tengo plan de seguimiento post-reunión', done: false }
+  ];
+
+  var saved = JSON.parse(localStorage.getItem('coach_checklist') || '{}');
+
+  var html = '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">📋 Checklist de Cierre</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Prepárate antes de cada reunión de cierre.</div>';
+
+  checks.forEach(function(c) {
+    var isDone = saved[c.id] || c.done;
+    html += '<div onclick="coachToggleCheck(\''+c.id+'\')" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:all 0.2s;">';
+    html += '<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(isDone?'#1D9E75':'rgba(255,255,255,0.15)')+';background:'+(isDone?'rgba(29,158,117,0.2)':'transparent')+';display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">'+(isDone?'✓':'')+'</div>';
+    html += '<span style="font-size:13px;color:'+(isDone?'rgba(255,255,255,0.4)':'#F0EDE6')+';'+(isDone?'text-decoration:line-through;':'')+'">'+c.text+'</span>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+
+// ── Tool: Predicción de Cierre ───────────────────────────────
+
+function renderToolCrmPrediccion() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+
+  var html = '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;">🎯 Predicción de Cierre</div>';
+
+  if (pros.length === 0) {
+    html += '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">No hay prospectos activos</div>';
+  } else {
+    // Calculate probability for each prospect
+    pros.forEach(function(p) {
+      var prob = 0;
+      // Temperature contributes 40%
+      prob += (p.temperatura || 0) * 0.4;
+      // Stage contributes 30%
+      var stageScore = {nuevo:10,contactado:25,interesado:50,presentacion:70,seguimiento:85};
+      prob += (stageScore[p.etapa] || 0) * 0.3;
+      // Rating contributes 20%
+      var rating = ((p.calif_positivo||0) + (p.calif_emprendedor||0) + (p.calif_dinero||0) + (p.calif_lider||0)) / 4;
+      prob += rating * 100 * 0.2;
+      // Recency contributes 10%
+      var daysSince = p.updated_at ? Math.ceil((Date.now() - new Date(p.updated_at).getTime()) / 86400000) : 30;
+      prob += Math.max(0, (10 - daysSince)) * 1;
+
+      prob = Math.min(99, Math.max(1, Math.round(prob)));
+      p._prob = prob;
+    });
+
+    // Sort by probability desc
+    pros.sort(function(a,b) { return (b._prob||0) - (a._prob||0); });
+
+    pros.slice(0, 8).forEach(function(p) {
+      var color = p._prob >= 70 ? '#1D9E75' : p._prob >= 40 ? '#C9A84C' : '#E24B4A';
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;margin-bottom:6px;">';
+      html += '<div style="width:44px;height:44px;border-radius:50%;border:3px solid '+color+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:'+color+';flex-shrink:0;">'+p._prob+'%</div>';
+      html += '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_safe(p.nombre||'Sin nombre')+'</div>';
+      html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">'+(p.etapa||'nuevo')+' · temp '+(p.temperatura||0)+'%</div></div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+  return html;
+}
+
+
+// ── Tool: Auto-Seguimiento ───────────────────────────────────
+
+function renderToolCrmAutoseg() {
+  var pros = typeof crmProspectos !== 'undefined' ? crmProspectos.filter(function(p){
+    if (p.etapa === 'cerrado_ganado' || p.etapa === 'cerrado_perdido') return false;
+    var days = p.updated_at ? Math.ceil((Date.now() - new Date(p.updated_at).getTime()) / 86400000) : 999;
+    return days >= 3;
+  }) : [];
+
+  pros.sort(function(a,b) {
+    var da = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+    var db = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+    return da - db; // oldest first
+  });
+
+  var html = '<div style="padding:16px;">';
+  html += '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">🔔 Auto-Seguimiento</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Prospectos que necesitan contacto. Toca para generar mensaje.</div>';
+
+  if (pros.length === 0) {
+    html += '<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);"><div style="font-size:32px;margin-bottom:8px;">✅</div>Todos al día — ningún prospecto sin seguimiento.</div>';
+  } else {
+    pros.slice(0, 10).forEach(function(p) {
+      var days = p.updated_at ? Math.ceil((Date.now() - new Date(p.updated_at).getTime()) / 86400000) : '?';
+      var urgency = days >= 7 ? '#E24B4A' : '#C9A84C';
+      var phone = (p.telefono || '').replace(/[^0-9]/g, '');
+
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.02);border-left:3px solid '+urgency+';border-radius:0 10px 10px 0;margin-bottom:6px;">';
+      html += '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;">'+_safe(p.nombre||'Sin nombre')+'</div>';
+      html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">'+days+' días sin contacto · '+(p.etapa||'nuevo')+'</div></div>';
+      html += '<button onclick="document.getElementById(\'coach-msg-prospect\').value=\''+p.id+'\';openCoachTool(\'crm_message\')" style="padding:6px 10px;border-radius:8px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">💬 Mensaje</button>';
+      if (phone) html += '<button onclick="window.open(\'https://wa.me/'+phone+'\',\'_blank\')" style="padding:6px 10px;border-radius:8px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);color:#25D366;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📱</button>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+  return html;
+}
+
+
 // ═══════════════════════════════════════════════════════════════
 //  CRM TOOL FUNCTIONS (Voice, Message, Reminder)
 // ═══════════════════════════════════════════════════════════════
@@ -1714,6 +1981,47 @@ window.coachSaveReminder = function() {
       }
     });
   }
+};
+
+
+// ── Agendar: Send agenda via WhatsApp ────────────────────────
+
+window.coachSendAgenda = function() {
+  var select = document.getElementById('coach-agendar-prospect');
+  if (!select || !select.value) { if(typeof showToast==='function') showToast('Selecciona un prospecto','error'); return; }
+  var option = select.options[select.selectedIndex];
+  var phone = (option.getAttribute('data-phone') || '').replace(/[^0-9]/g, '');
+  var name = option.getAttribute('data-name') || 'amigo';
+  var agendaLink = CU ? (window.location.origin + '?agenda=' + (CU.ref || CU.username)) : '';
+  var msg = 'Hola ' + name + '! 👋 Te comparto mi agenda para que reserves un espacio para nuestra reunión: ' + agendaLink + ' Escoge el horario que mejor te funcione. ¡Te espero! 💪';
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+};
+
+
+// ── Mover Etapa: Update prospect stage ───────────────────────
+
+window.coachMoverEtapa = function() {
+  var pSel = document.getElementById('coach-mover-prospect');
+  var eSel = document.getElementById('coach-mover-etapa');
+  if (!pSel || !pSel.value || !eSel) return;
+  if (typeof crmApi === 'function') {
+    crmApi('update', { id: pSel.value, updates: { etapa: eSel.value } }).then(function(r) {
+      if (r && r.ok) {
+        if(typeof showToast==='function') showToast('✅ Prospecto movido a ' + eSel.value);
+        if(typeof crmLoadData==='function') crmLoadData();
+      }
+    });
+  }
+};
+
+
+// ── Checklist: Toggle item ───────────────────────────────────
+
+window.coachToggleCheck = function(id) {
+  var saved = JSON.parse(localStorage.getItem('coach_checklist') || '{}');
+  saved[id] = !saved[id];
+  localStorage.setItem('coach_checklist', JSON.stringify(saved));
+  openCoachTool('crm_checklist');
 };
 
 
