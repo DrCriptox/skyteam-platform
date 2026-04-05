@@ -3490,12 +3490,18 @@ function showApp() {
     ['Notifs', typeof startNotifEngine==='function' ? startNotifEngine : null],
     ['SkyTV', typeof initSkyTv==='function' ? initSkyTv : null],
     ['Config', typeof applyPlatformConfig==='function' ? applyPlatformConfig : null],
-    ['SkyTeam', typeof initSkyTeam==='function' ? initSkyTeam : null],
-    ['CoachIA', typeof initCoachIA==='function' ? initCoachIA : null]
+    ['SkyTeam', typeof initSkyTeam==='function' ? initSkyTeam : null]
   ];
   initTasks.forEach(function(task) {
     if(task[1]) { try { task[1](); } catch(e) { console.error('[SKY] ' + task[0] + ' init failed:', e); } }
   });
+
+  // Coach IA: init with delay to ensure DOM and CU are fully ready
+  setTimeout(function() {
+    if (typeof initCoachIA === 'function') {
+      try { initCoachIA(); } catch(e) { console.error('[SKY] CoachIA delayed init failed:', e); }
+    }
+  }, 1500);
 
   // Renewal warning: grace period banner + notifications
   if(CU && CU.expiry && Number(CU.expiry) > 0) {
