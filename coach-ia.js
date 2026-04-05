@@ -1041,26 +1041,32 @@ function sendCoachMessage(text) {
     + contextInfo
     + 'Responde en espa\u00f1ol. M\u00e1ximo 3-4 oraciones.';
 
-  // Build messages array
-  var messages = [{ role: 'system', content: systemPrompt }];
+  // Build messages array (Anthropic format — system separate, messages user/assistant only)
+  var apiMessages = [];
   var historySlice = coachState.chatHistory.slice(-10);
   historySlice.forEach(function(m) {
-    messages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text });
+    apiMessages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text });
   });
 
-  // Call API
-  fetch('/api/chat', {
+  // Call API (Anthropic format)
+  var fetchFn = typeof _skyFetch === 'function' ? _skyFetch : fetch;
+  fetchFn('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: messages })
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      system: systemPrompt,
+      messages: apiMessages
+    })
   })
   .then(function(res) { return res.json(); })
   .then(function(data) {
-    var reply = 'Lo siento, no pude procesar tu mensaje.';
-    if (data && data.reply) {
+    var reply = 'Lo siento, no pude procesar tu mensaje. Verifica tu conexión.';
+    if (data && data.content && data.content[0] && data.content[0].text) {
+      reply = data.content[0].text;
+    } else if (data && data.reply) {
       reply = data.reply;
-    } else if (data && data.choices && data.choices[0]) {
-      reply = data.choices[0].message ? data.choices[0].message.content : (data.choices[0].text || reply);
     }
     coachState.chatHistory.push({ role: 'assistant', text: reply });
     coachState.chatLoading = false;
