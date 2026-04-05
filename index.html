@@ -5542,7 +5542,7 @@ function renderNotifList(notifs) {
 
     var waNum = n.booking ? (n.booking.whatsapp||'').replace(/[^0-9]/g,'') : '';
 
-    html += '<div class="' + cardClass + '" id="ncard_' + n.id + '" style="position:relative;transition:transform 0.25s,opacity 0.25s;" ontouchstart="_nSwipeStart(event,this)" ontouchmove="_nSwipeMove(event,this)" ontouchend="_nSwipeEnd(event,this,\'' + n.id + '\'')">';
+    html += '<div class="' + cardClass + '" id="ncard_' + n.id + '" style="position:relative;transition:transform 0.25s,opacity 0.25s;" ontouchstart="_nSwipeStart(event,this)" ontouchmove="_nSwipeMove(event,this)" ontouchend="_nSwipeEnd(event,this,\'' + n.id + '\')">';
     html += '<button onclick="dismissNotif(\'' + n.id + '\')" title="Descartar" style="position:absolute;top:8px;right:8px;background:none;border:none;color:rgba(255,255,255,0.2);font-size:14px;cursor:pointer;padding:2px 5px;line-height:1;z-index:2;">✕</button>';
     html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
     html += '<span style="font-size:24px;">' + n.icon + '</span>';
