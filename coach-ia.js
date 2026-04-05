@@ -782,14 +782,15 @@ function renderToolSimulador() {
   }
 
   var ranks = [
-    { name: 'Asociado', level: 0, ventas: 0, equipo: 0 },
-    { name: 'Ejecutivo', level: 1, ventas: 3, equipo: 2 },
-    { name: 'Bronce', level: 2, ventas: 6, equipo: 5 },
-    { name: 'Plata', level: 3, ventas: 10, equipo: 10 },
-    { name: 'Oro', level: 4, ventas: 20, equipo: 20 },
-    { name: 'Platino', level: 5, ventas: 40, equipo: 40 },
-    { name: 'Diamante', level: 6, ventas: 80, equipo: 80 },
-    { name: 'Corona', level: 7, ventas: 150, equipo: 150 }
+    { name: 'Cliente', level: 0, ventas: 0, equipo: 0 },
+    { name: 'INN 200', level: 1, ventas: 2, equipo: 1 },
+    { name: 'INN 500', level: 2, ventas: 5, equipo: 3 },
+    { name: 'NOVA 1500', level: 3, ventas: 10, equipo: 8 },
+    { name: 'NOVA 5K', level: 4, ventas: 20, equipo: 15 },
+    { name: 'NOVA 10K', level: 5, ventas: 40, equipo: 30 },
+    { name: 'NOVA DIAMOND', level: 6, ventas: 80, equipo: 60 },
+    { name: 'NOVA 50K', level: 7, ventas: 150, equipo: 100 },
+    { name: 'NOVA 100K', level: 8, ventas: 300, equipo: 200 }
   ];
 
   // Find current and next rank

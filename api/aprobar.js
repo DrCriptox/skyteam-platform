@@ -11,19 +11,21 @@ function hashPassword(plain) {
   return salt + ':' + hash;
 }
 
-// Map Innova "Clasificación Actual" text → platform rank number (0–7)
+// Map Innova "Clasificación Actual" text → platform rank number (0–8)
+// 0=Cliente, 1=INN200, 2=INN500, 3=NOVA1500, 4=NOVA5K, 5=NOVA10K, 6=NOVA DIAMOND(25K), 7=NOVA50K, 8=NOVA100K
 function mapInnovaRank(classification) {
   if (!classification) return 0;
   const c = classification.toUpperCase().trim();
-  if (c.includes('50K'))                                     return 7; // NOVA DIAMOND 50K → DIAMANTE 50K
-  if (c.includes('DIAMOND') || c.includes('DIAMANTE'))      return 6; // NOVA DIAMOND → DIAMANTE 20K
-  if (c.includes('10K') || c.includes('PLATINUM') || c.includes('PLATINO')) return 5;
-  if (c.includes('5K')  || c.includes('GOLD') || c.includes('ORO'))         return 4;
-  if (c.includes('1500') || c.includes('SILVER') || c.includes('PLATA'))    return 3;
-  if (c === 'NOVA')      return 3; // "NOVA" solo en la foto = NOVA 1500
-  if (c.includes('500')) return 2; // INN 500
+  if (c.includes('100K'))                                    return 8; // NOVA 100K
+  if (c.includes('50K'))                                     return 7; // NOVA 50K
+  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('25K')) return 6; // NOVA DIAMOND (25K)
+  if (c.includes('10K'))                                     return 5; // NOVA 10K
+  if (c.includes('5K'))                                      return 4; // NOVA 5K
+  if (c.includes('1500'))                                    return 3; // NOVA 1500
+  if (c === 'NOVA')                                          return 3; // "NOVA" solo = NOVA 1500
+  if (c.includes('500'))                                     return 2; // INN 500
   if (c.includes('200') || c.includes('INN'))                return 1; // INN 200
-  return 0;
+  return 0; // Cliente
 }
 
 export default async function handler(req, res) {

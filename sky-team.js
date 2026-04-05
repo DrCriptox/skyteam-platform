@@ -726,12 +726,16 @@ function renderSTArbol() {
   html += '<option value="inactive"' + (stState.treeFilterStatus === 'inactive' ? ' selected' : '') + '>Inactivos</option>';
   html += '</select>';
 
-  // Rank filter
+  // Rank filter (Innova ranks)
   html += '<select id="st-filter-rank" onchange="stState.treeFilterRank=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
   html += '<option value="all">Rango: Todos</option>';
-  var rankNames = ['Asociado', 'Ejecutivo', 'Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Corona'];
-  rankNames.forEach(function(rn) {
-    html += '<option value="' + rn.toLowerCase() + '"' + (stState.treeFilterRank === rn.toLowerCase() ? ' selected' : '') + '>' + rn + '</option>';
+  var rankOptions = [
+    {v:'0',l:'\u26AA Cliente'},{v:'1',l:'\uD83E\uDEA8 INN 200'},{v:'2',l:'\uD83D\uDC9C INN 500'},
+    {v:'3',l:'\uD83D\uDC8E NOVA 1500'},{v:'4',l:'\u2764\uFE0F NOVA 5K'},{v:'5',l:'\uD83D\uDC9A NOVA 10K'},
+    {v:'6',l:'\uD83D\uDC8E NOVA DIAMOND'},{v:'7',l:'\uD83D\uDC8E\uD83D\uDC8E NOVA 50K'},{v:'8',l:'\uD83D\uDC8E\uD83D\uDC8E\uD83D\uDC8E NOVA 100K'}
+  ];
+  rankOptions.forEach(function(ro) {
+    html += '<option value="' + ro.v + '"' + (stState.treeFilterRank === ro.v ? ' selected' : '') + '>' + ro.l + '</option>';
   });
   html += '</select>';
 
@@ -835,10 +839,9 @@ function _buildTreeHTML() {
       }
       // Status filter
       if (stState.treeFilterStatus !== 'all' && m.status !== stState.treeFilterStatus) return false;
-      // Rank filter
+      // Rank filter (compare by rank number)
       if (stState.treeFilterRank !== 'all') {
-        var rk = _getRank(m.rank);
-        if (rk.name.toLowerCase() !== stState.treeFilterRank) return false;
+        if (String(m.rank || 0) !== stState.treeFilterRank) return false;
       }
       // Score filter
       if (stState.treeFilterScore !== 'all') {
