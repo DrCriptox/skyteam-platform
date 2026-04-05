@@ -1354,14 +1354,10 @@ function skipTask() {
 
 function initCoachIA() {
   // Guard: require user context
-  if (typeof window.CU === 'undefined' || !window.CU) {
-    // Retry after a short delay (user may not be loaded yet)
-    setTimeout(function() {
-      if (window.CU) initCoachIA();
-    }, 2000);
+  if (!window.CU) {
+    setTimeout(function() { if (window.CU) initCoachIA(); }, 2000);
     return;
   }
-  CU = window.CU;
 
   // Prevent double-init
   if (document.getElementById('coach-fab')) return;
