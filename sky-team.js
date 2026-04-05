@@ -1528,19 +1528,59 @@ window.mentorSendChat = function(presetText) {
     }
   }, 100);
 
-  // Build context from team data
+  // Build RICH context from team data + CRM + agenda + BANK
   var d = stState.data;
   var context = '';
   if (d && d.members) {
-    context = 'RED DEL LIDER: ' + d.members.length + ' socios. ';
-    context += 'Activos 7d: ' + (d.network ? d.network.active_7d : 0) + '. ';
-    context += 'Directos: ' + d.members.filter(function(m){return m.level===1;}).length + '. ';
-    var top3 = d.members.sort(function(a,b){return (b.sky_score||0)-(a.sky_score||0);}).slice(0,3);
-    context += 'Top 3: ' + top3.map(function(m){return (m.name||m.username)+' (score:'+m.sky_score+', rango:'+m.rank+', dias:'+m.days_remaining+')';}).join(', ') + '. ';
+    context = 'RED: ' + d.members.length + ' socios. Activos: ' + (d.network ? d.network.active_7d : 0) + '. Nuevos mes: ' + (d.network ? d.network.new_this_month : 0) + '.\n';
+
+    // Detailed info per DIRECT member (level 1)
+    var directos = d.members.filter(function(m){return m.level===1;});
+    if (directos.length > 0) {
+      context += 'DIRECTOS (' + directos.length + '):\n';
+      directos.forEach(function(m) {
+        var bankCode = localStorage.getItem('bank_' + (m.username || m.ref)) || 'sin asignar';
+        var bday = m.birthday || localStorage.getItem('skyteam_birthday_' + m.username) || '';
+        var bdayStr = '';
+        if (bday) {
+          var parts = bday.split('-');
+          var meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+          bdayStr = parseInt(parts[2]) + ' ' + meses[parseInt(parts[1])];
+          // Check if birthday is within next 7 days
+          var today = new Date();
+          var bdayThisYear = new Date(today.getFullYear(), parseInt(parts[1])-1, parseInt(parts[2]));
+          var daysUntilBday = Math.ceil((bdayThisYear - today) / 86400000);
+          if (daysUntilBday >= 0 && daysUntilBday <= 7) bdayStr += ' (CUMPLE EN ' + daysUntilBday + ' DIAS!)';
+        }
+        var rk = (typeof RANKS !== 'undefined' && RANKS[m.rank]) ? RANKS[m.rank].name : 'R'+m.rank;
+        var hasLanding = m.ref ? 'SI' : 'NO';
+        context += '- ' + (m.name||m.username) + ': ' + rk + ', score:' + (m.sky_score||0) + ', dias:' + (m.days_remaining||'?') + ', estado:' + (m.status||'?');
+        context += ', prospectos:' + (m.prospectos_count||0) + ', citas:' + (m.bookings_count||0) + ', onboarding:dia' + (m.onboarding_day||0) + '/7';
+        context += ', racha:' + (m.streak_current||0) + 'd, landing:' + hasLanding + ', BANK:' + bankCode;
+        if (bdayStr) context += ', cumple:' + bdayStr;
+        context += '\n';
+      });
+    }
+
+    // Summary of deeper levels
+    var nivel2 = d.members.filter(function(m){return m.level===2;});
+    var nivel3plus = d.members.filter(function(m){return m.level>=3;});
+    if (nivel2.length > 0) context += 'NIVEL 2: ' + nivel2.length + ' socios (activos:' + nivel2.filter(function(m){return m.status==='active';}).length + ').\n';
+    if (nivel3plus.length > 0) context += 'NIVELES 3-10: ' + nivel3plus.length + ' socios.\n';
+
+    // Alerts
     var urgentes = (d.alerts||[]).filter(function(a){return a.category==='urgente';});
-    if (urgentes.length > 0) context += 'URGENTES: ' + urgentes.slice(0,3).map(function(a){return a.message;}).join('; ') + '. ';
+    var atencion = (d.alerts||[]).filter(function(a){return a.category==='atencion';});
+    if (urgentes.length > 0) context += 'URGENTES: ' + urgentes.slice(0,5).map(function(a){return a.message;}).join('; ') + '\n';
+    if (atencion.length > 0) context += 'ATENCION: ' + atencion.slice(0,3).map(function(a){return a.message;}).join('; ') + '\n';
   }
-  if (CU) context += 'LIDER: ' + CU.name + ', rango ' + CU.rank + '. ';
+  // CRM data
+  if (typeof crmProspectos !== 'undefined' && crmProspectos) {
+    var activos = crmProspectos.filter(function(p){return p.etapa!=='cerrado_ganado'&&p.etapa!=='cerrado_perdido';});
+    var calientes = activos.filter(function(p){return (p.temperatura||0)>=70;});
+    context += 'CRM: ' + crmProspectos.length + ' prospectos (' + activos.length + ' activos, ' + calientes.length + ' calientes).\n';
+  }
+  if (CU) context += 'LIDER: ' + CU.name + ', rango ' + CU.rank + ', usuario ' + CU.username + '.\n';
 
   // Build conversation for AI
   var messages = [];
@@ -1549,31 +1589,34 @@ window.mentorSendChat = function(presetText) {
   });
 
   var systemPrompt = 'Eres el Mentor IA de SKYTEAM — un coach de liderazgo experto en network marketing. Tu nombre es Mentor. Respondes en español, eres cercano, motivador, directo y siempre orientado a la ACCION.\n\n'
-    + 'REGLAS:\n'
-    + '- SIEMPRE orienta hacia la retencion, la accion y el crecimiento del negocio\n'
-    + '- NUNCA sugieras dejar el negocio o tomarse un break largo\n'
-    + '- Edifica a los lideres del equipo y al sistema SKYTEAM\n'
-    + '- Incluye gratitud (Dios, familia, lideres, equipo, sistema)\n'
-    + '- Usa nombres REALES del equipo cuando tengas datos\n'
-    + '- Si preguntan sobre emociones/pareja/dinero, escucha con empatia pero SIEMPRE vuelve a la accion\n'
-    + '- Cuenta historias de exito de lideres famosos (Jim Rohn, Eric Worre, Tony Robbins, etc)\n'
-    + '- De vez en cuando menciona una de tus capacidades: "Por cierto, yo puedo [capacidad]"\n\n'
-    + 'TUS CAPACIDADES (menciona 1 cada 3-4 mensajes de forma natural):\n'
-    + '- Analizar la red completa con nombres y scores\n'
-    + '- Codigo BANK (perfilar personalidades de socios)\n'
-    + '- Preparar Zoom semanal con agenda\n'
-    + '- Planificar Home Meetings\n'
-    + '- Proyeccion de rango (que falta para subir)\n'
-    + '- Plan de accion semanal personalizado\n'
-    + '- Coach emocional (bloqueos, miedos, motivacion)\n'
-    + '- Frases de poder de grandes lideres\n'
-    + '- Reconocimientos y celebraciones para el equipo\n'
-    + '- Reporte de duplicacion\n'
-    + '- Scorecard del lider\n'
-    + '- Metas con seguimiento y presion\n'
-    + '- Desafios gamificados para el equipo\n\n'
-    + 'DATOS DEL EQUIPO:\n' + context + '\n\n'
-    + 'Responde de forma concisa (max 3-4 parrafos). Usa emojis moderadamente. NO uses markdown.';
+    + 'REGLAS CRITICAS:\n'
+    + '- SIEMPRE orienta hacia la retencion, la accion y el crecimiento\n'
+    + '- NUNCA sugieras dejar el negocio, tomarse un break, o culpar a lideres\n'
+    + '- Edifica SIEMPRE a los lideres del equipo y al sistema SKYTEAM\n'
+    + '- Incluye gratitud (Dios, vida, familia, lideres, equipo, sistema)\n'
+    + '- Usa nombres REALES del equipo — tienes los datos de cada socio\n'
+    + '- Si preguntan sobre emociones/pareja/dinero: empatia + accion rapida + historias de exito\n'
+    + '- Cuenta historias de lideres famosos cuando sea relevante\n'
+    + '- Cada 3-4 mensajes menciona UNA capacidad tuya de forma natural\n\n'
+    + 'COMO ANALIZAR SOCIOS:\n'
+    + '- Cada socio tiene: rango, score, dias restantes, prospectos, citas, onboarding, racha, landing, Codigo BANK\n'
+    + '- Si el BANK es "B" (Blueprint): hablarle con datos y estructura\n'
+    + '- Si el BANK es "A" (Action): hablarle de resultados rapidos y desafios\n'
+    + '- Si el BANK es "N" (Nurturing): hablarle de impacto emocional y relaciones\n'
+    + '- Si el BANK es "K" (Knowledge): hablarle con logica y numeros\n'
+    + '- Si no tiene BANK asignado, sugiere al lider que lo perfilen\n'
+    + '- Si un socio tiene onboarding dia 0-1 despues de 7 dias: URGENTE que lo guien\n'
+    + '- Si un socio no tiene prospectos: necesita ayuda con su lista de contactos\n'
+    + '- Si no creo landing (ref): necesita activar Sky Sales\n'
+    + '- Si tiene cumpleaños pronto: recordar al lider que lo celebre\n'
+    + '- Los CLIENTES (rango 0) necesitan enfoque en educacion y rutas de aprendizaje\n'
+    + '- Los socios con membresia por vencer necesitan renovar URGENTE\n\n'
+    + 'TUS CAPACIDADES:\n'
+    + 'Analizar red, Codigo BANK, Zoom semanal, Home Meetings, Proyeccion rango, Plan semanal, '
+    + 'Coach emocional, Frases de poder, Reconocimientos, Duplicacion, Scorecard, Metas, Desafios, '
+    + 'Preparar mensajes segun personalidad, Planificar eventos, Rutina de lider\n\n'
+    + 'DATOS DEL EQUIPO:\n' + context + '\n'
+    + 'Responde conciso (max 3-4 parrafos). Emojis moderados. NO uses markdown. Cuando des consejo sobre un socio especifico, adapta el tono segun su Codigo BANK.';
 
   // Call AI
   if (typeof _skyFetch === 'function') {
