@@ -2865,12 +2865,12 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- GLOBAL NOTIFICATION BELL — injected into topbars via JS -->
 
 <!-- NOTIFICATION PANEL -->
-<div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:rgba(8,18,42,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Outfit,Nunito,sans-serif;">
+<div id="notif-panel" style="display:none;position:fixed;top:64px;right:12px;width:340px;max-width:calc(100vw - 24px);background:rgba(8,18,42,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:16px;z-index:200;backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:Outfit,Nunito,sans-serif;display:none;flex-direction:column;max-height:80vh;">
   <div style="padding:16px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(255,255,255,0.06);">
     <span style="font-size:15px;font-weight:800;color:#fff;">🔔 Notificaciones</span>
     <button onclick="toggleNotifPanel()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;">✕</button>
   </div>
-  <div id="notif-list" style="padding:10px 14px 14px;">
+  <div id="notif-list" style="padding:10px 14px 14px;overflow-y:auto;flex:1;overscroll-behavior:contain;">
     <p style="font-size:12px;color:rgba(255,255,255,0.25);text-align:center;padding:20px 0;">Sin notificaciones por ahora</p>
   </div>
 </div>
@@ -5094,6 +5094,7 @@ var _notifInterval = null;
 var _notifDismissed = JSON.parse(sessionStorage.getItem('skyteam_notif_dismissed')||'{}');
 // General notification queue for non-agenda notifications (content, events, etc.)
 var _notifQueue = JSON.parse(localStorage.getItem('skyteam_notif_queue_'+(typeof CU!=='undefined'&&CU?(CU.ref||CU.user):''))||'[]');
+var _notifFirstSeen = JSON.parse(sessionStorage.getItem('skyteam_notif_firstseen')||'{}');
 
 /* ── NATIVE PUSH NOTIFICATIONS ── */
 var _nativeNotifEnabled = ('Notification' in window);
@@ -5218,7 +5219,7 @@ function toggleNotifPanel() {
   _notifOpen = !_notifOpen;
   var panel = document.getElementById('notif-panel');
   var overlay = document.getElementById('notif-overlay');
-  if(panel) panel.style.display = _notifOpen ? 'block' : 'none';
+  if(panel) panel.style.display = _notifOpen ? 'flex' : 'none';
   if(overlay) overlay.style.display = _notifOpen ? 'block' : 'none';
   if(_notifOpen) refreshNotifications();
 }
@@ -5489,6 +5490,15 @@ function refreshNotifications() {
     activeCount++;
   }
 
+  // Stamp first-seen timestamp on each notification
+  notifs.forEach(function(n) {
+    if(!_notifFirstSeen[n.id]) {
+      _notifFirstSeen[n.id] = Date.now();
+      sessionStorage.setItem('skyteam_notif_firstseen', JSON.stringify(_notifFirstSeen));
+    }
+    n.timestamp = _notifFirstSeen[n.id];
+  });
+
   // Sort by priority (most urgent first)
   notifs.sort(function(a,b){ return b.priority - a.priority; });
 
@@ -5532,13 +5542,16 @@ function renderNotifList(notifs) {
 
     var waNum = n.booking ? (n.booking.whatsapp||'').replace(/[^0-9]/g,'') : '';
 
-    html += '<div class="' + cardClass + '">';
+    html += '<div class="' + cardClass + '" id="ncard_' + n.id + '" style="position:relative;transition:transform 0.25s,opacity 0.25s;" ontouchstart="_nSwipeStart(event,this)" ontouchmove="_nSwipeMove(event,this)" ontouchend="_nSwipeEnd(event,this,\'' + n.id + '\'')">';
+    html += '<button onclick="dismissNotif(\'' + n.id + '\')" title="Descartar" style="position:absolute;top:8px;right:8px;background:none;border:none;color:rgba(255,255,255,0.2);font-size:14px;cursor:pointer;padding:2px 5px;line-height:1;z-index:2;">✕</button>';
     html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
     html += '<span style="font-size:24px;">' + n.icon + '</span>';
     html += '<div style="flex:1;min-width:0;">';
     // Timestamp — use stored timestamp if available, else current time
-    var _tDate = n.timestamp ? new Date(n.timestamp) : new Date();
-    var _timeStr = n.time || (_tDate.getHours().toString().padStart(2,'0') + ':' + _tDate.getMinutes().toString().padStart(2,'0'));
+    var _tDate = new Date(n.timestamp || Date.now());
+    var _tH = _tDate.getHours(), _tM = _tDate.getMinutes().toString().padStart(2,'0');
+    var _tAmpm = _tH >= 12 ? 'PM' : 'AM', _t12 = (_tH % 12 || 12);
+    var _timeStr = _t12 + ':' + _tM + ' ' + _tAmpm;
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">';
     html += '<div style="font-size:13px;font-weight:800;color:#fff;">' + n.title + '</div>';
     html += '<span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:600;flex-shrink:0;margin-left:8px;">' + _timeStr + '</span>';
@@ -5563,7 +5576,6 @@ function renderNotifList(notifs) {
         html += '<button data-navsec="' + _sec + '" data-notifid="' + n.id + '" onclick="_notifNav(this)" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(201,168,76,0.7);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">' + (n.action.label||'Ver') + '</button>';
       }
     }
-    html += '<button onclick="dismissNotif(\'' + n.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:8px;padding:8px 10px;font-size:10px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Descartar</button>';
     html += '</div></div></div></div>';
   });
 
@@ -5580,6 +5592,29 @@ function _notifNav(btn) {
     setTimeout(function(){ if(typeof switchAgendaTab==='function') switchAgendaTab('plandiario'); }, 300);
   } else {
     navigate(sec);
+  }
+}
+
+// Swipe-to-dismiss helpers
+var _nSwipeX0 = 0;
+function _nSwipeStart(e, el) {
+  _nSwipeX0 = e.touches[0].clientX;
+  el.style.transition = 'none';
+}
+function _nSwipeMove(e, el) {
+  var dx = e.touches[0].clientX - _nSwipeX0;
+  if(dx < 0) { el.style.transform = 'translateX(' + Math.max(dx,-120) + 'px)'; el.style.opacity = 1 + dx/200; }
+}
+function _nSwipeEnd(e, el, id) {
+  var dx = e.changedTouches[0].clientX - _nSwipeX0;
+  el.style.transition = 'transform 0.25s,opacity 0.25s';
+  if(dx < -80) {
+    el.style.transform = 'translateX(-120%)';
+    el.style.opacity = '0';
+    setTimeout(function(){ dismissNotif(id); }, 250);
+  } else {
+    el.style.transform = '';
+    el.style.opacity = '';
   }
 }
 
