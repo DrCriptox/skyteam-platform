@@ -40,13 +40,11 @@ export default async function handler(req, res) {
       body.messages = body.messages.slice(-10);
     }
 
-    // ── Detect format: Coach IA vs direct Anthropic ──
-    let model, max_tokens, system, messages;
+    // ── Detect format and build messages ──
+    let max_tokens, system, messages;
 
     if (body.agent || body.systemPrompt) {
       // Coach IA / onboarding format
-      model = 'claude-sonnet-4-20250514';
-      // Carousel/story agents need more tokens for 8-slide JSON output
       max_tokens = (body.agent === 'carousel') ? 1800 : 512;
       system = body.systemPrompt || 'Eres un asistente de SKYTEAM. Responde en español, sé breve y útil.';
       messages = (body.messages || []).map(m => ({
@@ -54,38 +52,64 @@ export default async function handler(req, res) {
         content: typeof m.content === 'string' ? m.content.slice(0, 4000) : m.content
       }));
     } else {
-      // Direct Anthropic format (legacy)
-      model = body.model || 'claude-sonnet-4-20250514';
-      max_tokens = Math.min(body.max_tokens || 1024, 2048); // Cap at 2048
+      // Direct format (from coach-ia.js, sky-team.js, etc.)
+      max_tokens = Math.min(body.max_tokens || 1024, 2048);
       system = body.system || '';
       messages = body.messages || [];
     }
 
+    // Build OpenAI messages array (system as first message)
+    const openaiMessages = [];
+    if (system) openaiMessages.push({ role: 'system', content: system });
+    messages.forEach(m => {
+      openaiMessages.push({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) });
+    });
+
     // Add timeout via AbortController
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    const timeout = setTimeout(() => controller.abort(), 25000);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+    if (!OPENAI_KEY) {
+      clearTimeout(timeout);
+      return res.status(500).json({ error: 'OPENAI_API_KEY not configured', content: [{ text: 'Error: API key no configurada.' }] });
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': 'Bearer ' + OPENAI_KEY
       },
-      body: JSON.stringify({ model, max_tokens, system, messages }),
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: max_tokens,
+        messages: openaiMessages,
+        temperature: 0.7
+      }),
       signal: controller.signal
     });
 
     clearTimeout(timeout);
     const data = await response.json();
 
-    // ── Normalize response for Coach IA ──
+    // Extract response text
+    const responseText = data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content
+      : (data.error ? data.error.message : 'Error al procesar tu solicitud.');
+
+    // ── Normalize response for Coach IA format ──
     if (body.agent || body.systemPrompt) {
-      const reply = data.content && data.content[0] ? data.content[0].text : (data.error ? data.error.message : 'Error al procesar tu solicitud.');
-      return res.status(200).json({ reply });
+      return res.status(200).json({ reply: responseText });
     }
 
-    return res.status(response.status).json(data);
+    // Return in Anthropic-compatible format so existing frontend code works
+    // (sky-team.js and coach-ia.js read data.content[0].text)
+    return res.status(200).json({
+      content: [{ type: 'text', text: responseText }],
+      model: 'gpt-4o-mini',
+      usage: data.usage || {}
+    });
 
   } catch (error) {
     if (error.name === 'AbortError') {

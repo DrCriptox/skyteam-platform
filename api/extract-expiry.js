@@ -10,25 +10,24 @@ export default async function handler(req, res) {
     const { imageBase64, mimeType } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'imageBase64 requerido' });
 
-    const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-    if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'API key no configurada' });
+    const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+    if (!OPENAI_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': 'Bearer ' + OPENAI_KEY
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'gpt-4o-mini',
         max_tokens: 256,
         messages: [{
           role: 'user',
           content: [
             {
-              type: 'image',
-              source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: imageBase64 }
+              type: 'image_url',
+              image_url: { url: 'data:' + (mimeType || 'image/jpeg') + ';base64,' + imageBase64 }
             },
             {
               type: 'text',
@@ -41,11 +40,11 @@ export default async function handler(req, res) {
 
     if (!r.ok) {
       const errText = await r.text();
-      throw new Error('Claude API error: ' + r.status + ' ' + errText.substring(0, 200));
+      throw new Error('OpenAI API error: ' + r.status + ' ' + errText.substring(0, 200));
     }
 
-    const claude = await r.json();
-    const rawText = (claude.content?.[0]?.text || '').trim();
+    const gptData = await r.json();
+    const rawText = (gptData.choices?.[0]?.message?.content || '').trim();
 
     // Parse JSON from Claude's response (handle markdown code blocks)
     let extracted;

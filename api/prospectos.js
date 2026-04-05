@@ -17,15 +17,16 @@ async function sb(path, opts) {
 }
 
 async function askClaude(systemPrompt, userMsg) {
-  if (!ANTHROPIC_KEY) return null;
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+  const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+  if (!OPENAI_KEY) return null;
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, system: systemPrompt, messages: [{ role: 'user', content: userMsg }] })
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
+    body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 500, temperature: 0.7, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMsg }] })
   });
   if (!r.ok) return null;
   const data = await r.json();
-  return data.content && data.content[0] ? data.content[0].text : null;
+  return data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : null;
 }
 
 export default async function handler(req, res) {

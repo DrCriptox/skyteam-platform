@@ -226,18 +226,24 @@ async function handleCoach(req, res, user, ref) {
   summary += 'Top 3: ' + members.slice(0, 3).map(function(m) { return m.name + ' (score:' + m.sky_score + ')'; }).join(', ') + '. ';
   summary += 'Alertas urgentes: ' + urgentAlerts + '. ';
 
-  var r = await fetch('https://api.anthropic.com/v1/messages', {
+  var OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+  if (!OPENAI_KEY) return res.status(200).json({ recommendations: ['API key no configurada'] });
+
+  var r = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'gpt-4o-mini',
       max_tokens: 600,
-      system: 'Eres un coach experto en network marketing y liderazgo de equipos. Respondes en espa\u00f1ol. Analiza los datos del equipo y da 5 recomendaciones accionables, cortas y espec\u00edficas. Formato: JSON array de strings. Solo el array, sin explicaci\u00f3n.',
-      messages: [{ role: 'user', content: summary }]
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: 'Eres un coach experto en network marketing y liderazgo de equipos. Respondes en español latinoamericano, cercano y motivador. Analiza los datos del equipo y da 5 recomendaciones accionables, cortas y específicas. Formato: JSON array de strings. Solo el array, sin explicación.' },
+        { role: 'user', content: summary }
+      ]
     })
   });
   var data = await r.json();
-  var text = data.content && data.content[0] ? data.content[0].text : '[]';
+  var text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '[]';
   var recommendations = [];
   try { recommendations = JSON.parse(text.match(/\[[\s\S]*\]/)[0]); } catch (e) { recommendations = [text]; }
 
