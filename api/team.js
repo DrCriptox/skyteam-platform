@@ -17,41 +17,93 @@ async function sb(path, opts) {
 }
 
 function getServerDownline(allUsers, userRef, maxLevel) {
-  var byRef = {};
+  // Build lookup: index users by BOTH ref AND username (case-insensitive)
+  var byKey = {};
+  allUsers.forEach(function(u) {
+    var uname = (u.username || '').toLowerCase();
+    var uref = (u.ref || '').toLowerCase();
+    if (uref) byKey[uref] = u;
+    if (uname && !byKey[uname]) byKey[uname] = u;
+  });
+
+  // Build tree: sponsor → array of child keys
+  // Each child is stored by BOTH ref and username so either lookup path works
   var tree = {};
   allUsers.forEach(function(u) {
-    if (u.ref) byRef[u.ref.toLowerCase()] = u;
-    if (u.sponsor) {
-      var sk = u.sponsor.toLowerCase();
-      if (!tree[sk]) tree[sk] = [];
-      tree[sk].push(u.ref ? u.ref.toLowerCase() : (u.username || '').toLowerCase());
-    }
+    if (!u.sponsor) return;
+    var sk = u.sponsor.toLowerCase();
+    if (!tree[sk]) tree[sk] = [];
+    var childKey = (u.ref || u.username || '').toLowerCase();
+    if (childKey) tree[sk].push(childKey);
   });
+
   var result = [];
   var visited = new Set();
-  function recurse(r, level) {
-    if (level > maxLevel || visited.has(r)) return;
-    visited.add(r);
-    (tree[r] || []).forEach(function(childRef) {
-      var child = byRef[childRef];
-      if (child) {
-        result.push(Object.assign({}, child, { level: level }));
-        recurse(childRef, level + 1);
+
+  function recurse(key, level) {
+    if (level > maxLevel || visited.has(key)) return;
+    visited.add(key);
+
+    // Check children under this key
+    var children = tree[key] || [];
+
+    // Also check under the user's other identifier (ref vs username)
+    var user = byKey[key];
+    if (user) {
+      var altKey = key === (user.ref || '').toLowerCase()
+        ? (user.username || '').toLowerCase()
+        : (user.ref || '').toLowerCase();
+      if (altKey && altKey !== key && !visited.has(altKey)) {
+        visited.add(altKey);
+        children = children.concat(tree[altKey] || []);
       }
+    }
+
+    children.forEach(function(childKey) {
+      var child = byKey[childKey];
+      if (!child) return;
+      var cKey = (child.ref || child.username || '').toLowerCase();
+      if (result.some(function(r) { return (r.username || '').toLowerCase() === (child.username || '').toLowerCase(); })) return; // skip duplicates
+      result.push(Object.assign({}, child, { level: level }));
+      recurse(cKey, level + 1);
+      // Also recurse with alternate key
+      var altCKey = cKey === (child.ref || '').toLowerCase()
+        ? (child.username || '').toLowerCase()
+        : (child.ref || '').toLowerCase();
+      if (altCKey && altCKey !== cKey) recurse(altCKey, level + 1);
     });
   }
+
   recurse(userRef.toLowerCase(), 1);
+
+  // Also try with the user's username if ref was passed (or vice versa)
+  var rootUser = byKey[userRef.toLowerCase()];
+  if (rootUser) {
+    var altRoot = userRef.toLowerCase() === (rootUser.ref || '').toLowerCase()
+      ? (rootUser.username || '').toLowerCase()
+      : (rootUser.ref || '').toLowerCase();
+    if (altRoot && altRoot !== userRef.toLowerCase()) {
+      recurse(altRoot, 1);
+    }
+  }
+
   return result;
 }
 
 async function handleDashboard(req, res, user, ref) {
   if (!ref) return res.status(400).json({ error: 'Missing ref' });
 
-  // 1. Fetch ALL users
-  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,innova_user&limit=5000');
+  // 1. Fetch ALL users (include whatsapp for contact)
+  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,innova_user,whatsapp&limit=5000');
+
+  console.log('[Team API] User:', user, 'Ref:', ref, 'Total users:', allUsers.length);
+  // Debug: show sponsor relationships for this user
+  var relevantUsers = allUsers.filter(function(u) { return (u.sponsor || '').toLowerCase() === ref.toLowerCase() || (u.sponsor || '').toLowerCase() === user.toLowerCase(); });
+  console.log('[Team API] Direct children of', ref, ':', relevantUsers.map(function(u) { return u.username + '(ref:' + u.ref + ',sponsor:' + u.sponsor + ')'; }).join(', '));
 
   // 2. Get downline members (10 levels)
   var members = getServerDownline(allUsers, ref, 10);
+  console.log('[Team API] Downline members found:', members.length, members.map(function(m) { return m.username + '(L' + m.level + ')'; }).join(', '));
 
   // 3. Batch queries for supplementary data
   var gamData = [], onbData = [], prospData = [], bookData = [];

@@ -418,8 +418,9 @@ function initSkyTeam() {
     return;
   }
 
-  // Fetch data
-  var body = JSON.stringify({ action: 'get_team', username: CU.username });
+  // Fetch data — API expects action:'dashboard', user, ref
+  var userRef = CU.ref || CU.username || '';
+  var body = JSON.stringify({ action: 'dashboard', user: CU.username, ref: userRef });
 
   try {
   _skyFetch(TEAM_API, {
