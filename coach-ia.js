@@ -1022,6 +1022,39 @@ function sendCoachMsgFromInput() {
 function sendCoachMessage(text) {
   if (!text || coachState.chatLoading) return;
 
+  // ── CRM INTENT DETECTION — execute voice commands directly ──
+  var intent = detectCrmIntent(text);
+  if (intent && intent.prospect) {
+    coachState.chatHistory.push({ role: 'user', text: text });
+    coachState.chatLoading = true;
+    renderCoachPanel();
+    scrollChatToBottom();
+
+    executeCrmAction(intent).then(function(result) {
+      coachState.chatLoading = false;
+      if (result && result.msg) {
+        coachState.chatHistory.push({ role: 'assistant', text: result.msg });
+        if (result.ok && typeof showToast === 'function') {
+          showToast(result.msg.replace(/\*\*/g, '').replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '').trim());
+        }
+        // Refresh CRM data
+        if (typeof crmLoadData === 'function') setTimeout(crmLoadData, 500);
+      } else {
+        coachState.chatHistory.push({ role: 'assistant', text: 'No pude ejecutar la acci\u00f3n. Int\u00e9ntalo de nuevo.' });
+      }
+      renderCoachPanel();
+      scrollChatToBottom();
+    }).catch(function() {
+      coachState.chatLoading = false;
+      coachState.chatHistory.push({ role: 'assistant', text: 'Error ejecutando la acci\u00f3n. Verifica tu conexi\u00f3n.' });
+      renderCoachPanel();
+      scrollChatToBottom();
+    });
+    return;
+  }
+
+  // ── Normal AI chat (no CRM intent detected) ──
+
   // Add user message
   coachState.chatHistory.push({ role: 'user', text: text });
   coachState.chatLoading = true;
@@ -1041,10 +1074,17 @@ function sendCoachMessage(text) {
     contextInfo += 'Prospectos: ' + total + ' total, ' + hot + ' calientes. ';
   }
 
+  // Add prospect names for AI context
+  var prospectNames = prospects.slice(0, 10).map(function(p) { return (p.nombre || '?') + '(' + (p.etapa || 'nuevo') + ',' + (p.temperatura || 0) + '%)'; }).join(', ');
+  if (prospectNames) contextInfo += 'Prospectos activos: ' + prospectNames + '. ';
+
   var systemPrompt = 'Eres Coach IA, un asistente de ventas y network marketing para la plataforma SkyTeam. '
     + 'Respondes de forma breve, directa y motivacional. '
     + 'Das consejos pr\u00e1cticos sobre ventas, seguimiento de prospectos, cierre y crecimiento de red. '
     + contextInfo
+    + 'IMPORTANTE: Puedes ejecutar acciones por comando de voz. Si el usuario quiere hacer algo sobre un prospecto, gu\u00edalo con el formato correcto: '
+    + '"agrega nota a [nombre]: [nota]", "sube temperatura de [nombre] a [N]", "mueve a [nombre] a [etapa]", '
+    + '"califica a [nombre] con [N]", "pon recordatorio para [nombre] ma\u00f1ana", "genera mensaje para [nombre]". '
     + 'Responde en espa\u00f1ol. M\u00e1ximo 3-4 oraciones.';
 
   // Build messages array (Anthropic format — system separate, messages user/assistant only)
@@ -1994,7 +2034,7 @@ window.coachSaveReminder = function() {
   if (!prospectId || !prospectId.value || !date || !date.value) { if(typeof showToast==='function') showToast('Completa los campos','error'); return; }
 
   if (typeof crmApi === 'function') {
-    crmApi('addReminder', { prospecto_id: prospectId.value, fecha_recordatorio: date.value, mensaje: msg ? msg.value : 'Seguimiento' }).then(function(r) {
+    crmApi('addRecordatorio', { prospecto_id: prospectId.value, fecha_recordatorio: date.value, mensaje: msg ? msg.value : 'Seguimiento' }).then(function(r) {
       if (r && r.ok) {
         if(typeof showToast==='function') showToast('\u23F0 Recordatorio programado \u2713');
         openCoachTool(null); // Back to main
@@ -2045,6 +2085,317 @@ window.coachToggleCheck = function(id) {
   localStorage.setItem('coach_checklist', JSON.stringify(saved));
   openCoachTool('crm_checklist');
 };
+
+
+// ═══════════════════════════════════════════════════════════════
+//  CRM VOICE COMMAND SYSTEM — Intent Detection + Execution
+// ═══════════════════════════════════════════════════════════════
+
+var STAGE_MAP = {
+  'nuevo': 'nuevo', 'nueva': 'nuevo', 'nuevos': 'nuevo',
+  'contactado': 'contactado', 'contactada': 'contactado', 'contactar': 'contactado',
+  'interesado': 'interesado', 'interesada': 'interesado',
+  'presentacion': 'presentacion', 'presentación': 'presentacion',
+  'seguimiento': 'seguimiento',
+  'ganado': 'cerrado_ganado', 'cerrado ganado': 'cerrado_ganado', 'cerrado': 'cerrado_ganado', 'ganada': 'cerrado_ganado',
+  'perdido': 'cerrado_perdido', 'cerrado perdido': 'cerrado_perdido', 'perdida': 'cerrado_perdido'
+};
+
+function findProspectByName(name) {
+  if (!name) return null;
+  var prospects = window.crmProspectos || [];
+  var search = name.toLowerCase().trim();
+
+  // Exact match first
+  var exact = prospects.find(function(p) {
+    return (p.nombre || '').toLowerCase().trim() === search;
+  });
+  if (exact) return exact;
+
+  // Contains match
+  var partial = prospects.find(function(p) {
+    var n = (p.nombre || '').toLowerCase();
+    return n.indexOf(search) !== -1 || search.indexOf(n) !== -1;
+  });
+  if (partial) return partial;
+
+  // First-name match
+  var firstName = search.split(/\s+/)[0];
+  if (firstName.length >= 3) {
+    var byFirst = prospects.find(function(p) {
+      return (p.nombre || '').toLowerCase().split(/\s+/)[0] === firstName;
+    });
+    if (byFirst) return byFirst;
+  }
+
+  return null;
+}
+
+function resolveStage(text) {
+  if (!text) return null;
+  var t = text.toLowerCase().trim();
+  if (STAGE_MAP[t]) return STAGE_MAP[t];
+  // Fuzzy: check if any key is contained
+  var keys = Object.keys(STAGE_MAP);
+  for (var i = 0; i < keys.length; i++) {
+    if (t.indexOf(keys[i]) !== -1) return STAGE_MAP[keys[i]];
+  }
+  return null;
+}
+
+function detectCrmIntent(text) {
+  if (!text) return null;
+  var msg = text.toLowerCase().trim();
+  var prospects = window.crmProspectos || [];
+  if (prospects.length === 0) return null;
+
+  var result = null;
+
+  // ── 1. ADD NOTE / COMMENT ──
+  // "agrega nota a Pedro: llamar mañana" / "deja comentario en María que dijo que sí"
+  var notePatterns = [
+    /(?:agrega|deja|pon|añade|a[ñn]ade|agregar|dejar)\s+(?:una?\s+)?(?:nota|comentario|update|estado|observaci[oó]n)\s+(?:a|para|en|de|al?)\s+([^:,]+?)[\s:,]+(.+)/i,
+    /(?:nota|comentario)\s+(?:a|para|en|de)\s+([^:,]+?)[\s:,]+(.+)/i,
+    /(?:agrega|deja|pon)\s+(?:a|en|para)\s+([^:,]+?)[\s:,]+(.+)/i
+  ];
+  for (var i = 0; i < notePatterns.length; i++) {
+    var m = text.match(notePatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      if (p) { result = { action: 'addNote', prospect: p, value: m[2].trim() }; break; }
+    }
+  }
+  if (result) return result;
+
+  // ── 2. CHANGE TEMPERATURE ──
+  // "sube temperatura de Pedro a 80" / "temperatura María 90" / "pon temp de Juan en 60"
+  var tempPatterns = [
+    /(?:sube|baja|cambia|pon|actualiza|cambiar|subir|bajar)\s+(?:la\s+)?(?:temperatura|temp)\s+(?:de|a)\s+(.+?)\s+(?:a|en|al?)\s+(\d+)/i,
+    /(?:temperatura|temp)\s+(?:de\s+)?(.+?)\s+(?:a|en|al?)\s+(\d+)/i,
+    /(.+?)\s+(?:temperatura|temp)\s+(?:a|en|al?)\s+(\d+)/i
+  ];
+  for (var i = 0; i < tempPatterns.length; i++) {
+    var m = text.match(tempPatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      var val = parseInt(m[2]);
+      if (p && val >= 0 && val <= 100) { result = { action: 'changeTemp', prospect: p, value: val }; break; }
+    }
+  }
+  if (result) return result;
+
+  // ── 3. MOVE STAGE ──
+  // "mueve a Pedro a presentación" / "cambia a María a interesada" / "pasa a Juan a ganado"
+  var movePatterns = [
+    /(?:mueve|cambia|pasa|mover|cambiar|pasar)\s+(?:a\s+)?(.+?)\s+(?:a|hacia|para)\s+(?:la\s+)?(?:etapa\s+(?:de\s+)?)?(.+)/i,
+    /(?:etapa|stage)\s+(?:de\s+)?(.+?)\s+(?:a|en)\s+(.+)/i
+  ];
+  for (var i = 0; i < movePatterns.length; i++) {
+    var m = text.match(movePatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      var stage = resolveStage(m[2]);
+      if (p && stage) { result = { action: 'moveStage', prospect: p, value: stage }; break; }
+    }
+  }
+  if (result) return result;
+
+  // ── 4. CHANGE RATING (calificación / estrellas) ──
+  // "califica a Pedro con 80" / "sube calificación de María a 90"
+  var ratingPatterns = [
+    /(?:califica|punt[uú]a|eval[uú]a|sube|cambia)\s+(?:la\s+)?(?:calificaci[oó]n|rating|puntuaci[oó]n|estrellas?)\s+(?:de|a)\s+(.+?)\s+(?:a|en|con)\s+(\d+)/i,
+    /(?:califica|puntuar|evaluar)\s+(?:a\s+)?(.+?)\s+(?:a|con|en)\s+(\d+)/i
+  ];
+  for (var i = 0; i < ratingPatterns.length; i++) {
+    var m = text.match(ratingPatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      var val = parseInt(m[2]);
+      if (p && val >= 0 && val <= 100) { result = { action: 'changeRating', prospect: p, value: val }; break; }
+    }
+  }
+  if (result) return result;
+
+  // ── 5. ADD REMINDER ──
+  // "pon recordatorio para Pedro mañana" / "recuérdame llamar a María el lunes"
+  var reminderPatterns = [
+    /(?:pon|agrega|crear|programa)\s+(?:un?\s+)?(?:recordatorio|reminder|alarma)\s+(?:para|a|de)\s+(.+?)[\s,]+(.+)/i,
+    /(?:recu[eé]rdame|recordar)\s+(?:llamar|contactar|escribir)\s+(?:a\s+)?(.+?)[\s,]+(.+)/i
+  ];
+  for (var i = 0; i < reminderPatterns.length; i++) {
+    var m = text.match(reminderPatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      if (p) {
+        var when = m[2].trim();
+        var reminderDate = parseRelativeDate(when);
+        result = { action: 'addReminder', prospect: p, value: when, date: reminderDate };
+        break;
+      }
+    }
+  }
+  if (result) return result;
+
+  // ── 6. GENERATE MESSAGE ──
+  // "genera mensaje para Pedro" / "escríbele a María"
+  var msgPatterns = [
+    /(?:genera|escribe|crea|haz|redacta)\s+(?:un?\s+)?(?:mensaje|whatsapp|texto|wa)\s+(?:para|a|de)\s+(.+)/i,
+    /(?:escr[ií]bele|cont[aá]ctale|env[ií]ale)\s+(?:a\s+)?(.+)/i
+  ];
+  for (var i = 0; i < msgPatterns.length; i++) {
+    var m = text.match(msgPatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      if (p) { result = { action: 'generateMsg', prospect: p }; break; }
+    }
+  }
+  if (result) return result;
+
+  // ── 7. WHATSAPP ──
+  // "llama a Pedro" / "whatsapp a María"
+  var waPatterns = [
+    /(?:llama|whatsapp|wa|abre\s+whatsapp|contacta)\s+(?:a|de|para)\s+(.+)/i
+  ];
+  for (var i = 0; i < waPatterns.length; i++) {
+    var m = text.match(waPatterns[i]);
+    if (m) {
+      var p = findProspectByName(m[1]);
+      if (p && p.telefono) { result = { action: 'whatsapp', prospect: p }; break; }
+    }
+  }
+
+  return result;
+}
+
+function parseRelativeDate(text) {
+  var t = text.toLowerCase().trim();
+  var now = new Date();
+  if (t.indexOf('hoy') !== -1) return now.toISOString().split('T')[0];
+  if (t.indexOf('ma\u00f1ana') !== -1 || t.indexOf('manana') !== -1) {
+    var d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0];
+  }
+  if (t.indexOf('pasado') !== -1) {
+    var d = new Date(now); d.setDate(d.getDate() + 2); return d.toISOString().split('T')[0];
+  }
+  var dayNames = [['lunes',1],['martes',2],['miercoles',3],['mi\u00e9rcoles',3],['jueves',4],['viernes',5],['sabado',6],['s\u00e1bado',6],['domingo',0]];
+  for (var i = 0; i < dayNames.length; i++) {
+    if (t.indexOf(dayNames[i][0]) !== -1) {
+      var target = dayNames[i][1];
+      var current = now.getDay();
+      var diff = target - current;
+      if (diff <= 0) diff += 7;
+      var d = new Date(now); d.setDate(d.getDate() + diff);
+      return d.toISOString().split('T')[0];
+    }
+  }
+  // Try to find number of days
+  var numMatch = t.match(/(\d+)\s*d[ií]as?/);
+  if (numMatch) {
+    var d = new Date(now); d.setDate(d.getDate() + parseInt(numMatch[1]));
+    return d.toISOString().split('T')[0];
+  }
+  // Default: tomorrow
+  var d = new Date(now); d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+function executeCrmAction(intent) {
+  if (!intent || !intent.prospect) return Promise.resolve(false);
+  var p = intent.prospect;
+  var pName = p.nombre || 'Prospecto';
+
+  switch (intent.action) {
+
+    case 'addNote':
+      var dateStr = new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      var fullNote = '[' + dateStr + '] ' + intent.value;
+      var newNotes = p.notas ? p.notas + '\n' + fullNote : fullNote;
+      return _coachCrmApi('update', { id: p.id, updates: { notas: newNotes } }).then(function(r) {
+        if (r && r.ok) {
+          p.notas = newNotes;
+          return { ok: true, msg: '\u2705 Nota agregada a **' + pName + '**: "' + intent.value + '"' };
+        }
+        return { ok: false, msg: '\u274C Error al guardar la nota' };
+      });
+
+    case 'changeTemp':
+      return _coachCrmApi('update', { id: p.id, updates: { temperatura: intent.value } }).then(function(r) {
+        if (r && r.ok) {
+          p.temperatura = intent.value;
+          return { ok: true, msg: '\uD83C\uDF21\uFE0F Temperatura de **' + pName + '** actualizada a **' + intent.value + '%**' };
+        }
+        return { ok: false, msg: '\u274C Error al actualizar temperatura' };
+      });
+
+    case 'moveStage':
+      var stageLabels = { nuevo: 'Nuevo', contactado: 'Contactado', interesado: 'Interesado', presentacion: 'Presentaci\u00f3n', seguimiento: 'Seguimiento', cerrado_ganado: 'Cerrado Ganado \u2705', cerrado_perdido: 'Cerrado Perdido \u274C' };
+      return _coachCrmApi('update', { id: p.id, updates: { etapa: intent.value } }).then(function(r) {
+        if (r && r.ok) {
+          p.etapa = intent.value;
+          return { ok: true, msg: '\uD83D\uDD04 **' + pName + '** movido a **' + (stageLabels[intent.value] || intent.value) + '**' };
+        }
+        return { ok: false, msg: '\u274C Error al mover etapa' };
+      });
+
+    case 'changeRating':
+      var val = Math.min(1, Math.max(0, intent.value / 100));
+      return _coachCrmApi('update', { id: p.id, updates: {
+        calif_positivo: val, calif_emprendedor: val, calif_dinero: val, calif_lider: val
+      }}).then(function(r) {
+        if (r && r.ok) {
+          p.calif_positivo = val; p.calif_emprendedor = val; p.calif_dinero = val; p.calif_lider = val;
+          return { ok: true, msg: '\u2B50 Calificaci\u00f3n de **' + pName + '** actualizada a **' + intent.value + '%**' };
+        }
+        return { ok: false, msg: '\u274C Error al calificar' };
+      });
+
+    case 'addReminder':
+      var dateISO = intent.date || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      return _coachCrmApi('addRecordatorio', {
+        prospecto_id: p.id,
+        fecha_recordatorio: dateISO,
+        mensaje: 'Seguimiento: ' + intent.value
+      }).then(function(r) {
+        if (r && r.ok) {
+          return { ok: true, msg: '\u23F0 Recordatorio para **' + pName + '** programado (**' + dateISO + '**): ' + intent.value };
+        }
+        return { ok: false, msg: '\u274C Error al crear recordatorio' };
+      });
+
+    case 'generateMsg':
+      // Open the message generator tool with the prospect pre-selected
+      coachState.tools = 'crm_message';
+      renderCoachPanel();
+      setTimeout(function() {
+        var sel = document.getElementById('coach-msg-prospect');
+        if (sel) { sel.value = p.id; }
+      }, 100);
+      return Promise.resolve({ ok: true, msg: '\uD83D\uDCAC Abriendo generador de mensaje para **' + pName + '**. Selecciona el tipo y genera.' });
+
+    case 'whatsapp':
+      var phone = (p.telefono || '').replace(/[^0-9]/g, '');
+      if (phone) window.open('https://wa.me/' + phone, '_blank');
+      return Promise.resolve({ ok: true, msg: '\uD83D\uDCF1 Abriendo WhatsApp para **' + pName + '**' });
+
+    default:
+      return Promise.resolve(null);
+  }
+}
+
+function _coachCrmApi(action, data) {
+  // Use the global crmApi from index.html if available
+  if (typeof window.crmApi === 'function') {
+    return window.crmApi(action, data);
+  }
+  // Fallback: direct fetch
+  var user = window.CU ? (window.CU.username || window.CU.user || '') : '';
+  var body = Object.assign({ action: action, user: user }, data);
+  return fetch('/api/prospectos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); }).catch(function() { return null; });
+}
 
 
 // ═══════════════════════════════════════════════════════════════
