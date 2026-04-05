@@ -35,6 +35,10 @@ var stState = {
   data: null,
   treeExpanded: {},
   treeSearch: '',
+  treeFilterStatus: 'all',
+  treeFilterRank: 'all',
+  treeFilterScore: 'all',
+  treeFilterDays: 'all',
   rankPeriod: 'monthly',
   coachData: null,
   mentorTool: null,
@@ -124,10 +128,12 @@ function injectSkyTeamCSS() {
     '.st-attention-btn:hover{background:rgba(255,255,255,0.1);transform:scale(1.03);}',
 
     // ── Growth sparkline ──
-    '.st-sparkline{display:flex;align-items:flex-end;gap:6px;height:80px;padding:12px 16px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:18px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}',
-    '.st-spark-bar{flex:1;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#C9A84C,rgba(201,168,76,0.4));transition:height 0.6s cubic-bezier(0.34,1.56,0.64,1);min-height:4px;position:relative;}',
-    '.st-spark-bar:hover{background:linear-gradient(180deg,#E8D48B,rgba(201,168,76,0.6));}',
-    '.st-spark-label{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(240,237,230,0.5);font-weight:600;white-space:nowrap;}',
+    '.st-sparkline{display:flex;align-items:flex-end;gap:6px;height:100px;padding:16px 16px 8px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:18px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}',
+    '.st-spark-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;}',
+    '.st-spark-bar{width:100%;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#C9A84C,rgba(201,168,76,0.4));transition:height 0.6s cubic-bezier(0.34,1.56,0.64,1);min-height:4px;position:relative;cursor:pointer;}',
+    '.st-spark-bar:hover{filter:brightness(1.3);transform:scaleY(1.05);transform-origin:bottom;}',
+    '.st-spark-label{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:10px;color:#E8D48B;font-weight:700;white-space:nowrap;}',
+    '.st-spark-day{font-size:9px;color:rgba(255,255,255,0.3);margin-top:6px;font-weight:600;}',
 
     // ── Quick actions ──
     '.st-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}',
@@ -652,22 +658,28 @@ function renderSTDashboard() {
   }
   html += '</div>';
 
-  // ── 4. Growth Sparkline ──
+  // ── 4. Growth Sparkline (interactive) ──
   html += '<div>';
-  var growth = net.growth_weekly || [];
-  if (growth.length > 0) {
-    html += '<div class="st-section-title">📈 Crecimiento Semanal</div>';
-    var maxG = Math.max.apply(null, growth);
+  var growthRaw = net.growth_weekly || [];
+  if (growthRaw.length > 0) {
+    // Normalize: can be [{label,count}] or [number]
+    var growth = growthRaw.map(function(g) {
+      return typeof g === 'object' ? { label: g.label || '', count: g.count || 0 } : { label: '', count: g || 0 };
+    });
+    var totalWeek = growth.reduce(function(s, g) { return s + g.count; }, 0);
+    html += '<div class="st-section-title">\uD83D\uDCC8 Crecimiento Semanal <span style="font-size:12px;color:rgba(255,255,255,0.4);font-weight:400;">(' + totalWeek + ' nuevos)</span></div>';
+    var maxG = Math.max.apply(null, growth.map(function(g) { return g.count; }));
     if (maxG === 0) maxG = 1;
 
     html += '<div class="st-sparkline">';
-    var dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     for (var k = 0; k < growth.length; k++) {
-      var pct = Math.round((growth[k] / maxG) * 100);
-      if (pct < 5) pct = 5;
-      var lbl = dayLabels[k] || '';
-      html += '<div class="st-spark-bar" style="height:' + pct + '%;" title="' + lbl + ': ' + growth[k] + '">';
-      html += '<span class="st-spark-label">' + growth[k] + '</span>';
+      var pct = Math.max(5, Math.round((growth[k].count / maxG) * 100));
+      var barColor = growth[k].count > 0 ? 'linear-gradient(180deg,#C9A84C,#1D9E75)' : 'rgba(255,255,255,0.06)';
+      html += '<div class="st-spark-col">';
+      html += '<div class="st-spark-bar" style="height:' + pct + '%;background:' + barColor + ';" title="' + growth[k].label + ': ' + growth[k].count + ' nuevos">';
+      if (growth[k].count > 0) html += '<span class="st-spark-label">' + growth[k].count + '</span>';
+      html += '</div>';
+      html += '<div class="st-spark-day">' + growth[k].label + '</div>';
       html += '</div>';
     }
     html += '</div>';
@@ -702,6 +714,61 @@ function renderSTArbol() {
   // Search
   html += '<input id="st-tree-search-input" class="st-tree-search" type="text" placeholder="Buscar por nombre o usuario..." />';
 
+  // Filter bar
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
+
+  // Status filter
+  html += '<select id="st-filter-status" onchange="stState.treeFilterStatus=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
+  html += '<option value="all">Todos</option>';
+  html += '<option value="active"' + (stState.treeFilterStatus === 'active' ? ' selected' : '') + '>Activos</option>';
+  html += '<option value="new"' + (stState.treeFilterStatus === 'new' ? ' selected' : '') + '>Nuevos</option>';
+  html += '<option value="risk"' + (stState.treeFilterStatus === 'risk' ? ' selected' : '') + '>En riesgo</option>';
+  html += '<option value="inactive"' + (stState.treeFilterStatus === 'inactive' ? ' selected' : '') + '>Inactivos</option>';
+  html += '</select>';
+
+  // Rank filter
+  html += '<select id="st-filter-rank" onchange="stState.treeFilterRank=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
+  html += '<option value="all">Rango: Todos</option>';
+  var rankNames = ['Asociado', 'Ejecutivo', 'Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Corona'];
+  rankNames.forEach(function(rn) {
+    html += '<option value="' + rn.toLowerCase() + '"' + (stState.treeFilterRank === rn.toLowerCase() ? ' selected' : '') + '>' + rn + '</option>';
+  });
+  html += '</select>';
+
+  // Score filter
+  html += '<select id="st-filter-score" onchange="stState.treeFilterScore=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
+  html += '<option value="all">Score: Todos</option>';
+  html += '<option value="high"' + (stState.treeFilterScore === 'high' ? ' selected' : '') + '>Alto (50+)</option>';
+  html += '<option value="mid"' + (stState.treeFilterScore === 'mid' ? ' selected' : '') + '>Medio (10-49)</option>';
+  html += '<option value="low"' + (stState.treeFilterScore === 'low' ? ' selected' : '') + '>Bajo (0-9)</option>';
+  html += '</select>';
+
+  // Days filter
+  html += '<select id="st-filter-days" onchange="stState.treeFilterDays=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
+  html += '<option value="all">D\u00edas: Todos</option>';
+  html += '<option value="critical"' + (stState.treeFilterDays === 'critical' ? ' selected' : '') + '>Cr\u00edtico (\u22647d)</option>';
+  html += '<option value="warning"' + (stState.treeFilterDays === 'warning' ? ' selected' : '') + '>Alerta (8-15d)</option>';
+  html += '<option value="ok"' + (stState.treeFilterDays === 'ok' ? ' selected' : '') + '>OK (16+d)</option>';
+  html += '</select>';
+
+  // CSV export button
+  html += '<button onclick="_exportTeamCSV()" style="padding:6px 12px;border-radius:8px;background:rgba(29,158,117,0.10);border:1px solid rgba(29,158,117,0.25);color:#1D9E75;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">CSV</button>';
+
+  html += '</div>';
+
+  // Active filter count
+  var activeFilters = 0;
+  if (stState.treeFilterStatus !== 'all') activeFilters++;
+  if (stState.treeFilterRank !== 'all') activeFilters++;
+  if (stState.treeFilterScore !== 'all') activeFilters++;
+  if (stState.treeFilterDays !== 'all') activeFilters++;
+  if (activeFilters > 0) {
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
+    html += '<span style="font-size:11px;color:rgba(255,255,255,0.4);">' + activeFilters + ' filtro' + (activeFilters > 1 ? 's' : '') + ' activo' + (activeFilters > 1 ? 's' : '') + '</span>';
+    html += '<button onclick="_clearTreeFilters()" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.20);color:#E24B4A;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Limpiar</button>';
+    html += '</div>';
+  }
+
   // Tree list
   html += '<div id="st-tree-list-container" class="st-tree-list">';
   html += _buildTreeHTML();
@@ -709,6 +776,25 @@ function renderSTArbol() {
 
   return html;
 }
+
+function _filterSelectCSS() {
+  return 'padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#F0EDE6;font-size:11px;font-weight:600;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;min-width:0;flex:1;max-width:140px;';
+}
+
+function _refreshTree() {
+  var container = document.getElementById('st-tree-list-container');
+  if (container) container.innerHTML = _buildTreeHTML();
+}
+window._refreshTree = _refreshTree;
+
+function _clearTreeFilters() {
+  stState.treeFilterStatus = 'all';
+  stState.treeFilterRank = 'all';
+  stState.treeFilterScore = 'all';
+  stState.treeFilterDays = 'all';
+  renderSkyTeam();
+}
+window._clearTreeFilters = _clearTreeFilters;
 
 function _buildTreeHTML() {
   var d = stState.data;
@@ -734,21 +820,53 @@ function _buildTreeHTML() {
     }
   }
 
-  // If search is active, filter and show flat
-  if (search) {
-    var filtered = members.filter(function(m) {
-      var name = (m.name || '').toLowerCase();
-      var uname = (m.username || '').toLowerCase();
-      return name.indexOf(search) !== -1 || uname.indexOf(search) !== -1;
+  // Apply filters to members
+  var hasFilters = stState.treeFilterStatus !== 'all' || stState.treeFilterRank !== 'all' || stState.treeFilterScore !== 'all' || stState.treeFilterDays !== 'all';
+  var showFlat = !!search || hasFilters;
+
+  var pool = members;
+  if (search || hasFilters) {
+    pool = members.filter(function(m) {
+      // Search
+      if (search) {
+        var name = (m.name || '').toLowerCase();
+        var uname = (m.username || '').toLowerCase();
+        if (name.indexOf(search) === -1 && uname.indexOf(search) === -1) return false;
+      }
+      // Status filter
+      if (stState.treeFilterStatus !== 'all' && m.status !== stState.treeFilterStatus) return false;
+      // Rank filter
+      if (stState.treeFilterRank !== 'all') {
+        var rk = _getRank(m.rank);
+        if (rk.name.toLowerCase() !== stState.treeFilterRank) return false;
+      }
+      // Score filter
+      if (stState.treeFilterScore !== 'all') {
+        var sc = m.sky_score || _scoreParts(m).total || 0;
+        if (stState.treeFilterScore === 'high' && sc < 50) return false;
+        if (stState.treeFilterScore === 'mid' && (sc < 10 || sc >= 50)) return false;
+        if (stState.treeFilterScore === 'low' && sc >= 10) return false;
+      }
+      // Days filter
+      if (stState.treeFilterDays !== 'all') {
+        var days = m.days_remaining != null ? m.days_remaining : 999;
+        if (stState.treeFilterDays === 'critical' && days > 7) return false;
+        if (stState.treeFilterDays === 'warning' && (days <= 7 || days > 15)) return false;
+        if (stState.treeFilterDays === 'ok' && days <= 15) return false;
+      }
+      return true;
     });
+  }
 
-    if (filtered.length === 0) {
-      return '<div class="st-tree-empty">No se encontraron resultados para "' + _safe(stState.treeSearch) + '"</div>';
+  // Flat view (search or filter active)
+  if (showFlat) {
+    if (pool.length === 0) {
+      var msg = search ? 'No se encontraron resultados para "' + _safe(stState.treeSearch) + '"' : 'Ning\u00fan miembro coincide con los filtros';
+      return '<div class="st-tree-empty">' + msg + '</div>';
     }
-
-    var html = '';
-    for (var j = 0; j < filtered.length; j++) {
-      html += _renderTreeNode(filtered[j], 0, childrenMap, true);
+    var html = '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:8px;">' + pool.length + ' miembro' + (pool.length !== 1 ? 's' : '') + '</div>';
+    for (var j = 0; j < pool.length; j++) {
+      html += _renderTreeNode(pool[j], 0, childrenMap, true);
     }
     return html;
   }
@@ -849,6 +967,46 @@ function _toggleTreeNode(ref) {
   }
 }
 window._toggleTreeNode = _toggleTreeNode;
+
+
+// ── CSV Export ───────────────────────────────────────────────
+
+function _exportTeamCSV() {
+  var d = stState.data;
+  if (!d || !d.members) return;
+  var members = d.members;
+
+  var rows = [['Nombre', 'Usuario', 'Nivel', 'Rango', 'Sky Score', 'Prospectos', 'Ventas', 'Estado', 'D\u00edas Restantes', 'Registro', 'WhatsApp']];
+  members.forEach(function(m) {
+    var rk = _getRank(m.rank);
+    var sc = m.sky_score || _scoreParts(m).total || 0;
+    var created = m.created_at ? m.created_at.split('T')[0] : '';
+    rows.push([
+      '"' + (m.name || '').replace(/"/g, '""') + '"',
+      m.username || '',
+      m.level || '',
+      rk.name,
+      sc,
+      m.prospectos_count || 0,
+      m.ventas || 0,
+      _statusLabel(m.status),
+      m.days_remaining != null ? m.days_remaining : '',
+      created,
+      m.whatsapp || ''
+    ]);
+  });
+
+  var csv = rows.map(function(r) { return r.join(','); }).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'skyteam_red_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  if (typeof showToast === 'function') showToast('CSV descargado');
+}
+window._exportTeamCSV = _exportTeamCSV;
 
 
 // ═══════════════════════════════════════════════════════════════

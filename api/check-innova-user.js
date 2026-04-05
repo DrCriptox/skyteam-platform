@@ -45,16 +45,19 @@ export default async function handler(req, res) {
       }
     }
 
-    // Check whatsapp exists in users table
+    // Check whatsapp exists in users table (match last 8 digits for format flexibility)
     if (whatsapp) {
-      const clean = whatsapp.trim();
-      const r = await fetch(
-        SUPABASE_URL + '/rest/v1/users?whatsapp=eq.' + encodeURIComponent(clean) + '&select=username&limit=1',
-        { headers: HEADERS }
-      );
-      const rows = await r.json();
-      if (rows && rows.length > 0) {
-        result.whatsapp.exists = true;
+      const digits = whatsapp.replace(/[^0-9]/g, '');
+      if (digits.length >= 8) {
+        const last8 = digits.slice(-8);
+        const r = await fetch(
+          SUPABASE_URL + '/rest/v1/users?whatsapp=like.*' + encodeURIComponent(last8) + '*&select=username&limit=1',
+          { headers: HEADERS }
+        );
+        const rows = await r.json();
+        if (rows && rows.length > 0) {
+          result.whatsapp.exists = true;
+        }
       }
     }
 

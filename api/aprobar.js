@@ -76,6 +76,28 @@ export default async function handler(req, res) {
     // If innova_user already has 1 account, append .2 to username to differentiate
     const finalUsername = innovaCount === 1 ? username + '.2' : username;
 
+    // Check duplicate email (if provided)
+    if (sol.email) {
+      const emailClean = sol.email.toLowerCase().trim();
+      const emailCheck = await fetch(SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(emailClean) + '&select=username&limit=1', { headers: HEADERS });
+      const emailRows = await emailCheck.json();
+      if (Array.isArray(emailRows) && emailRows.length > 0) {
+        return res.status(400).json({ error: 'El email ' + emailClean + ' ya est\u00e1 registrado con el usuario "' + emailRows[0].username + '". Usa otro email.' });
+      }
+    }
+
+    // Check duplicate WhatsApp (if provided)
+    if (sol.whatsapp) {
+      const waClean = sol.whatsapp.replace(/[^0-9]/g, '');
+      if (waClean.length >= 8) {
+        const waCheck = await fetch(SUPABASE_URL + '/rest/v1/users?whatsapp=like.*' + encodeURIComponent(waClean.slice(-8)) + '*&select=username&limit=1', { headers: HEADERS });
+        const waRows = await waCheck.json();
+        if (Array.isArray(waRows) && waRows.length > 0) {
+          return res.status(400).json({ error: 'El WhatsApp ' + sol.whatsapp + ' ya est\u00e1 registrado con el usuario "' + waRows[0].username + '". Usa otro n\u00famero.' });
+        }
+      }
+    }
+
     // Check if user already exists (prevent duplicates from race conditions)
     const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername) + '&limit=1', { headers: HEADERS });
     const existUsers = await existCheck.json();

@@ -1,7 +1,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
 
 async function sb(path, opts) {
   const url = SUPABASE_URL + '/rest/v1/' + path;
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
 
       // AI suggestion for next step (compressed prompt)
       let ia_sugerencia = null;
-      if (ANTHROPIC_KEY) {
+      if (OPENAI_KEY) {
         const prospectoArr = await sb('prospectos?id=eq.' + encodeURIComponent(prospecto_id) + '&select=*');
         const prospecto = prospectoArr && prospectoArr[0] ? prospectoArr[0] : null;
         if (prospecto) {
