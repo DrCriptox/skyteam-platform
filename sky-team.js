@@ -231,7 +231,7 @@ function injectSkyTeamCSS() {
 
     // ── Member Detail Overlay ──
     '.st-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0;}',
-    '.st-detail-sheet{width:100%;max-width:480px;max-height:85vh;overflow-y:auto;background:rgba(10,10,18,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 32px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 -16px 64px rgba(0,0,0,0.5);animation:stSheetIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;font-family:"Outfit","Nunito",sans-serif;color:#F0EDE6;}',
+    '.st-detail-sheet{width:100%;max-width:480px;max-height:85vh;overflow-y:auto;overscroll-behavior:contain;background:rgba(10,10,18,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 32px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 -16px 64px rgba(0,0,0,0.5);animation:stSheetIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;font-family:"Outfit","Nunito",sans-serif;color:#F0EDE6;}',
     '@keyframes stSheetIn{from{opacity:0;transform:translateY(60px);}to{opacity:1;transform:translateY(0);}}',
     '.st-detail-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);margin:0 auto 20px;}',
     '.st-detail-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;}',
@@ -417,6 +417,7 @@ function initSkyTeam() {
   // Fetch data
   var body = JSON.stringify({ action: 'get_team', username: CU.username });
 
+  try {
   _skyFetch(TEAM_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -454,6 +455,7 @@ function initSkyTeam() {
       '</div>';
     }
   });
+  } catch(e) { stState.loading = false; console.error('[SkyTeam] _skyFetch error:', e); }
 }
 
 
@@ -694,11 +696,12 @@ function _buildTreeHTML() {
     var m = members[i];
     var parentRef = m.sponsor || m.parent || null;
 
-    if (!childrenMap[parentRef]) childrenMap[parentRef] = [];
-    childrenMap[parentRef].push(m);
-
     if (m.level === 1 || !parentRef) {
+      // Level 1 members are roots — don't add them as children
       roots.push(m);
+    } else {
+      if (!childrenMap[parentRef]) childrenMap[parentRef] = [];
+      childrenMap[parentRef].push(m);
     }
   }
 
@@ -841,7 +844,7 @@ function renderSTRanking() {
   for (var p = 0; p < periods.length; p++) {
     var pr = periods[p];
     var active = (stState.rankPeriod === pr.id) ? ' active' : '';
-    html += '<button class="st-rank-opt' + active + '" onclick="stState.rankPeriod=\'' + pr.id + '\';renderSkyTeam();">' + pr.label + '</button>';
+    html += '<button class="st-rank-opt' + active + '" onclick="window._stSetRankPeriod(\'' + pr.id + '\')">' + pr.label + '</button>';
   }
   html += '</div>';
 
@@ -1112,7 +1115,7 @@ function renderSTCoach() {
     for (var r = 0; r < recs.length; r++) {
       html += '<div class="st-coach-rec-card">';
       html += '<div class="st-coach-rec-num">Recomendacion #' + (r + 1) + '</div>';
-      html += '<div class="st-coach-rec-text">' + _safe(recs[r].text || recs[r].message || recs[r]) + '</div>';
+      html += '<div class="st-coach-rec-text">' + _safe(typeof recs[r] === 'string' ? recs[r] : (recs[r].text || recs[r].message || JSON.stringify(recs[r]))) + '</div>';
       html += '</div>';
     }
   } else if (stState.loading) {
@@ -1179,6 +1182,7 @@ function _loadCoachRecommendations() {
     username: (typeof CU !== 'undefined' && CU) ? CU.username : ''
   });
 
+  try {
   _skyFetch(TEAM_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1202,6 +1206,7 @@ function _loadCoachRecommendations() {
     stState.coachData = { recommendations: [{ text: 'Error cargando recomendaciones. Intenta de nuevo.' }] };
     renderSkyTeam();
   });
+  } catch(e) { stState.loading = false; console.error('[SkyTeam Coach] _skyFetch error:', e); }
 }
 window._loadCoachRecommendations = _loadCoachRecommendations;
 
@@ -1399,5 +1404,7 @@ function switchSTTab(tab) {
 window.initSkyTeam = initSkyTeam;
 window.switchSTTab = switchSTTab;
 window.openMemberDetail = openMemberDetail;
+window.renderSkyTeam = renderSkyTeam;
+window._stSetRankPeriod = function(p) { stState.rankPeriod = p; renderSkyTeam(); };
 
 })();

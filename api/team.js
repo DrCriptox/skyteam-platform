@@ -24,12 +24,14 @@ function getServerDownline(allUsers, userRef, maxLevel) {
     if (u.sponsor) {
       var sk = u.sponsor.toLowerCase();
       if (!tree[sk]) tree[sk] = [];
-      tree[sk].push(u.ref ? u.ref.toLowerCase() : u.username);
+      tree[sk].push(u.ref ? u.ref.toLowerCase() : (u.username || '').toLowerCase());
     }
   });
   var result = [];
+  var visited = new Set();
   function recurse(r, level) {
-    if (level > maxLevel) return;
+    if (level > maxLevel || visited.has(r)) return;
+    visited.add(r);
     (tree[r] || []).forEach(function(childRef) {
       var child = byRef[childRef];
       if (child) {
@@ -71,7 +73,7 @@ async function handleDashboard(req, res, user, ref) {
   // 4. Calculate Sky Score per member
   var now = Date.now();
   members.forEach(function(m) {
-    var gam = gamData.find(function(g) { return g.user_ref === m.username; }) || {};
+    var gam = gamData.find(function(g) { return g.user_ref === m.username || g.user_ref === m.ref; }) || {};
     var onb = onbData.find(function(o) { return o.username === m.username; }) || {};
     var prosCount = prospData.filter(function(p) { return p.username === m.username; }).length;
     var closedCount = prospData.filter(function(p) { return p.username === m.username && p.etapa === 'cerrado_ganado'; }).length;
@@ -90,7 +92,8 @@ async function handleDashboard(req, res, user, ref) {
     m.xp = gam.xp || 0;
 
     // Calculate status
-    var daysRemaining = m.expiry ? Math.ceil((Number(m.expiry) - now) / 86400000) : 999;
+    var expiryMs = m.expiry ? (typeof m.expiry === 'number' || /^\d+$/.test(m.expiry) ? Number(m.expiry) : new Date(m.expiry).getTime()) : 0;
+    var daysRemaining = expiryMs > 0 ? Math.ceil((expiryMs - now) / 86400000) : 999;
     m.days_remaining = daysRemaining;
     var lastActive = gam.streak_last_date ? Math.ceil((now - new Date(gam.streak_last_date).getTime()) / 86400000) : 999;
 
@@ -103,32 +106,32 @@ async function handleDashboard(req, res, user, ref) {
   var alerts = [];
   members.forEach(function(m) {
     if (m.days_remaining > 0 && m.days_remaining <= 7) {
-      alerts.push({ type: 'expiring', category: 'urgente', username: m.username, name: m.name, message: m.name + ' vence en ' + m.days_remaining + ' dias', action: 'contact' });
+      alerts.push({ type: 'expiring', category: 'urgente', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' vence en ' + m.days_remaining + ' dias', action: 'contact' });
     }
     if (m.status === 'inactive' && m.days_remaining > 7) {
       var daysInactive = m.streak_last_date ? Math.ceil((now - new Date(m.streak_last_date).getTime()) / 86400000) : 999;
-      alerts.push({ type: 'inactive', category: 'urgente', username: m.username, name: m.name, message: m.name + ' lleva ' + daysInactive + ' dias sin actividad', action: 'contact' });
+      alerts.push({ type: 'inactive', category: 'urgente', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' lleva ' + daysInactive + ' dias sin actividad', action: 'contact' });
     }
     if (m.onboarding_day <= 1 && m.onboarding_started) {
       var daysSinceStart = Math.ceil((now - new Date(m.onboarding_started).getTime()) / 86400000);
       if (daysSinceStart > 7) {
-        alerts.push({ type: 'no_onboarding', category: 'atencion', username: m.username, name: m.name, message: m.name + ' no ha avanzado en el onboarding', action: 'profile' });
+        alerts.push({ type: 'no_onboarding', category: 'atencion', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' no ha avanzado en el onboarding', action: 'profile' });
       }
     }
     if (m.prospectos_count === 0) {
       var daysSinceReg = m.created_at ? Math.ceil((now - new Date(m.created_at).getTime()) / 86400000) : 0;
       if (daysSinceReg > 14) {
-        alerts.push({ type: 'zero_prospects', category: 'atencion', username: m.username, name: m.name, message: m.name + ' no tiene prospectos', action: 'profile' });
+        alerts.push({ type: 'zero_prospects', category: 'atencion', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' no tiene prospectos', action: 'profile' });
       }
     }
     if (m.created_at) {
       var daysSinceReg2 = Math.ceil((now - new Date(m.created_at).getTime()) / 86400000);
       if (daysSinceReg2 <= 7) {
-        alerts.push({ type: 'new_member', category: 'positivo', username: m.username, name: m.name, message: 'Nuevo socio: ' + m.name, action: 'profile' });
+        alerts.push({ type: 'new_member', category: 'positivo', username: m.username, name: (m.name || m.username || 'Socio'), message: 'Nuevo socio: ' + (m.name || m.username || 'Socio'), action: 'profile' });
       }
     }
     if (m.streak_current >= 7) {
-      alerts.push({ type: 'streak', category: 'positivo', username: m.username, name: m.name, message: m.name + ' tiene racha de ' + m.streak_current + ' dias', action: 'profile' });
+      alerts.push({ type: 'streak', category: 'positivo', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' tiene racha de ' + m.streak_current + ' dias', action: 'profile' });
     }
   });
   // Sort: urgente first, then atencion, then positivo
@@ -188,7 +191,7 @@ async function handleCoach(req, res, user, ref) {
   // Calculate scores
   var now = Date.now();
   members.forEach(function(m) {
-    var gam = gamData.find(function(g) { return g.user_ref === m.username; }) || {};
+    var gam = gamData.find(function(g) { return g.user_ref === m.username || g.user_ref === m.ref; }) || {};
     var onb = onbData.find(function(o) { return o.username === m.username; }) || {};
     var prosCount = prospData.filter(function(p) { return p.username === m.username; }).length;
     var closedCount = prospData.filter(function(p) { return p.username === m.username && p.etapa === 'cerrado_ganado'; }).length;
@@ -199,7 +202,8 @@ async function handleCoach(req, res, user, ref) {
     m.score_day = ((onb.current_day || 0) * 3) + ((gam.streak_current || 0) * 2) + (bookCount * 4);
     m.sky_score = m.score_prospects + m.score_sales + m.score_day;
 
-    var daysRemaining = m.expiry ? Math.ceil((Number(m.expiry) - now) / 86400000) : 999;
+    var expiryMs = m.expiry ? (typeof m.expiry === 'number' || /^\d+$/.test(m.expiry) ? Number(m.expiry) : new Date(m.expiry).getTime()) : 0;
+    var daysRemaining = expiryMs > 0 ? Math.ceil((expiryMs - now) / 86400000) : 999;
     var lastActive = gam.streak_last_date ? Math.ceil((now - new Date(gam.streak_last_date).getTime()) / 86400000) : 999;
     if (daysRemaining <= 7 || lastActive >= 14) m.status = 'inactive';
     else if (daysRemaining <= 14 || lastActive >= 7) m.status = 'risk';
@@ -234,6 +238,7 @@ async function handleCoach(req, res, user, ref) {
   var recommendations = [];
   try { recommendations = JSON.parse(text.match(/\[[\s\S]*\]/)[0]); } catch (e) { recommendations = [text]; }
 
+  res.setHeader('Cache-Control', 'no-store');
   return res.status(200).json({ recommendations: recommendations });
 }
 
