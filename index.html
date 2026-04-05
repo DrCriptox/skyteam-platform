@@ -2454,6 +2454,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="sidebar-nav">
       <div class="nav-section-label">Principal</div>
       <button class="nav-item active" data-sec="home" onclick="navigate('home')"><span class="nav-icon">🏠</span>Inicio</button>
+      <button class="nav-item" data-sec="sky-tv" onclick="navigate('sky-tv')"><span class="nav-icon">📺</span>Sky TV</button>
 
       <div class="nav-section-label">Formación</div>
       <button class="nav-item" data-sec="academia" onclick="navigate('academia')"><span class="nav-icon">🎓</span>Academia de Servicios</button>
@@ -2462,12 +2463,9 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
       <div class="nav-section-label">Sky Sales IA</div>
-      <button class="nav-item" data-sec="agenda" onclick="navigate('agenda')"><span class="nav-icon">📅</span>Mi Agenda</button>
-<button class="nav-item" data-sec="sky-tv" onclick="navigate('sky-tv')"><span class="nav-icon">📺</span>Sky TV</button>
-      <button class="nav-item" data-sec="skysales" onclick="navigate('skysales')"><span class="nav-icon">🚀</span>Sky Sales IA</button>
-      <button class="nav-item" data-sec="prospectos" onclick="navigate('prospectos')"><span class="nav-icon">👥</span>Sky Prospectos</button>
-
-      <div class="nav-section-label">Equipo</div>
+      <button class="nav-item" data-sec="agenda" onclick="navigate('agenda')"><span class="nav-icon">📅</span>Sky Journal</button>
+      <button class="nav-item" data-sec="skysales" onclick="navigate('skysales')"><span class="nav-icon">💵</span>Sky Sales IA</button>
+      <button class="nav-item" data-sec="prospectos" onclick="navigate('prospectos')"><span class="nav-icon">👥</span>Sky Prospects</button><div class="nav-section-label">Equipo</div>
         <button class="nav-item" data-sec="skyteam" onclick="navigate('skyteam')"><span class="nav-icon">🚀</span>Sky Team</button>
       <button class="nav-item" data-sec="ranking" onclick="navigate('ranking')"><span class="nav-icon">🏆</span>Ranking</button>
       <button class="nav-item" data-sec="viajes" onclick="navigate('viajes')"><span class="nav-icon">✈️</span>Viajes</button>
@@ -2619,12 +2617,12 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
   <!-- AGENDA DE CIERRES -->
 <div class="section" id="section-agenda">
-  <div class="topbar"><div class="topbar-title">📅 Mi Agenda de Cierres</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
+  <div class="topbar"><div class="topbar-title">📅 Sky Journal</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
   <div class="sc" id="agenda-content"></div>
 </div>
 
   <div class="section" id="section-prospectos">
-  <div class="topbar"><div class="topbar-title">👥 Sky Prospectos</div><div class="topbar-right"><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
+  <div class="topbar"><div class="topbar-title">👥 Sky Prospects</div><div class="topbar-right"><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
   <div class="sc" id="prospectos-content">
     <div class="crm-control-bar">
       <div class="crm-view-toggles">
@@ -3490,7 +3488,8 @@ function showApp() {
     ['Notifs', typeof startNotifEngine==='function' ? startNotifEngine : null],
     ['SkyTV', typeof initSkyTv==='function' ? initSkyTv : null],
     ['Config', typeof applyPlatformConfig==='function' ? applyPlatformConfig : null],
-    ['SkyTeam', typeof initSkyTeam==='function' ? initSkyTeam : null]
+    ['SkyTeam', typeof initSkyTeam==='function' ? initSkyTeam : null],
+    ['CoachIA', typeof initCoachIA==='function' ? initCoachIA : null]
   ];
   initTasks.forEach(function(task) {
     if(task[1]) { try { task[1](); } catch(e) { console.error('[SKY] ' + task[0] + ' init failed:', e); } }
@@ -12987,5 +12986,6 @@ function renderAntiCheatResults(container, results) {
 <script src="onboarding-system.js"></script>
 <script src="admin-panel.js"></script>
 <script src="sky-team.js"></script>
+<script src="coach-ia.js"></script>
 </body>
 </html>
