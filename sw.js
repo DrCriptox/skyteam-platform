@@ -1,5 +1,5 @@
 // SKYTEAM - Service Worker v16
-var CACHE_NAME = 'skyteam-v93';
+var CACHE_NAME = 'skyteam-v94';
 var OFFLINE_URL = '/';
 
 // Install: cache the shell

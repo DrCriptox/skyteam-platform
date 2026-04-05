@@ -1,7 +1,7 @@
 
 // ═══════════════════════════════════════════════════════════════
 // SKYTEAM V2 — SKY TEAM (Mi Red) Frontend
-// Dashboard, Arbol Genealogico, Ranking, Alertas, Coach IA
+// Dashboard, Arbol Genealogico, Ranking, Alertas, Mentor IA
 // Nebula Premium Design — Glassmorphism + Gold Accents
 // ═══════════════════════════════════════════════════════════════
 
@@ -37,6 +37,7 @@ var stState = {
   treeSearch: '',
   rankPeriod: 'monthly',
   coachData: null,
+  mentorTool: null,
   loading: false,
   cache: null,
   cacheTime: 0
@@ -472,7 +473,7 @@ function renderSkyTeam() {
     { id: 'arbol',     icon: '🌳', label: 'Arbol' },
     { id: 'ranking',   icon: '🏆', label: 'Ranking' },
     { id: 'alertas',   icon: '🔔', label: 'Alertas' },
-    { id: 'coach',     icon: '🤖', label: 'Coach IA' }
+    { id: 'mentor',    icon: '🧠', label: 'Mentor IA' }
   ];
 
   var html = '';
@@ -496,7 +497,7 @@ function renderSkyTeam() {
     case 'arbol':     html += renderSTArbol();     break;
     case 'ranking':   html += renderSTRanking();   break;
     case 'alertas':   html += renderSTAlertas();   break;
-    case 'coach':     html += renderSTCoach();     break;
+    case 'mentor':    html += renderSTMentor();    break;
     default:          html += renderSTDashboard();
   }
   html += '</div>';
@@ -652,7 +653,7 @@ function renderSTDashboard() {
   html += '<div class="st-quick-actions">';
   html += '<button class="st-quick-btn st-quick-btn-gold" onclick="switchSTTab(\'arbol\')">🌳 Ver Arbol</button>';
   html += '<button class="st-quick-btn" onclick="switchSTTab(\'ranking\')">🏆 Ranking</button>';
-  html += '<button class="st-quick-btn" onclick="switchSTTab(\'coach\')">🤖 Coach IA</button>';
+  html += '<button class="st-quick-btn" onclick="switchSTTab(\'mentor\')">🧠 Mentor IA</button>';
   html += '<button class="st-quick-btn" onclick="switchSTTab(\'alertas\')">🔔 Alertas</button>';
   html += '</div>';
 
@@ -1012,152 +1013,291 @@ function _renderAlertCard(al, borderColor, icon) {
 
 
 // ═══════════════════════════════════════════════════════════════
-//  TAB: COACH IA
+//  TAB: MENTOR IA (21 tools)
 // ═══════════════════════════════════════════════════════════════
 
-function renderSTCoach() {
+function renderSTMentor() {
   var d = stState.data;
-  if (!d) return _spinnerHTML();
+  if (!d) return '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);">Cargando...</div>';
 
-  var members = d.members || [];
+  // If a mentor tool is active, show it
+  if (stState.mentorTool) {
+    return renderMentorTool(stState.mentorTool, d);
+  }
+
   var html = '';
 
-  // ── 1. Daily 3 ──
-  html += '<div class="st-section-title">🎯 Tus 3 Acciones del Dia</div>';
-  html += '<div class="st-daily3">';
+  // Daily insight card
+  html += '<div style="background:linear-gradient(135deg,rgba(127,119,221,0.08),rgba(201,168,76,0.06));border:1px solid rgba(127,119,221,0.15);border-radius:16px;padding:16px;margin-bottom:16px;">';
+  html += '<div style="font-size:10px;color:#7F77DD;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px;">🧠 Insight del dia</div>';
+  var totalMembers = d.members ? d.members.length : 0;
+  var activeMembers = d.members ? d.members.filter(function(m){return m.status==='active';}).length : 0;
+  var pct = totalMembers > 0 ? Math.round(activeMembers/totalMembers*100) : 0;
+  html += '<div style="font-size:14px;color:#fff;font-weight:600;line-height:1.4;">';
+  if (pct >= 70) html += 'Tu equipo esta fuerte — '+pct+'% activos. Enfocate en duplicacion.';
+  else if (pct >= 40) html += activeMembers+' de '+totalMembers+' socios activos ('+pct+'%). Reactiva a los inactivos esta semana.';
+  else html += 'Solo '+pct+'% de tu equipo esta activo. Prioridad #1: llamar a tus directos inactivos hoy.';
+  html += '</div></div>';
 
-  // Action 1: Closest to expiring (still active)
-  var closestExpire = null;
-  var closestDays = 9999;
-  for (var i = 0; i < members.length; i++) {
-    var m = members[i];
-    var days = m.days_remaining != null ? m.days_remaining : (m.days_left != null ? m.days_left : null);
-    var status = m.status || 'active';
-    if (days != null && days > 0 && (status === 'active' || status === 'risk' || status === 'at_risk') && days < closestDays) {
-      closestDays = days;
-      closestExpire = m;
-    }
-  }
+  // Tools sections
+  var sections = [
+    { title: '📊 ESTRATEGIA', tools: [
+      {id:'metas', icon:'🎯', name:'Metas'},
+      {id:'scorecard', icon:'📊', name:'Scorecard'},
+      {id:'proyeccion', icon:'📈', name:'Proyeccion'},
+      {id:'duplicacion', icon:'🔄', name:'Duplicacion'}
+    ]},
+    { title: '👥 EQUIPO', tools: [
+      {id:'analisis_red', icon:'🔍', name:'Analizar Red'},
+      {id:'alertas_pred', icon:'⚠️', name:'Alertas'},
+      {id:'bank_code', icon:'🏦', name:'Codigo BANK'},
+      {id:'onb_buddy', icon:'🤝', name:'Buddy'}
+    ]},
+    { title: '📅 EVENTOS', tools: [
+      {id:'home_meeting', icon:'🏠', name:'Home Meeting'},
+      {id:'evento_mensual', icon:'🎪', name:'Evento'},
+      {id:'zoom_semanal', icon:'💻', name:'Zoom'},
+      {id:'agenda_lider', icon:'📋', name:'Agenda Lider'}
+    ]},
+    { title: '💬 COMUNICACION', tools: [
+      {id:'lenguaje', icon:'💬', name:'Lenguaje'},
+      {id:'frases', icon:'🔥', name:'Frases'},
+      {id:'reconocimientos', icon:'🏆', name:'Celebrar'},
+      {id:'capacitacion', icon:'🎓', name:'Capacitacion'}
+    ]},
+    { title: '🧘 DESARROLLO', tools: [
+      {id:'emocional', icon:'🧘', name:'Emocional'},
+      {id:'patrones', icon:'🌟', name:'Patrones'},
+      {id:'plan_lider', icon:'📝', name:'Plan Semanal'},
+      {id:'resumen', icon:'📄', name:'Resumen'},
+      {id:'desafios_eq', icon:'🏆', name:'Desafios'}
+    ]}
+  ];
 
-  if (closestExpire) {
-    html += '<div class="st-daily3-card" onclick="openMemberDetail(\'' + _safe(closestExpire.username) + '\')">';
-    html += '<div class="st-daily3-num">1</div>';
-    html += '<div class="st-daily3-text">Renueva a <strong>' + _safe(closestExpire.name || closestExpire.username) + '</strong> — quedan ' + closestDays + ' dias</div>';
-    html += '<div class="st-daily3-action">Ver &rarr;</div>';
-    html += '</div>';
-  } else {
-    html += '<div class="st-daily3-card">';
-    html += '<div class="st-daily3-num">1</div>';
-    html += '<div class="st-daily3-text">Todos tus socios tienen buena vigencia</div>';
-    html += '</div>';
-  }
-
-  // Action 2: Closest to next rank
-  var closestRank = null;
-  var closestRankGap = 9999;
-  for (var j = 0; j < members.length; j++) {
-    var m2 = members[j];
-    var nextRank = (m2.rank || 0) + 1;
-    if (typeof RANKS !== 'undefined' && RANKS[nextRank]) {
-      var gap = m2.points_to_next_rank || m2.gap_to_next || null;
-      if (gap != null && gap < closestRankGap && gap > 0) {
-        closestRankGap = gap;
-        closestRank = m2;
-      }
-    }
-  }
-
-  if (closestRank) {
-    var nextRk = _getRank((closestRank.rank || 0) + 1);
-    html += '<div class="st-daily3-card" onclick="openMemberDetail(\'' + _safe(closestRank.username) + '\')">';
-    html += '<div class="st-daily3-num">2</div>';
-    html += '<div class="st-daily3-text">Motiva a <strong>' + _safe(closestRank.name || closestRank.username) + '</strong> — a ' + closestRankGap + ' pts de ' + _safe(nextRk.name) + '</div>';
-    html += '<div class="st-daily3-action">Ver &rarr;</div>';
-    html += '</div>';
-  } else {
-    html += '<div class="st-daily3-card">';
-    html += '<div class="st-daily3-num">2</div>';
-    html += '<div class="st-daily3-text">Motiva a tu equipo a escalar de rango</div>';
-    html += '</div>';
-  }
-
-  // Action 3: Most recently inactive direct
-  var directInactive = members.filter(function(m) {
-    return m.level === 1 && (m.status === 'inactive' || m.status === 'expired');
-  });
-  directInactive.sort(function(a, b) {
-    var dateA = a.last_active || a.last_login || '';
-    var dateB = b.last_active || b.last_login || '';
-    return dateB > dateA ? 1 : (dateB < dateA ? -1 : 0);
-  });
-
-  if (directInactive.length > 0) {
-    var reactivate = directInactive[0];
-    html += '<div class="st-daily3-card" onclick="openMemberDetail(\'' + _safe(reactivate.username) + '\')">';
-    html += '<div class="st-daily3-num">3</div>';
-    html += '<div class="st-daily3-text">Reactiva a <strong>' + _safe(reactivate.name || reactivate.username) + '</strong></div>';
-    html += '<div class="st-daily3-action">Ver &rarr;</div>';
-    html += '</div>';
-  } else {
-    html += '<div class="st-daily3-card">';
-    html += '<div class="st-daily3-num">3</div>';
-    html += '<div class="st-daily3-text">Todos tus directos estan activos — excelente!</div>';
-    html += '</div>';
-  }
-
-  html += '</div>';
-
-  // ── 2. AI Recommendations ──
-  html += '<div class="st-section-title">🤖 Recomendaciones IA</div>';
-
-  if (stState.coachData && stState.coachData.recommendations) {
-    var recs = stState.coachData.recommendations;
-    for (var r = 0; r < recs.length; r++) {
-      html += '<div class="st-coach-rec-card">';
-      html += '<div class="st-coach-rec-num">Recomendacion #' + (r + 1) + '</div>';
-      html += '<div class="st-coach-rec-text">' + _safe(typeof recs[r] === 'string' ? recs[r] : (recs[r].text || recs[r].message || JSON.stringify(recs[r]))) + '</div>';
+  sections.forEach(function(sec) {
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.20);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">'+sec.title+'</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">';
+    sec.tools.forEach(function(t) {
+      html += '<div onclick="stSetMentorTool(\''+t.id+'\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);" onmouseover="this.style.borderColor=\'rgba(127,119,221,0.25)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,0.06)\';this.style.transform=\'none\'">';
+      html += '<div style="font-size:22px;margin-bottom:3px;">'+t.icon+'</div>';
+      html += '<div style="font-size:8px;color:rgba(255,255,255,0.45);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">'+t.name+'</div>';
       html += '</div>';
-    }
-  } else if (stState.loading) {
-    html += _spinnerHTML();
-  } else {
-    html += '<button class="st-coach-load-btn" id="st-coach-load-btn" onclick="_loadCoachRecommendations()">';
-    html += '🤖 Cargar recomendaciones IA';
-    html += '</button>';
-  }
-
-  // ── 3. Smart Insights ──
-  html += '<div class="st-section-title" style="margin-top:22px;">💡 Insights</div>';
-
-  var totalMembers = net_total(d);
-  var activeMembers = members.filter(function(m) { return m.status === 'active'; }).length;
-  var topMember = members.length > 0 ? members.slice().sort(function(a, b) {
-    return (_scoreParts(b).total) - (_scoreParts(a).total);
-  })[0] : null;
-
-  var directsAll = members.filter(function(m) { return m.level === 1; });
-  var directsOnboarded = directsAll.filter(function(m) {
-    return m.onboarding_day >= 7 || m.onboarding_complete;
+    });
+    html += '</div></div>';
   });
-  var onboardPct = directsAll.length > 0 ? Math.round((directsOnboarded.length / directsAll.length) * 100) : 0;
 
-  html += '<div class="st-insight-card">';
-  html += '<div class="st-insight-icon">📊</div>';
-  html += '<div class="st-insight-text">Tu red tiene <strong>' + activeMembers + '</strong> socios activos de <strong>' + totalMembers + '</strong></div>';
+  return html;
+}
+
+// ── renderMentorTool: handles all 21 tools ──
+
+function renderMentorTool(toolId, d) {
+  var members = d.members || [];
+  var alerts = d.alerts || [];
+  var net = d.network || {};
+
+  // Back button
+  var html = '<div style="margin-bottom:16px;">';
+  html += '<button onclick="stSetMentorTool(null)" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 14px;color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">← Volver</button>';
   html += '</div>';
 
-  if (topMember) {
-    var topSc = topMember.sky_score != null ? topMember.sky_score : _scoreParts(topMember).total;
-    html += '<div class="st-insight-card">';
-    html += '<div class="st-insight-icon">⭐</div>';
-    html += '<div class="st-insight-text">Top socio: <strong>' + _safe(topMember.name || topMember.username) + '</strong> con Sky Score <strong>' + topSc + '</strong></div>';
-    html += '</div>';
+  // TOOL: metas
+  if (toolId === 'metas') {
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:16px;">🎯 Metas de Lider</div>';
+
+    var goals = JSON.parse(localStorage.getItem('mentor_goals_'+(typeof CU!=='undefined'&&CU?CU.username:'')) || '{}');
+    if (!goals.inn200) goals = {inn200:0, inn500:0, nova:0, cierres:0, directos:0};
+
+    var curInn200 = members.filter(function(m){return m.rank>=1;}).length;
+    var curInn500 = members.filter(function(m){return m.rank>=2;}).length;
+    var curNova = members.filter(function(m){return m.rank>=3;}).length;
+    var curDirectos = members.filter(function(m){return m.level===1;}).length;
+
+    var metas = [
+      {key:'inn200', label:'INN 200 en mi red', current:curInn200, icon:'🌱'},
+      {key:'inn500', label:'INN 500 en mi red', current:curInn500, icon:'⭐'},
+      {key:'nova', label:'Nova+ en mi red', current:curNova, icon:'🔥'},
+      {key:'directos', label:'Directos activos', current:curDirectos, icon:'👥'},
+      {key:'cierres', label:'Cierres este mes', current:(typeof CU!=='undefined'&&CU?CU.ventas||0:0), icon:'💰'}
+    ];
+
+    metas.forEach(function(m) {
+      var goal = goals[m.key] || 0;
+      var pctM = goal > 0 ? Math.min(100, Math.round(m.current/goal*100)) : 0;
+      var color = pctM >= 100 ? '#1D9E75' : pctM >= 50 ? '#C9A84C' : '#E24B4A';
+
+      html += '<div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:8px;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+      html += '<div style="font-size:13px;font-weight:600;color:#fff;">'+m.icon+' '+m.label+'</div>';
+      html += '<div style="font-size:12px;font-weight:800;color:'+color+';">'+m.current+' / '+(goal||'—')+'</div>';
+      html += '</div>';
+      if (goal > 0) {
+        html += '<div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+pctM+'%;background:'+color+';border-radius:3px;transition:width 0.5s;"></div></div>';
+        if (pctM < 100) {
+          var faltantes = goal - m.current;
+          html += '<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;">Te faltan '+faltantes+' para tu meta</div>';
+        } else {
+          html += '<div style="font-size:10px;color:#1D9E75;margin-top:4px;">Meta alcanzada!</div>';
+        }
+      }
+      html += '<input type="number" value="'+(goal||'')+'" placeholder="Meta..." min="0" onchange="mentorSaveGoal(\''+m.key+'\',this.value)" style="margin-top:6px;width:80px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:6px;color:#F0EDE6;font-size:11px;padding:4px 8px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
+      html += '</div>';
+    });
   }
 
-  html += '<div class="st-insight-card">';
-  html += '<div class="st-insight-icon">🎓</div>';
-  html += '<div class="st-insight-text"><strong>' + onboardPct + '%</strong> de tus directos completaron onboarding</div>';
-  html += '</div>';
+  // TOOL: bank_code
+  else if (toolId === 'bank_code') {
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">🏦 Codigo BANK</div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Perfila a tus socios para comunicarte mejor.</div>';
+
+    var codes = [
+      {id:'B', name:'Blueprint', color:'#3B82F6', icon:'🔵', desc:'Planificador. Necesita datos, estructura, plan paso a paso. No lo presiones, dale informacion.', speak:'Hablale con datos: "El plan tiene 7 pasos. En el paso 1 haras..."'},
+      {id:'A', name:'Action', color:'#EF4444', icon:'🔴', desc:'Competitivo. Quiere resultados rapidos, no procesos. Desafialo.', speak:'Hablale de resultados: "Cuanto quieres ganar este mes? Yo te muestro como."'},
+      {id:'N', name:'Nurturing', color:'#F59E0B', icon:'💛', desc:'Emocional. Le importan las relaciones y ayudar. Conecta emocionalmente.', speak:'Hablale de impacto: "Imagina ayudar a 10 familias a tener libertad financiera."'},
+      {id:'K', name:'Knowledge', color:'#10B981', icon:'💚', desc:'Analitico. Necesita investigar, comparar, entender todo. Dale espacio.', speak:'Hablale con logica: "Mira los numeros: el ROI promedio es 300% en 90 dias."'}
+    ];
+
+    var directos = members.filter(function(m){return m.level===1;});
+    html += '<select id="mentor-bank-member" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:16px;">';
+    html += '<option value="">Selecciona un socio...</option>';
+    directos.forEach(function(m) {
+      var saved = localStorage.getItem('bank_'+(m.username||m.ref));
+      html += '<option value="'+(m.username||m.ref)+'">' + _safe(m.name||m.username) + (saved ? ' ('+saved+')' : '') + '</option>';
+    });
+    html += '</select>';
+
+    codes.forEach(function(c) {
+      html += '<div onclick="mentorSetBANK(\''+c.id+'\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor=\''+c.color+'40\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,0.06)\'">';
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+      html += '<div style="font-size:20px;">'+c.icon+'</div>';
+      html += '<div style="font-size:14px;font-weight:700;color:'+c.color+';">'+c.name+'</div></div>';
+      html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;margin-bottom:6px;">'+c.desc+'</div>';
+      html += '<div style="font-size:11px;color:'+c.color+';font-style:italic;">"'+c.speak+'"</div>';
+      html += '</div>';
+    });
+  }
+
+  // TOOL: emocional
+  else if (toolId === 'emocional') {
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">🧘 Coach Emocional</div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Como te sientes hoy? Responde honestamente.</div>';
+
+    html += '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;">';
+    var moods = [{e:'😫',v:2,l:'Mal'},{e:'😐',v:4,l:'Regular'},{e:'🙂',v:6,l:'Bien'},{e:'😊',v:8,l:'Muy bien'},{e:'🔥',v:10,l:'Imparable'}];
+    moods.forEach(function(m) {
+      html += '<div onclick="mentorSetMood('+m.v+')" style="text-align:center;cursor:pointer;padding:10px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);transition:all 0.2s;" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">';
+      html += '<div style="font-size:28px;">'+m.e+'</div>';
+      html += '<div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px;">'+m.l+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px;">Algo te bloquea?</div>';
+    var blocks = [
+      {id:'rechazo', label:'😰 Miedo al rechazo'},
+      {id:'impostor', label:'🎭 No me siento capaz'},
+      {id:'tiempo', label:'⏰ No tengo tiempo'},
+      {id:'resultados', label:'📉 No veo resultados'},
+      {id:'equipo', label:'👥 Mi equipo no avanza'},
+      {id:'motivacion', label:'😔 Perdi la motivacion'}
+    ];
+    html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px;">';
+    blocks.forEach(function(b) {
+      html += '<button onclick="mentorHandleBlock(\''+b.id+'\')" style="padding:10px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:12px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-align:left;transition:all 0.2s;">'+b.label+'</button>';
+    });
+    html += '</div>';
+
+    html += '<div id="mentor-emocional-response"></div>';
+  }
+
+  // TOOL: frases
+  else if (toolId === 'frases') {
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:16px;">🔥 Frases de Poder</div>';
+
+    var frases = [
+      {author:'Jim Rohn', text:'No desees que sea mas facil, desea ser mejor. No desees menos problemas, desea mas habilidades.'},
+      {author:'Eric Worre', text:'El network marketing no es perfecto, es mejor. Mejor que cualquier otra opcion para la persona promedio.'},
+      {author:'Robert Kiyosaki', text:'Los ricos construyen redes. Los demas buscan trabajo.'},
+      {author:'Jordan Adler', text:'Tu negocio crece exactamente a la velocidad a la que tu creces como persona.'},
+      {author:'John C. Maxwell', text:'Un lider es grande no por su poder, sino por su habilidad de empoderar a otros.'},
+      {author:'Zig Ziglar', text:'Puedes tener todo lo que quieras en la vida si ayudas a suficientes personas a conseguir lo que quieren.'},
+      {author:'Tony Robbins', text:'El secreto del exito es aprender a usar el dolor y el placer en lugar de dejar que ellos te usen a ti.'},
+      {author:'Napoleon Hill', text:'Lo que la mente puede concebir y creer, lo puede lograr.'},
+      {author:'Les Brown', text:'No tienes que ser grande para empezar, pero tienes que empezar para ser grande.'},
+      {author:'Grant Cardone', text:'El exito no es un lujo ni un privilegio. El exito es tu deber, obligacion y responsabilidad.'}
+    ];
+
+    frases.sort(function() { return Math.random() - 0.5; });
+
+    frases.forEach(function(f) {
+      html += '<div style="background:rgba(255,255,255,0.025);border-left:3px solid #C9A84C;border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:10px;">';
+      html += '<div style="font-size:14px;color:#F0EDE6;font-style:italic;line-height:1.5;">"'+f.text+'"</div>';
+      html += '<div style="font-size:11px;color:#C9A84C;font-weight:700;margin-top:6px;">— '+f.author+'</div>';
+      html += '</div>';
+    });
+
+    html += '<button onclick="mentorShareFrase()" style="width:100%;padding:12px;border-radius:10px;background:rgba(201,168,76,0.10);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📱 Compartir frase al equipo</button>';
+  }
+
+  // TOOL: home_meeting
+  else if (toolId === 'home_meeting') {
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">🏠 Home Meetings</div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;">Planifica reuniones en casa de tus socios.</div>';
+
+    html += '<input type="text" id="mentor-hm-host" placeholder="Anfitrion (nombre del socio)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;box-sizing:border-box;">';
+    html += '<input type="text" id="mentor-hm-place" placeholder="Lugar / Direccion" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;box-sizing:border-box;">';
+    html += '<input type="datetime-local" id="mentor-hm-date" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:8px;box-sizing:border-box;">';
+    html += '<input type="number" id="mentor-hm-guests" placeholder="Invitados esperados" min="1" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;margin-bottom:12px;box-sizing:border-box;">';
+    html += '<button onclick="mentorSaveHomeMeeting()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">💾 Programar Home Meeting</button>';
+
+    var savedHM = JSON.parse(localStorage.getItem('mentor_hm_'+(typeof CU!=='undefined'&&CU?CU.username:'')) || '[]');
+    if (savedHM.length > 0) {
+      html += '<div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px;">PROXIMOS HOME MEETINGS</div>';
+      savedHM.forEach(function(hm) {
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:6px;">';
+        html += '<div style="font-size:20px;">🏠</div>';
+        html += '<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#fff;">'+_safe(hm.host)+'</div>';
+        html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">'+_safe(hm.place)+' · '+hm.date+' · '+hm.guests+' invitados</div></div>';
+        html += '</div>';
+      });
+    }
+  }
+
+  // TOOL: reconocimientos
+  else if (toolId === 'reconocimientos') {
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:16px;">🏆 Reconocimientos</div>';
+
+    var directosRec = members.filter(function(m){return m.level===1;}).sort(function(a,b){return (b.sky_score||0)-(a.sky_score||0);});
+
+    directosRec.slice(0, 10).forEach(function(m) {
+      var rk = (typeof RANKS !== 'undefined' && RANKS[m.rank]) ? RANKS[m.rank] : {icon:'👤',name:'Socio'};
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:6px;">';
+      html += '<div style="width:36px;height:36px;border-radius:50%;background:rgba(201,168,76,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#C9A84C;">'+_safe((m.name||'?').substring(0,2).toUpperCase())+'</div>';
+      html += '<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#fff;">'+_safe(m.name||m.username)+'</div>';
+      html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">'+rk.icon+' '+rk.name+' · Score: '+(m.sky_score||0)+'</div></div>';
+      html += '<button onclick="mentorCelebrate(\''+_safe(m.name||m.username)+'\')" style="padding:6px 10px;border-radius:8px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">🎉 Celebrar</button>';
+      html += '</div>';
+    });
+  }
+
+  // DEFAULT: AI-powered tools (scorecard, proyeccion, duplicacion, analisis_red, alertas_pred, onb_buddy, evento_mensual, zoom_semanal, agenda_lider, lenguaje, capacitacion, patrones, plan_lider, resumen, desafios_eq)
+  else {
+    var toolNames = {
+      scorecard:'📊 Scorecard del Lider',proyeccion:'📈 Proyeccion de Rango',duplicacion:'🔄 Reporte de Duplicacion',
+      analisis_red:'🔍 Analisis de Red',alertas_pred:'⚠️ Alertas Predictivas',onb_buddy:'🤝 Onboarding Buddy',
+      evento_mensual:'🎪 Evento Mensual',zoom_semanal:'💻 Zoom Semanal',agenda_lider:'📋 Agenda de Lider',
+      lenguaje:'💬 Lenguaje de Lider',capacitacion:'🎓 Capacitacion Tracker',patrones:'🌟 Patrones de Exito',
+      plan_lider:'📝 Plan Semanal',resumen:'📄 Resumen Ejecutivo',desafios_eq:'🏆 Desafios de Equipo'
+    };
+    var name = toolNames[toolId] || toolId;
+
+    html += '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:16px;">'+name+'</div>';
+    html += '<div id="mentor-ai-result" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">Cargando analisis...</div>';
+
+    // Auto-fetch AI analysis
+    html += '<scr'+'ipt>setTimeout(function(){mentorAIAnalysis("'+toolId+'")},500);<\/scr'+'ipt>';
+  }
 
   return html;
 }
@@ -1168,47 +1308,149 @@ function net_total(d) {
   return 0;
 }
 
-function _loadCoachRecommendations() {
-  var btn = document.getElementById('st-coach-load-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = _spinnerHTML();
+// ── Mentor helper functions ──
+
+window.stSetMentorTool = function(id) { stState.mentorTool = id; renderSkyTeam(); };
+
+window.mentorSaveGoal = function(key, val) {
+  var goals = JSON.parse(localStorage.getItem('mentor_goals_'+(typeof CU!=='undefined'&&CU?CU.username:'')) || '{}');
+  goals[key] = parseInt(val) || 0;
+  localStorage.setItem('mentor_goals_'+(typeof CU!=='undefined'&&CU?CU.username:''), JSON.stringify(goals));
+  if(typeof showToast === 'function') showToast('Meta guardada');
+};
+
+window.mentorSetBANK = function(code) {
+  var sel = document.getElementById('mentor-bank-member');
+  if (!sel || !sel.value) { if(typeof showToast==='function') showToast('Selecciona un socio primero','error'); return; }
+  localStorage.setItem('bank_'+sel.value, code);
+  if(typeof showToast==='function') showToast('Codigo BANK guardado: '+code);
+};
+
+window.mentorSetMood = function(val) {
+  var div = document.getElementById('mentor-emocional-response');
+  if (!div) return;
+  if (val >= 8) {
+    div.innerHTML = '<div style="background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.2);border-radius:12px;padding:16px;margin-top:12px;"><div style="font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:8px;">🔥 Excelente energia!</div><div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5;">Aprovecha este momento. Los mejores resultados vienen cuando estas asi de conectado. Llama a tus prospectos calientes, agenda cierres, y comparte tu energia con tu equipo.</div></div>';
+  } else if (val >= 5) {
+    div.innerHTML = '<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:16px;margin-top:12px;"><div style="font-size:14px;font-weight:700;color:#C9A84C;margin-bottom:8px;">💪 Bien, pero puedes mas</div><div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5;">Estas en un buen punto. Para subir tu energia: escucha un podcast motivacional 10 min, haz una llamada a alguien de tu equipo que este ganando, y recuerda POR QUE empezaste.</div></div>';
+  } else {
+    div.innerHTML = '<div style="background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.2);border-radius:12px;padding:16px;margin-top:12px;"><div style="font-size:14px;font-weight:700;color:#7F77DD;margin-bottom:8px;">🫂 Esta bien no estar bien</div><div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.5;">Todos los grandes lideres pasaron por momentos dificiles. La diferencia es que no se rindieron. Tomate 5 minutos, respira profundo, y recuerda: este negocio cambia vidas — empezando por la tuya. Selecciona tu bloqueo abajo para trabajarlo juntos. 💜</div></div>';
   }
+};
 
-  stState.loading = true;
+window.mentorHandleBlock = function(blockId) {
+  var div = document.getElementById('mentor-emocional-response');
+  if (!div) return;
 
-  var body = JSON.stringify({
-    action: 'coach',
-    username: (typeof CU !== 'undefined' && CU) ? CU.username : ''
-  });
+  var responses = {
+    rechazo: {title:'El rechazo es redireccionamiento',story:'En los primeros meses muchos lideres reciben cientos de rechazos. Hoy esas mismas personas les piden unirse. La clave: cada NO te acerca al SI. Estadisticamente, necesitas 10 conversaciones para 1 socio. No te estan rechazando a TI, estan rechazando el momento.',action:'Ejercicio: Llama a 3 personas hoy CON LA INTENCION de que te digan no. Quitale el poder al rechazo. Veras que duele menos de lo que imaginas.'},
+    impostor: {title:'El sindrome del impostor es senal de crecimiento',story:'Muchos grandes del network marketing empezaron sin credenciales, sin dinero, sin experiencia. Pero tenian un sistema. Tu tienes SKYTEAM. No necesitas ser experto — necesitas seguir el sistema y dejar que las herramientas trabajen por ti.',action:'Ejercicio: Escribe 3 cosas que has logrado desde que empezaste. Por pequenas que sean. Tu ya eres diferente al 95% que nunca intenta.'},
+    tiempo: {title:'No es falta de tiempo, es falta de prioridad',story:'Los ricos compran tiempo, los pobres venden tiempo. 30 minutos al dia son 15 horas al mes. Con el Plan Diario, organiza esos 30 minutos: 10 min prospectar, 10 min seguimiento, 10 min capacitarte.',action:'Ejercicio: Abre tu Plan Diario ahora y bloquea 30 minutos para tu negocio. Manana, esos 30 minutos pueden cambiar tu mes entero.'},
+    resultados: {title:'Los resultados son la consecuencia, no la causa',story:'No desees que sea mas facil, desea ser mejor. Muchos perdieron todo y luego se volvieron millonarios. La diferencia: duplicaron sus acciones. Si haces 5 llamadas y no cierras, haz 15. Los numeros nunca mienten.',action:'Ejercicio: Duplica tu actividad esta semana. Si invitas 3, invita 6. Si agendas 1 cierre, agenda 3. El volumen compensa la inexperiencia.'},
+    equipo: {title:'Tu equipo es tu reflejo',story:'Un lider no crea seguidores, crea mas lideres. Si tu equipo no avanza, preguntate: estoy haciendo lo que les pido que hagan? Estoy disponible? Celebro sus pequenos logros? A veces un mensaje personal vale mas que una hora de capacitacion.',action:'Ejercicio: Envia AHORA un mensaje a cada uno de tus directos. No de negocio — personal. "Como estas?" Reconecta como persona primero, como lider despues.'},
+    motivacion: {title:'La motivacion no es permanente, la disciplina si',story:'La motivacion no dura, pero tampoco el bano, por eso se recomienda diariamente. Todos los grandes lideres tienen dias malos. La diferencia: tienen RUTINAS que los mantienen activos aunque no sientan ganas. Tu Plan Diario es tu rutina.',action:'Ejercicio: Escribe tu POR QUE en una nota y ponla donde la veas todos los dias. Por que empezaste? Que cambia cuando lo logres? Esa imagen te levanta cuando nada mas lo hace.'}
+  };
 
-  try {
-  _skyFetch(TEAM_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: body
-  }, 20000)
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    stState.loading = false;
-    if (data && data.recommendations) {
-      stState.coachData = data;
-    } else if (data && data.message) {
-      stState.coachData = { recommendations: [{ text: data.message }] };
+  var r = responses[blockId] || {title:'Vamos a trabajarlo',story:'Cada desafio es una oportunidad disfrazada.',action:'Reflexiona sobre que puedes aprender de esta situacion.'};
+
+  div.innerHTML = '<div style="background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.15);border-radius:14px;padding:18px;margin-top:12px;">'
+    + '<div style="font-size:15px;font-weight:800;color:#7F77DD;margin-bottom:10px;">💜 '+r.title+'</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.6;margin-bottom:12px;">'+r.story+'</div>'
+    + '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;"><div style="font-size:10px;color:#C9A84C;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Tu accion ahora</div>'
+    + '<div style="font-size:12px;color:#F0EDE6;line-height:1.5;">'+r.action+'</div></div></div>';
+};
+
+window.mentorSaveHomeMeeting = function() {
+  var host = document.getElementById('mentor-hm-host');
+  var place = document.getElementById('mentor-hm-place');
+  var date = document.getElementById('mentor-hm-date');
+  var guests = document.getElementById('mentor-hm-guests');
+  if (!host||!host.value||!date||!date.value) { if(typeof showToast==='function') showToast('Completa los campos','error'); return; }
+  var saved = JSON.parse(localStorage.getItem('mentor_hm_'+(typeof CU!=='undefined'&&CU?CU.username:'')) || '[]');
+  saved.push({host:host.value,place:place?place.value:'',date:date.value,guests:guests?guests.value:'0'});
+  localStorage.setItem('mentor_hm_'+(typeof CU!=='undefined'&&CU?CU.username:''), JSON.stringify(saved));
+  if(typeof showToast==='function') showToast('🏠 Home Meeting programado');
+  stState.mentorTool = 'home_meeting';
+  renderSkyTeam();
+};
+
+window.mentorCelebrate = function(name) {
+  var msg = '🎉🏆 Felicidades ' + name + '! Tu esfuerzo y dedicacion estan dando frutos. Sigue asi, el equipo esta orgulloso de ti! 💪🔥 #SkyTeam #LideresQueInspiran';
+  if (navigator.share) {
+    navigator.share({title:'Reconocimiento SkyTeam', text:msg}).catch(function(){});
+  } else {
+    if (navigator.clipboard) navigator.clipboard.writeText(msg);
+    if(typeof showToast==='function') showToast('🎉 Mensaje de celebracion copiado');
+  }
+};
+
+window.mentorShareFrase = function() {
+  var frases = document.querySelectorAll('[style*="font-style:italic"]');
+  if (frases.length > 0) {
+    var random = frases[Math.floor(Math.random()*frases.length)];
+    var text = random.textContent + ' #SkyTeam #MotivacionDiaria';
+    if (navigator.share) {
+      navigator.share({title:'Frase de Poder — SkyTeam', text:text}).catch(function(){});
     } else {
-      stState.coachData = { recommendations: [{ text: 'No hay recomendaciones disponibles en este momento.' }] };
+      if (navigator.clipboard) navigator.clipboard.writeText(text);
+      if(typeof showToast==='function') showToast('Frase copiada');
     }
-    renderSkyTeam();
-  })
-  .catch(function(err) {
-    stState.loading = false;
-    console.error('[SkyTeam Coach] Error:', err);
-    stState.coachData = { recommendations: [{ text: 'Error cargando recomendaciones. Intenta de nuevo.' }] };
-    renderSkyTeam();
-  });
-  } catch(e) { stState.loading = false; console.error('[SkyTeam Coach] _skyFetch error:', e); }
-}
-window._loadCoachRecommendations = _loadCoachRecommendations;
+  }
+};
+
+// AI-powered mentor analysis for tools not manually implemented
+window.mentorAIAnalysis = function(toolId) {
+  var div = document.getElementById('mentor-ai-result');
+  if (!div || !stState.data) return;
+
+  var d = stState.data;
+  var members = d.members || [];
+  var summary = 'Equipo de ' + (typeof CU!=='undefined'&&CU?CU.name:'Lider') + ': ' + members.length + ' socios. ';
+  summary += 'Activos: ' + (d.network?d.network.active_7d:0) + '. ';
+  summary += 'Directos: ' + members.filter(function(m){return m.level===1;}).length + '. ';
+  summary += 'Top 3: ' + members.slice(0,3).map(function(m){return (m.name||m.username)+' (score:'+m.sky_score+', rango:'+m.rank+')';}).join(', ') + '. ';
+  summary += 'Alertas urgentes: ' + (d.alerts?d.alerts.filter(function(a){return a.category==='urgente';}).length:0);
+
+  var prompts = {
+    scorecard: 'Genera un scorecard del lider (0-100) evaluando: retencion de equipo, crecimiento mensual, duplicacion, actividad personal. Da la calificacion con explicacion corta de cada area. Formato: lista con puntaje.',
+    proyeccion: 'Analiza el equipo y proyecta cuando podria subir de rango el lider. Incluye que necesita lograr (numero de ventas, directos activos, etc). Se especifico con plazos.',
+    duplicacion: 'Genera un reporte de duplicacion: que niveles estan duplicando (sus referidos traen gente) y cuales no. Identifica los cuellos de botella y da acciones concretas.',
+    analisis_red: 'Analiza la red completa: fortalezas, debilidades, oportunidades. Identifica los socios clave y los que necesitan atencion inmediata. Da 5 recomendaciones accionables.',
+    alertas_pred: 'Genera alertas predictivas: quien tiene mayor probabilidad de abandonar, quien esta a punto de subir de rango, que tendencias ves en la actividad del equipo. Se especifico con nombres.',
+    onb_buddy: 'Sugiere asignacion de buddies: para cada socio nuevo (registrado en ultimos 14 dias), recomienda un socio experimentado como mentor. Explica por que cada par funciona.',
+    evento_mensual: 'Planifica el proximo evento mensual presencial: agenda sugerida (90 min), quien deberia dar testimonio, roles para los directos, meta de asistencia, y mensaje de invitacion.',
+    zoom_semanal: 'Prepara la agenda para el zoom semanal del equipo: temas a tratar, quien deberia participar, dinamica sugerida (20 min max por tema). Incluye un mensaje de invitacion para WhatsApp.',
+    agenda_lider: 'Genera la rutina semanal ideal para este lider: Lunes a Viernes, que hacer cada dia (30-60 min), enfocado en crecimiento de red. Incluye llamadas, reuniones, capacitacion, contenido.',
+    lenguaje: 'Genera 5 mensajes ejemplo para diferentes situaciones de liderazgo: motivar al equipo, corregir sin desmotivar, celebrar un logro, presionar resultados, reactivar un inactivo. Tono profesional pero cercano.',
+    capacitacion: 'Analiza que socios del equipo han completado el onboarding y cuales no. Genera un plan de capacitacion: que modulos priorizar, como hacer seguimiento, y mensaje para enviar a los que estan atrasados.',
+    patrones: 'Analiza los patrones de exito del equipo: que tienen en comun los socios top (actividad, velocidad de onboarding, tipo de prospectos). Contrasta con los que no avanzan. Da 3 conclusiones accionables.',
+    plan_lider: 'Genera el plan de accion de esta semana para el lider: 5 acciones prioritarias con nombres especificos del equipo. Incluye quien contactar, que decir, y que resultado esperar.',
+    resumen: 'Genera el resumen ejecutivo semanal: metricas clave, logros destacados, areas de mejora, proyeccion para la proxima semana. Formato: 5 secciones cortas.',
+    desafios_eq: 'Crea 3 desafios gamificados para el equipo esta semana: nombre creativo, descripcion, meta, premio/reconocimiento. Enfocados en prospectar, cerrar, y capacitarse.'
+  };
+
+  var prompt = prompts[toolId] || 'Analiza el equipo y da recomendaciones para mejorar.';
+
+  if (typeof _skyFetch === 'function') {
+    _skyFetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: 'Eres un mentor experto en network marketing y liderazgo de equipos. Respondes en espanol. Eres directo, motivador, y das acciones concretas con nombres cuando los tienes. Usa formato con emojis y puntos clave. NO uses markdown.',
+        messages: [{ role: 'user', content: summary + '\n\nTarea: ' + prompt }]
+      })
+    }).then(function(r){return r.json()}).then(function(data) {
+      var text = data.content && data.content[0] ? data.content[0].text : 'No se pudo generar el analisis.';
+      div.innerHTML = '<div style="font-size:13px;color:#F0EDE6;line-height:1.6;white-space:pre-wrap;">'+_safe(text)+'</div>';
+    }).catch(function() {
+      div.innerHTML = '<div style="color:#E24B4A;font-size:12px;">Error conectando con IA. Intenta de nuevo.</div>';
+    });
+  } else {
+    div.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:12px;">Funcion de IA no disponible.</div>';
+  }
+};
 
 
 // ═══════════════════════════════════════════════════════════════
