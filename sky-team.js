@@ -1555,8 +1555,20 @@ window.mentorSendChat = function(presetText) {
         var rk = (typeof RANKS !== 'undefined' && RANKS[m.rank]) ? RANKS[m.rank].name : 'R'+m.rank;
         var hasLanding = m.ref ? 'SI' : 'NO';
         context += '- ' + (m.name||m.username) + ': ' + rk + ', score:' + (m.sky_score||0) + ', dias:' + (m.days_remaining||'?') + ', estado:' + (m.status||'?');
-        context += ', prospectos:' + (m.prospectos_count||0) + ', citas:' + (m.bookings_count||0) + ', onboarding:dia' + (m.onboarding_day||0) + '/7';
-        context += ', racha:' + (m.streak_current||0) + 'd, landing:' + hasLanding + ', BANK:' + bankCode;
+        // Prospect breakdown by stage
+        var etapas = m.prospectos_por_etapa || {};
+        var prospDetail = 'prospectos:' + (m.prospectos_count||0) + '(';
+        if (etapas.nuevo) prospDetail += 'nuevos:'+etapas.nuevo+',';
+        if (etapas.contactado) prospDetail += 'contactados:'+etapas.contactado+',';
+        if (etapas.interesado) prospDetail += 'interesados:'+etapas.interesado+',';
+        if (etapas.presentacion) prospDetail += 'presentacion:'+etapas.presentacion+',';
+        if (etapas.seguimiento) prospDetail += 'seguimiento:'+etapas.seguimiento+',';
+        if (etapas.cerrado_ganado) prospDetail += 'CERRADOS:'+etapas.cerrado_ganado+',';
+        if (etapas.cerrado_perdido) prospDetail += 'perdidos:'+etapas.cerrado_perdido+',';
+        prospDetail = prospDetail.replace(/,$/, '') + ')';
+        context += ', ' + prospDetail + ', citas:' + (m.bookings_count||0) + ', onboarding:dia' + (m.onboarding_day||0) + '/7';
+        context += ', racha:' + (m.streak_current||0) + 'd, xp:' + (m.xp||0) + ', ventas:' + (m.ventas||0);
+        context += ', landing:' + hasLanding + ', BANK:' + bankCode;
         if (bdayStr) context += ', cumple:' + bdayStr;
         context += '\n';
       });

@@ -84,6 +84,9 @@ async function handleDashboard(req, res, user, ref) {
     m.score_day = ((onb.current_day || 0) * 3) + ((gam.streak_current || 0) * 2) + (bookCount * 4);
     m.sky_score = m.score_prospects + m.score_sales + m.score_day;
     m.prospectos_count = prosCount;
+    m.prospectos_cerrados = closedCount;
+    m.prospectos_por_etapa = {};
+    prospData.filter(function(p){return p.username===m.username;}).forEach(function(p){ m.prospectos_por_etapa[p.etapa] = (m.prospectos_por_etapa[p.etapa]||0)+1; });
     m.bookings_count = bookCount;
     m.streak_current = gam.streak_current || 0;
     m.streak_last_date = gam.streak_last_date || null;
