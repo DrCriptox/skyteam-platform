@@ -3119,8 +3119,9 @@ function showLanding() {
 // URL routing — /login and /registro direct access
 (function() {
   var path = window.location.pathname.toLowerCase();
+  var _hasSavedSession = (function(){ try { var s=localStorage.getItem('skyteam_u'); return !!(s&&JSON.parse(s).username); }catch(e){return false;} })();
   if (path === '/login') {
-    setTimeout(function() { showLoginFromLanding(); }, 100);
+    if (!_hasSavedSession) setTimeout(function() { showLoginFromLanding(); }, 100);
   } else if (path === '/registro') {
     setTimeout(function() { showRegisterFromLanding(); }, 100);
   }
@@ -3466,6 +3467,7 @@ function showApp() {
   if(landingEl) landingEl.style.display='none';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  history.replaceState(null, '', '/');  // clear /login from URL
 
   // Reset admin nav — ALWAYS hide first
   var al = document.getElementById('nav-admin-label');
