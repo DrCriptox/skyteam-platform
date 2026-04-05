@@ -151,10 +151,19 @@ async function handleDashboard(req, res, user, ref) {
     var daysRemaining = expiryMs > 0 ? Math.ceil((expiryMs - now) / 86400000) : 999;
     m.days_remaining = daysRemaining;
     var lastActive = gam.streak_last_date ? Math.ceil((now - new Date(gam.streak_last_date).getTime()) / 86400000) : 999;
+    var daysSinceRegistration = m.created_at ? Math.ceil((now - new Date(m.created_at).getTime()) / 86400000) : 999;
+    m.days_since_registration = daysSinceRegistration;
 
-    if (daysRemaining <= 7 || lastActive >= 14) m.status = 'inactive';
-    else if (daysRemaining <= 14 || lastActive >= 7) m.status = 'risk';
-    else m.status = 'active';
+    // New members (< 7 days) are "new", not "inactive"
+    if (daysSinceRegistration <= 7 && lastActive >= 14) {
+      m.status = 'new';
+    } else if (daysRemaining <= 7 || (lastActive >= 14 && daysSinceRegistration > 7)) {
+      m.status = 'inactive';
+    } else if (daysRemaining <= 14 || lastActive >= 7) {
+      m.status = 'risk';
+    } else {
+      m.status = 'active';
+    }
   });
 
   // 5. Generate alerts
@@ -164,8 +173,14 @@ async function handleDashboard(req, res, user, ref) {
       alerts.push({ type: 'expiring', category: 'urgente', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' vence en ' + m.days_remaining + ' dias', action: 'contact' });
     }
     if (m.status === 'inactive' && m.days_remaining > 7) {
-      var daysInactive = m.streak_last_date ? Math.ceil((now - new Date(m.streak_last_date).getTime()) / 86400000) : 999;
-      alerts.push({ type: 'inactive', category: 'urgente', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' lleva ' + daysInactive + ' dias sin actividad', action: 'contact' });
+      var daysInactive = m.streak_last_date ? Math.ceil((now - new Date(m.streak_last_date).getTime()) / 86400000) : (m.days_since_registration || 0);
+      if (daysInactive > 3) {
+        alerts.push({ type: 'inactive', category: 'urgente', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' lleva ' + daysInactive + ' dias sin actividad', action: 'contact' });
+      }
+    }
+    // New members get a positive alert instead
+    if (m.status === 'new') {
+      alerts.push({ type: 'new_member', category: 'positivo', username: m.username, name: (m.name || m.username || 'Socio'), message: 'Nuevo socio: ' + (m.name || m.username || 'Socio') + ' (hace ' + (m.days_since_registration || 0) + ' dias)', action: 'profile' });
     }
     if (m.onboarding_day <= 1 && m.onboarding_started) {
       var daysSinceStart = Math.ceil((now - new Date(m.onboarding_started).getTime()) / 86400000);
@@ -260,7 +275,9 @@ async function handleCoach(req, res, user, ref) {
     var expiryMs = m.expiry ? (typeof m.expiry === 'number' || /^\d+$/.test(m.expiry) ? Number(m.expiry) : new Date(m.expiry).getTime()) : 0;
     var daysRemaining = expiryMs > 0 ? Math.ceil((expiryMs - now) / 86400000) : 999;
     var lastActive = gam.streak_last_date ? Math.ceil((now - new Date(gam.streak_last_date).getTime()) / 86400000) : 999;
-    if (daysRemaining <= 7 || lastActive >= 14) m.status = 'inactive';
+    var daysSinceReg = m.created_at ? Math.ceil((now - new Date(m.created_at).getTime()) / 86400000) : 999;
+    if (daysSinceReg <= 7 && lastActive >= 14) m.status = 'new';
+    else if (daysRemaining <= 7 || (lastActive >= 14 && daysSinceReg > 7)) m.status = 'inactive';
     else if (daysRemaining <= 14 || lastActive >= 7) m.status = 'risk';
     else m.status = 'active';
   });

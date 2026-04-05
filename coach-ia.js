@@ -1306,9 +1306,13 @@ function toggleVoice() {
     coachState.recording = false;
     coachState.recognition.stop();
     updateMicButton();
-    // Auto-send on stop
+    // Auto-send on stop and clear input
     var input = document.getElementById('coach-input');
-    if (input && input.value.trim()) sendCoachMessage(input.value.trim());
+    if (input && input.value.trim()) {
+      var msg = input.value.trim();
+      input.value = '';
+      sendCoachMessage(msg);
+    }
     return;
   }
 

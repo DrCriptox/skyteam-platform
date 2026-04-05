@@ -313,8 +313,32 @@ function _getInitials(name) {
 
 function _statusColor(status) {
   if (status === 'active') return C.green;
+  if (status === 'new') return '#7F77DD';
   if (status === 'risk' || status === 'at_risk') return C.gold;
   return C.red;
+}
+
+function _statusLabel(status, daysSinceReg) {
+  if (status === 'new') return 'Nuevo';
+  if (status === 'active') return 'Activo';
+  if (status === 'risk' || status === 'at_risk') return 'En riesgo';
+  if (status === 'inactive') return 'Inactivo';
+  return status || 'Sin datos';
+}
+
+function _memberActivityLabel(m) {
+  var regDays = m.days_since_registration;
+  if (regDays != null && regDays <= 1) return 'Se uni\u00f3 hoy';
+  if (regDays != null && regDays <= 2) return 'Se uni\u00f3 ayer';
+  if (regDays != null && regDays <= 7) return 'Se uni\u00f3 hace ' + regDays + ' d\u00edas';
+  if (m.streak_last_date) {
+    var lastDays = Math.ceil((Date.now() - new Date(m.streak_last_date).getTime()) / 86400000);
+    if (lastDays <= 1) return 'Activo hoy';
+    if (lastDays <= 2) return 'Activo ayer';
+    return '\u00daltima actividad hace ' + lastDays + 'd';
+  }
+  if (regDays != null && regDays < 999) return 'Registrado hace ' + regDays + ' d\u00edas';
+  return '';
 }
 
 function _daysPillColor(days) {
@@ -1840,8 +1864,8 @@ function openMemberDetail(username) {
   html += '</div>';
 
   html += '<div class="st-detail-stat">';
-  html += '<div class="st-detail-stat-val" style="color:' + _statusColor(status) + ';">' + _safe(status) + '</div>';
-  html += '<div class="st-detail-stat-label">Estado</div>';
+  html += '<div class="st-detail-stat-val" style="color:' + _statusColor(status) + ';">' + _statusLabel(status) + '</div>';
+  html += '<div class="st-detail-stat-label">' + _memberActivityLabel(m) + '</div>';
   html += '</div>';
 
   html += '</div>';
