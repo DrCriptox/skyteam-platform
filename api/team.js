@@ -122,14 +122,29 @@ async function handleDashboard(req, res, user, ref) {
     bookData = results[3] || [];
   }
 
-  // 4. Calculate Sky Score per member
+  // 4. Build lookup maps for O(1) access (avoid O(n²) .find/.filter in loops)
+  var gamMap = {};
+  gamData.forEach(function(g) { gamMap[g.user_ref] = g; });
+  var onbMap = {};
+  onbData.forEach(function(o) { onbMap[o.username] = o; });
+  var prosMap = {}, closedMap = {}, prosByEtapa = {};
+  prospData.forEach(function(p) {
+    prosMap[p.username] = (prosMap[p.username] || 0) + 1;
+    if (p.etapa === 'cerrado_ganado') closedMap[p.username] = (closedMap[p.username] || 0) + 1;
+    if (!prosByEtapa[p.username]) prosByEtapa[p.username] = {};
+    prosByEtapa[p.username][p.etapa] = (prosByEtapa[p.username][p.etapa] || 0) + 1;
+  });
+  var bookMap = {};
+  bookData.forEach(function(b) { bookMap[b.username] = (bookMap[b.username] || 0) + 1; });
+
+  // Calculate Sky Score per member
   var now = Date.now();
   members.forEach(function(m) {
-    var gam = gamData.find(function(g) { return g.user_ref === m.username || g.user_ref === m.ref; }) || {};
-    var onb = onbData.find(function(o) { return o.username === m.username; }) || {};
-    var prosCount = prospData.filter(function(p) { return p.username === m.username; }).length;
-    var closedCount = prospData.filter(function(p) { return p.username === m.username && p.etapa === 'cerrado_ganado'; }).length;
-    var bookCount = bookData.filter(function(b) { return b.username === m.username; }).length;
+    var gam = gamMap[m.username] || gamMap[m.ref] || {};
+    var onb = onbMap[m.username] || {};
+    var prosCount = prosMap[m.username] || 0;
+    var closedCount = closedMap[m.username] || 0;
+    var bookCount = bookMap[m.username] || 0;
 
     m.score_prospects = (prosCount * 2) + (closedCount * 5);
     m.score_sales = (m.ventas || 0) * 10;
@@ -137,8 +152,7 @@ async function handleDashboard(req, res, user, ref) {
     m.sky_score = m.score_prospects + m.score_sales + m.score_day;
     m.prospectos_count = prosCount;
     m.prospectos_cerrados = closedCount;
-    m.prospectos_por_etapa = {};
-    prospData.filter(function(p){return p.username===m.username;}).forEach(function(p){ m.prospectos_por_etapa[p.etapa] = (m.prospectos_por_etapa[p.etapa]||0)+1; });
+    m.prospectos_por_etapa = prosByEtapa[m.username] || {};
     m.bookings_count = bookCount;
     m.streak_current = gam.streak_current || 0;
     m.streak_last_date = gam.streak_last_date || null;
@@ -258,14 +272,21 @@ async function handleCoach(req, res, user, ref) {
     bookData = results[3] || [];
   }
 
+  // Build lookup maps for O(1) access
+  var gamMap2 = {}; gamData.forEach(function(g) { gamMap2[g.user_ref] = g; });
+  var onbMap2 = {}; onbData.forEach(function(o) { onbMap2[o.username] = o; });
+  var prosMap2 = {}, closedMap2 = {};
+  prospData.forEach(function(p) { prosMap2[p.username] = (prosMap2[p.username]||0)+1; if (p.etapa==='cerrado_ganado') closedMap2[p.username] = (closedMap2[p.username]||0)+1; });
+  var bookMap2 = {}; bookData.forEach(function(b) { bookMap2[b.username] = (bookMap2[b.username]||0)+1; });
+
   // Calculate scores
   var now = Date.now();
   members.forEach(function(m) {
-    var gam = gamData.find(function(g) { return g.user_ref === m.username || g.user_ref === m.ref; }) || {};
-    var onb = onbData.find(function(o) { return o.username === m.username; }) || {};
-    var prosCount = prospData.filter(function(p) { return p.username === m.username; }).length;
-    var closedCount = prospData.filter(function(p) { return p.username === m.username && p.etapa === 'cerrado_ganado'; }).length;
-    var bookCount = bookData.filter(function(b) { return b.username === m.username; }).length;
+    var gam = gamMap2[m.username] || gamMap2[m.ref] || {};
+    var onb = onbMap2[m.username] || {};
+    var prosCount = prosMap2[m.username] || 0;
+    var closedCount = closedMap2[m.username] || 0;
+    var bookCount = bookMap2[m.username] || 0;
 
     m.score_prospects = (prosCount * 2) + (closedCount * 5);
     m.score_sales = (m.ventas || 0) * 10;
