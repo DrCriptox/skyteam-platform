@@ -97,27 +97,59 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, stats: data });
     }
 
-    // ── GET RANKING: merge both asesor files + stats ──
+    // ── GET RANKING: merge both asesor files + stats, filter by period ──
     if (action === 'getRanking') {
+      const { period } = req.body || {};
       const { data: stats } = await readGHFile(FILE_STATS);
       const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
       const { data: oldAsesores } = await readGHFile('asesores.json');
       const allAsesores = Object.assign({}, oldAsesores, skyAsesores);
+
+      // Calculate date range for period filter
+      const now = new Date();
+      let dateFrom = null;
+      if (period === 'weekly') {
+        const day = now.getDay(); const diff = day === 0 ? 6 : day - 1;
+        const monday = new Date(now); monday.setDate(now.getDate() - diff); monday.setHours(0,0,0,0);
+        dateFrom = monday.toISOString().split('T')[0];
+      } else if (period === 'monthly') {
+        dateFrom = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
+      }
 
       const ranking = Object.keys(allAsesores)
         .filter(function(ref) { return ref !== 'default'; })
         .map(function(ref) {
           const asesor = allAsesores[ref] || {};
           const s = typeof stats[ref] === 'object' ? stats[ref] : {};
-          const visitas = s.total || 0;
-          const uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
+
+          // Filter visits by period using days data
+          let visitas = 0, uniqueIps = 0, conversiones = s.conversions || 0;
+          if (dateFrom && s.days) {
+            // Count only visits in the date range
+            Object.keys(s.days).forEach(function(d) { if (d >= dateFrom) visitas += (typeof s.days[d] === 'number' ? s.days[d] : 0); });
+            // Count unique IPs in date range
+            if (s.days_ips) {
+              const periodIps = {};
+              Object.keys(s.days_ips).forEach(function(d) {
+                if (d >= dateFrom && typeof s.days_ips[d] === 'object') {
+                  Object.keys(s.days_ips[d]).forEach(function(ip) { periodIps[ip] = true; });
+                }
+              });
+              uniqueIps = Object.keys(periodIps).length;
+            } else {
+              uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
+            }
+          } else {
+            visitas = s.total || 0;
+            uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
+          }
+
           const ipDupes = Math.max(0, visitas - uniqueIps);
-          const conversiones = s.conversions || 0;
           const validConversions = Math.min(conversiones, uniqueIps);
           const score = Math.max(0, (visitas * 1) - (ipDupes * 2) + (validConversions * 20));
           return {
             ref: ref, nombre: asesor.nombre || ref,
-            visitas: uniqueIps, conversiones: conversiones, score: score,
+            visitas: uniqueIps, conversiones: validConversions, score: score,
             whatsapp: asesor.whatsapp || '', foto: asesor.foto || ''
           };
         })
