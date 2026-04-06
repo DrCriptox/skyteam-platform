@@ -10374,14 +10374,22 @@ function renderPerfil() {
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
     + (function(){
         var bday = localStorage.getItem('skyteam_birthday_'+CU.username) || CU.birthday || '';
-        if(bday) {
-          // Locked — show date as text, not editable
+        var bdayLockKey = 'skyteam_bday_lock_' + CU.username;
+        var lastSave = localStorage.getItem(bdayLockKey);
+        var isLocked = false;
+        var lockDaysLeft = 0;
+        if(lastSave) {
+          var elapsed = Date.now() - parseInt(lastSave);
+          var sixMonths = 180 * 86400000;
+          if(elapsed < sixMonths) { isLocked = true; lockDaysLeft = Math.ceil((sixMonths - elapsed) / 86400000); }
+        }
+        if(bday && isLocked) {
           var parts = bday.split('-');
           var meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
           var label = parseInt(parts[2])+' '+meses[parseInt(parts[1])]+' '+parts[0];
-          return '<div class="perfil-data-row"><span class="perfil-data-label">🎂 Cumpleaños</span><span class="perfil-data-value" style="font-size:12px;">'+label+' <span style="font-size:8px;color:rgba(255,255,255,0.2);">🔒</span></span></div>';
+          return '<div class="perfil-data-row"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><span class="perfil-data-value" style="font-size:12px;">'+label+' <span style="font-size:8px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 '+lockDaysLeft+'d</span></span></div>';
         } else {
-          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">🎂 Cumpleaños</span><input type="date" id="pf-birthday" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>';
+          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><input type="date" id="pf-birthday" value="'+(bday||'')+'" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>';
         }
       })()
     + '</div>'
@@ -10602,17 +10610,33 @@ function saveTZ(tz) {
 }
 function saveBirthday(val) {
   if(!CU) return;
+  // Lock: only 1 change every 6 months
+  var bdayLockKey = 'skyteam_bday_lock_' + CU.username;
+  var lastSave = localStorage.getItem(bdayLockKey);
+  if(lastSave) {
+    var elapsed = Date.now() - parseInt(lastSave);
+    var sixMonths = 180 * 86400000;
+    if(elapsed < sixMonths) {
+      var daysLeft = Math.ceil((sixMonths - elapsed) / 86400000);
+      showToast('\uD83D\uDD12 Cumplea\u00f1os bloqueado. Podr\u00e1s cambiarlo en ' + daysLeft + ' d\u00edas', 'error');
+      renderPerfil(); // revert input
+      return;
+    }
+  }
   localStorage.setItem('skyteam_birthday_'+CU.username, val);
-  if(CU) { CU.birthday = val; localStorage.setItem('skyteam_u', JSON.stringify(CU)); }
-  // Save to server
+  CU.birthday = val;
+  localStorage.setItem('skyteam_u', JSON.stringify(CU));
   fetch('/api/update-user', {
-    method: 'POST',
+    method: 'PATCH',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ username: CU.username, updates: { birthday: val } })
   }).then(function(r){return r.json();}).then(function(d){
-    if(d.ok) showToast('🎂 Cumpleaños guardado ✓');
-    else showToast('Error guardando cumpleaños','error');
-  }).catch(function(){ showToast('Error de conexión','error'); });
+    if(d.ok) {
+      localStorage.setItem(bdayLockKey, String(Date.now()));
+      showToast('\uD83C\uDF82 Cumplea\u00f1os guardado \u2713');
+      renderPerfil();
+    } else showToast('Error guardando cumplea\u00f1os','error');
+  }).catch(function(){ showToast('Error de conexi\u00f3n','error'); });
 }
 
 /* ── INIT ── */
