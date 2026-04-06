@@ -3849,7 +3849,7 @@ function renderAgendaUI(el) {
   html += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">';
   html += '<button onclick="switchAgendaTab(\'config\')" class="' + (agendaTab==='config'?'atab-on':'atab-off') + '">⚙️ Configurar</button>';
   html += '<button onclick="switchAgendaTab(\'citas\')" class="' + (agendaTab==='citas'?'atab-on':'atab-off') + '">📋 Citas (' + pendientes.length + ')</button>';
-  html += '<button onclick="switchAgendaTab(\'plandiario\')" class="' + (agendaTab==='plandiario'?'atab-on':'atab-off') + '">📅 Mi Plan Diario</button>';
+  html += '<button onclick="switchAgendaTab(\'plandiario\')" class="' + (agendaTab==='plandiario'?'atab-on':'atab-off') + '">📅 Mi Agenda</button>';
   html += '</div>';
 
   html += agendaTab === 'config' ? renderAgendaConfigUI() : agendaTab === 'plandiario' ? renderPlanDiarioUI() : renderAgendaCitasUI();
@@ -4387,7 +4387,7 @@ function renderPlanDiarioUI() {
   var html = '';
   // Title + description
   html += '<div style="text-align:center;margin-bottom:16px;">';
-  html += '<p style="font-size:20px;font-weight:900;color:#F0EDE6;margin:0;">📅 Mi Plan Diario</p>';
+  html += '<p style="font-size:20px;font-weight:900;color:#F0EDE6;margin:0;">📅 Mi Agenda</p>';
   html += '<p style="font-size:12px;color:rgba(255,255,255,0.4);margin:6px 0 0;">Organiza tu tiempo personal. Los bloques se sincronizan con tu agenda de cierres.</p>';
   html += '</div>';
 
@@ -5517,8 +5517,8 @@ function refreshNotifications() {
       id: dailyKey+'morning', type: 'system', icon: '🌅',
       title: '¡Buenos días! Tu día productivo empieza ahora',
       subtitle: 'Revisa tu agenda y contacta a tus prospectos',
-      msg: 'Las primeras horas son las más valiosas. Revisa tu Plan Diario y empieza con tus tareas de mayor impacto.',
-      action: {label: '📅 Mi Plan Diario', url: 'javascript:navigate("agenda");setTimeout(function(){switchAgendaTab("plandiario")},300)'},
+      msg: 'Las primeras horas son las m\u00e1s valiosas. Revisa tu agenda y empieza con tus tareas de mayor impacto.',
+      action: {label: '📅 Mi Agenda', url: 'javascript:navigate("agenda");setTimeout(function(){switchAgendaTab("plandiario")},300)'},
       priority: 0.8
     });
     activeCount++;
