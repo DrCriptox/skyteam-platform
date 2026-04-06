@@ -10617,6 +10617,7 @@ function sendSolicitud() {
       body: JSON.stringify({
         id: newSolicitud.id,
         expiryTs: expiryData ? expiryData.expiry_ts : null,
+        daysRemaining: expiryData ? expiryData.days_remaining : null,
         directData: {
           name: name,
           email: email || null,

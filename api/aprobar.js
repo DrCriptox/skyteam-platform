@@ -130,8 +130,16 @@ export default async function handler(req, res) {
 
     // Create user in users table — try progressively minimal payloads if columns are missing
     // Migration grace: if expiry is past or null, give 8 days from now
+    const { daysRemaining } = req.body || {};
     let finalExpiry = expiryTs || null;
-    // If no expiry, expired, or expires within 24h → give 7 days trial
+
+    // If OCR detected days_remaining > 0, use that as source of truth (more reliable than expiry_ts)
+    if (typeof daysRemaining === 'number' && daysRemaining > 0) {
+      finalExpiry = Date.now() + (daysRemaining * 86400000);
+      console.log('[APROBAR] Using daysRemaining=' + daysRemaining + ' → expiry:', new Date(finalExpiry).toISOString());
+    }
+
+    // If still no expiry, expired, or expires within 24h → give 7 days trial
     if (!finalExpiry || finalExpiry <= (Date.now() + 86400000)) {
       finalExpiry = Date.now() + (7 * 86400000);
       console.log('[APROBAR] Trial period: 7 days granted. New expiry:', new Date(finalExpiry).toISOString());
