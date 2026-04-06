@@ -113,7 +113,8 @@ export default async function handler(req, res) {
           const uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
           const ipDupes = Math.max(0, visitas - uniqueIps);
           const conversiones = s.conversions || 0;
-          const score = Math.max(0, (visitas * 1) - (ipDupes * 2) + (conversiones * 10));
+          const validConversions = Math.min(conversiones, uniqueIps);
+          const score = Math.max(0, (visitas * 1) - (ipDupes * 2) + (validConversions * 20));
           return {
             ref: ref, nombre: asesor.nombre || ref,
             visitas: uniqueIps, conversiones: conversiones, score: score,

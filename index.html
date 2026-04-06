@@ -7182,14 +7182,16 @@ function _loadSSLandingProfile() {
     var myIps = myData.ips ? Object.keys(myData.ips).length : 0;
     var ipDupes = Math.max(0, myVisits - myIps);
     var myConversions = myData.conversions || 0;
-    // Score: visits*1 - ipDupes*2 + conversions*10
-    var myScore = Math.max(0, (myVisits * 1) - (ipDupes * 2) + (myConversions * 10));
+    // Conversions only count from unique IPs
+    var validConversions = Math.min(myConversions, myIps);
+    // Score: visits*1 - ipDupes*2 + validConversions*20
+    var myScore = Math.max(0, (myVisits * 1) - (ipDupes * 2) + (validConversions * 20));
     el.innerHTML = '<div style="display:flex;gap:12px;justify-content:center;">'
       +'<div style="text-align:center;padding:10px 18px;background:rgba(201,168,76,0.06);border-radius:10px;border:0.5px solid rgba(201,168,76,0.15);flex:1;"><div style="font-size:22px;font-weight:900;color:#C9A84C;">'+myIps+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Visitas \u00fanicas</div></div>'
       +'<div style="text-align:center;padding:10px 18px;background:rgba(29,158,117,0.06);border-radius:10px;border:0.5px solid rgba(29,158,117,0.15);flex:1;"><div style="font-size:22px;font-weight:900;color:#1D9E75;">'+myConversions+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Conversiones</div></div>'
       +'<div style="text-align:center;padding:10px 18px;background:rgba(127,119,221,0.06);border-radius:10px;border:0.5px solid rgba(127,119,221,0.15);flex:1;"><div style="font-size:22px;font-weight:900;color:#7F77DD;">'+myScore+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Puntaje</div></div>'
       +'</div>'
-      +'<p style="font-size:8px;color:rgba(255,255,255,0.15);text-align:center;margin:6px 0 0;">Puntaje = visitas\u00d71 - IPs duplicados\u00d72 + conversiones\u00d710</p>';
+      +'<p style="font-size:8px;color:rgba(255,255,255,0.15);text-align:center;margin:6px 0 0;">PTS = visitas\u00d71 - IPs duplicados\u00d72 + conversiones(\u00fanicos)\u00d720</p>';
   }).catch(function(){});
 }
 
