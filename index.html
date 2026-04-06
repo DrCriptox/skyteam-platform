@@ -3460,7 +3460,8 @@ function doLogout() {
   if(lp) lp.value='';
 }
 
-document.getElementById('lp').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+var _lpEl = document.getElementById('lp');
+if(_lpEl) _lpEl.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
 function showApp() {
   // Hide landing page and login
@@ -8280,6 +8281,7 @@ function navigate(sec) {
     document.documentElement.scrollTop = 0;
     renderAgenda();
   } else { stopAgendaPoll(); }
+  if(sec==='home' && typeof renderHome==='function') renderHome();
   if(sec==='perfil') renderPerfil();
   if(sec==='skyteam' && typeof initSkyTeam==='function') initSkyTeam();
   if(sec==='academia-liderazgo') renderAcadLid();
@@ -9976,7 +9978,7 @@ function onSolImgChange(input) {
 function sendSolicitud() {
   var name       = document.getElementById('sol-name').value.trim();
   var waNum      = document.getElementById('sol-wa-num') ? document.getElementById('sol-wa-num').value.trim().replace(/\s+/g,'') : '';
-  var country    = document.getElementById('sol-country') ? document.getElementById('sol-country').value : '+57';
+  var country    = (document.getElementById('sol-country') ? document.getElementById('sol-country').value : '') || '+57';
   var wa         = waNum ? (country + waNum) : '';
   var innovaUser     = document.getElementById('sol-innova-user').value.trim();
   var email          = document.getElementById('sol-email').value.trim();
