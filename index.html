@@ -4518,9 +4518,11 @@ function renderPlanDiarioCalendar() {
   // Helper: convert HH:MM to minutes since midnight
   function toMin(t){ var p=t.split(':'); return parseInt(p[0])*60+parseInt(p[1]); }
 
-  // Grid body — each day column is a relative container with absolute-positioned blocks
-  var gridTotalMin = (LAST_HOUR+1-FIRST_HOUR)*60; // total minutes in grid
-  html += '<div class="pd-grid-body" style="position:relative;">';
+  // Grid body — fixed row height so absolute % positioning works correctly
+  var ROW_H = 48; // pixels per hour row
+  var gridTotalMin = (LAST_HOUR+1-FIRST_HOUR)*60;
+  var gridTotalPx = hours.length * ROW_H;
+  html += '<div class="pd-grid-body" style="position:relative;height:'+gridTotalPx+'px;">';
 
   // Draw hour rows (visual grid lines)
   hours.forEach(function(h){
@@ -4529,7 +4531,7 @@ function renderPlanDiarioCalendar() {
     html += '<div class="pd-time-label">'+hStr+'</div>';
     dates.forEach(function(d){
       var dateStr = fmtDate(d);
-      html += '<div class="pd-cell" style="min-height:48px;" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+hStr+'\')"></div>';
+      html += '<div class="pd-cell" style="height:'+ROW_H+'px;" onclick="openPlanDiarioAdd(\''+dateStr+'\',\''+hStr+'\')"></div>';
     });
     html += '</div>';
   });
@@ -4548,8 +4550,10 @@ function renderPlanDiarioCalendar() {
       var bStartMin = Math.max(toMin(b.hora_inicio), FIRST_HOUR*60);
       var bEndMin = Math.min(toMin(b.hora_fin), (LAST_HOUR+1)*60);
       if(bEndMin <= bStartMin) return; // outside visible range
-      var topPct = ((bStartMin - FIRST_HOUR*60) / gridTotalMin * 100).toFixed(2);
-      var heightPct = ((bEndMin - bStartMin) / gridTotalMin * 100).toFixed(2);
+      var topPx = Math.round((bStartMin - FIRST_HOUR*60) / 60 * ROW_H);
+      var heightPx = Math.max(ROW_H/2, Math.round((bEndMin - bStartMin) / 60 * ROW_H));
+      var topPct = (topPx / gridTotalPx * 100).toFixed(2);
+      var heightPct = (heightPx / gridTotalPx * 100).toFixed(2);
       // Column positioning: skip time col (48px), then each col is 1/N of remaining
       var colLeft = 'calc(48px + '+colIdx+' * (100% - 48px) / '+dates.length+' + 3px)';
       var colWidth = 'calc((100% - 48px) / '+dates.length+' - 6px)';
