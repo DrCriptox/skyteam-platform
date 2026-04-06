@@ -703,7 +703,9 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 .crm-prospect-card{cursor:grab;transition:all 0.15s;}
 .crm-prospect-card:hover{transform:translateY(-2px);}
 .crm-prospect-card.dragging{opacity:0.5;cursor:grabbing;}
-.crm-modal{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;margin:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.crm-modal{position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;margin:0;background:rgba(0,0,0,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.crm-modal-open #sidebar{display:none !important;}
+.crm-modal-open #sb-overlay{display:none !important;}
 .crm-modal-content{background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:18px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
 .crm-modal-detail-content{max-width:640px;}
 .crm-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid rgba(255,255,255,0.06);}
@@ -11907,9 +11909,7 @@ function crmInstagramAppUrl(username) {
    ======================================== */
 
 function openCrmModalAdd(editId) {
-  // Close sidebar so it doesn't interfere with modal
-  if(typeof closeSidebar === 'function') closeSidebar();
-
+  document.body.classList.add('crm-modal-open');
   var modal = document.getElementById('crm-modal-add');
   if (!modal) return;
 
@@ -11979,6 +11979,7 @@ function openCrmModalAdd(editId) {
 }
 
 function closeCrmModalAdd() {
+  document.body.classList.remove('crm-modal-open');
   var modal = document.getElementById('crm-modal-add');
   if (modal) modal.style.display = 'none';
   crmEditingId = null;
@@ -12112,6 +12113,7 @@ function openCrmDetail(id) {
 }
 
 function closeCrmModalDetail() {
+  document.body.classList.remove('crm-modal-open');
   var modal = document.getElementById('crm-modal-detail');
   if (modal) modal.style.display = 'none';
   crmDetailId = null;
