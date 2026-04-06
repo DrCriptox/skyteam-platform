@@ -1,6 +1,8 @@
 // Landing integration API — reads/writes asesores.json + stats.json from innova-ia-landing repo
 const REPO = process.env.GITHUB_REPO || 'DrCriptox/innova-ia-landing';
 const BRANCH = 'main';
+const FILE_ASESORES = 'asesores-skyteam.json'; // New file for skyteam registrations
+const FILE_STATS = 'stats.json';
 const TOKEN = () => process.env.GITHUB_TOKEN || '';
 
 function ghHeaders() {
@@ -37,54 +39,70 @@ export default async function handler(req, res) {
     const { action, user, ref } = req.body || {};
     if (!action) return res.status(400).json({ error: 'Missing action' });
 
-    // ── GET PROFILE: read asesor data from asesores.json ──
+    // ── GET PROFILE: read from skyteam file first, then old asesores.json as fallback ──
     if (action === 'getProfile') {
       if (!ref) return res.status(400).json({ error: 'Missing ref' });
-      const { data } = await readGHFile('asesores.json');
-      const asesor = data[ref.toLowerCase()] || null;
+      const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const { data: skyData } = await readGHFile(FILE_ASESORES);
+      let asesor = skyData[slug] || null;
+      if (!asesor) {
+        const { data: oldData } = await readGHFile('asesores.json');
+        asesor = oldData[slug] || null;
+      }
       return res.status(200).json({ ok: true, asesor, exists: !!asesor });
     }
 
-    // ── SAVE PROFILE: create or update asesor in asesores.json ──
+    // ── SAVE PROFILE: write to asesores-skyteam.json AND asesores.json ──
     if (action === 'saveProfile') {
       if (!ref) return res.status(400).json({ error: 'Missing ref' });
       const { nombre, rol, whatsapp, mensaje, foto } = req.body;
       if (!TOKEN()) return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
+      const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const asesorData = {
+        nombre: (nombre || 'Socio').trim(),
+        rol: (rol || 'Asesor InnovaIA').trim(),
+        whatsapp: (whatsapp || '').trim(),
+        foto: foto !== undefined ? foto : '',
+        verificado: true,
+        mensaje: (mensaje || 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes').trim()
+      };
 
+      // Write to new skyteam file
+      let saved = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, sha } = await readGHFile(FILE_ASESORES);
+        data[slug] = asesorData;
+        if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) { saved = true; break; }
+      }
+
+      // Also write to old asesores.json so innovaia.app landing works
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data, sha } = await readGHFile('asesores.json');
-        const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const existing = data[slug] || {};
-        data[slug] = {
-          nombre: (nombre || existing.nombre || 'Socio').trim(),
-          rol: (rol || existing.rol || 'Asesor InnovaIA').trim(),
-          whatsapp: (whatsapp || existing.whatsapp || '').trim(),
-          foto: foto !== undefined ? foto : (existing.foto || ''),
-          verificado: true,
-          mensaje: (mensaje || existing.mensaje || '¡Hola! Soy tu asesor InnovaIA 🚀').trim()
-        };
-        const ok = await writeGHFile('asesores.json', data, sha, 'skyteam: update ' + slug);
-        if (ok) return res.status(200).json({ ok: true, slug, link: 'https://innovaia.app?ref=' + slug });
-        if (attempt === 2) return res.status(500).json({ error: 'Write conflict after 3 attempts' });
+        data[slug] = asesorData;
+        if (await writeGHFile('asesores.json', data, sha, 'skyteam: sync ' + slug)) break;
       }
+
+      if (saved) return res.status(200).json({ ok: true, slug, link: 'https://innovaia.app?ref=' + slug });
+      return res.status(500).json({ error: 'Write failed after 3 attempts' });
     }
 
-    // ── GET STATS: read visit/conversion stats ──
+    // ── GET STATS: read visit stats ──
     if (action === 'getStats') {
-      const { data } = await readGHFile('stats.json');
-      // data format: { "ref1": 15, "ref2": 8, ... } (visit counts)
+      const { data } = await readGHFile(FILE_STATS);
       return res.status(200).json({ ok: true, stats: data });
     }
 
-    // ── GET RANKING: compute ranking from stats ──
+    // ── GET RANKING: merge both asesor files + stats ──
     if (action === 'getRanking') {
-      const { data: stats } = await readGHFile('stats.json');
-      const { data: asesores } = await readGHFile('asesores.json');
+      const { data: stats } = await readGHFile(FILE_STATS);
+      const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
+      const { data: oldAsesores } = await readGHFile('asesores.json');
+      const allAsesores = Object.assign({}, oldAsesores, skyAsesores);
 
-      const ranking = Object.keys(stats)
-        .filter(function(ref) { return ref !== 'default' && stats[ref] > 0; })
+      const ranking = Object.keys(allAsesores)
+        .filter(function(ref) { return ref !== 'default'; })
         .map(function(ref) {
-          const asesor = asesores[ref] || {};
+          const asesor = allAsesores[ref] || {};
           return {
             ref: ref,
             nombre: asesor.nombre || ref,
