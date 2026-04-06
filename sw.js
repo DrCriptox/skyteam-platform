@@ -1,5 +1,5 @@
 // SKYTEAM - Service Worker v16
-var CACHE_NAME = 'skyteam-v132';
+var CACHE_NAME = 'skyteam-v133';
 var OFFLINE_URL = '/';
 
 // Install: cache the shell
@@ -30,11 +30,11 @@ self.addEventListener('activate', function(event) {
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for static
+// Fetch: network-first for everything, cache fallback only offline
 self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
 
-  // API calls: always network
+  // API calls: always network, no cache
   if(url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request).catch(function() {
@@ -46,18 +46,28 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Static assets: network first, fallback to cache
+  // HTML pages: ALWAYS fetch fresh, never serve stale cache
+  if(event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request).then(function(response) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+        return response;
+      }).catch(function() {
+        return caches.match(event.request).then(function(c) { return c || caches.match(OFFLINE_URL); });
+      })
+    );
+    return;
+  }
+
+  // JS/CSS/images: network first, cache fallback
   event.respondWith(
     fetch(event.request).then(function(response) {
       var clone = response.clone();
-      caches.open(CACHE_NAME).then(function(cache) {
-        cache.put(event.request, clone);
-      });
+      caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
       return response;
     }).catch(function() {
-      return caches.match(event.request).then(function(cached) {
-        return cached || caches.match(OFFLINE_URL);
-      });
+      return caches.match(event.request).then(function(c) { return c || caches.match(OFFLINE_URL); });
     })
   );
 });
