@@ -9356,8 +9356,12 @@ function _adminViewProfile(username) {
   h += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:16px;font-weight:800;color:#1D9E75;">'+(u.innova_user||username)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Innova</div></div>';
   h += '</div>';
 
+  // Registration screenshot button
+  h += '<button onclick="_adminLoadScreenshot(\''+_safe(u.innova_user||username)+'\')" style="width:100%;padding:8px;margin-top:10px;border-radius:8px;background:rgba(127,119,221,0.08);border:0.5px solid rgba(127,119,221,0.20);color:#7F77DD;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDDBC\uFE0F Ver imagen de registro</button>';
+  h += '<div id="admin-screenshot-area" style="margin-top:8px;"></div>';
+
   // Buttons
-  h += '<div style="display:flex;gap:8px;margin-top:14px;">';
+  h += '<div style="display:flex;gap:8px;margin-top:10px;">';
   h += '<button onclick="_adminSaveProfile(\''+_safe(username)+'\')" style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:12px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar cambios</button>';
   if(u.wa||u.whatsapp) {
     var waNum = (u.wa||u.whatsapp||'').replace(/[^0-9]/g,'');
@@ -9395,6 +9399,37 @@ function _adminSaveProfile(username) {
   }).catch(function(e){ showToast('\u274C ' + e.message); });
 }
 window._adminSaveProfile = _adminSaveProfile;
+
+function _adminLoadScreenshot(innovaUser) {
+  var area = document.getElementById('admin-screenshot-area');
+  if(!area) return;
+  area.innerHTML = '<div style="text-align:center;padding:10px;color:rgba(255,255,255,0.3);font-size:11px;">\u23F3 Buscando imagen...</div>';
+  fetch('/api/solicitudes?limit=50').then(function(r){return r.json();}).then(function(d) {
+    var sols = d.solicitudes || [];
+    var found = sols.find(function(s) { return (s.innovaUser||'').toLowerCase() === innovaUser.toLowerCase(); });
+    if(!found) { area.innerHTML = '<div style="text-align:center;padding:8px;color:rgba(255,255,255,0.25);font-size:10px;">No se encontr\u00f3 solicitud de registro</div>'; return; }
+    var screenshot = null;
+    try { var ph = JSON.parse(found.phone||'{}'); screenshot = ph.screenshot || null; } catch(e){}
+    var h = '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;font-size:10px;">';
+    h += '<div style="color:rgba(255,255,255,0.3);margin-bottom:6px;font-weight:600;">DATOS DE SOLICITUD</div>';
+    h += '<div style="color:rgba(255,255,255,0.5);line-height:1.6;">';
+    h += 'Fecha: ' + (found.timestamp||'--') + '<br>';
+    h += 'Sponsor: ' + (found.sponsor||'--') + '<br>';
+    h += 'Email: ' + (found.email||'--') + '<br>';
+    if(found.phone) {
+      try { var ep = JSON.parse(found.phone); h += 'D\u00edas restantes: ' + (ep.days_remaining||'--') + '<br>Vencimiento: ' + (ep.expiry_label||'--') + '<br>'; } catch(e){}
+    }
+    h += '</div>';
+    if(screenshot) {
+      h += '<div style="margin-top:8px;"><img src="data:image/jpeg;base64,' + screenshot + '" style="width:100%;border-radius:8px;border:0.5px solid rgba(255,255,255,0.08);"></div>';
+    } else {
+      h += '<div style="margin-top:6px;color:rgba(255,255,255,0.2);font-style:italic;">Imagen no disponible (registrado antes de esta funcionalidad)</div>';
+    }
+    h += '</div>';
+    area.innerHTML = h;
+  }).catch(function(){ area.innerHTML = '<div style="color:#E24B4A;font-size:10px;">Error cargando datos</div>'; });
+}
+window._adminLoadScreenshot = _adminLoadScreenshot;
 
 function cambiarRango(username, newRank) {
   if(USERS[username]) {
@@ -9968,6 +10003,14 @@ function onSolImgChange(input) {
       var jpegUrl = canvas.toDataURL('image/jpeg', 0.92);
       var b64 = jpegUrl.substring(jpegUrl.indexOf(',') + 1);
 
+      // Save thumbnail for admin audit (small 200px version)
+      try {
+        var thumbW = Math.min(200, w), thumbH = Math.round(h * (thumbW / w));
+        var tc = document.createElement('canvas'); tc.width = thumbW; tc.height = thumbH;
+        tc.getContext('2d').drawImage(img, 0, 0, thumbW, thumbH);
+        input._thumbnailBase64 = tc.toDataURL('image/jpeg', 0.5).substring(tc.toDataURL('image/jpeg', 0.5).indexOf(',') + 1);
+      } catch(e) { input._thumbnailBase64 = null; }
+
       fetch('/api/extract-expiry', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -10105,13 +10148,20 @@ function sendSolicitud() {
               + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 
     var birthday = document.getElementById('sol-birthday') ? document.getElementById('sol-birthday').value : '';
+    // Get registration screenshot thumbnail for admin audit
+    var _regScreenshot = null;
+    try {
+      var _imgInput = document.getElementById('sol-img');
+      if(_imgInput && _imgInput._thumbnailBase64) _regScreenshot = _imgInput._thumbnailBase64;
+    } catch(e){}
+
     var newSolicitud = {
       id:Date.now(), name:name, wa:wa, email:email,
       sponsor:sponsor||'Sin especificar', innovaUser:innovaUser,
       patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
       fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
       password:pass, birthday: birthday || null,
-      phone: expiryData ? JSON.stringify({ expiry_ts: expiryData.expiry_ts, expiry_label: expiryData.expiry_label, days_remaining: expiryData.days_remaining }) : null
+      phone: expiryData ? JSON.stringify({ expiry_ts: expiryData.expiry_ts, expiry_label: expiryData.expiry_label, days_remaining: expiryData.days_remaining, screenshot: _regScreenshot }) : null
     };
 
     // Show loading state
