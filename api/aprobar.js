@@ -131,18 +131,25 @@ export default async function handler(req, res) {
     // Create user in users table — try progressively minimal payloads if columns are missing
     // Migration grace: if expiry is past or null, give 8 days from now
     const { daysRemaining } = req.body || {};
-    let finalExpiry = expiryTs || null;
 
-    // If OCR detected days_remaining > 0, use that as source of truth (more reliable than expiry_ts)
-    if (typeof daysRemaining === 'number' && daysRemaining > 0) {
-      finalExpiry = Date.now() + (daysRemaining * 86400000);
-      console.log('[APROBAR] Using daysRemaining=' + daysRemaining + ' → expiry:', new Date(finalExpiry).toISOString());
+    // Calculate expiry from BOTH sources and use the BEST one
+    const expiryFromTs = expiryTs && expiryTs > Date.now() ? expiryTs : null;
+    const expiryFromDays = (typeof daysRemaining === 'number' && daysRemaining > 0) ? Date.now() + (daysRemaining * 86400000) : null;
+
+    let finalExpiry = null;
+    if (expiryFromTs && expiryFromDays) {
+      // Both available: use the one that gives MORE days (OCR can miscalculate either)
+      finalExpiry = Math.max(expiryFromTs, expiryFromDays);
+      console.log('[APROBAR] Both sources: ts=' + new Date(expiryFromTs).toISOString() + ' days=' + new Date(expiryFromDays).toISOString() + ' → using max:', new Date(finalExpiry).toISOString());
+    } else {
+      finalExpiry = expiryFromTs || expiryFromDays || null;
+      if (finalExpiry) console.log('[APROBAR] Single source → expiry:', new Date(finalExpiry).toISOString());
     }
 
-    // If still no expiry, expired, or expires within 24h → give 7 days trial
+    // If still no valid expiry → give 7 days trial
     if (!finalExpiry || finalExpiry <= (Date.now() + 86400000)) {
       finalExpiry = Date.now() + (7 * 86400000);
-      console.log('[APROBAR] Trial period: 7 days granted. New expiry:', new Date(finalExpiry).toISOString());
+      console.log('[APROBAR] Trial period: 7 days granted. Expiry:', new Date(finalExpiry).toISOString());
     }
     // Core: fields that MUST be in every INSERT attempt (never lose email, expiry, whatsapp)
     const corePayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, innova_user: innovaUser };
