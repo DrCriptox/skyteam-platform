@@ -5262,7 +5262,7 @@ function startAgendaPoll() {
         var prev=agendaBookings.filter(function(b){return b.status!=='cancelada';}).length;
         var nuevo=(d.bookings||[]).filter(function(b){return b.status!=='cancelada';}).length;
         if(nuevo>prev){
-          agendaBookings=d.bookings||[];showToast('🔔 ¡Nueva cita agendada!');renderAgendaUI(document.getElementById('agenda-content'));
+          agendaBookings=d.bookings||[];showToast('\uD83D\uDD14 \u00a1Nueva cita agendada!');renderAgendaUI(document.getElementById('agenda-content'));if(agendaTab==='plandiario')loadPlanDiario();
           // Find the new booking and push notification
           var newB = agendaBookings.filter(function(b){return b.status!=='cancelada';}).sort(function(a,b){return new Date(b.creadaEn||0)-new Date(a.creadaEn||0);})[0];
           if(newB) {
@@ -5280,7 +5280,7 @@ function startAgendaPoll() {
         }
         else { agendaBookings=d.bookings||[]; refreshNotifications(); }
       }).catch(function(){});
-  },45000);
+  },15000);
 }
 function stopAgendaPoll(){if(agendaPollInterval){clearInterval(agendaPollInterval);agendaPollInterval=null;}}
 
