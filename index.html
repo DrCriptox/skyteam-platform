@@ -7090,10 +7090,10 @@ function _renderSSLanding() {
   h += '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:14px;">';
   h += '<span style="font-family:monospace;font-size:12px;color:#C9A84C;flex:1;word-break:break-all;">'+link+'</span>';
   h += '<button onclick="copyText(\''+link+'\');showToast(\'\uD83D\uDD17 Link copiado\')" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);font-size:14px;cursor:pointer;">\uD83D\uDD17</button>';
-  h += '<button onclick="window.open(\'https://wa.me/?text='+encodeURIComponent('\u00a1Hola! Revisa esta informaci\u00f3n de franquicia digital \uD83D\uDE80 '+link)+'\',\'_blank\')" style="padding:4px 8px;border-radius:6px;background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);color:#25D366;font-size:14px;cursor:pointer;">\uD83D\uDCF1</button>';
+  h += '<button onclick="window.open(\'https://wa.me/?text='+encodeURIComponent('\u00a1Hola! Revisa esta informaci\u00f3n de franquicia digital \uD83D\uDE80 '+link)+'\',\'_blank\')" title="Compartir por WhatsApp" style="padding:4px 8px;border-radius:6px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></button>';
   h += '</div>';
   // Preview link
-  h += '<a href="'+link+'" target="_blank" style="display:inline-block;font-size:11px;color:#7F77DD;text-decoration:none;margin-bottom:14px;">\uD83D\uDC41 Ver mi landing en vivo \u2192</a>';
+  h += '<a href="'+link+'" target="_blank" style="display:inline-block;font-size:11px;color:#7F77DD;text-decoration:none;margin-bottom:2px;">\uD83D\uDC41 Ver mi landing en vivo \u2192</a>';
   h += '</div>';
 
   // Editor
@@ -7103,15 +7103,15 @@ function _renderSSLanding() {
   h += '<div id="ss-landing-form" style="display:none;">';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Nombre</label><input type="text" id="ss-l-nombre" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Rol / T\u00edtulo</label><input type="text" id="ss-l-rol" placeholder="Ej: Asesor InnovaIA" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
+  var _curWa = CU ? (CU.whatsapp || CU.phone || '') : '';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label>';
-  h += '<div style="display:flex;gap:6px;margin-top:4px;">';
-  h += '<select id="ss-l-country" style="background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:12px;padding:9px 6px;outline:none;font-family:Outfit,Nunito,sans-serif;min-width:90px;">';
-  h += '<option value="+57">\uD83C\uDDE8\uD83C\uDDF4 +57</option><option value="+52">\uD83C\uDDF2\uD83C\uDDFD +52</option><option value="+51">\uD83C\uDDF5\uD83C\uDDEA +51</option><option value="+56">\uD83C\uDDE8\uD83C\uDDF1 +56</option><option value="+54">\uD83C\uDDE6\uD83C\uDDF7 +54</option><option value="+58">\uD83C\uDDFB\uD83C\uDDEA +58</option><option value="+593">\uD83C\uDDEA\uD83C\uDDE8 +593</option><option value="+507">\uD83C\uDDF5\uD83C\uDDE6 +507</option><option value="+506">\uD83C\uDDE8\uD83C\uDDF7 +506</option><option value="+1">\uD83C\uDDFA\uD83C\uDDF8 +1</option><option value="+34">\uD83C\uDDEA\uD83C\uDDF8 +34</option>';
-  h += '</select>';
-  h += '<input type="tel" id="ss-l-wa" placeholder="300 123 4567" style="flex:1;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">';
-  h += '</div></div>';
+  h += phoneCountrySelectHTML('ss-l-wa-phone', _curWa);
+  h += '</div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Texto de tu landing</label><textarea id="ss-l-msg" rows="3" placeholder="Ej: Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;resize:vertical;"></textarea><p style="font-size:9px;color:rgba(255,255,255,0.2);margin:4px 0 0;">Este texto aparece en tu landing visible al p\u00fablico</p></div>';
-  h += '<div style="margin-bottom:14px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Foto de perfil</label><div style="display:flex;gap:8px;margin-top:4px;align-items:center;"><div id="ss-l-foto-preview" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;">\uD83D\uDC64</div><label style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCF7 Cambiar foto<input type="file" accept="image/*" style="display:none;" onchange="_ssLandingPhotoChange(this)"></label></div></div>';
+  var _initFoto = (CU && CU.photo) || localStorage.getItem('skyteam_photo_' + (CU ? CU.username : '')) || '';
+  if(_initFoto) _ssLandingPhoto = _initFoto;
+  var _fotoContent = _initFoto ? '<img src="'+_initFoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '\uD83D\uDC64';
+  h += '<div style="margin-bottom:14px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Foto de perfil</label><div style="display:flex;gap:8px;margin-top:4px;align-items:center;"><div id="ss-l-foto-preview" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;">'+_fotoContent+'</div><label style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCF7 Cambiar foto<input type="file" accept="image/*" style="display:none;" onchange="_ssLandingPhotoChange(this)"></label></div></div>';
   h += '<button onclick="_ssLandingSave()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar y publicar landing</button>';
   h += '</div></div>';
 
@@ -7128,16 +7128,16 @@ function _ssLandingPhotoChange(input) {
   reader.onload = function(e) {
     // Use the same crop tool as profile if available
     if(typeof openCropModal === 'function') {
-      openCropModal(e.target.result, function(croppedData) {
-        _ssLandingPhoto = croppedData;
-        var pv = document.getElementById('ss-l-foto-preview');
-        if(pv) pv.innerHTML = '<img src="'+croppedData+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-        // Also update profile photo
-        if(CU) {
-          try { localStorage.setItem('skyteam_photo_' + CU.username, croppedData); } catch(ex){}
-          if(typeof renderSidebarUser === 'function') renderSidebarUser();
+      _cropCallback = function() {
+        var foto = CU && CU.photo;
+        if(foto) {
+          _ssLandingPhoto = foto;
+          var pv = document.getElementById('ss-l-foto-preview');
+          if(pv) pv.innerHTML = '<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
         }
-      });
+        if(typeof renderSidebarUser === 'function') renderSidebarUser();
+      };
+      openCropModal(e.target.result);
     } else {
       // Fallback: simple resize
       var img = new Image();
@@ -7166,21 +7166,22 @@ function _loadSSLandingProfile() {
     var a = d.asesor || {};
     var ni = document.getElementById('ss-l-nombre'); if(ni) ni.value = a.nombre || CU.name || '';
     var ri = document.getElementById('ss-l-rol'); if(ri) ri.value = a.rol || 'Asesor InnovaIA';
-    var wi = document.getElementById('ss-l-wa');
-    var ci = document.getElementById('ss-l-country');
-    var rawWa = a.whatsapp || CU.whatsapp || '';
-    // Try to split country code from number
-    if(rawWa && ci) {
-      var opts = ci.querySelectorAll('option');
-      var matched = false;
-      for(var oi=0;oi<opts.length;oi++) {
-        if(rawWa.indexOf(opts[oi].value)===0) { ci.value=opts[oi].value; rawWa=rawWa.substring(opts[oi].value.length); matched=true; break; }
+    var rawWa = a.whatsapp || (CU && (CU.whatsapp || CU.phone)) || '';
+    if(rawWa) {
+      var _sorted = _phoneCountries.slice().sort(function(a,b){return b.code.length-a.code.length;});
+      var _code='57',_num=rawWa,_iso='co';
+      var _bare = rawWa.startsWith('+') ? rawWa.slice(1) : rawWa;
+      for(var _i=0;_i<_sorted.length;_i++){
+        if(_bare.startsWith(_sorted[_i].code)){_code=_sorted[_i].code;_iso=_sorted[_i].iso;_num=_bare.slice(_sorted[_i].code.length);break;}
       }
+      var _selEl=document.getElementById('ss-l-wa-phone-code'); if(_selEl) _selEl.value=_code;
+      var _flEl=document.getElementById('ss-l-wa-phone-flag'); if(_flEl) _flEl.src='https://flagcdn.com/w40/'+_iso+'.png';
+      var _ctEl=document.getElementById('ss-l-wa-phone-codetext'); if(_ctEl) _ctEl.textContent='+'+_code;
+      var _numEl=document.getElementById('ss-l-wa-phone-num'); if(_numEl) _numEl.value=_num;
     }
-    if(wi) wi.value = rawWa;
     var mi = document.getElementById('ss-l-msg'); if(mi) mi.value = a.mensaje || '';
-    // Use landing foto, or fallback to profile photo
-    var foto = a.foto || localStorage.getItem('skyteam_photo_' + (CU?CU.username:'')) || '';
+    // Use landing foto, fallback to profile photo (localStorage or Supabase)
+    var foto = a.foto || localStorage.getItem('skyteam_photo_' + (CU?CU.username:'')) || (CU && CU.photo) || '';
     if(foto) {
       _ssLandingPhoto = foto;
       var pv = document.getElementById('ss-l-foto-preview');
@@ -7222,12 +7223,10 @@ function _ssLandingSave() {
   var ref = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
   var nombre = document.getElementById('ss-l-nombre');
   var rol = document.getElementById('ss-l-rol');
-  var wa = document.getElementById('ss-l-wa');
   var msg = document.getElementById('ss-l-msg');
   if(!nombre||!nombre.value.trim()){showToast('Ingresa tu nombre','error');return;}
-  if(!wa||!wa.value.trim()){showToast('Ingresa tu WhatsApp','error');return;}
-  var country = document.getElementById('ss-l-country');
-  var fullWa = (country?country.value:'+57') + wa.value.trim().replace(/\s+/g,'');
+  var fullWa = getPhoneValue('ss-l-wa-phone');
+  if(!fullWa){showToast('Ingresa tu WhatsApp','error');return;}
   var defaultMsg = 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80';
   var finalMsg = (msg && msg.value.trim()) ? msg.value.trim() : defaultMsg;
   showToast('\u23F3 Publicando landing...');
