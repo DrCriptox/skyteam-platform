@@ -9008,9 +9008,9 @@ function renderSolicitudes() {
 }
 
 function cancelarPorInconsistencia(username, nombre) {
-  if(!confirm('¿Cancelar el acceso de ' + nombre + ' (@' + username + ') por inconsistencia en los datos?\n\nSe eliminará su cuenta y se le notificará por correo.')) return;
-  showToast('⏳ Cancelando acceso...');
-  var adminUser = (SESSION && SESSION.username) ? SESSION.username : '';
+  if(!confirm('\u00bfCancelar el acceso de ' + nombre + ' (@' + username + ')?\n\nSe eliminar\u00e1 su cuenta de la base de datos y se le notificar\u00e1 por correo.')) return;
+  showToast('\u23F3 Cancelando acceso...');
+  var adminUser = CU ? CU.username : '';
   fetch('/api/cancelar', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -9226,99 +9226,175 @@ function rechazarSolicitud(id) {
 function renderAdminUsuarios() {
   var el = document.getElementById('admin-usuarios');
   if(!el) return;
-  // Build user list from real USERS object
   var userList = Object.keys(USERS).map(function(username) {
     var u = USERS[username];
-    return {
-      user: username,
-      name: u.name,
-      rank: u.rank,
-      ref: u.ref,
-      ventas: u.ventas || 0,
-      wa: u.wa || '—',
-      email: u.email || '—',
-      isAdmin: u.isAdmin || false,
-      expiry: u.expiry || null
-    };
+    return { user: username, name: u.name||'', rank: u.rank||0, ref: u.ref||'', sponsor: u.sponsor||'', ventas: u.ventas||0, wa: u.wa||u.whatsapp||'', email: u.email||'', isAdmin: u.isAdmin||false, expiry: u.expiry||null, innova_user: u.innova_user||'', created_at: u.created_at||'' };
   });
-
-  var totalUsers = userList.filter(function(u){ return !u.isAdmin; }).length;
-  var activeUsers = userList.filter(function(u){ return !u.isAdmin && (!u.expiry || Date.now() <= u.expiry); }).length;
+  var nonAdminList = userList.filter(function(u){ return !u.isAdmin; });
+  var totalUsers = nonAdminList.length;
+  var activeUsers = nonAdminList.filter(function(u){ return !u.expiry || Date.now() <= u.expiry; }).length;
   var expiredUsers = totalUsers - activeUsers;
 
   var html = '';
-  // Stats row
-  html += '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">';
-  html += '<div style="flex:1;min-width:120px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.2);border-radius:10px;padding:12px 16px;text-align:center;">';
-  html += '<div style="font-size:22px;font-weight:900;color:#1D9E75;">' + activeUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Activos</div></div>';
-  html += '<div style="flex:1;min-width:120px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:10px;padding:12px 16px;text-align:center;">';
-  html += '<div style="font-size:22px;font-weight:900;color:#E24B4A;">' + expiredUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Expirados</div></div>';
-  html += '<div style="flex:1;min-width:120px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;text-align:center;">';
-  html += '<div style="font-size:22px;font-weight:900;color:#C9A84C;">' + totalUsers + '</div><div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Total</div></div>';
+  // Stats
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
+  html += '<div style="flex:1;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.2);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#1D9E75;">' + activeUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Activos</div></div>';
+  html += '<div style="flex:1;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#E24B4A;">' + expiredUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Expirados</div></div>';
+  html += '<div style="flex:1;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#C9A84C;">' + totalUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Total</div></div>';
   html += '</div>';
 
-  // Search bar
-  html += '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">';
-  html += '<input type="text" id="admin-user-search" placeholder="Buscar por nombre, usuario o WhatsApp..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);font-size:13px;padding:10px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
-  html += '<button onclick="addUserPrompt()" style="padding:10px 16px;border-radius:10px;background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">+ Nuevo Usuario</button>';
+  // Search
+  html += '<div style="margin-bottom:10px;display:flex;gap:8px;">';
+  html += '<input type="text" id="admin-user-search" placeholder="Buscar..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--text);font-size:12px;padding:8px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
   html += '</div>';
 
-  // Pagination setup
-  var PAGE_SIZE = 25;
+  // Pagination
+  var PAGE_SIZE = 30;
   window._adminUserPage = window._adminUserPage || 0;
-  var nonAdminList = userList.filter(function(u){ return !u.isAdmin; });
   var totalPages = Math.max(1, Math.ceil(nonAdminList.length / PAGE_SIZE));
   if(window._adminUserPage >= totalPages) window._adminUserPage = totalPages - 1;
   var start = window._adminUserPage * PAGE_SIZE;
   var pageUsers = nonAdminList.slice(start, start + PAGE_SIZE);
 
-  html += '<div style="overflow-x:auto;"><table class="admin-table" id="admin-users-table">';
-  html += '<thead><tr><th>Usuario</th><th>Nombre</th><th>Sponsor</th><th>Email</th><th>Vencimiento</th><th>Rango</th><th>Estado</th><th></th></tr></thead><tbody>';
+  // Table — compact
+  html += '<div style="overflow-x:auto;"><table id="admin-users-table" style="width:100%;border-collapse:collapse;font-size:11px;">';
+  html += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">';
+  html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;letter-spacing:1px;">Usuario</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Nombre</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Sponsor</th>';
+  html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Email / WA</th>';
+  html += '<th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Vence</th>';
+  html += '<th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Rango</th>';
+  html += '<th style="text-align:center;padding:6px 4px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;width:90px;">Acciones</th>';
+  html += '</tr></thead><tbody>';
 
   pageUsers.forEach(function(u) {
     var rk = RANKS[u.rank] || RANKS[0];
     var isMe = u.user === CU.username;
-    var opts = Object.entries(RANKS).filter(function(e){ return +e[0] <= 7; })
-      .map(function(e){ return '<option value="' + e[0] + '"' + (+e[0]===u.rank?' selected':'') + '>' + e[1].icon + ' ' + e[1].name + '</option>'; }).join('');
+    var rankOpts = Object.keys(RANKS).filter(function(k){ return +k <= 8; }).map(function(k){
+      return '<option value="'+k+'"'+(+k===u.rank?' selected':'')+'>'+RANKS[k].icon+' '+RANKS[k].name+'</option>';
+    }).join('');
     var expired = u.expiry && Date.now() > u.expiry;
-    var statusColor = expired ? '#E24B4A' : '#1D9E75';
-    var statusLabel = expired ? '⏰ Exp.' : '● Activo';
-    var expiryStr = '—';
+    var expiryStr = '\u2014';
     if(u.expiry) {
       var d = new Date(u.expiry);
       var days = Math.max(0, Math.ceil((u.expiry - Date.now()) / 86400000));
-      expiryStr = d.getUTCDate().toString().padStart(2,'0') + '/' + (d.getUTCMonth()+1).toString().padStart(2,'0') + '/' + d.getUTCFullYear()
-        + '<br><span style="font-size:10px;color:' + (expired?'#E24B4A':'#4ade80') + ';">' + days + 'd</span>';
+      expiryStr = '<span style="color:' + (expired?'#E24B4A':'#4ade80') + ';font-weight:700;">' + days + 'd</span>';
     }
 
-    html += '<tr data-search="' + _safe(u.user + ' ' + u.name + ' ' + (u.email||'') + ' ' + (u.sponsor||'')).toLowerCase() + '"' + (isMe?' style="background:rgba(255,215,0,0.06);"':'') + '>';
-    html += '<td style="font-family:monospace;color:rgba(255,255,255,0.5);font-size:12px;">' + _safe(u.user) + (isMe?' (tu)':'') + '</td>';
-    html += '<td style="font-weight:600;font-size:12px;">' + _safe(u.name) + '</td>';
-    html += '<td style="font-size:11px;color:#4ade80;font-weight:700;">' + _safe(u.sponsor||'—') + '</td>';
-    html += '<td style="font-size:11px;color:rgba(255,255,255,0.4);">' + _safe(u.email||'—') + '</td>';
-    html += '<td style="font-size:11px;line-height:1.4;">' + expiryStr + '</td>';
-    html += '<td><select class="rank-select" data-uname="' + _safe(u.user) + '" onchange="cambiarRango(this.dataset.uname,this.value)">' + opts + '</select></td>';
-    html += '<td><span style="font-size:11px;font-weight:700;color:' + statusColor + ';">' + statusLabel + '</span></td>';
-    html += '<td>' + (!isMe ? '<button onclick="cancelarPorInconsistencia(\'' + _safe(u.user) + '\',\'' + _safe(u.name||u.user) + '\')" style="padding:4px 8px;border-radius:6px;background:rgba(248,113,113,0.1);border:0.5px solid rgba(248,113,113,0.3);color:#f87171;font-size:10px;cursor:pointer;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;">✕ Cancelar</button>' : '') + '</td>';
-    html += '</tr>';
+    html += '<tr data-search="' + _safe(u.user+' '+u.name+' '+(u.email||'')+' '+(u.sponsor||'')+' '+(u.wa||'')).toLowerCase() + '" style="border-bottom:0.5px solid rgba(255,255,255,0.04);' + (isMe?'background:rgba(201,168,76,0.04);':'') + '">';
+    html += '<td style="padding:5px 8px;font-family:monospace;color:rgba(255,255,255,0.5);font-size:10px;">' + _safe(u.user) + '</td>';
+    html += '<td style="padding:5px 8px;font-weight:600;color:#F0EDE6;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">' + _safe(u.name||u.user) + '</td>';
+    html += '<td style="padding:5px 8px;font-size:10px;color:#4ade80;font-weight:600;">' + _safe(u.sponsor||'\u2014') + '</td>';
+    html += '<td style="padding:5px 8px;font-size:10px;color:rgba(255,255,255,0.4);max-width:140px;overflow:hidden;text-overflow:ellipsis;">' + _safe(u.email||'') + (u.wa ? '<br><span style="color:rgba(255,255,255,0.25);">' + _safe(u.wa) + '</span>' : '') + '</td>';
+    html += '<td style="padding:5px 8px;text-align:center;">' + expiryStr + '</td>';
+    html += '<td style="padding:5px 4px;text-align:center;"><select data-uname="'+_safe(u.user)+'" onchange="cambiarRango(this.dataset.uname,this.value)" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;color:#F0EDE6;font-size:10px;padding:3px 4px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;max-width:100px;">' + rankOpts + '</select></td>';
+    html += '<td style="padding:5px 4px;text-align:center;white-space:nowrap;">';
+    html += '<button onclick="_adminViewProfile(\'' + _safe(u.user) + '\')" style="padding:3px 6px;border-radius:5px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.20);color:#C9A84C;font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-right:3px;" title="Ver perfil">\uD83D\uDC41</button>';
+    if(!isMe) html += '<button onclick="cancelarPorInconsistencia(\'' + _safe(u.user) + '\',\'' + _safe(u.name||u.user) + '\')" style="padding:3px 6px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.25);color:#f87171;font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" title="Eliminar">\u2715</button>';
+    html += '</td></tr>';
   });
 
   html += '</tbody></table></div>';
 
-  // Pagination controls
+  // Pagination
   if(totalPages > 1) {
-    html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;">';
-    html += '<button onclick="window._adminUserPage=0;renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" ' + (window._adminUserPage===0?'disabled':'') + '>«</button>';
-    html += '<button onclick="window._adminUserPage=Math.max(0,window._adminUserPage-1);renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" ' + (window._adminUserPage===0?'disabled':'') + '>‹ Anterior</button>';
-    html += '<span style="font-size:12px;color:var(--text);font-weight:700;padding:0 8px;">' + (window._adminUserPage+1) + ' / ' + totalPages + '</span>';
-    html += '<button onclick="window._adminUserPage=Math.min(' + (totalPages-1) + ',window._adminUserPage+1);renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" ' + (window._adminUserPage>=totalPages-1?'disabled':'') + '>Siguiente ›</button>';
-    html += '<button onclick="window._adminUserPage=' + (totalPages-1) + ';renderAdminUsuarios()" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" ' + (window._adminUserPage>=totalPages-1?'disabled':'') + '>»</button>';
+    html += '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;">';
+    html += '<button onclick="window._adminUserPage=Math.max(0,window._adminUserPage-1);renderAdminUsuarios()" style="padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:10px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" '+(window._adminUserPage===0?'disabled':'')+'>< Ant</button>';
+    html += '<span style="font-size:11px;color:rgba(255,255,255,0.5);font-weight:600;">' + (window._adminUserPage+1) + '/' + totalPages + '</span>';
+    html += '<button onclick="window._adminUserPage=Math.min('+(totalPages-1)+',window._adminUserPage+1);renderAdminUsuarios()" style="padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:10px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" '+(window._adminUserPage>=totalPages-1?'disabled':'')+'>Sig ></button>';
     html += '</div>';
-    html += '<div style="text-align:center;font-size:10px;color:var(--muted2);margin-top:6px;">Mostrando ' + (start+1) + '-' + Math.min(start+PAGE_SIZE, nonAdminList.length) + ' de ' + nonAdminList.length + ' usuarios</div>';
+    html += '<div style="text-align:center;font-size:9px;color:rgba(255,255,255,0.25);margin-top:4px;">' + (start+1) + '-' + Math.min(start+PAGE_SIZE, nonAdminList.length) + ' de ' + nonAdminList.length + '</div>';
   }
 
   el.innerHTML = html;
 }
+
+// ── Admin: View/Edit user profile modal ──
+function _adminViewProfile(username) {
+  var u = USERS[username];
+  if(!u) { showToast('Usuario no encontrado'); return; }
+  var rk = RANKS[u.rank||0] || RANKS[0];
+  var expired = u.expiry && Date.now() > u.expiry;
+  var days = u.expiry ? Math.max(0, Math.ceil((u.expiry - Date.now()) / 86400000)) : 0;
+
+  var ov = document.createElement('div');
+  ov.id = 'admin-profile-overlay';
+  ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+
+  var h = '<div style="background:rgba(10,10,18,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:20px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
+  h += '<div style="font-size:16px;font-weight:800;color:#F0EDE6;">\uD83D\uDC64 ' + _safe(u.name||username) + '</div>';
+  h += '<button onclick="document.getElementById(\'admin-profile-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;">\u2715</button></div>';
+
+  // Badge
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">';
+  h += '<span style="padding:4px 10px;border-radius:8px;background:'+rk.bg+';color:'+rk.color+';border:0.5px solid '+rk.border+';font-size:11px;font-weight:700;">'+rk.icon+' '+rk.name+'</span>';
+  h += '<span style="padding:4px 10px;border-radius:8px;background:'+(expired?'rgba(226,75,74,0.1)':'rgba(29,158,117,0.1)')+';color:'+(expired?'#E24B4A':'#1D9E75')+';font-size:11px;font-weight:700;">'+(expired?'\u23F0 Expirado ('+days+'d)':'\u2705 Activo ('+days+'d)')+'</span>';
+  h += '</div>';
+
+  // Editable fields
+  var fields = [
+    {id:'apn',label:'Nombre',val:u.name||'',key:'name'},
+    {id:'ape',label:'Email',val:u.email||'',key:'email'},
+    {id:'apw',label:'WhatsApp',val:u.wa||u.whatsapp||'',key:'whatsapp'},
+    {id:'aps',label:'Sponsor',val:u.sponsor||'',key:'sponsor'},
+    {id:'apr',label:'Ref code',val:u.ref||'',key:'ref'}
+  ];
+  fields.forEach(function(f) {
+    h += '<div style="margin-bottom:8px;">';
+    h += '<label style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.5px;">'+f.label+'</label>';
+    h += '<input id="'+f.id+'" value="'+_safe(f.val)+'" style="width:100%;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:12px;padding:8px 10px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:2px;">';
+    h += '</div>';
+  });
+
+  // Stats (read-only)
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0;">';
+  h += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:16px;font-weight:800;color:#C9A84C;">'+(u.ventas||0)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Ventas</div></div>';
+  h += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:16px;font-weight:800;color:#7F77DD;">'+(u.equipo||0)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Equipo</div></div>';
+  h += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:16px;font-weight:800;color:#1D9E75;">'+(u.innova_user||username)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Innova</div></div>';
+  h += '</div>';
+
+  // Buttons
+  h += '<div style="display:flex;gap:8px;margin-top:14px;">';
+  h += '<button onclick="_adminSaveProfile(\''+_safe(username)+'\')" style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:12px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar cambios</button>';
+  if(u.wa||u.whatsapp) {
+    var waNum = (u.wa||u.whatsapp||'').replace(/[^0-9]/g,'');
+    h += '<button onclick="window.open(\'https://wa.me/'+waNum+'\',\'_blank\')" style="padding:10px 14px;border-radius:10px;background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);color:#25D366;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCF1 WA</button>';
+  }
+  h += '</div>';
+  h += '</div>';
+
+  ov.innerHTML = h;
+  document.body.appendChild(ov);
+}
+window._adminViewProfile = _adminViewProfile;
+
+function _adminSaveProfile(username) {
+  var updates = {};
+  var fields = [{id:'apn',key:'name'},{id:'ape',key:'email'},{id:'apw',key:'whatsapp'},{id:'aps',key:'sponsor'},{id:'apr',key:'ref'}];
+  fields.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    if(el) updates[f.key] = el.value.trim();
+  });
+  fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: username, updates: updates })
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if(d.ok) {
+      // Update local
+      if(USERS[username]) Object.assign(USERS[username], updates);
+      showToast('\u2705 Perfil de @' + username + ' actualizado');
+      document.getElementById('admin-profile-overlay').remove();
+      renderAdminUsuarios();
+    } else {
+      showToast('\u274C Error: ' + (d.error||''));
+    }
+  }).catch(function(e){ showToast('\u274C ' + e.message); });
+}
+window._adminSaveProfile = _adminSaveProfile;
 
 function cambiarRango(username, newRank) {
   if(USERS[username]) {

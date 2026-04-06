@@ -30,6 +30,8 @@ export default async function handler(req, res) {
         ref: row.ref || row.username,
         sponsor: row.sponsor || null,
         email: row.email || null,
+        wa: row.whatsapp || null,
+        whatsapp: row.whatsapp || null,
         ventas: row.ventas || 0,
         equipo: row.equipo || 0,
         expiry: row.expiry || null,
