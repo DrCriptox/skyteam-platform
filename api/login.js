@@ -74,7 +74,8 @@ export default async function handler(req, res) {
         equipo: user.equipo || 0,
         expiry: user.expiry || null,
         isAdmin: user.is_admin || false,
-        photo: user.photo || null
+        photo: user.photo || null,
+        birthday: user.birthday || null
       }
     });
 
