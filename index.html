@@ -7578,6 +7578,7 @@ async function sendAgentMsg() {
   if(!text) return;
 
   var cfg = AGENT_CONFIGS[currentAgent];
+  if(!cfg) return;
   if(!agentHistory[currentAgent]) agentHistory[currentAgent] = [];
 
   // Add user message

@@ -123,7 +123,7 @@ function getNextEvent() {
     var dt = new Date(e.fecha + 'T' + (e.hora_inicio || '00:00:00'));
     return dt > now;
   }).sort(function(a, b) {
-    return new Date(a.fecha + 'T' + a.hora_inicio) - new Date(b.fecha + 'T' + b.hora_inicio);
+    return new Date(a.fecha + 'T' + (a.hora_inicio||'00:00:00')) - new Date(b.fecha + 'T' + (b.hora_inicio||'00:00:00'));
   });
   return upcoming.length > 0 ? upcoming[0] : null;
 }
