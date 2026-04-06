@@ -135,13 +135,14 @@ export default async function handler(req, res) {
       finalExpiry = Date.now() + (8 * 86400000); // 8 days from now
       console.log('[APROBAR] Migration grace: user expired/no expiry, granting 8 days. New expiry:', new Date(finalExpiry).toISOString());
     }
-    const fullPayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, innova_user: innovaUser, birthday: sol.birthday || null, original_sponsor: originalSponsor };
+    const corePayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: sol.ref || finalUsername, password, expiry: finalExpiry, innova_user: innovaUser };
+    const fullPayload = { ...corePayload, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, birthday: sol.birthday || null, original_sponsor: originalSponsor };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
-      { ...fullPayload, rank: undefined },                                                         // 2. no rank
-      { ...fullPayload, email: undefined },                                                        // 3. no email
-      { ...fullPayload, rank: undefined, email: undefined },                                       // 4. no rank, no email
-      { username: finalUsername, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || finalUsername, password, innova_user: innovaUser }, // 5. guaranteed columns + innova_user
+      { ...fullPayload, original_sponsor: undefined },                                             // 2. no original_sponsor
+      { ...fullPayload, original_sponsor: undefined, rank: undefined },                            // 3. no rank
+      { ...fullPayload, original_sponsor: undefined, rank: undefined, email: undefined, birthday: undefined }, // 4. minimal + expiry
+      corePayload,                                                                                 // 5. core (always has expiry)
     ].map(o => Object.fromEntries(Object.entries(o).filter(([,v]) => v !== undefined)));
     let insertR = null;
     for (let i = 0; i < attempts.length; i++) {
