@@ -2939,11 +2939,11 @@ function _skyFetch(url, opts, timeoutMs) {
 // ── DYNAMIC USER LOADING FROM SUPABASE ──
 var _usersLoaded = false;
 function loadUsersFromServer(callback) {
-  _skyFetch('/api/users', null, 10000)
+  fetch('/api/users?_t=' + Date.now(), { cache: 'no-store' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.users) {
-        // Merge server users into USERS (server takes priority, but keep local-only users)
+        // Replace USERS with server data (server is source of truth)
         var serverUsers = data.users;
         for (var key in serverUsers) {
           USERS[key] = serverUsers[key];
@@ -9459,9 +9459,9 @@ window._adminLoadScreenshot = _adminLoadScreenshot;
 function cambiarRango(username, newRank) {
   if(!USERS[username]) return;
   var oldRank = USERS[username].rank;
-  if(+newRank === oldRank) return; // no change
+  if(+newRank === oldRank) return;
   var rk = RANKS[+newRank]||RANKS[0];
-  showToast('\u23F3 Guardando rango de @' + username + '...');
+  showToast('\u23F3 Guardando...');
 
   fetch('/api/update-user', {
     method: 'PATCH',
@@ -9469,17 +9469,14 @@ function cambiarRango(username, newRank) {
     body: JSON.stringify({username: username, updates: {rank: +newRank}})
   }).then(function(r){ return r.json(); }).then(function(d) {
     if(d.ok) {
-      // Update local objects AFTER server confirms
-      USERS[username].rank = +newRank;
-      if(CU && CU.username === username) {
-        CU.rank = +newRank;
-        try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-      }
       showToast('\u2705 @' + username + ' \u2192 ' + rk.icon + ' ' + rk.name);
-      if(typeof renderRanking === 'function') renderRanking();
+      // Force reload ALL users from server so USERS object stays in sync
+      loadUsersFromServer(function() {
+        if(typeof renderAdminUsuarios === 'function') renderAdminUsuarios();
+        if(typeof renderRanking === 'function') renderRanking();
+      });
     } else {
       showToast('\u274C Error: ' + (d.error||'No se pudo guardar'), 'error');
-      // Revert dropdown
       renderAdminUsuarios();
     }
   }).catch(function(e){
