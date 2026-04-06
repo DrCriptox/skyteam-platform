@@ -103,7 +103,10 @@ export default async function handler(req, res) {
       const { data: stats } = await readGHFile(FILE_STATS);
       const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
       const { data: oldAsesores } = await readGHFile('asesores.json');
-      const allAsesores = Object.assign({}, oldAsesores, skyAsesores);
+      // After April 9 2026 (Wednesday), only count landings created from skyteam (asesores-skyteam.json)
+      const cutoffDate = new Date('2026-04-09T00:00:00');
+      const onlyNew = Date.now() >= cutoffDate.getTime();
+      const allAsesores = onlyNew ? skyAsesores : Object.assign({}, oldAsesores, skyAsesores);
 
       // Calculate date range for period filter
       const now = new Date();
