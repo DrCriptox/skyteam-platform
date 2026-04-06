@@ -153,10 +153,24 @@ export default async function handler(req, res) {
             whatsapp: asesor.whatsapp || '', foto: asesor.foto || ''
           };
         })
-        .sort(function(a, b) { return b.score - a.score; })
-        .slice(0, 20);
+        .sort(function(a, b) { return b.score - a.score; });
 
-      return res.status(200).json({ ok: true, ranking });
+      const top20 = ranking.slice(0, 20);
+      const totalParticipants = ranking.length;
+
+      // Find current user's position if not in top 20
+      const userRef = (req.body.ref || '').toLowerCase();
+      let myPosition = null;
+      if (userRef) {
+        const idx = ranking.findIndex(function(r) { return r.ref === userRef; });
+        if (idx >= 20) {
+          myPosition = { position: idx + 1, data: ranking[idx] };
+        } else if (idx === -1) {
+          myPosition = { position: totalParticipants + 1, data: { ref: userRef, nombre: userRef, visitas: 0, conversiones: 0, score: 0, whatsapp: '', foto: '' } };
+        }
+      }
+
+      return res.status(200).json({ ok: true, ranking: top20, totalParticipants, myPosition });
     }
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
