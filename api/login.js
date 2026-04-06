@@ -57,8 +57,10 @@ export default async function handler(req, res) {
     }
 
     const user = rows[0];
-    if (user.expiry && Date.now() > user.expiry) {
-      return res.status(401).json({ error: 'Este usuario ha expirado' });
+    // Grace period: 3 days after expiry, user can still login but sees renewal banner
+    const GRACE_MS = 3 * 86400000;
+    if (user.expiry && Date.now() > (user.expiry + GRACE_MS)) {
+      return res.status(401).json({ error: 'Tu membres\u00eda expir\u00f3 hace m\u00e1s de 3 d\u00edas. Contacta a tu patrocinador para renovar.' });
     }
 
     return res.status(200).json({

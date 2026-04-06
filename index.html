@@ -9444,6 +9444,20 @@ function _adminViewProfile(username) {
   h += '<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:16px;font-weight:800;color:#1D9E75;">'+(u.innova_user||username)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Innova</div></div>';
   h += '</div>';
 
+  // Extend days control
+  h += '<div style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;">';
+  h += '<label style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.5px;">Extender acceso</label>';
+  h += '<div style="display:flex;gap:6px;margin-top:6px;">';
+  var dayBtns = [7,15,30,90,365];
+  dayBtns.forEach(function(d) {
+    h += '<button onclick="_adminExtendDays(\''+_safe(username)+'\','+d+')" style="flex:1;padding:6px 4px;border-radius:6px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);color:#1D9E75;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">+'+d+'d</button>';
+  });
+  h += '</div>';
+  h += '<div style="display:flex;gap:6px;margin-top:6px;">';
+  h += '<input type="number" id="admin-custom-days" placeholder="D\u00edas" min="1" max="999" style="flex:1;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;color:#F0EDE6;font-size:11px;padding:6px 8px;outline:none;font-family:Outfit,Nunito,sans-serif;width:60px;">';
+  h += '<button onclick="var v=document.getElementById(\'admin-custom-days\');if(v&&v.value>0)_adminExtendDays(\''+_safe(username)+'\',+v.value)" style="padding:6px 12px;border-radius:6px;background:rgba(201,168,76,0.10);border:0.5px solid rgba(201,168,76,0.20);color:#C9A84C;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Aplicar</button>';
+  h += '</div></div>';
+
   // Registration screenshot button
   h += '<button onclick="_adminLoadScreenshot(\''+_safe(u.innova_user||username)+'\')" style="width:100%;padding:8px;margin-top:10px;border-radius:8px;background:rgba(127,119,221,0.08);border:0.5px solid rgba(127,119,221,0.20);color:#7F77DD;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDDBC\uFE0F Ver imagen de registro</button>';
   h += '<div id="admin-screenshot-area" style="margin-top:8px;"></div>';
@@ -9518,6 +9532,35 @@ function _adminLoadScreenshot(innovaUser) {
   }).catch(function(){ area.innerHTML = '<div style="color:#E24B4A;font-size:10px;">Error cargando datos</div>'; });
 }
 window._adminLoadScreenshot = _adminLoadScreenshot;
+
+function _adminExtendDays(username, days) {
+  if(!days || days < 1) return;
+  var u = USERS[username];
+  if(!u) { showToast('Usuario no encontrado','error'); return; }
+  // If expired or no expiry, extend from NOW. If active, extend from current expiry.
+  var base = (u.expiry && u.expiry > Date.now()) ? u.expiry : Date.now();
+  var newExpiry = base + (days * 86400000);
+  showToast('\u23F3 Extendiendo ' + days + ' d\u00edas...');
+  fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: username, updates: { expiry: newExpiry } })
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if(d.ok) {
+      var newDays = Math.ceil((newExpiry - Date.now()) / 86400000);
+      showToast('\u2705 @' + username + ' ahora tiene ' + newDays + ' d\u00edas de acceso');
+      loadUsersFromServer(function() {
+        renderAdminUsuarios();
+        // Update overlay badge
+        var overlay = document.getElementById('admin-profile-overlay');
+        if(overlay) { overlay.remove(); _adminViewProfile(username); }
+      });
+    } else {
+      showToast('\u274C Error: ' + (d.error||''), 'error');
+    }
+  }).catch(function(){ showToast('\u274C Error de conexi\u00f3n','error'); });
+}
+window._adminExtendDays = _adminExtendDays;
 
 function cambiarRango(username, newRank) {
   if(!USERS[username]) return;
