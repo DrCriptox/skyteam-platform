@@ -108,20 +108,22 @@ export default async function handler(req, res) {
         .filter(function(ref) { return ref !== 'default'; })
         .map(function(ref) {
           const asesor = allAsesores[ref] || {};
+          const s = typeof stats[ref] === 'object' ? stats[ref] : {};
+          const visitas = s.total || 0;
+          const uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
+          const ipDupes = Math.max(0, visitas - uniqueIps);
+          const conversiones = s.conversions || 0;
+          const score = Math.max(0, (visitas * 1) - (ipDupes * 2) + (conversiones * 10));
           return {
-            ref: ref,
-            nombre: asesor.nombre || ref,
-            visitas: typeof stats[ref] === 'object' ? (stats[ref].total || 0) : (stats[ref] || 0),
-            conversiones: typeof stats[ref] === 'object' ? (stats[ref].conversions || 0) : 0,
-            whatsapp: asesor.whatsapp || '',
-            foto: asesor.foto || ''
+            ref: ref, nombre: asesor.nombre || ref,
+            visitas: uniqueIps, conversiones: conversiones, score: score,
+            whatsapp: asesor.whatsapp || '', foto: asesor.foto || ''
           };
         })
-        .sort(function(a, b) { return b.visitas - a.visitas; })
+        .sort(function(a, b) { return b.score - a.score; })
         .slice(0, 20);
 
-      var totalV = Object.values(stats).reduce(function(s,v){ return s + (typeof v === 'object' ? (v.total||0) : (v||0)); }, 0);
-      return res.status(200).json({ ok: true, ranking, totalVisits: totalV });
+      return res.status(200).json({ ok: true, ranking });
     }
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
