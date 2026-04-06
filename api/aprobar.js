@@ -156,24 +156,37 @@ export default async function handler(req, res) {
     const fullPayload = { ...corePayload, rank, birthday: sol.birthday || null, original_sponsor: originalSponsor };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
-      { ...fullPayload, original_sponsor: undefined },                                             // 2. no original_sponsor
+      { ...fullPayload, original_sponsor: undefined },                                             // 2. no original_sponsor (column may not exist yet)
       { ...fullPayload, original_sponsor: undefined, birthday: undefined },                        // 3. no birthday
       { ...fullPayload, original_sponsor: undefined, birthday: undefined, rank: undefined },       // 4. no rank
       corePayload,                                                                                 // 5. core (email+expiry+whatsapp always present)
     ].map(o => Object.fromEntries(Object.entries(o).filter(([,v]) => v !== undefined)));
     let insertR = null;
+    let insertAttemptIdx = 0;
     for (let i = 0; i < attempts.length; i++) {
       insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
         method: 'POST',
         headers: { ...HEADERS, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify(attempts[i])
       });
-      if (insertR.ok) { console.log('[aprobar] INSERT succeeded on attempt', i + 1, 'fields:', Object.keys(attempts[i]).join(',')); break; }
+      if (insertR.ok) { insertAttemptIdx = i; console.log('[aprobar] INSERT succeeded on attempt', i + 1, 'fields:', Object.keys(attempts[i]).join(',')); break; }
       const errTxt = await insertR.text();
       console.error('[aprobar] INSERT attempt', i + 1, 'failed', insertR.status, errTxt.substring(0, 200));
       if (insertR.status !== 400 || i === attempts.length - 1) {
         throw new Error('No se pudo crear el usuario: ' + insertR.status + ' — ' + errTxt.substring(0, 120));
       }
+    }
+
+    // If INSERT succeeded on a fallback attempt that dropped original_sponsor,
+    // try to PATCH it now so orphan reassignment can work later.
+    if (originalSponsor && insertAttemptIdx > 0 && !attempts[insertAttemptIdx].original_sponsor) {
+      try {
+        await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername), {
+          method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({ original_sponsor: originalSponsor })
+        });
+        console.log('[aprobar] PATCH original_sponsor saved for', finalUsername, '→', originalSponsor);
+      } catch(e) { console.warn('[aprobar] Could not save original_sponsor via PATCH:', e.message); }
     }
 
     // Auto-reassign orphaned users: if someone registered before their sponsor,
@@ -182,15 +195,27 @@ export default async function handler(req, res) {
     const newUserRef = (sol.ref || finalUsername).toLowerCase();
     const newUserName = finalUsername.toLowerCase();
     try {
-      // Find users whose original_sponsor matches this new user's username or ref
-      const orphanCheck = await fetch(SUPABASE_URL + '/rest/v1/users?or=(original_sponsor.ilike.' + encodeURIComponent(newUserRef) + ',original_sponsor.ilike.' + encodeURIComponent(newUserName) + ')&select=username,original_sponsor', { headers: HEADERS });
+      // Build search terms: exact ref, exact username, and first+last name parts (min 4 chars)
+      const searchTerms = new Set([newUserRef, newUserName]);
+      if (sol.name) {
+        sol.name.toLowerCase().split(/\s+/).forEach(function(p) {
+          if (p.length >= 4) searchTerms.add(p);
+        });
+      }
+      // Search with % wildcards so partial matches work (e.g. "belly bane" matches "bellybane")
+      const pct = '%25'; // URL-encoded %
+      const orClauses = Array.from(searchTerms).map(function(t) {
+        return 'original_sponsor.ilike.' + pct + encodeURIComponent(t) + pct;
+      }).join(',');
+      const orphanCheck = await fetch(SUPABASE_URL + '/rest/v1/users?or=(' + orClauses + ')&select=username,original_sponsor,sponsor', { headers: HEADERS });
       const orphans = await orphanCheck.json();
       if (Array.isArray(orphans) && orphans.length > 0) {
         for (const orphan of orphans) {
-          console.log('[APROBAR] Reassigning orphan "' + orphan.username + '" from LEGEND to "' + (sol.ref || finalUsername).toUpperCase() + '"');
+          const newSponsor = sol.ref || finalUsername;
+          console.log('[APROBAR] Reassigning orphan "' + orphan.username + '" original_sponsor="' + orphan.original_sponsor + '" → sponsor="' + newSponsor + '"');
           await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(orphan.username), {
-            method: 'PATCH', headers: HEADERS,
-            body: JSON.stringify({ sponsor: (sol.ref || finalUsername).toUpperCase(), original_sponsor: null })
+            method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' },
+            body: JSON.stringify({ sponsor: newSponsor, original_sponsor: null })
           });
         }
       }

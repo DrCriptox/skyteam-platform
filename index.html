@@ -9871,13 +9871,15 @@ function renderAdminUsuarios() {
   var totalUsers = nonAdminList.length;
   var activeUsers = nonAdminList.filter(function(u){ return !u.expiry || Date.now() <= u.expiry; }).length;
   var expiredUsers = totalUsers - activeUsers;
+  var orphanUsers = nonAdminList.filter(function(u){ var sp=(u.sponsor||'').toUpperCase(); return sp==='LEGEND'||sp==='LEGGIN'||sp===''; }).length;
 
   var html = '';
   // Stats
-  html += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
-  html += '<div style="flex:1;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.2);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#1D9E75;">' + activeUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Activos</div></div>';
-  html += '<div style="flex:1;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#E24B4A;">' + expiredUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Expirados</div></div>';
-  html += '<div style="flex:1;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#C9A84C;">' + totalUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Total</div></div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">';
+  html += '<div style="flex:1;min-width:60px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.2);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#1D9E75;">' + activeUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Activos</div></div>';
+  html += '<div style="flex:1;min-width:60px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#E24B4A;">' + expiredUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Expirados</div></div>';
+  html += '<div style="flex:1;min-width:60px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px 12px;text-align:center;"><span style="font-size:18px;font-weight:900;color:#C9A84C;">' + totalUsers + '</span><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Total</div></div>';
+  if(orphanUsers>0) html += '<div onclick="filterAdminLegend()" title="Click para filtrar huérfanos" style="flex:1;min-width:60px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.4);border-radius:8px;padding:8px 12px;text-align:center;cursor:pointer;"><span style="font-size:18px;font-weight:900;color:#FFA500;">' + orphanUsers + '</span><div style="font-size:9px;color:rgba(255,165,0,0.7);text-transform:uppercase;">Huérfanos</div></div>';
   html += '</div>';
 
   // Search
@@ -9930,8 +9932,10 @@ function renderAdminUsuarios() {
     html += '<td style="padding:5px 8px;font-size:10px;color:rgba(255,255,255,0.4);max-width:140px;overflow:hidden;text-overflow:ellipsis;">' + _safe(u.email||'') + (u.wa ? '<br><span style="color:rgba(255,255,255,0.25);">' + _safe(u.wa) + '</span>' : '') + '</td>';
     html += '<td style="padding:5px 8px;text-align:center;">' + expiryStr + '</td>';
     html += '<td style="padding:5px 4px;text-align:center;"><select data-uname="'+_safe(u.user)+'" onchange="cambiarRango(this.dataset.uname,this.value)" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;color:#F0EDE6;font-size:10px;padding:3px 4px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;max-width:100px;">' + rankOpts + '</select></td>';
+    var isOrphan = ['LEGEND','LEGGIN',''].includes((u.sponsor||'').toUpperCase());
     html += '<td style="padding:5px 4px;text-align:center;white-space:nowrap;">';
     html += '<button onclick="_adminViewProfile(\'' + _safe(u.user) + '\')" style="padding:3px 6px;border-radius:5px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.20);color:#C9A84C;font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-right:3px;" title="Ver perfil">\uD83D\uDC41</button>';
+    html += '<button onclick="_adminReasignarSponsor(\'' + _safe(u.user) + '\',\'' + _safe(u.sponsor||'') + '\')" style="padding:3px 6px;border-radius:5px;background:' + (isOrphan?'rgba(255,165,0,0.15)':'rgba(255,255,255,0.04)') + ';border:0.5px solid ' + (isOrphan?'rgba(255,165,0,0.5)':'rgba(255,255,255,0.10)') + ';color:' + (isOrphan?'#FFA500':'rgba(255,255,255,0.3)') + ';font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-right:3px;" title="Reasignar sponsor">\uD83D\uDD17</button>';
     if(!isMe) html += '<button onclick="cancelarPorInconsistencia(\'' + _safe(u.user) + '\',\'' + _safe(u.name||u.user) + '\')" style="padding:3px 6px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.25);color:#f87171;font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" title="Eliminar">\u2715</button>';
     html += '</td></tr>';
   });
@@ -10192,6 +10196,35 @@ function filterAdminUsers() {
     var data = row.getAttribute('data-search') || '';
     row.style.display = (!query || data.indexOf(query) !== -1) ? '' : 'none';
   });
+}
+
+function filterAdminLegend() {
+  var inp = document.getElementById('admin-user-search');
+  if(inp) { inp.value = 'legend'; filterAdminUsers(); }
+}
+
+function _adminReasignarSponsor(username, currentSponsor) {
+  var msg = 'Nuevo sponsor para @' + username + '\nActual: ' + (currentSponsor||'ninguno') + '\n\nEscribe el username o ref del nuevo sponsor:';
+  var newSponsor = prompt(msg, '');
+  if(!newSponsor || !newSponsor.trim()) return;
+  newSponsor = newSponsor.trim().toLowerCase();
+  showToast('Actualizando sponsor...');
+  fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: username, updates: { sponsor: newSponsor, original_sponsor: null } })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if(d.ok) {
+      showToast('✅ Sponsor de @' + username + ' → ' + newSponsor);
+      if(USERS[username]) { USERS[username].sponsor = newSponsor; USERS[username].original_sponsor = null; }
+      renderAdminUsuarios();
+    } else {
+      showToast('❌ Error: ' + (d.error || 'desconocido'));
+    }
+  })
+  .catch(function(e){ showToast('❌ ' + e.message); });
 }
 
 function addUserPrompt() {
