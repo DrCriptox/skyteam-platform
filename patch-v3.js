@@ -464,11 +464,11 @@ function renderAntifraudeCardMini(r) {
 }
 
 // --- 7. Add Ranking tab to Mi Agenda (MINIMAL â calls original, then injects tab) ---
+// REMOVED: old ranking tab injection — now built into Sky Journal natively as sjranking tab
+/*  BLOCK 7+8 COMMENTED OUT
 (function() {
-  var _origRenderAgenda = renderAgendaUI;
-  var _origSwitchAgenda = switchAgendaTab;
-
-  function injectRankingTabBtn(el) {
+  var _origRenderAgenda, _origSwitchAgenda;
+  function injectRankingTabBtn_DISABLED(el) {
     if (!el || el.querySelector('#agenda-ranking-btn')) return;
     // Find the tab buttons - look for buttons that call switchAgendaTab
     var btns = el.querySelectorAll('button');
@@ -595,6 +595,8 @@ function renderAntifraudeCardMini(r) {
   }
 })();
 
+
+END BLOCK 7+8 COMMENTED OUT */
 
 // --- 9. Fix navigate() for skysales and agente sections (height:0 bug) ---
 (function() {
