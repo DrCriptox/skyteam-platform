@@ -4552,8 +4552,6 @@ function renderPlanDiarioCalendar() {
       if(bEndMin <= bStartMin) return; // outside visible range
       var topPx = Math.round((bStartMin - FIRST_HOUR*60) / 60 * ROW_H);
       var heightPx = Math.max(ROW_H/2, Math.round((bEndMin - bStartMin) / 60 * ROW_H));
-      var topPct = (topPx / gridTotalPx * 100).toFixed(2);
-      var heightPct = (heightPx / gridTotalPx * 100).toFixed(2);
       // Column positioning: skip time col (48px), then each col is 1/N of remaining
       var colLeft = 'calc(48px + '+colIdx+' * (100% - 48px) / '+dates.length+' + 3px)';
       var colWidth = 'calc((100% - 48px) / '+dates.length+' - 6px)';
@@ -4569,7 +4567,7 @@ function renderPlanDiarioCalendar() {
         blockClick = 'event.stopPropagation()';
       }
 
-      html += '<div class="pd-block" style="position:absolute;top:'+topPct+'%;height:'+heightPct+'%;left:'+colLeft+';width:'+colWidth+';border-left:3px solid '+color+';background:'+bgAlpha+';border-radius:6px;padding:3px 6px;overflow:hidden;z-index:3;cursor:pointer;display:flex;flex-direction:column;justify-content:center;" onclick="'+blockClick+'">';
+      html += '<div class="pd-block" style="position:absolute;top:'+topPx+'px;height:'+heightPx+'px;left:'+colLeft+';width:'+colWidth+';border-left:3px solid '+color+';background:'+bgAlpha+';border-radius:6px;padding:3px 6px;overflow:hidden;z-index:3;cursor:pointer;display:flex;flex-direction:column;justify-content:center;" onclick="'+blockClick+'">';
       html += '<span class="pd-block-title" style="font-size:10px;font-weight:600;color:'+(isBooking?'#DC2626':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+b.titulo+'</span>';
       html += '<span class="pd-block-time" style="font-size:9px;color:rgba(255,255,255,0.45);">'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+'</span>';
       if(isBooking) html += '<span style="position:absolute;top:2px;right:4px;font-size:8px;color:rgba(220,38,38,0.5);">✕</span>';
