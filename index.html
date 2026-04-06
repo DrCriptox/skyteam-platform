@@ -703,9 +703,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 .crm-prospect-card{cursor:grab;transition:all 0.15s;}
 .crm-prospect-card:hover{transform:translateY(-2px);}
 .crm-prospect-card.dragging{opacity:0.5;cursor:grabbing;}
-.crm-modal{position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;margin:0;background:rgba(0,0,0,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-.crm-modal-open #sidebar{display:none !important;}
-.crm-modal-open #sb-overlay{display:none !important;}
+.crm-modal{position:fixed;top:0;left:0;width:100vw;height:100vh;margin:0;background:rgba(0,0,0,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
 .crm-modal-content{background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:18px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
 .crm-modal-detail-content{max-width:640px;}
 .crm-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid rgba(255,255,255,0.06);}
@@ -11909,12 +11907,13 @@ function crmInstagramAppUrl(username) {
    ======================================== */
 
 function openCrmModalAdd(editId) {
-  // Hide sidebar completely (backdrop-filter creates stacking context that beats z-index)
-  var _sb = document.getElementById('sidebar');
-  if(_sb) _sb.style.display = 'none';
-  document.body.classList.add('crm-modal-open');
+  // Move modal to body root so it's not affected by sidebar stacking context
   var modal = document.getElementById('crm-modal-add');
   if (!modal) return;
+  if(modal.parentElement !== document.body) document.body.appendChild(modal);
+  // Temporarily disable sidebar backdrop-filter (causes stacking context issues)
+  var _sb = document.getElementById('sidebar');
+  if(_sb) { _sb._origBf = _sb.style.backdropFilter; _sb.style.backdropFilter = 'none'; _sb.style.webkitBackdropFilter = 'none'; }
 
   var form = modal.querySelector('form');
   if (!form) return;
@@ -11982,10 +11981,8 @@ function openCrmModalAdd(editId) {
 }
 
 function closeCrmModalAdd() {
-  document.body.classList.remove('crm-modal-open');
-  // Restore sidebar
   var _sb = document.getElementById('sidebar');
-  if(_sb) _sb.style.display = '';
+  if(_sb) { _sb.style.backdropFilter = ''; _sb.style.webkitBackdropFilter = ''; }
   var modal = document.getElementById('crm-modal-add');
   if (modal) modal.style.display = 'none';
   crmEditingId = null;
@@ -12119,9 +12116,8 @@ function openCrmDetail(id) {
 }
 
 function closeCrmModalDetail() {
-  document.body.classList.remove('crm-modal-open');
   var _sb = document.getElementById('sidebar');
-  if(_sb) _sb.style.display = '';
+  if(_sb) { _sb.style.backdropFilter = ''; _sb.style.webkitBackdropFilter = ''; }
   var modal = document.getElementById('crm-modal-detail');
   if (modal) modal.style.display = 'none';
   crmDetailId = null;
