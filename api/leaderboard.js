@@ -68,8 +68,8 @@ module.exports = async (req, res) => {
           if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
         });
         s.ipDupes = ipDupes;
-        // Penalize score for IP dupes: -5 per duplicate IP booking
-        s.score = (s.verificadas * 10) + ((s.citas - s.verificadas) * 3) + (s.proofs * 5) - (ipDupes * 5);
+        // Points: 10 per booking, +30 per verified/proof, -10 per IP dupe
+        s.score = (s.citas * 10) + (s.verificadas * 30) + (s.proofs * 30) - (ipDupes * 10);
         if (s.score < 0) s.score = 0;
         // Clean up ips object for response (just counts)
         var ipSummary = {};
@@ -98,7 +98,49 @@ module.exports = async (req, res) => {
         };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 10);
 
-      return res.status(200).json({ ok: true, period: 'weekly', from: mondayISO, to: sundayISO, ranking: ranking });
+      return res.status(200).json({ ok: true, period: 'weekly', from: mondayISO, to: sundayISO, ranking: ranking.slice(0,20) });
+    }
+
+    // ===== GET MONTHLY TOP 20 =====
+    if (action === 'monthlyTop') {
+      const now = new Date();
+      const monthStart = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1);
+      const monthEnd = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+      const fromISO = monthStart.toISOString();
+      const toISO = monthEnd.toISOString();
+
+      const bookings = await sb(
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada)'
+      );
+      const proofs = await sb(
+        'booking_proofs?select=username,status,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO
+      );
+
+      const userStats = {};
+      (bookings || []).forEach(function(b) {
+        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, proofs: 0 };
+        userStats[b.username].citas++;
+        if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
+      });
+      (proofs || []).forEach(function(p) {
+        if (!userStats[p.username]) userStats[p.username] = { citas: 0, verificadas: 0, proofs: 0 };
+        if (p.status === 'approved') userStats[p.username].proofs++;
+      });
+
+      const usernames = Object.keys(userStats);
+      let usersMap = {};
+      if (usernames.length > 0) {
+        const users = await sb('users?select=username,name,ref&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        (users || []).forEach(function(u) { usersMap[u.username] = u; });
+      }
+
+      const ranking = usernames.map(function(u) {
+        var s = userStats[u];
+        var score = (s.citas * 10) + (s.verificadas * 30) + (s.proofs * 30);
+        return { username: u, name: usersMap[u] ? usersMap[u].name : u, citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score };
+      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
+
+      return res.status(200).json({ ok: true, period: 'monthly', from: fromISO, to: toISO, ranking: ranking });
     }
 
     // ===== GET DAILY TOP 5 (with IP flags) =====
