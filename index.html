@@ -10782,22 +10782,25 @@ function renderPerfil() {
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
     + (function(){
         var bday = localStorage.getItem('skyteam_birthday_'+CU.username) || CU.birthday || '';
+        var bdayCountKey = 'skyteam_bday_count_' + CU.username;
         var bdayLockKey = 'skyteam_bday_lock_' + CU.username;
-        var lastSave = localStorage.getItem(bdayLockKey);
+        var changeCount = parseInt(localStorage.getItem(bdayCountKey) || '0');
+        var lastLock = localStorage.getItem(bdayLockKey);
         var isLocked = false;
         var lockDaysLeft = 0;
-        if(lastSave) {
-          var elapsed = Date.now() - parseInt(lastSave);
+        if(changeCount >= 2 && lastLock) {
+          var elapsed = Date.now() - parseInt(lastLock);
           var sixMonths = 180 * 86400000;
           if(elapsed < sixMonths) { isLocked = true; lockDaysLeft = Math.ceil((sixMonths - elapsed) / 86400000); }
         }
-        if(bday && isLocked) {
+        if(isLocked && bday) {
           var parts = bday.split('-');
           var meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
           var label = parseInt(parts[2])+' '+meses[parseInt(parts[1])]+' '+parts[0];
           return '<div class="perfil-data-row"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><span class="perfil-data-value" style="font-size:12px;">'+label+' <span style="font-size:8px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 '+lockDaysLeft+'d</span></span></div>';
         } else {
-          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><input type="date" id="pf-birthday" value="'+(bday||'')+'" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"></div>';
+          var changesLeft = Math.max(0, 2 - changeCount);
+          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><input type="date" id="pf-birthday" value="'+(bday||'')+'" placeholder="Elige tu fecha" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:'+(bday?'#F0EDE6':'rgba(255,255,255,0.3)')+';font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;">'+(changesLeft<2?'<span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:4px;">'+changesLeft+' cambio'+(changesLeft!==1?'s':'')+' restante'+(changesLeft!==1?'s':'')+'</span>':'')+'</div>';
         }
       })()
     + '</div>'
@@ -11049,17 +11052,24 @@ function _savePerfilName() {
 
 function saveBirthday(val) {
   if(!CU) return;
-  // Lock: only 1 change every 6 months
+  if(!val) { showToast('Elige tu fecha de cumplea\u00f1os primero'); return; }
+  // Lock: 2 changes allowed, then lock 180 days
+  var bdayCountKey = 'skyteam_bday_count_' + CU.username;
   var bdayLockKey = 'skyteam_bday_lock_' + CU.username;
-  var lastSave = localStorage.getItem(bdayLockKey);
-  if(lastSave) {
-    var elapsed = Date.now() - parseInt(lastSave);
+  var changeCount = parseInt(localStorage.getItem(bdayCountKey) || '0');
+  var lastLock = localStorage.getItem(bdayLockKey);
+  if(changeCount >= 2 && lastLock) {
+    var elapsed = Date.now() - parseInt(lastLock);
     var sixMonths = 180 * 86400000;
     if(elapsed < sixMonths) {
       var daysLeft = Math.ceil((sixMonths - elapsed) / 86400000);
       showToast('\uD83D\uDD12 Cumplea\u00f1os bloqueado. Podr\u00e1s cambiarlo en ' + daysLeft + ' d\u00edas', 'error');
-      renderPerfil(); // revert input
+      renderPerfil();
       return;
+    } else {
+      // Reset after 6 months
+      changeCount = 0;
+      localStorage.setItem(bdayCountKey, '0');
     }
   }
   localStorage.setItem('skyteam_birthday_'+CU.username, val);
@@ -11071,7 +11081,9 @@ function saveBirthday(val) {
     body: JSON.stringify({ username: CU.username, updates: { birthday: val } })
   }).then(function(r){return r.json();}).then(function(d){
     if(d.ok) {
-      localStorage.setItem(bdayLockKey, String(Date.now()));
+      changeCount++;
+      localStorage.setItem(bdayCountKey, String(changeCount));
+      if(changeCount >= 2) localStorage.setItem(bdayLockKey, String(Date.now()));
       showToast('\uD83C\uDF82 Cumplea\u00f1os guardado \u2713');
       renderPerfil();
     } else showToast('Error guardando cumplea\u00f1os','error');
