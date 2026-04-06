@@ -4245,9 +4245,57 @@ function renderAgendaCitasUI() {
       html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;">✕ Cancelar</button>';
       html += '</div>';
     }
+    // Photo proof button
+    var hasProof = cita.proof_url || cita.proof;
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.04);">';
+    if(hasProof) {
+      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Foto verificada (+10 pts)</span>';
+    } else {
+      html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border-radius:8px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);font-size:11px;font-weight:700;color:#1D9E75;font-family:Outfit,Nunito,sans-serif;">';
+      html += '\uD83D\uDCF7 Subir foto';
+      html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
+      html += '</label>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+10 pts en ranking</span>';
+    }
+    html += '</div>';
     html += '</div>';
   });
   return html;
+}
+
+function _uploadMeetingProof(input, bookingId) {
+  var file = input.files[0];
+  if(!file) return;
+  showToast('\u23F3 Subiendo foto...');
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // Compress to JPEG thumbnail
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 800;
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if(w > MAX || h > MAX) { var r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      var b64 = c.toDataURL('image/jpeg', 0.7);
+      // Save proof via API
+      fetch('/api/agenda', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action: 'saveProof', user: CU.ref||CU.user||'', bookingId: bookingId, proof: b64 })
+      }).then(function(r){ return r.json(); }).then(function(d) {
+        if(d.ok || d.proof) {
+          showToast('\u2705 Foto subida (+10 pts en ranking)');
+          // Update local booking
+          var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
+          if(bk) bk.proof = true;
+          renderAgendaUI(document.getElementById('agenda-content'));
+        } else { showToast('\u274C Error: ' + (d.error||'')); }
+      }).catch(function(){ showToast('\u274C Error de conexi\u00f3n'); });
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function injectAgendaCSS() {
