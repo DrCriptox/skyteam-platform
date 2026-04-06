@@ -10209,10 +10209,11 @@ function _adminReasignarSponsor(username, currentSponsor) {
   if(!newSponsor || !newSponsor.trim()) return;
   newSponsor = newSponsor.trim().toLowerCase();
   showToast('Actualizando sponsor...');
+  // Step 1: update sponsor only
   fetch('/api/update-user', {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username: username, updates: { sponsor: newSponsor, original_sponsor: null } })
+    body: JSON.stringify({ username: username, updates: { sponsor: newSponsor } })
   })
   .then(function(r){ return r.json(); })
   .then(function(d) {
@@ -10220,6 +10221,12 @@ function _adminReasignarSponsor(username, currentSponsor) {
       showToast('✅ Sponsor de @' + username + ' → ' + newSponsor);
       if(USERS[username]) { USERS[username].sponsor = newSponsor; USERS[username].original_sponsor = null; }
       renderAdminUsuarios();
+      // Step 2: silently try to clear original_sponsor (may fail if column doesn't exist — OK)
+      fetch('/api/update-user', {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username: username, updates: { original_sponsor: null } })
+      }).catch(function(){});
     } else {
       showToast('❌ Error: ' + (d.error || 'desconocido'));
     }
