@@ -4357,6 +4357,16 @@ function loadPlanDiario() {
     .then(function(r){return r.json();})
     .then(function(d){
       planDiarioBlocks=d.blocks||[];
+      // Also sync personal blocks from agenda config
+      if(typeof agendaConfig !== 'undefined' && agendaConfig && agendaConfig.bloqueos_personales) {
+        var bp = agendaConfig.bloqueos_personales;
+        Object.keys(bp).forEach(function(dateKey) {
+          (bp[dateKey]||[]).forEach(function(b) {
+            var exists = planDiarioBlocks.some(function(pb){ return pb.fecha===dateKey && pb.hora_inicio===b.ini; });
+            if(!exists) planDiarioBlocks.push({fecha:dateKey, hora_inicio:b.ini+':00', hora_fin:b.fin+':00', titulo:b.titulo||'Bloqueo personal', categoria:'personal', _isConfig:true});
+          });
+        });
+      }
       // Also sync agenda bookings as "Cierre" blocks
       fetch('/api/agenda?action=list&user='+(CU.ref||CU.username||''))
         .then(function(r){return r.json();})
