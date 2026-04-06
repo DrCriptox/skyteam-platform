@@ -7127,21 +7127,31 @@ function _ssLandingPhotoChange(input) {
   var reader = new FileReader();
   reader.onload = function(e) {
     // Use the same crop tool as profile if available
+    // Always use crop modal for landing photo
+    window._ssLandingCropPending = true;
+    _cropCallback = function() {
+      if(!window._ssLandingCropPending) return;
+      window._ssLandingCropPending = false;
+      // Read cropped result from the canvas output
+      var out = 280;
+      var offscreen = document.createElement('canvas');
+      offscreen.width = out; offscreen.height = out;
+      var ctx = offscreen.getContext('2d');
+      if(_cropState && _cropState.img) {
+        ctx.drawImage(_cropState.img, _cropState.ox, _cropState.oy, _cropState.img.naturalWidth*_cropState.scale, _cropState.img.naturalHeight*_cropState.scale);
+      }
+      var cropped = offscreen.toDataURL('image/jpeg', 0.8);
+      _ssLandingPhoto = cropped;
+      var pv = document.getElementById('ss-l-foto-preview');
+      if(pv) pv.innerHTML = '<img src="'+cropped+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      showToast('\u2705 Foto de landing actualizada');
+      // Do NOT update profile — landing photo is independent
+    };
     if(typeof openCropModal === 'function') {
-      _cropCallback = function() {
-        // Get cropped photo from canvas
-        var canvas = document.getElementById('crop-canvas');
-        if(canvas) {
-          var cropped = canvas.toDataURL('image/jpeg', 0.8);
-          _ssLandingPhoto = cropped;
-          var pv = document.getElementById('ss-l-foto-preview');
-          if(pv) pv.innerHTML = '<img src="'+cropped+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-        }
-        // Landing photo is independent — does NOT change profile
-      };
       openCropModal(e.target.result);
     } else {
-      // Fallback: simple resize
+      // Fallback if crop modal not available
+      window._ssLandingCropPending = false;
       var img = new Image();
       img.onload = function() {
         var s = Math.min(400, img.naturalWidth, img.naturalHeight);
@@ -11262,6 +11272,13 @@ function _cropEvents(canvas) {
 }
 
 function _cropConfirm() {
+  // If a custom callback is set (e.g. from Sky Sales landing), use it and skip profile update
+  if(typeof _cropCallback === 'function') {
+    var cb = _cropCallback; _cropCallback = null;
+    document.getElementById('crop-modal').remove();
+    cb();
+    return;
+  }
   var out = 280;
   var offscreen = document.createElement('canvas');
   offscreen.width = out; offscreen.height = out;
@@ -11292,7 +11309,7 @@ function _cropConfirm() {
     showToast('Error sincronizando foto ⚠️ Intenta de nuevo');
   });
   document.getElementById('crop-modal').remove();
-  if(typeof _cropCallback==='function'){var cb=_cropCallback;_cropCallback=null;cb();return;}
+  // _cropCallback handled at top of function now
   renderPerfil();
   renderSidebarUser();
   showToast('Foto de perfil actualizada ✓');
