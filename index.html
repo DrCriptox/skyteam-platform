@@ -7124,16 +7124,31 @@ function _ssLandingPhotoChange(input) {
   var file = input.files[0]; if(!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
-    var img = new Image();
-    img.onload = function() {
-      var s = Math.min(400, img.naturalWidth, img.naturalHeight);
-      var c = document.createElement('canvas'); c.width=s; c.height=s;
-      c.getContext('2d').drawImage(img, 0, 0, s, s);
-      _ssLandingPhoto = c.toDataURL('image/jpeg', 0.7);
-      var pv = document.getElementById('ss-l-foto-preview');
-      if(pv) pv.innerHTML = '<img src="'+_ssLandingPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-    };
-    img.src = e.target.result;
+    // Use the same crop tool as profile if available
+    if(typeof openCropModal === 'function') {
+      openCropModal(e.target.result, function(croppedData) {
+        _ssLandingPhoto = croppedData;
+        var pv = document.getElementById('ss-l-foto-preview');
+        if(pv) pv.innerHTML = '<img src="'+croppedData+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        // Also update profile photo
+        if(CU) {
+          try { localStorage.setItem('skyteam_photo_' + CU.username, croppedData); } catch(ex){}
+          if(typeof renderSidebarUser === 'function') renderSidebarUser();
+        }
+      });
+    } else {
+      // Fallback: simple resize
+      var img = new Image();
+      img.onload = function() {
+        var s = Math.min(400, img.naturalWidth, img.naturalHeight);
+        var c = document.createElement('canvas'); c.width=s; c.height=s;
+        c.getContext('2d').drawImage(img, 0, 0, s, s);
+        _ssLandingPhoto = c.toDataURL('image/jpeg', 0.7);
+        var pv = document.getElementById('ss-l-foto-preview');
+        if(pv) pv.innerHTML = '<img src="'+_ssLandingPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      };
+      img.src = e.target.result;
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -7162,10 +7177,12 @@ function _loadSSLandingProfile() {
     }
     if(wi) wi.value = rawWa;
     var mi = document.getElementById('ss-l-msg'); if(mi) mi.value = a.mensaje || '';
-    if(a.foto) {
-      _ssLandingPhoto = a.foto;
+    // Use landing foto, or fallback to profile photo
+    var foto = a.foto || localStorage.getItem('skyteam_photo_' + (CU?CU.username:'')) || '';
+    if(foto) {
+      _ssLandingPhoto = foto;
       var pv = document.getElementById('ss-l-foto-preview');
-      if(pv) pv.innerHTML = '<img src="'+a.foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      if(pv) pv.innerHTML = '<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
     }
   }).catch(function(){
     var loading = document.getElementById('ss-landing-loading');
@@ -7218,7 +7235,14 @@ function _ssLandingSave() {
     whatsapp:fullWa, mensaje:finalMsg,
     foto:_ssLandingPhoto||undefined
   })}).then(function(r){return r.json();}).then(function(d){
-    if(d.ok) showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
+    if(d.ok) {
+      showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
+      // Sync photo to profile if changed
+      if(_ssLandingPhoto && CU) {
+        try { localStorage.setItem('skyteam_photo_' + CU.username, _ssLandingPhoto); } catch(ex){}
+        if(typeof renderSidebarUser === 'function') renderSidebarUser();
+      }
+    }
     else showToast('\u274C Error: '+(d.error||''),'error');
   }).catch(function(){showToast('\u274C Error de conexi\u00f3n','error');});
 }
