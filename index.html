@@ -7129,13 +7129,15 @@ function _ssLandingPhotoChange(input) {
     // Use the same crop tool as profile if available
     if(typeof openCropModal === 'function') {
       _cropCallback = function() {
-        var foto = CU && CU.photo;
-        if(foto) {
-          _ssLandingPhoto = foto;
+        // Get cropped photo from canvas
+        var canvas = document.getElementById('crop-canvas');
+        if(canvas) {
+          var cropped = canvas.toDataURL('image/jpeg', 0.8);
+          _ssLandingPhoto = cropped;
           var pv = document.getElementById('ss-l-foto-preview');
-          if(pv) pv.innerHTML = '<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+          if(pv) pv.innerHTML = '<img src="'+cropped+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
         }
-        if(typeof renderSidebarUser === 'function') renderSidebarUser();
+        // Landing photo is independent — does NOT change profile
       };
       openCropModal(e.target.result);
     } else {
@@ -7238,11 +7240,7 @@ function _ssLandingSave() {
   })}).then(function(r){return r.json();}).then(function(d){
     if(d.ok) {
       showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
-      // Sync photo to profile if changed
-      if(_ssLandingPhoto && CU) {
-        try { localStorage.setItem('skyteam_photo_' + CU.username, _ssLandingPhoto); } catch(ex){}
-        if(typeof renderSidebarUser === 'function') renderSidebarUser();
-      }
+      // Landing photo is independent — does NOT overwrite profile photo
     }
     else showToast('\u274C Error: '+(d.error||''),'error');
   }).catch(function(){showToast('\u274C Error de conexi\u00f3n','error');});
