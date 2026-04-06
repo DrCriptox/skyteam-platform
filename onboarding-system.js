@@ -123,7 +123,67 @@ var DAY_CONFIG = {
 };
 
 
+function _renderLockedRuta(container, html) {
+  var CU = typeof window.CU !== 'undefined' ? window.CU : null;
+  var hasPhoto = !!(CU && localStorage.getItem('skyteam_photo_' + CU.username));
+  var hasBday = !!(CU && (CU.birthday || localStorage.getItem('skyteam_birthday_' + (CU.username||''))));
+
+  // Active tasks
+  html += '<div style="margin-bottom:16px;">';
+  html += '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">\u2705 Completa tu perfil</div>';
+
+  // Task 1: Photo
+  html += '<div onclick="navigate(\'perfil\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+(hasPhoto?'rgba(29,158,117,0.06)':'rgba(201,168,76,0.06)')+';border:1px solid '+(hasPhoto?'rgba(29,158,117,0.2)':'rgba(201,168,76,0.2)')+';border-radius:14px;margin-bottom:8px;cursor:pointer;">';
+  html += '<div style="width:36px;height:36px;border-radius:50%;background:'+(hasPhoto?'rgba(29,158,117,0.15)':'rgba(201,168,76,0.15)')+';display:flex;align-items:center;justify-content:center;font-size:18px;">'+(hasPhoto?'\u2705':'\uD83D\uDCF7')+'</div>';
+  html += '<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:'+(hasPhoto?'#1D9E75':'#F0EDE6')+';">'+(hasPhoto?'Foto de perfil cargada':'Sube tu foto de perfil')+'</div>';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">'+(hasPhoto?'Tu foto profesional est\u00e1 lista':'Una buena foto genera confianza')+'</div></div>';
+  if(!hasPhoto) html += '<div style="font-size:12px;color:#C9A84C;font-weight:700;">Ir \u2192</div>';
+  html += '</div>';
+
+  // Task 2: Birthday
+  html += '<div onclick="navigate(\'perfil\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+(hasBday?'rgba(29,158,117,0.06)':'rgba(201,168,76,0.06)')+';border:1px solid '+(hasBday?'rgba(29,158,117,0.2)':'rgba(201,168,76,0.2)')+';border-radius:14px;margin-bottom:8px;cursor:pointer;">';
+  html += '<div style="width:36px;height:36px;border-radius:50%;background:'+(hasBday?'rgba(29,158,117,0.15)':'rgba(201,168,76,0.15)')+';display:flex;align-items:center;justify-content:center;font-size:18px;">'+(hasBday?'\u2705':'\uD83C\uDF82')+'</div>';
+  html += '<div style="flex:1;"><div style="font-size:14px;font-weight:700;color:'+(hasBday?'#1D9E75':'#F0EDE6')+';">'+(hasBday?'Cumplea\u00f1os verificado':'Verifica tu cumplea\u00f1os')+'</div>';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">'+(hasBday?'\u00a1Te celebraremos en tu d\u00eda!':'Ve al perfil y agrega tu fecha')+'</div></div>';
+  if(!hasBday) html += '<div style="font-size:12px;color:#C9A84C;font-weight:700;">Ir \u2192</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Divider
+  html += '<div style="height:0.5px;background:rgba(255,255,255,0.06);margin:8px 0 16px;"></div>';
+
+  // Locked route
+  html += '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">\uD83D\uDD12 Tu ruta de 7 d\u00edas (pr\u00f3ximamente)</div>';
+  for (var day = 1; day <= 7; day++) {
+    var cfg = DAY_CONFIG[day];
+    html += '<div style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px;margin-bottom:8px;opacity:0.35;pointer-events:none;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;">';
+    html += '<div style="font-size:22px;flex-shrink:0;filter:grayscale(1);">' + cfg.icon + '</div>';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<span style="font-size:9px;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.25);letter-spacing:1px;">D\u00eda ' + day + '</span>';
+    html += '<h3 style="font-size:13px;font-weight:700;margin:2px 0 0;color:rgba(255,255,255,0.4);">' + cfg.name + '</h3>';
+    html += '</div>';
+    html += '<div style="font-size:14px;color:rgba(255,255,255,0.15);">\uD83D\uDD12</div>';
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
 function renderOnboarding(container) {
+  // ── PREVIEW MODE: render immediately without API call ──
+  var RUTA_LOCKED = true; // Set to false when ready to launch
+
+  if (RUTA_LOCKED) {
+    var html = '';
+    // Header
+    html += '<div style="text-align:center;margin-bottom:20px;">';
+    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">\uD83D\uDDFA\uFE0F Tu Ruta de 7 D\u00edas</h2>';
+    html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Sigue cada paso y lanza tu negocio como un profesional</p>';
+    html += '</div>';
+    _renderLockedRuta(container, html);
+    return;
+  }
+
   container.innerHTML = '<div style="text-align:center;padding:40px;color:' + C.textSub + '">Cargando tu ruta...</div>';
 
   obApi('getProgress').then(function(data) {
@@ -135,9 +195,6 @@ function renderOnboarding(container) {
     if (data.newAchievement) {
       showCelebration(data.newAchievement);
     }
-
-    // ── PREVIEW MODE: show titles but everything locked/greyed out ──
-    var RUTA_LOCKED = true; // Set to false when ready to launch
 
     var html = '';
 
