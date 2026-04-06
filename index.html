@@ -10729,7 +10729,22 @@ function renderPerfil() {
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
     + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.40);text-transform:uppercase;">Datos de registro</span>'
     + '</div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+'</span></div>'
+    + (function(){
+        var nameLockKey = 'skyteam_name_lock_' + CU.username;
+        var lastSave = localStorage.getItem(nameLockKey);
+        var isLocked = false;
+        var lockDaysLeft = 0;
+        if(lastSave) {
+          var elapsed = Date.now() - parseInt(lastSave);
+          var sixMonths = 180 * 86400000;
+          if(elapsed < sixMonths) { isLocked = true; lockDaysLeft = Math.ceil((sixMonths - elapsed) / 86400000); }
+        }
+        if(isLocked) {
+          return '<div class="perfil-data-row"><span class="perfil-data-label">Nombre</span><span class="perfil-data-value">'+CU.name+' <span style="font-size:8px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 '+lockDaysLeft+'d</span></span></div>';
+        } else {
+          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">Nombre</span><input type="text" id="pf-name" value="'+_safe(CU.name)+'" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:#F0EDE6;font-size:12px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"><button onclick="_savePerfilName()" style="padding:5px 10px;border-radius:6px;background:rgba(201,168,76,0.10);border:0.5px solid rgba(201,168,76,0.20);color:#C9A84C;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE</button></div>';
+        }
+      })()
     + '<div class="perfil-data-row"><span class="perfil-data-label">Usuario</span><span class="perfil-data-value mono">'+CU.username+'</span></div>'
     + (function(){
         var LOCK = 15 * 24 * 3600000; // 15 days in ms
@@ -11009,6 +11024,29 @@ function saveTZ(tz) {
   if(CU) { CU.timezone = tz; localStorage.setItem('skyteam_u', JSON.stringify(CU)); }
   showToast('Zona horaria guardada ✓');
 }
+function _savePerfilName() {
+  if(!CU) return;
+  var input = document.getElementById('pf-name');
+  if(!input || !input.value.trim()) { showToast('Ingresa tu nombre','error'); return; }
+  var newName = input.value.trim();
+  if(newName === CU.name) { showToast('El nombre no cambi\u00f3'); return; }
+  fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username: CU.username, updates: { name: newName } })
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.ok) {
+      CU.name = newName;
+      localStorage.setItem('skyteam_u', JSON.stringify(CU));
+      localStorage.setItem('skyteam_name_lock_' + CU.username, String(Date.now()));
+      if(USERS[CU.username]) USERS[CU.username].name = newName;
+      showToast('\u2705 Nombre actualizado');
+      renderPerfil();
+      renderSidebarUser();
+    } else showToast('\u274C Error: ' + (d.error||''),'error');
+  }).catch(function(){ showToast('\u274C Error de conexi\u00f3n','error'); });
+}
+
 function saveBirthday(val) {
   if(!CU) return;
   // Lock: only 1 change every 6 months
