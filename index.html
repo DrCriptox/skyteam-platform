@@ -3556,16 +3556,16 @@ function showApp() {
         var myUsername = CU.username || '';
         var myRef = (CU.ref || CU.username || '').toLowerCase();
 
-        // Check +3 days ahead for upcoming birthdays
+        // Check: today, tomorrow (+1), and +3 days
         var upcoming = [];
-        for (var di = 0; di <= 3; di++) {
+        [0, 1, 3].forEach(function(di) {
           var checkDate = new Date(today);
           checkDate.setDate(checkDate.getDate() + di);
           upcoming.push({
             md: String(checkDate.getMonth()+1).padStart(2,'0') + '-' + String(checkDate.getDate()).padStart(2,'0'),
             daysUntil: di
           });
-        }
+        });
 
         Object.keys(USERS).forEach(function(k){
           var u = USERS[k];
@@ -3625,14 +3625,21 @@ function showApp() {
           }
         }
 
-        // Notify: upcoming birthdays (3 days ahead)
+        // Notify: upcoming birthdays (3 days and tomorrow only)
         if(birthdaySoon.length > 0) {
           birthdaySoon.forEach(function(b) {
-            if(typeof pushNotification === 'function') pushNotification({
+            if(typeof pushNotification !== 'function') return;
+            var title, msg;
+            if(b.days === 1) {
+              title = '\uD83C\uDF82 Ma\u00f1ana cumple a\u00f1os ' + b.name;
+              msg = '\u00a1Ma\u00f1ana es el cumplea\u00f1os de tu socio ' + b.name + '! Prep\u00e1rale un mensaje de felicitaci\u00f3n \uD83C\uDF89';
+            } else {
+              title = '\uD83C\uDF82 En 3 d\u00edas cumple a\u00f1os ' + b.name;
+              msg = 'Faltan 3 d\u00edas para el cumplea\u00f1os de ' + b.name + '. \u00a1Tenlo presente!';
+            }
+            pushNotification({
               id:'bday_soon_'+b.name.replace(/\s/g,'')+'_'+b.days, type:'info', icon:'\uD83C\uDF82',
-              title:'\uD83C\uDF82 Cumplea\u00f1os en ' + b.days + ' d\u00eda' + (b.days>1?'s':''),
-              subtitle: b.name,
-              msg: (b.isMe ? 'Tu cumplea\u00f1os es en '+b.days+' d\u00eda'+(b.days>1?'s':'')+'.' : b.name+' cumple a\u00f1os en '+b.days+' d\u00eda'+(b.days>1?'s':'')+'. \u00a1Prep\u00e1ra un mensaje!')
+              title: title, subtitle: b.name, msg: msg
             });
           });
         }
