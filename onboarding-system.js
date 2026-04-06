@@ -136,13 +136,43 @@ function renderOnboarding(container) {
       showCelebration(data.newAchievement);
     }
 
+    // ── PREVIEW MODE: show titles but everything locked/greyed out ──
+    var RUTA_LOCKED = true; // Set to false when ready to launch
+
     var html = '';
 
     // Header
     html += '<div style="text-align:center;margin-bottom:20px;">';
-    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">🗺️ Tu Ruta de 7 Días</h2>';
+    html += '<h2 style="font-size:20px;font-weight:800;margin:0 0 4px;">\uD83D\uDDFA\uFE0F Tu Ruta de 7 D\u00edas</h2>';
     html += '<p style="color:' + C.textSub + ';font-size:12px;margin:0;">Sigue cada paso y lanza tu negocio como un profesional</p>';
     html += '</div>';
+
+    if (RUTA_LOCKED) {
+      // Locked banner
+      html += '<div style="text-align:center;padding:14px 20px;margin-bottom:16px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.15);border-radius:12px;">';
+      html += '<div style="font-size:20px;margin-bottom:6px;">\uD83D\uDD12</div>';
+      html += '<div style="font-size:13px;font-weight:700;color:#C9A84C;">Pr\u00f3ximamente</div>';
+      html += '<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px;">Tu ruta de 7 d\u00edas estar\u00e1 disponible muy pronto. Mientras tanto, explora la plataforma.</div>';
+      html += '</div>';
+
+      // Show day cards as preview (greyed out, no interactions)
+      for (var day = 1; day <= 7; day++) {
+        var cfg = DAY_CONFIG[day];
+        html += '<div style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px;margin-bottom:8px;opacity:0.4;pointer-events:none;">';
+        html += '<div style="display:flex;align-items:center;gap:10px;">';
+        html += '<div style="font-size:22px;flex-shrink:0;filter:grayscale(1);">' + cfg.icon + '</div>';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<span style="font-size:9px;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.25);letter-spacing:1px;">D\u00eda ' + day + '</span>';
+        html += '<h3 style="font-size:13px;font-weight:700;margin:2px 0 0;color:rgba(255,255,255,0.4);">' + cfg.name + '</h3>';
+        html += '</div>';
+        html += '<div style="font-size:14px;color:rgba(255,255,255,0.15);">\uD83D\uDD12</div>';
+        html += '</div></div>';
+      }
+
+      var container = document.getElementById('ob-ruta-content') || document.getElementById('ob-content');
+      if (container) container.innerHTML = html;
+      return;
+    }
 
     // Progress bar
     var completedDays = 0;
@@ -170,7 +200,7 @@ function renderOnboarding(container) {
       var dotColor = dayDone ? C.green : (isCurrent ? C.accent : 'rgba(255,255,255,0.15)');
       var dotBorder = isCurrent ? '2px solid ' + C.accent : 'none';
       var dotShadow = isCurrent ? '0 0 8px ' + C.glow : 'none';
-      html += '<div style="width:28px;height:28px;border-radius:50%;background:' + dotColor + ';border:' + dotBorder + ';box-shadow:' + dotShadow + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:' + (dayDone ? '#000' : '#fff') + ';flex-shrink:0;">' + (dayDone ? '✓' : dd) + '</div>';
+      html += '<div style="width:28px;height:28px;border-radius:50%;background:' + dotColor + ';border:' + dotBorder + ';box-shadow:' + dotShadow + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:' + (dayDone ? '#000' : '#fff') + ';flex-shrink:0;">' + (dayDone ? '\u2713' : dd) + '</div>';
     }
     html += '</div></div>';
 
@@ -195,9 +225,9 @@ function renderOnboarding(container) {
       html += '<div style="font-size:24px;flex-shrink:0;">' + cfg.icon + '</div>';
       html += '<div style="flex:1;min-width:0;">';
       html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
-      html += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:' + (dayComplete ? C.green : isActive ? C.accent : C.textSub) + ';letter-spacing:1px;">Día ' + day + '</span>';
-      if (dayComplete) html += '<span style="font-size:9px;background:rgba(0,230,118,0.15);color:' + C.green + ';padding:2px 6px;border-radius:8px;">✓ Listo</span>';
-      if (isActive) html += '<span style="font-size:9px;background:rgba(201,168,76,0.15);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">← Aquí</span>';
+      html += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:' + (dayComplete ? C.green : isActive ? C.accent : C.textSub) + ';letter-spacing:1px;">D\u00eda ' + day + '</span>';
+      if (dayComplete) html += '<span style="font-size:9px;background:rgba(0,230,118,0.15);color:' + C.green + ';padding:2px 6px;border-radius:8px;">\u2713 Listo</span>';
+      if (isActive) html += '<span style="font-size:9px;background:rgba(201,168,76,0.15);color:' + C.accent + ';padding:2px 6px;border-radius:8px;animation:obPulse 2s infinite;">\u2190 Aqu\u00ed</span>';
       html += '</div>';
       html += '<h3 style="font-size:14px;font-weight:700;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cfg.name + '</h3>';
       html += '</div>';
