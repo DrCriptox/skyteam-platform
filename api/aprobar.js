@@ -131,9 +131,10 @@ export default async function handler(req, res) {
     // Create user in users table — try progressively minimal payloads if columns are missing
     // Migration grace: if expiry is past or null, give 8 days from now
     let finalExpiry = expiryTs || null;
-    if (!finalExpiry || finalExpiry < Date.now()) {
-      finalExpiry = Date.now() + (8 * 86400000); // 8 days from now
-      console.log('[APROBAR] Migration grace: user expired/no expiry, granting 8 days. New expiry:', new Date(finalExpiry).toISOString());
+    // If no expiry, expired, or expires within 24h → give 7 days trial
+    if (!finalExpiry || finalExpiry <= (Date.now() + 86400000)) {
+      finalExpiry = Date.now() + (7 * 86400000);
+      console.log('[APROBAR] Trial period: 7 days granted. New expiry:', new Date(finalExpiry).toISOString());
     }
     // Core: fields that MUST be in every INSERT attempt (never lose email, expiry, whatsapp)
     const corePayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, innova_user: innovaUser };

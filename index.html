@@ -10550,7 +10550,7 @@ function sendSolicitud() {
     showToast('En la imagen no se visualizan los días activos en la plataforma. Sube una captura más clara ❌'); return;
   }
   if(expiryData.days_remaining <= 0) {
-    showToast('En la imagen aparecen 0 días activos. Renueva tu membresía en Innova para continuar ❌'); return;
+    if(!confirm('Tu membres\u00eda en Innova tiene 0 d\u00edas activos.\n\nSe te dar\u00e1 acceso por 7 d\u00edas de prueba.\nRecuerda renovar tu membres\u00eda lo antes posible.\n\n\u00bfDeseas continuar con el registro?')) return;
   }
   if(!innovaUser) {
     document.getElementById('sol-innova-user').focus();
