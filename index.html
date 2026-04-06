@@ -4689,12 +4689,23 @@ function updatePlanDiarioBlock(id) {
   var ini=document.getElementById('pd-edit-ini');
   var fin=document.getElementById('pd-edit-fin');
   var cat=document.getElementById('pd-edit-cat');
-  if(!titulo||!titulo.value.trim()){showToast('Ingresa un título');return;}
+  if(!titulo||!titulo.value.trim()){showToast('Ingresa un t\u00edtulo');return;}
   if(ini.value>=fin.value){showToast('La hora de inicio debe ser antes del fin');return;}
-  fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:id,updates:{titulo:titulo.value.trim(),hora_inicio:ini.value,hora_fin:fin.value,categoria:cat?cat.value:'personal'}})})
-    .then(function(r){return r.json();})
-    .then(function(d){if(d.ok){showToast('✅ Actividad actualizada');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();}else showToast('❌ Error');})
-    .catch(function(){showToast('❌ Error de conexión');});
+  var block = planDiarioBlocks.find(function(b){return b.id===id;});
+  var similar = block ? planDiarioBlocks.filter(function(b){ return b.id!==id && b.hora_inicio===block.hora_inicio && b.hora_fin===block.hora_fin; }) : [];
+  var applyAll = similar.length > 0 && confirm('\u00bfAplicar este cambio a los otros ' + similar.length + ' bloques con el mismo horario?');
+  var newTitle = titulo.value.trim();
+  var newCat = cat ? cat.value : 'personal';
+  var promises = [fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:id,updates:{titulo:newTitle,hora_inicio:ini.value,hora_fin:fin.value,categoria:newCat}})})];
+  if(applyAll) {
+    similar.forEach(function(b) {
+      promises.push(fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:b.id,updates:{titulo:newTitle,categoria:newCat}})}));
+    });
+  }
+  Promise.all(promises).then(function(){
+    showToast('\u2705 ' + (applyAll ? (similar.length+1)+' bloques actualizados' : 'Actividad actualizada'));
+    var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();
+  }).catch(function(){showToast('\u274C Error de conexi\u00f3n');});
 }
 
 function updatePlanDiarioBlockAll(id) {
