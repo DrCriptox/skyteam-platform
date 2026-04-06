@@ -7229,6 +7229,7 @@ function _renderSSRanking() {
   h += '<button onclick="_ssRankPeriod=\'weekly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='weekly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='weekly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='weekly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Semanal</button>';
   h += '<button onclick="_ssRankPeriod=\'monthly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='monthly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='monthly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='monthly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Mensual</button>';
   h += '</div></div>';
+  h += '<style>@media(min-width:769px){.ss-rk-name{font-size:17px !important;}.ss-rk-stats{font-size:11px !important;}.ss-rk-pts{font-size:20px !important;}}</style>';
   h += '<div id="ss-ranking-list" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div>';
   h += '</div>';
   return h;
@@ -7271,11 +7272,11 @@ function _loadSSRanking() {
       html += '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+(isMe?'rgba(201,168,76,0.4)':isPodium?podiumBorder[i]:'rgba(255,255,255,0.06)')+'">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats
       html += '<div style="flex:1;min-width:0;">';
-      html += '<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span style="font-size:8px;color:#C9A84C;">(t\u00fa)</span>':'')+'</div>';
-      html += '<div style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+u.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+u.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+convRate+'%</span></div>';
+      html += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span style="font-size:8px;color:#C9A84C;">(t\u00fa)</span>':'')+'</div>';
+      html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+u.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+u.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+convRate+'%</span></div>';
       html += '</div>';
       // Score
-      html += '<div style="flex-shrink:0;text-align:right;"><span style="font-size:16px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
+      html += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       html += '</div>';
     });
     html += '<p style="font-size:8px;color:rgba(255,255,255,0.12);text-align:center;margin:10px 0 0;">PTS = visitas\u00d71 - IPs duplicados\u00d72 + conversiones(\u00fanicos)\u00d720</p>';
