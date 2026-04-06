@@ -3192,7 +3192,8 @@ function showLanding() {
     var wh = window.innerHeight;
     document.querySelectorAll('.sky-reveal:not(.visible)').forEach(function(el) {
       var r = el.getBoundingClientRect();
-      if (r.top < wh - 20 && r.bottom > 0 && r.height > 0) {
+      // Use wh + 120 so elements at the bottom edge of the viewport are always revealed
+      if (r.top < wh + 120 && r.bottom > 0 && r.height > 0) {
         el.classList.add('visible');
       }
     });
@@ -3228,6 +3229,7 @@ function showLanding() {
       });
       setTimeout(revealTick, 100);
       setTimeout(revealTick, 400);
+      setTimeout(revealTick, 900);
     };
   }
 
