@@ -11508,69 +11508,7 @@ function crmInjectRatingCSS() {
    RATING WIZARD
    ======================================== */
 
-function crmStartRatingWizard(onComplete) {
-  var questions = [
-    { text: '\u00BFTu prospecto es Positivo?', key: 'calif_positivo', number: 1 },
-    { text: '\u00BFTu prospecto es Emprendedor?', key: 'calif_emprendedor', number: 3 },
-    { text: '\u00BFTu prospecto tiene Dinero?', key: 'calif_dinero', number: 4 },
-    { text: '\u00BFTu prospecto es L\u00EDder?', key: 'calif_lider', number: 5 }
-  ];
-
-  crmRatingWizardState.isOpen = true;
-  crmRatingWizardState.currentQuestion = 0;
-  crmRatingWizardState.answers = Object.assign({}, crmRatingAnswers);
-
-  function showQuestion(index) {
-    if (index >= questions.length) {
-      crmRatingWizardState.isOpen = false;
-      if (onComplete) {
-        onComplete(crmRatingWizardState.answers);
-      }
-      var overlay = document.querySelector('.crm-wizard-overlay');
-      if (overlay) {
-        overlay.style.animation = 'fadeOut 0.3s ease';
-        setTimeout(function() { overlay.remove(); }, 300);
-      }
-      return;
-    }
-
-    var q = questions[index];
-    var existingOverlay = document.querySelector('.crm-wizard-overlay');
-    if (existingOverlay) {
-      existingOverlay.remove();
-    }
-
-    var overlay = document.createElement('div');
-    overlay.className = 'crm-wizard-overlay';
-    var card = document.createElement('div');
-    card.className = 'crm-wizard-card';
-    card.innerHTML = '<div class="crm-wizard-question">' + q.text + '</div>' +
-      '<div class="crm-wizard-subtitle">Pregunta ' + q.number + ' de 5</div>' +
-      '<div class="crm-wizard-buttons">' +
-      '<button class="crm-wizard-btn crm-wizard-btn-yes" data-answer="1">S\u00ED</button>' +
-      '<button class="crm-wizard-btn crm-wizard-btn-no" data-answer="0">No</button>' +
-      '</div>';
-
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-
-    var yesBtn = card.querySelector('[data-answer="1"]');
-    var noBtn = card.querySelector('[data-answer="0"]');
-
-    function handleAnswer(answer) {
-      crmRatingWizardState.answers[q.key] = answer;
-      card.style.animation = 'fadeOut 0.2s ease';
-      setTimeout(function() {
-        showQuestion(index + 1);
-      }, 200);
-    }
-
-    if (yesBtn) yesBtn.addEventListener('click', function() { handleAnswer(1); });
-    if (noBtn) noBtn.addEventListener('click', function() { handleAnswer(0); });
-  }
-
-  showQuestion(0);
-}
+// Legacy crmStartRatingWizard(onComplete) removed — using v2 at line ~12113 with (prospectoId, onComplete)
 
 function crmUpdateStarsDisplay() {
   var count = (crmRatingAnswers.calif_positivo || 0) +
