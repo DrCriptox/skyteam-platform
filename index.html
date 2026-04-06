@@ -11637,77 +11637,141 @@ function _detectDevice() {
 function showInstallTutorial() {
   if(document.getElementById('install-tutorial-modal')) return;
   var dev = _detectDevice();
-  var steps = [];
-  var title = 'Instalar SKYTEAM';
-  var subtitle = '';
 
-  if (dev === 'ios-safari') {
-    subtitle = 'Safari en iPhone/iPad';
-    steps = [
-      {icon: '⬆️', text: 'Toca el botón <b>Compartir</b> <span style="display:inline-block;width:22px;height:22px;border:1.5px solid #C9A84C;border-radius:5px;text-align:center;line-height:20px;font-size:13px;vertical-align:middle;">⬆</span> en la barra inferior'},
-      {icon: '📜', text: 'Desliza hacia abajo en las opciones'},
-      {icon: '➕', text: 'Toca <b>"Añadir a pantalla de inicio"</b>'},
-      {icon: '✅', text: 'Confirma tocando <b>"Añadir"</b> arriba a la derecha'}
-    ];
-  } else if (dev === 'ios-other') {
-    subtitle = 'Chrome/Firefox en iPhone';
-    steps = [
-      {icon: '💡', text: 'Para instalar como app, necesitas usar <b>Safari</b>'},
-      {icon: '🌐', text: 'Abre <b>Safari</b> y visita <b>skyteam.global</b>'},
-      {icon: '⬆️', text: 'Toca el botón <b>Compartir</b> <span style="display:inline-block;width:22px;height:22px;border:1.5px solid #C9A84C;border-radius:5px;text-align:center;line-height:20px;font-size:13px;vertical-align:middle;">⬆</span>'},
-      {icon: '➕', text: 'Selecciona <b>"Añadir a pantalla de inicio"</b>'}
-    ];
-  } else if (dev === 'android-chrome') {
-    subtitle = 'Chrome en Android';
-    steps = [
-      {icon: '⋮', text: 'Toca los <b>3 puntos</b> ⋮ arriba a la derecha'},
-      {icon: '📲', text: 'Toca <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>'},
-      {icon: '✅', text: 'Confirma tocando <b>"Instalar"</b>'}
-    ];
-  } else if (dev === 'android-samsung') {
-    subtitle = 'Samsung Internet';
-    steps = [
-      {icon: '☰', text: 'Toca el menú <b>☰</b> abajo a la derecha'},
-      {icon: '➕', text: 'Toca <b>"Añadir página a"</b>'},
-      {icon: '📱', text: 'Selecciona <b>"Pantalla de inicio"</b>'},
-      {icon: '✅', text: 'Confirma tocando <b>"Añadir"</b>'}
-    ];
-  } else if (dev === 'android-other') {
-    subtitle = 'Navegador Android';
-    steps = [
-      {icon: '⋮', text: 'Abre el <b>menú</b> de tu navegador (⋮ o ☰)'},
-      {icon: '📲', text: 'Busca <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar"</b>'},
-      {icon: '✅', text: 'Confirma la instalación'}
-    ];
-  } else {
-    subtitle = 'Navegador de escritorio';
-    steps = [
-      {icon: '🔍', text: 'Busca el ícono <b>📲</b> o <b>⊕</b> en la barra de direcciones'},
-      {icon: '📲', text: 'Haz clic en <b>"Instalar"</b>'},
-      {icon: '✅', text: '¡Listo! La app aparecerá en tu escritorio'}
-    ];
+  // ── Config por dispositivo ──────────────────────────────────────
+  var cfg = {
+    'ios-safari':      { os:'ios',     title:'Instala SKYTEAM en tu iPhone', color:'#007AFF',
+      badge:'Safari · iPhone / iPad',
+      arrow: 'bottom-center',   // apunta al botón compartir (abajo centro en Safari)
+      arrowLabel: 'Toca aquí',
+      steps:[
+        '1️⃣  Toca el botón <b>Compartir</b> <span style="font-size:18px;">⬆️</span> en la barra de abajo',
+        '2️⃣  Desliza y toca <b>"Añadir a pantalla de inicio"</b> <span style="font-size:16px;">➕</span>',
+        '3️⃣  Toca <b>"Añadir"</b> arriba a la derecha',
+        '✅  ¡Listo! Busca <b>SKYTEAM</b> en tu pantalla de inicio'
+      ]},
+    'ios-other':       { os:'ios',     title:'Abre con Safari para instalar', color:'#FF9500',
+      badge:'Chrome / Firefox · iPhone',
+      arrow: null,
+      steps:[
+        '⚠️  Tu navegador actual <b>no permite instalar</b> como app',
+        '1️⃣  Abre <b>Safari</b> y visita <b>skyteam.global</b>',
+        '2️⃣  Toca <b>Compartir ⬆️</b> → <b>"Añadir a pantalla de inicio"</b>',
+        '✅  ¡Listo! SKYTEAM quedará como app'
+      ]},
+    'android-chrome':  { os:'android', title:'Instala SKYTEAM en tu Android', color:'#34A853',
+      badge:'Chrome · Android',
+      arrow: 'top-right',       // apunta a los 3 puntos de Chrome (arriba derecha)
+      arrowLabel: 'Toca los 3 puntos',
+      steps:[
+        '1️⃣  Toca los <b>3 puntos ⋮</b> arriba a la derecha',
+        '2️⃣  Toca <b>"Instalar aplicación"</b> o <b>"Añadir a inicio"</b>',
+        '3️⃣  Confirma tocando <b>"Instalar"</b>',
+        '✅  Busca <b>SKYTEAM</b> en tu pantalla de inicio'
+      ]},
+    'android-samsung': { os:'android', title:'Instala SKYTEAM en tu Android', color:'#1428A0',
+      badge:'Samsung Internet',
+      arrow: 'bottom-right',
+      arrowLabel: 'Toca el menú',
+      steps:[
+        '1️⃣  Toca el ícono <b>☰ Menú</b> abajo a la derecha',
+        '2️⃣  Toca <b>"Añadir página a"</b> → <b>"Pantalla de inicio"</b>',
+        '3️⃣  Confirma tocando <b>"Añadir"</b>',
+        '✅  Busca <b>SKYTEAM</b> en tu pantalla de inicio'
+      ]},
+    'android-other':   { os:'android', title:'Instala SKYTEAM como app', color:'#34A853',
+      badge:'Android',
+      arrow: 'top-right',
+      arrowLabel: 'Menú del navegador',
+      steps:[
+        '1️⃣  Abre el <b>menú ⋮ / ☰</b> de tu navegador',
+        '2️⃣  Busca <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar"</b>',
+        '3️⃣  Confirma la instalación',
+        '✅  Busca <b>SKYTEAM</b> en tu pantalla de inicio'
+      ]},
+    'desktop':         { os:'desktop', title:'Instala SKYTEAM como app', color:'#C9A84C',
+      badge:'Escritorio',
+      arrow: 'top-right',
+      arrowLabel: 'Ícono de instalación',
+      steps:[
+        '1️⃣  Busca el ícono <b>⊕</b> o <b>📲</b> en la barra de direcciones',
+        '2️⃣  Haz clic en <b>"Instalar"</b>',
+        '✅  SKYTEAM aparecerá en tu escritorio'
+      ]}
+  };
+  var c = cfg[dev] || cfg['desktop'];
+
+  // ── Flecha superpuesta según posición ──────────────────────────
+  var arrowHtml = '';
+  if(c.arrow) {
+    var arrowStyle = 'position:fixed;z-index:10001;font-size:40px;animation:_arrowBounce 0.7s ease-in-out infinite alternate;pointer-events:none;';
+    var labelStyle = 'position:fixed;z-index:10001;font-size:11px;font-weight:800;color:#fff;background:rgba(0,0,0,0.75);padding:4px 10px;border-radius:20px;white-space:nowrap;pointer-events:none;';
+    if(c.arrow === 'bottom-center') {
+      arrowHtml = '<div id="_inst_arrow" style="'+arrowStyle+'bottom:70px;left:50%;transform:translateX(-50%);">⬇️</div>'
+                + '<div id="_inst_label" style="'+labelStyle+'bottom:115px;left:50%;transform:translateX(-50%);">'+c.arrowLabel+'</div>';
+    } else if(c.arrow === 'top-right') {
+      arrowHtml = '<div id="_inst_arrow" style="'+arrowStyle+'top:60px;right:14px;">⬆️</div>'
+                + '<div id="_inst_label" style="'+labelStyle+'top:108px;right:8px;">'+c.arrowLabel+'</div>';
+    } else if(c.arrow === 'bottom-right') {
+      arrowHtml = '<div id="_inst_arrow" style="'+arrowStyle+'bottom:70px;right:14px;">⬇️</div>'
+                + '<div id="_inst_label" style="'+labelStyle+'bottom:115px;right:8px;">'+c.arrowLabel+'</div>';
+    }
   }
 
-  var stepsHtml = steps.map(function(s, i) {
-    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;'+(i<steps.length-1?'border-bottom:0.5px solid rgba(255,255,255,0.06);':'')+'">'
-      + '<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+(i+1)+'</div>'
-      + '<div style="flex:1;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.5;padding-top:6px;">'+s.text+'</div>'
+  // ── Pasos ───────────────────────────────────────────────────────
+  var stepsHtml = c.steps.map(function(s, i) {
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:13px 0;'+(i<c.steps.length-1?'border-bottom:0.5px solid rgba(255,255,255,0.06);':'')+'">'
+      + '<div style="flex:1;font-size:14px;color:rgba(255,255,255,0.88);line-height:1.55;">'+s+'</div>'
       + '</div>';
   }).join('');
 
+  // ── Modal ───────────────────────────────────────────────────────
   var modal = document.createElement('div');
   modal.id = 'install-tutorial-modal';
-  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;font-family:Outfit,Nunito,sans-serif;';
-  modal.innerHTML = '<div style="background:linear-gradient(180deg,#0a0a12,#050508);border-radius:24px 24px 0 0;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;padding:24px 20px 32px;">'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">'
-    + '<div><div style="font-size:18px;font-weight:900;color:#fff;">📲 '+title+'</div><div style="font-size:12px;color:rgba(255,255,255,0.55);font-weight:700;margin-top:2px;">'+subtitle+'</div></div>'
-    + '<button onclick="document.getElementById(\'install-tutorial-modal\').remove()" style="background:rgba(255,255,255,0.06);border:none;border-radius:50%;width:32px;height:32px;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>'
+  modal.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;font-family:Outfit,Nunito,sans-serif;';
+
+  // Inject bounce keyframe once
+  if(!document.getElementById('_arrowKf')) {
+    var kfStyle = document.createElement('style');
+    kfStyle.id = '_arrowKf';
+    kfStyle.textContent = '@keyframes _arrowBounce{from{transform:translateY(0) translateX(-50%)}to{transform:translateY(-10px) translateX(-50%)}}';
+    document.head.appendChild(kfStyle);
+  }
+
+  modal.innerHTML = arrowHtml
+    + '<div style="background:linear-gradient(180deg,#0e0e1a,#050508);border-radius:28px 28px 0 0;max-width:440px;width:100%;max-height:80vh;overflow-y:auto;padding:0 0 32px;box-shadow:0 -8px 40px rgba(0,0,0,0.5);">'
+    // Handle
+    + '<div style="width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);margin:12px auto 0;"></div>'
+    // Header
+    + '<div style="padding:20px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;">'
+    +   '<div>'
+    +     '<div style="display:inline-block;background:'+c.color+';color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:0.5px;margin-bottom:8px;">'+c.badge+'</div>'
+    +     '<div style="font-size:20px;font-weight:900;color:#fff;line-height:1.2;">📲 '+c.title+'</div>'
+    +   '</div>'
+    +   '<button onclick="_closeInstallModal()" style="background:rgba(255,255,255,0.08);border:none;border-radius:50%;min-width:34px;height:34px;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;margin-left:10px;flex-shrink:0;">✕</button>'
     + '</div>'
-    + '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:16px;padding:4px 16px;">'+stepsHtml+'</div>'
-    + '<div style="text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,0.25);">Después de instalar, busca SKYTEAM en tu pantalla de inicio</div>'
+    // Divider
+    + '<div style="height:0.5px;background:rgba(255,255,255,0.07);margin:16px 20px;"></div>'
+    // Steps
+    + '<div style="padding:0 20px;">'+stepsHtml+'</div>'
+    // Footer
+    + '<div style="margin:16px 20px 0;padding:14px 16px;background:rgba(201,168,76,0.07);border:0.5px solid rgba(201,168,76,0.2);border-radius:14px;text-align:center;">'
+    +   '<div style="font-size:13px;color:#C9A84C;font-weight:700;">🏆 SKYTEAM</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;">La app quedará en tu pantalla de inicio sin ocupar espacio extra</div>'
+    + '</div>'
     + '</div>';
-  modal.addEventListener('click', function(e) { if(e.target === modal) modal.remove(); });
+
+  modal.addEventListener('click', function(e) { if(e.target === modal) _closeInstallModal(); });
   document.body.appendChild(modal);
+}
+
+function _closeInstallModal() {
+  var m = document.getElementById('install-tutorial-modal');
+  if(m) m.remove();
+  var a = document.getElementById('_inst_arrow');
+  if(a) a.remove();
+  var l = document.getElementById('_inst_label');
+  if(l) l.remove();
 }
 
 function markPWAInstalled() {
