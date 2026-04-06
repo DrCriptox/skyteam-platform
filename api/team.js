@@ -143,6 +143,14 @@ async function handleDashboard(req, res, user, ref) {
   var bookMap = {};
   bookData.forEach(function(b) { bookMap[b.username] = (bookMap[b.username] || 0) + 1; });
 
+  // Build direct-socio count map: how many users have each person as sponsor
+  var directMap = {};
+  allUsers.forEach(function(u) {
+    if (!u.sponsor) return;
+    var sp = u.sponsor.toLowerCase();
+    directMap[sp] = (directMap[sp] || 0) + 1;
+  });
+
   // Calculate Sky Score per member
   var now = Date.now();
   members.forEach(function(m) {
@@ -152,8 +160,14 @@ async function handleDashboard(req, res, user, ref) {
     var closedCount = closedMap[m.username] || 0;
     var bookCount = bookMap[m.username] || 0;
 
+    // Direct socios = users who joined under this person (real sales)
+    var mRef = (m.ref || '').toLowerCase();
+    var mUser = (m.username || '').toLowerCase();
+    var directSocios = (directMap[mRef] || 0) + (directMap[mUser] && mUser !== mRef ? directMap[mUser] : 0);
+    m.direct_socios = directSocios;
+
     m.score_prospects = (prosCount * 2) + (closedCount * 5);
-    m.score_sales = (m.ventas || 0) * 10;
+    m.score_sales = directSocios * 10;
     m.score_day = ((onb.current_day || 0) * 3) + ((gam.streak_current || 0) * 2) + (bookCount * 4);
     m.sky_score = m.score_prospects + m.score_sales + m.score_day;
     m.prospectos_count = prosCount;

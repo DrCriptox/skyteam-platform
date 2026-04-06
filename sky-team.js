@@ -1979,17 +1979,8 @@ function openMemberDetail(username) {
   var appointments = isSelf ? _citasThisWeek() : (m.bookings_count != null ? m.bookings_count : (m.appointments || m.citas || 0));
   // Racha
   var streak = isSelf ? _calcRacha() : (m.streak_current || m.daily_streak || m.streak || 0);
-  // Ventas: socios directos que esta persona tiene en su downline
-  var directSocios = 0;
-  if (stState.data && stState.data.members) {
-    var mRef = (m.ref || m.username || '').toLowerCase();
-    var mUser = (m.username || '').toLowerCase();
-    directSocios = stState.data.members.filter(function(x) {
-      var sp = (x.sponsor || '').toLowerCase();
-      return sp === mRef || sp === mUser;
-    }).length;
-  }
-  var sales = directSocios || m.ventas || 0;
+  // Ventas: socios directos calculados por el API (m.direct_socios)
+  var sales = m.direct_socios != null ? m.direct_socios : m.ventas || 0;
 
   // Determine if CU is sponsor (direct)
   var cuUsername = (typeof CU !== 'undefined' && CU) ? CU.username : '';
