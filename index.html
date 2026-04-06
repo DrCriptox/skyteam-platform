@@ -4506,9 +4506,16 @@ function renderPlanDiarioCalendar() {
       var colLeft = 'calc(48px + '+colIdx+' * (100% - 48px) / '+dates.length+' + 3px)';
       var colWidth = 'calc((100% - 48px) / '+dates.length+' - 6px)';
 
-      var blockClick = isBooking
-        ? 'event.stopPropagation();if(confirm(\'¿Cancelar esta cita de cierre?\'))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')'
-        : 'event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')';
+      var blockClick;
+      if(isBooking) {
+        blockClick = 'event.stopPropagation();if(confirm(\'\\u00bfCancelar esta cita de cierre?\'))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')';
+      } else if(b._isConfig) {
+        blockClick = 'event.stopPropagation();if(confirm(\'\\u00bfEliminar este bloque?\\n'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+': '+(b.titulo||'').replace(/'/g,'')+'\'))_deleteConfigBlock(\''+b.fecha+'\',\''+b.hora_inicio.substring(0,5)+'\')';
+      } else if(b.id) {
+        blockClick = 'event.stopPropagation();openPlanDiarioEdit(\''+b.id+'\')';
+      } else {
+        blockClick = 'event.stopPropagation()';
+      }
 
       html += '<div class="pd-block" style="position:absolute;top:'+topPct+'%;height:'+heightPct+'%;left:'+colLeft+';width:'+colWidth+';border-left:3px solid '+color+';background:'+bgAlpha+';border-radius:6px;padding:3px 6px;overflow:hidden;z-index:3;cursor:pointer;display:flex;flex-direction:column;justify-content:center;" onclick="'+blockClick+'">';
       html += '<span class="pd-block-title" style="font-size:10px;font-weight:600;color:'+(isBooking?'#DC2626':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+b.titulo+'</span>';
@@ -4620,6 +4627,22 @@ function deletePlanDiarioBlock(id) {
     .then(function(d){if(d.ok){showToast('Actividad eliminada');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();}})
     .catch(function(){showToast('❌ Error de conexión');});
 }
+
+// Delete a personal block from agenda config
+function _deleteConfigBlock(fecha, horaIni) {
+  if(!CU || typeof agendaConfig === 'undefined') return;
+  var bp = agendaConfig.bloqueos_personales || {};
+  if(bp[fecha]) {
+    bp[fecha] = bp[fecha].filter(function(b){ return b.ini !== horaIni; });
+    if(bp[fecha].length === 0) delete bp[fecha];
+  }
+  agendaConfig.bloqueos_personales = bp;
+  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveConfig',user:CU.ref||CU.user||'',config:agendaConfig})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d.ok||d.config){ showToast('\u2705 Bloque eliminado'); loadPlanDiario(); } else showToast('\u274C Error'); })
+    .catch(function(){ showToast('\u274C Error de conexi\u00f3n'); });
+}
+window._deleteConfigBlock = _deleteConfigBlock;
 
 // ── Voice input (Web Speech API) ──
 function togglePlanDiarioVoice() {
