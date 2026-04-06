@@ -4589,6 +4589,37 @@ function renderPlanDiarioCalendar() {
   html += '<div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;font-size:11px;color:rgba(255,255,255,0.45);">🔗 Los bloques personales se sincronizan automáticamente con tu agenda de cierres. Nadie podrá agendar una cita durante tus actividades personales.</div>';
 
   container.innerHTML = html;
+
+  // Post-render: reposition blocks using actual DOM row positions
+  setTimeout(function() {
+    var gridBody = container.querySelector('.pd-grid-body');
+    var rows = container.querySelectorAll('.pd-grid-row');
+    var blocks = container.querySelectorAll('.pd-block');
+    if(!gridBody || rows.length === 0 || blocks.length === 0) return;
+    var bodyTop = gridBody.getBoundingClientRect().top;
+    // Build map: hour → pixel offset from grid body top
+    var hourOffsets = {};
+    rows.forEach(function(row, i) {
+      var h = FIRST_HOUR + i;
+      hourOffsets[h] = row.getBoundingClientRect().top - bodyTop;
+    });
+    var rowH = rows[0].getBoundingClientRect().height;
+    blocks.forEach(function(block) {
+      var timeEl = block.querySelector('.pd-block-time');
+      if(!timeEl) return;
+      var timeTxt = timeEl.textContent; // "14:00 - 15:30"
+      var parts = timeTxt.split(' - ');
+      if(parts.length < 2) return;
+      var startParts = parts[0].trim().split(':');
+      var endParts = parts[1].trim().split(':');
+      var startH = parseInt(startParts[0]), startM = parseInt(startParts[1]||0);
+      var endH = parseInt(endParts[0]), endM = parseInt(endParts[1]||0);
+      var startOffset = (hourOffsets[startH]||0) + (startM/60)*rowH;
+      var endOffset = (hourOffsets[endH]||0) + (endM/60)*rowH;
+      block.style.top = Math.round(startOffset) + 'px';
+      block.style.height = Math.max(rowH/2, Math.round(endOffset - startOffset)) + 'px';
+    });
+  }, 50);
 }
 
 function openPlanDiarioAdd(fecha, hora) {
