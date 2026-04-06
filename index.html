@@ -11909,6 +11909,9 @@ function crmInstagramAppUrl(username) {
    ======================================== */
 
 function openCrmModalAdd(editId) {
+  // Hide sidebar completely (backdrop-filter creates stacking context that beats z-index)
+  var _sb = document.getElementById('sidebar');
+  if(_sb) _sb.style.display = 'none';
   document.body.classList.add('crm-modal-open');
   var modal = document.getElementById('crm-modal-add');
   if (!modal) return;
@@ -11980,6 +11983,9 @@ function openCrmModalAdd(editId) {
 
 function closeCrmModalAdd() {
   document.body.classList.remove('crm-modal-open');
+  // Restore sidebar
+  var _sb = document.getElementById('sidebar');
+  if(_sb) _sb.style.display = '';
   var modal = document.getElementById('crm-modal-add');
   if (modal) modal.style.display = 'none';
   crmEditingId = null;
@@ -12114,6 +12120,8 @@ function openCrmDetail(id) {
 
 function closeCrmModalDetail() {
   document.body.classList.remove('crm-modal-open');
+  var _sb = document.getElementById('sidebar');
+  if(_sb) _sb.style.display = '';
   var modal = document.getElementById('crm-modal-detail');
   if (modal) modal.style.display = 'none';
   crmDetailId = null;
