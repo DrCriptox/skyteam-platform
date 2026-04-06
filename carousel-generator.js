@@ -1059,9 +1059,55 @@
       };
     });
 
+    // Weekly limit UI
+    var _limitEl = document.createElement('div');
+    _limitEl.id = 'cg-limit-info';
+    _limitEl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;';
+    function _updateLimitUI() {
+      var cu = typeof CU !== 'undefined' ? CU : null;
+      var ukey = cu ? cu.username : 'anon';
+      var types = {carousel:'Carrusel',story:'Historias',info:'Informativo'};
+      var parts = [];
+      ['carousel','story','info'].forEach(function(t) {
+        var lk = 'skyteam_gen_' + t + '_' + ukey;
+        var last = localStorage.getItem(lk);
+        if(last) {
+          var elapsed = Date.now() - parseInt(last);
+          var weekMs = 7 * 86400000;
+          if(elapsed < weekMs) {
+            var daysLeft = Math.ceil((weekMs - elapsed) / 86400000);
+            parts.push(types[t] + ': \uD83D\uDD12 ' + daysLeft + 'd');
+          } else {
+            parts.push(types[t] + ': \u2705');
+          }
+        } else {
+          parts.push(types[t] + ': \u2705');
+        }
+      });
+      _limitEl.innerHTML = '\uD83D\uDCC5 L\u00edmite semanal (1 de cada tipo) \u2014 ' + parts.join(' \u00b7 ');
+    }
+    var _formDiv = ov.querySelector('#cf');
+    if(_formDiv) _formDiv.appendChild(_limitEl);
+    _updateLimitUI();
+
     gen.onclick = async function() {
       var topic = inp.value.trim();
       if (!topic) { inp.focus(); inp.style.borderColor = '#ff5c5c'; setTimeout(function() { inp.style.borderColor = ''; }, 1500); return; }
+      // Check weekly limit
+      var cu = typeof CU !== 'undefined' ? CU : null;
+      var ukey = cu ? cu.username : 'anon';
+      var limitKey = 'skyteam_gen_' + mode + '_' + ukey;
+      var lastGen = localStorage.getItem(limitKey);
+      if(lastGen) {
+        var elapsed = Date.now() - parseInt(lastGen);
+        var weekMs = 7 * 86400000;
+        if(elapsed < weekMs) {
+          var daysLeft = Math.ceil((weekMs - elapsed) / 86400000);
+          er.style.display = 'block';
+          er.innerHTML = '\uD83D\uDD12 Ya generaste tu contenido esta semana.<br>Podr\u00e1s crear otro en <strong>' + daysLeft + ' d\u00eda' + (daysLeft>1?'s':'') + '</strong>.';
+          return;
+        }
+      }
       gen.disabled = true; ld.style.display = 'block'; er.style.display = 'none'; pv.style.display = 'none'; ps.innerHTML = '';
       var upd = function(m) { st.textContent = m; };
       try {
@@ -1084,7 +1130,10 @@
           ft.appendChild(lb); ft.appendChild(dl); card.appendChild(ft); ps.appendChild(card);
         });
         pv.style.display = 'block';
-        if (typeof showToast === 'function') showToast('✅ Contenido generado exitosamente');
+        // Save weekly limit timestamp
+        localStorage.setItem(limitKey, String(Date.now()));
+        _updateLimitUI();
+        if (typeof showToast === 'function') showToast('\u2705 Contenido generado exitosamente');
       } catch(e) {
         console.error(e); er.textContent = 'Error: ' + (e.message || 'Intenta de nuevo'); er.style.display = 'block';
       } finally { ld.style.display = 'none'; gen.disabled = false; }
