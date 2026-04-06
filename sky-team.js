@@ -1117,7 +1117,7 @@ function renderSTRanking() {
 
       html += '<div class="st-rank-row' + (isMe ? ' is-me' : '') + '" onclick="openMemberDetail(\'' + _safe(m.username) + '\')">';
       html += '<div class="st-rank-pos">#' + (i + 1) + '</div>';
-      html += _avatarHTML(m.name || m.username, m.rank, 34, _getMemberPhoto(m.username));
+      html += _avatarHTML(m.name || m.username, m.rank, 34, m.photo || m.foto || _getMemberPhoto(m.username));
       html += '<div class="st-rank-info">';
       html += '<div class="st-rank-name">' + _safe(m.name || m.username) + ' ' + _rankBadgeHTML(m.rank, true) + '</div>';
       html += '</div>';
@@ -1158,7 +1158,7 @@ function _renderPodium(top) {
     html += '<div class="st-podium-col" onclick="openMemberDetail(\'' + _safe(m.username) + '\')" style="cursor:pointer;">';
     html += '<div class="st-podium-block ' + o.cls + '">';
     html += '<div class="st-podium-medal">' + o.medal + '</div>';
-    html += _avatarHTML(m.name || m.username, m.rank, 44, _getMemberPhoto(m.username));
+    html += _avatarHTML(m.name || m.username, m.rank, 44, m.photo || m.foto || _getMemberPhoto(m.username));
     html += '<div class="st-podium-name">' + _safe(m.name || m.username) + '</div>';
     html += '<div class="st-podium-score">' + sc + '</div>';
     html += '</div>';
@@ -1971,12 +1971,25 @@ function openMemberDetail(username) {
   var onbPct = Math.min(Math.round((onbDay / 7) * 100), 100);
 
   var isSelf = (typeof CU !== 'undefined' && CU && CU.username === (m.username || username));
+  // Prospectos: API devuelve m.prospectos_count; para uno mismo usar datos locales si están disponibles
   var prospects = isSelf && typeof crmProspectos !== 'undefined' && crmProspectos
     ? crmProspectos.length
-    : (m.prospects_score || m.prospects || 0);
-  var appointments = isSelf ? _citasThisWeek() : (m.appointments || m.citas || 0);
-  var streak = isSelf ? _calcRacha() : (m.daily_streak || m.streak || 0);
-  var sales = m.sales_score || m.sales || 0;
+    : (m.prospectos_count != null ? m.prospectos_count : (m.prospects_score || m.prospects || 0));
+  // Citas: API devuelve m.bookings_count (todas no canceladas)
+  var appointments = isSelf ? _citasThisWeek() : (m.bookings_count != null ? m.bookings_count : (m.appointments || m.citas || 0));
+  // Racha
+  var streak = isSelf ? _calcRacha() : (m.streak_current || m.daily_streak || m.streak || 0);
+  // Ventas: socios directos que esta persona tiene en su downline
+  var directSocios = 0;
+  if (stState.data && stState.data.members) {
+    var mRef = (m.ref || m.username || '').toLowerCase();
+    var mUser = (m.username || '').toLowerCase();
+    directSocios = stState.data.members.filter(function(x) {
+      var sp = (x.sponsor || '').toLowerCase();
+      return sp === mRef || sp === mUser;
+    }).length;
+  }
+  var sales = directSocios || m.ventas || 0;
 
   // Determine if CU is sponsor (direct)
   var cuUsername = (typeof CU !== 'undefined' && CU) ? CU.username : '';
@@ -1997,7 +2010,7 @@ function openMemberDetail(username) {
   html += '<button class="st-detail-close" onclick="_closeMemberDetail()">&times;</button>';
 
   // Header
-  var memberPhoto = _getMemberPhoto(m.username || username) || m.photo || m.foto || '';
+  var memberPhoto = m.photo || m.foto || _getMemberPhoto(m.username || username) || '';
   html += '<div class="st-detail-header">';
   html += _avatarHTML(m.name || username, m.rank, 56, memberPhoto);
   html += '<div>';
