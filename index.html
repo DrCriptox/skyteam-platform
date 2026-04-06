@@ -11128,7 +11128,7 @@ function renderPerfil() {
           return '<div class="perfil-data-row"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><span class="perfil-data-value" style="font-size:12px;">'+label+' <span style="font-size:8px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 '+lockDaysLeft+'d</span></span></div>';
         } else {
           var changesLeft = Math.max(0, 2 - changeCount);
-          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><input type="date" id="pf-birthday" value="'+(bday||'')+'" placeholder="Elige tu fecha" onchange="saveBirthday(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:'+(bday?'#F0EDE6':'rgba(255,255,255,0.3)')+';font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;">'+(changesLeft<2?'<span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:4px;">'+changesLeft+' cambio'+(changesLeft!==1?'s':'')+' restante'+(changesLeft!==1?'s':'')+'</span>':'')+'</div>';
+          return '<div class="perfil-data-row" style="flex-wrap:wrap;gap:6px;align-items:center;"><span class="perfil-data-label">\uD83C\uDF82 Cumplea\u00f1os</span><input type="date" id="pf-birthday" value="'+(bday||'')+'" placeholder="Elige tu fecha" onchange="_bdayChanged(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;color:'+(bday?'#F0EDE6':'rgba(255,255,255,0.3)')+';font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;"><button id="pf-birthday-save" onclick="saveBirthday(document.getElementById(\'pf-birthday\').value)" style="display:none;padding:6px 12px;border-radius:8px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">\u2713 Guardar</button>'+(changesLeft<2?'<span style="font-size:8px;color:rgba(255,255,255,0.2);width:100%;text-align:right;">'+changesLeft+' cambio'+(changesLeft!==1?'s':'')+' restante'+(changesLeft!==1?'s':'')+'</span>':'')+'</div>';
         }
       })()
     + '</div>'
@@ -11376,6 +11376,11 @@ function _savePerfilName() {
       renderSidebarUser();
     } else showToast('\u274C Error: ' + (d.error||''),'error');
   }).catch(function(){ showToast('\u274C Error de conexi\u00f3n','error'); });
+}
+
+function _bdayChanged(val) {
+  var btn = document.getElementById('pf-birthday-save');
+  if(btn) btn.style.display = val ? 'inline-block' : 'none';
 }
 
 function saveBirthday(val) {
