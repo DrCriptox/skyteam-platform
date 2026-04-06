@@ -5568,11 +5568,12 @@ function toggleNotifPanel() {
 // Push a general notification (callable from anywhere in the app)
 function pushNotification(notif) {
   // notif: {id, type:'content'|'event'|'booking'|'system', icon, title, subtitle, msg, action:{label,url}, timestamp}
-  notif.timestamp = notif.timestamp || Date.now();
   notif.id = notif.id || 'n_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-  // Avoid duplicates
+  // Avoid duplicates — if already in queue, do NOT update timestamp or re-add
   var exists = _notifQueue.some(function(n){ return n.id === notif.id; });
-  if(!exists) {
+  if(exists) return;
+  notif.timestamp = notif.timestamp || Date.now();
+  if(true) {
     _notifQueue.unshift(notif);
     // Keep max 30 notifications
     if(_notifQueue.length > 30) _notifQueue = _notifQueue.slice(0, 30);
