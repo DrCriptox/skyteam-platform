@@ -3551,43 +3551,90 @@ function showApp() {
         var mm = String(today.getMonth()+1).padStart(2,'0');
         var dd = String(today.getDate()).padStart(2,'0');
         var todayMD = mm+'-'+dd;
-        var birthdayUsers = [];
+        var birthdayToday = [];
+        var birthdaySoon = [];
         var myUsername = CU.username || '';
-        var isLeader = CU.isAdmin || CU.rank >= 5;
+        var myRef = (CU.ref || CU.username || '').toLowerCase();
+
+        // Check +3 days ahead for upcoming birthdays
+        var upcoming = [];
+        for (var di = 0; di <= 3; di++) {
+          var checkDate = new Date(today);
+          checkDate.setDate(checkDate.getDate() + di);
+          upcoming.push({
+            md: String(checkDate.getMonth()+1).padStart(2,'0') + '-' + String(checkDate.getDate()).padStart(2,'0'),
+            daysUntil: di
+          });
+        }
 
         Object.keys(USERS).forEach(function(k){
           var u = USERS[k];
           var bday = u.birthday || localStorage.getItem('skyteam_birthday_'+k) || '';
-          if(bday && bday.substring(5) === todayMD) {
-            // Check if I should be notified:
-            // 1. I'm admin or rank>=5 (Nova 10K+)
-            // 2. I'm their sponsor
-            // 3. I'm the sponsor of their sponsor
-            var isSponsor = u.sponsor && u.sponsor.toLowerCase() === myUsername.toLowerCase();
-            var isSponsorOfSponsor = false;
-            if(u.sponsor && USERS[u.sponsor.toLowerCase()]) {
-              var sponsorUser = USERS[u.sponsor.toLowerCase()];
-              if(sponsorUser.sponsor && sponsorUser.sponsor.toLowerCase() === myUsername.toLowerCase()) {
-                isSponsorOfSponsor = true;
-              }
+          if(!bday) return;
+          var bdayMD = bday.substring(5); // MM-DD
+
+          // Should I be notified? sponsor directo, indirecto, or it's me
+          var isMe = k.toLowerCase() === myUsername.toLowerCase();
+          var isSponsor = u.sponsor && (u.sponsor.toLowerCase() === myUsername.toLowerCase() || u.sponsor.toLowerCase() === myRef);
+          var isSponsorOfSponsor = false;
+          if(u.sponsor) {
+            var spKey = u.sponsor.toLowerCase();
+            var sponsorUser = USERS[spKey];
+            if(sponsorUser && sponsorUser.sponsor && (sponsorUser.sponsor.toLowerCase() === myUsername.toLowerCase() || sponsorUser.sponsor.toLowerCase() === myRef)) {
+              isSponsorOfSponsor = true;
             }
-            if(isLeader || isSponsor || isSponsorOfSponsor) {
-              var relation = isSponsor ? ' (tu directo)' : isSponsorOfSponsor ? ' (2da línea)' : '';
-              birthdayUsers.push((u.name || k) + relation);
+          }
+          if(!isMe && !isSponsor && !isSponsorOfSponsor && !CU.isAdmin) return;
+
+          for (var ui = 0; ui < upcoming.length; ui++) {
+            if(bdayMD === upcoming[ui].md) {
+              var nombre = u.name || k;
+              var relation = isMe ? '' : isSponsor ? ' (tu directo)' : isSponsorOfSponsor ? ' (2da l\u00ednea)' : '';
+              if(upcoming[ui].daysUntil === 0) {
+                birthdayToday.push({ name: nombre + relation, isMe: isMe });
+              } else {
+                birthdaySoon.push({ name: nombre + relation, days: upcoming[ui].daysUntil, isMe: isMe });
+              }
+              break;
             }
           }
         });
 
-        if(birthdayUsers.length > 0) {
-          showToast('🎂 ¡Hoy cumple años: ' + birthdayUsers.join(', ') + '!');
-          if(typeof pushNotification === 'function') {
-            pushNotification({
-              id:'birthday_'+dd+mm, type:'info', icon:'🎂',
-              title:'🎂 Cumpleaños hoy',
-              subtitle: birthdayUsers.join(', '),
-              msg: birthdayUsers.length === 1 ? birthdayUsers[0]+' está de cumpleaños hoy. ¡Celébralo!' : birthdayUsers.length+' personas cumplen años hoy.'
+        // Notify: today's birthdays
+        if(birthdayToday.length > 0) {
+          var myBday = birthdayToday.find(function(b){ return b.isMe; });
+          var otherBdays = birthdayToday.filter(function(b){ return !b.isMe; });
+          if(myBday) {
+            showToast('\uD83C\uDF82 \u00a1Feliz cumplea\u00f1os! \uD83C\uDF89');
+            if(typeof pushNotification === 'function') pushNotification({
+              id:'mybday_'+dd+mm, type:'info', icon:'\uD83C\uDF82',
+              title:'\uD83C\uDF89 \u00a1Feliz cumplea\u00f1os!',
+              subtitle:'Todo el equipo SKYTEAM te desea lo mejor',
+              msg:'\u00a1Hoy es tu d\u00eda! Que sea un a\u00f1o lleno de \u00e9xitos \uD83D\uDE80'
             });
           }
+          if(otherBdays.length > 0) {
+            var names = otherBdays.map(function(b){ return b.name; });
+            showToast('\uD83C\uDF82 Hoy cumple a\u00f1os: ' + names.join(', '));
+            if(typeof pushNotification === 'function') pushNotification({
+              id:'birthday_'+dd+mm, type:'info', icon:'\uD83C\uDF82',
+              title:'\uD83C\uDF82 Cumplea\u00f1os hoy',
+              subtitle: names.join(', '),
+              msg: names.length === 1 ? names[0]+' est\u00e1 de cumplea\u00f1os hoy. \u00a1Cel\u00e9bralo!' : names.length+' personas cumplen a\u00f1os hoy.'
+            });
+          }
+        }
+
+        // Notify: upcoming birthdays (3 days ahead)
+        if(birthdaySoon.length > 0) {
+          birthdaySoon.forEach(function(b) {
+            if(typeof pushNotification === 'function') pushNotification({
+              id:'bday_soon_'+b.name.replace(/\s/g,'')+'_'+b.days, type:'info', icon:'\uD83C\uDF82',
+              title:'\uD83C\uDF82 Cumplea\u00f1os en ' + b.days + ' d\u00eda' + (b.days>1?'s':''),
+              subtitle: b.name,
+              msg: (b.isMe ? 'Tu cumplea\u00f1os es en '+b.days+' d\u00eda'+(b.days>1?'s':'')+'.' : b.name+' cumple a\u00f1os en '+b.days+' d\u00eda'+(b.days>1?'s':'')+'. \u00a1Prep\u00e1ra un mensaje!')
+            });
+          });
         }
       } catch(e) { console.warn('Birthday check error:', e); }
     }, 3000);
