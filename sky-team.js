@@ -348,9 +348,11 @@ function _memberActivityLabel(m) {
 }
 
 function _daysPillColor(days) {
+  // 0-7 rojo, 8-30 naranja, 31-90 verde, 91+ dorado
   if (days <= 7) return { bg: 'rgba(226,75,74,0.15)', border: 'rgba(226,75,74,0.3)', color: '#E24B4A' };
-  if (days <= 15) return { bg: 'rgba(201,168,76,0.15)', border: 'rgba(201,168,76,0.3)', color: '#E8D48B' };
-  return { bg: 'rgba(29,158,117,0.12)', border: 'rgba(29,158,117,0.25)', color: '#1D9E75' };
+  if (days <= 30) return { bg: 'rgba(212,118,10,0.15)', border: 'rgba(212,118,10,0.3)', color: '#D4760A' };
+  if (days <= 90) return { bg: 'rgba(29,158,117,0.12)', border: 'rgba(29,158,117,0.25)', color: '#1D9E75' };
+  return { bg: 'rgba(201,168,76,0.12)', border: 'rgba(201,168,76,0.25)', color: '#C9A84C' };
 }
 
 function _scoreParts(m) {

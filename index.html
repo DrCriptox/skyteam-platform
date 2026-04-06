@@ -3649,6 +3649,15 @@ function rankBadge(r, small) {
   return `<span class="rank-badge" style="${sz}background:${rk.bg};border:0.5px solid ${rk.border};color:${rk.color};">${rk.icon} ${rk.name}</span>`;
 }
 
+// Global: color por dias restantes
+// 0-7 rojo, 8-30 naranja, 31-90 verde, 91+ dorado
+function getDaysColor(days) {
+  if (days <= 7) return '#E24B4A';
+  if (days <= 30) return '#D4760A';
+  if (days <= 90) return '#1D9E75';
+  return '#C9A84C';
+}
+
 function renderSidebarUser() {
   if(!CU) return;
   const rk = RANKS[CU.rank]||RANKS[1];
@@ -3662,9 +3671,9 @@ function renderSidebarUser() {
   if (CU.expiry && Number(CU.expiry) > 0) {
     var msLeft = Number(CU.expiry) - Date.now();
     var days = Math.ceil(msLeft / 86400000);
-    var color = days >= 31 ? '#25D366' : days >= 8 ? '#FFD700' : '#E24B4A';
+    var color = getDaysColor(days);
     if (days > 0) {
-      daysLeft = '<div style="font-size:8px;color:' + color + ';margin-top:2px;font-weight:600;letter-spacing:0.3px;">⏱ ' + days + ' días restantes</div>';
+      daysLeft = '<div style="font-size:8px;color:' + color + ';margin-top:2px;font-weight:600;letter-spacing:0.3px;">\u23F1 ' + days + ' d\u00edas restantes</div>';
     } else if (days >= -3) {
       // Grace period: 0 to -3 days (expired but 3 days grace)
       var graceDays = 3 + days; // days is negative, so 3+(-1)=2, 3+(-2)=1, 3+(-3)=0
@@ -9301,7 +9310,7 @@ function renderAdminUsuarios() {
     if(u.expiry) {
       var d = new Date(u.expiry);
       var days = Math.max(0, Math.ceil((u.expiry - Date.now()) / 86400000));
-      expiryStr = '<span style="color:' + (expired?'#E24B4A':'#4ade80') + ';font-weight:700;">' + days + 'd</span>';
+      expiryStr = '<span style="color:' + (expired ? '#E24B4A' : getDaysColor(days)) + ';font-weight:700;">' + days + 'd</span>';
     }
 
     html += '<tr data-search="' + _safe(u.user+' '+u.name+' '+(u.email||'')+' '+(u.sponsor||'')+' '+(u.wa||'')).toLowerCase() + '" style="border-bottom:0.5px solid rgba(255,255,255,0.04);' + (isMe?'background:rgba(201,168,76,0.04);':'') + '">';
@@ -10324,6 +10333,7 @@ function renderPerfil() {
     + '<div class="perfil-name">'+CU.name+'</div>'
     + '<div class="perfil-username">@'+CU.username+'</div>'
     + '<div style="margin-top:6px;">'+rankBadge(CU.rank)+'</div>'
+    + (function(){ if(!CU.expiry || !Number(CU.expiry)) return ''; var _pd=Math.ceil((Number(CU.expiry)-Date.now())/86400000); var _pc=getDaysColor(Math.max(0,_pd)); return '<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_pc+';">\u23F1 '+(_pd>0?_pd+' d\u00edas restantes':'\u26A0\uFE0F Expirado')+'</div>'; })()
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
