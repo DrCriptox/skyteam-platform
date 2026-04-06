@@ -155,6 +155,9 @@ function injectCoachCSS() {
     '.coach-allclear-title{font-size:15px;font-weight:700;color:#1D9E75;}',
     '.coach-allclear-sub{font-size:12px;margin-top:6px;}',
 
+    /* ── Mobile: raise FAB above other floating elements ── */
+    '@media(max-width:768px){.coach-fab{bottom:80px;right:16px;width:50px;height:50px;font-size:20px;}}',
+
     /* ── goldShimmer (shared keyframes, may already exist) ── */
     '@keyframes goldShimmer{0%{background-position:200% center}100%{background-position:-200% center}}'
 
