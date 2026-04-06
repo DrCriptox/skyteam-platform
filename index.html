@@ -10370,7 +10370,7 @@ function renderPerfil() {
         return eRow + waRow;
       })()
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
-    + '<div class="perfil-data-row"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:10px;word-break:break-all;">skyteam.global?ref='+(CU.ref||CU.username)+'</span></div>'
+    + '<div class="perfil-data-row"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:10px;word-break:break-all;flex:1;">skyteam.global?ref='+(CU.ref||CU.username)+'</span><button onclick="copyText(\'https://skyteam.global?ref='+(CU.ref||CU.username)+'\');showToast(\'\uD83D\uDCCB Link copiado \u2713\')" style="padding:3px 8px;border-radius:6px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.20);color:#C9A84C;font-size:9px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">\uD83D\uDCCB</button></div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
     + (function(){
         var bday = localStorage.getItem('skyteam_birthday_'+CU.username) || CU.birthday || '';
@@ -10405,8 +10405,8 @@ function renderPerfil() {
     + '</div>'
     + '</div>'
     + '<div style="display:flex;gap:10px;">'
-    + '<button class="btn-main" style="flex:1;font-size:13px;" onclick="copyText(document.getElementById(\'perfil-content\').dataset.ref||\'ref\');showToast(\'Link copiado ✓\')">📋 Copiar mi link</button>'
-    + '<button style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="navigate(\'home\')">← Volver</button>'
+    + '<button class="btn-main" style="flex:1;font-size:13px;" onclick="_savePerfilChanges()">\uD83D\uDCBE Guardar cambios</button>'
+    + '<button style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="navigate(\'home\')">\u2190 Volver</button>'
     + '</div>'
     + '</div>';
   document.getElementById('perfil-content').innerHTML = html;
@@ -10601,6 +10601,14 @@ function guardarWaPerfil() {
 function copiarLink() {
   if(CU && CU.ref) copyText('https://innovaia.app?ref=' + CU.ref);
   showToast('Link copiado ✓');
+}
+
+function _savePerfilChanges() {
+  if(!CU) return;
+  // Save timezone
+  var tzSelect = document.querySelector('#section-perfil select');
+  if(tzSelect) { saveTZ(tzSelect.value); }
+  showToast('\u2705 Cambios guardados');
 }
 
 function saveTZ(tz) {
