@@ -10631,15 +10631,33 @@ function saveBirthday(val) {
         var localP = localStorage.getItem('skyteam_photo_' + CU.username) || '';
         if (CU.photo && !localP) {
           try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
-          console.log('[SKY] Photo restored from session cache');
         } else if (CU.photo && localP && CU.photo !== localP) {
-          // Session has different photo than localStorage — use session (came from server)
           try { localStorage.setItem('skyteam_photo_' + CU.username, CU.photo); } catch(e) {}
-          console.log('[SKY] Photo updated from session cache (was different)');
         }
         var lp = document.getElementById('landing-page');
         if(lp) lp.style.display = 'none';
         showApp();
+
+        // Silent refresh: sync CU with server data (rank, sponsor, expiry may have changed)
+        _skyFetch('/api/users', null, 8000).then(function(r){return r.json();}).then(function(d){
+          if(d && d.users && d.users[CU.username]) {
+            var srv = d.users[CU.username];
+            var changed = false;
+            ['rank','sponsor','expiry','name','email','whatsapp','ventas','equipo','ref'].forEach(function(k){
+              if(srv[k] !== undefined && srv[k] !== null && srv[k] !== CU[k]) { CU[k] = srv[k]; changed = true; }
+            });
+            if(changed) {
+              try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e){}
+              console.log('[SKY] CU synced from server (rank/sponsor/expiry updated)');
+              if(typeof renderSidebarUser === 'function') renderSidebarUser();
+              if(typeof renderPerfil === 'function') {
+                var perfilEl = document.querySelector('#section-perfil.active');
+                if(perfilEl) renderPerfil();
+              }
+            }
+          }
+        }).catch(function(){});
+
         return;
       } else {
         localStorage.removeItem('skyteam_u');
