@@ -7077,6 +7077,153 @@ function getPhoneValue(idPrefix) {
 }
 
 /* ── SKY SALES IA ── */
+// ── Sky Sales: Landing Editor ──
+function _renderSSLanding() {
+  var ref = CU ? (CU.ref||CU.username||'') : '';
+  var link = 'https://innovaia.app?ref=' + ref.toLowerCase();
+  var h = '';
+  h += '<div class="card" style="margin-bottom:16px;">';
+  h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:10px;">\uD83D\uDD17 Tu landing de ventas</div>';
+  h += '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:14px;">';
+  h += '<span style="font-family:monospace;font-size:12px;color:#C9A84C;flex:1;word-break:break-all;">'+link+'</span>';
+  h += '<button onclick="copyText(\''+link+'\');showToast(\'\uD83D\uDD17 Link copiado\')" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);font-size:14px;cursor:pointer;">\uD83D\uDD17</button>';
+  h += '<button onclick="window.open(\'https://wa.me/?text='+encodeURIComponent('\u00a1Hola! Revisa esta informaci\u00f3n de franquicia digital \uD83D\uDE80 '+link)+'\',\'_blank\')" style="padding:4px 8px;border-radius:6px;background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);color:#25D366;font-size:14px;cursor:pointer;">\uD83D\uDCF1</button>';
+  h += '</div>';
+  // Preview link
+  h += '<a href="'+link+'" target="_blank" style="display:inline-block;font-size:11px;color:#7F77DD;text-decoration:none;margin-bottom:14px;">\uD83D\uDC41 Ver mi landing en vivo \u2192</a>';
+  h += '</div>';
+
+  // Editor
+  h += '<div class="card" style="margin-bottom:16px;">';
+  h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:14px;">\u270F\uFE0F Personaliza tu landing</div>';
+  h += '<div id="ss-landing-loading" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando perfil...</div>';
+  h += '<div id="ss-landing-form" style="display:none;">';
+  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Nombre</label><input type="text" id="ss-l-nombre" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
+  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Rol / T\u00edtulo</label><input type="text" id="ss-l-rol" placeholder="Ej: Asesor InnovaIA" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
+  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label><input type="tel" id="ss-l-wa" placeholder="+57 300 123 4567" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
+  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Mensaje personalizado</label><textarea id="ss-l-msg" rows="2" placeholder="\u00a1Hola! Soy tu asesor..." style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;resize:vertical;"></textarea></div>';
+  h += '<div style="margin-bottom:14px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Foto de perfil</label><div style="display:flex;gap:8px;margin-top:4px;align-items:center;"><div id="ss-l-foto-preview" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;">\uD83D\uDC64</div><label style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCF7 Cambiar foto<input type="file" accept="image/*" style="display:none;" onchange="_ssLandingPhotoChange(this)"></label></div></div>';
+  h += '<button onclick="_ssLandingSave()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar y publicar landing</button>';
+  h += '</div></div>';
+
+  // Stats
+  h += '<div class="card"><div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:10px;">\uD83D\uDCCA Estad\u00edsticas de tu landing</div>';
+  h += '<div id="ss-landing-stats" style="text-align:center;padding:10px;color:rgba(255,255,255,0.3);font-size:11px;">\u23F3 Cargando...</div></div>';
+  return h;
+}
+
+var _ssLandingPhoto = '';
+function _ssLandingPhotoChange(input) {
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var s = Math.min(400, img.naturalWidth, img.naturalHeight);
+      var c = document.createElement('canvas'); c.width=s; c.height=s;
+      c.getContext('2d').drawImage(img, 0, 0, s, s);
+      _ssLandingPhoto = c.toDataURL('image/jpeg', 0.7);
+      var pv = document.getElementById('ss-l-foto-preview');
+      if(pv) pv.innerHTML = '<img src="'+_ssLandingPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function _loadSSLandingProfile() {
+  var ref = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
+  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getProfile',ref:ref})})
+  .then(function(r){return r.json();}).then(function(d){
+    var form = document.getElementById('ss-landing-form');
+    var loading = document.getElementById('ss-landing-loading');
+    if(loading) loading.style.display = 'none';
+    if(form) form.style.display = 'block';
+    var a = d.asesor || {};
+    var ni = document.getElementById('ss-l-nombre'); if(ni) ni.value = a.nombre || CU.name || '';
+    var ri = document.getElementById('ss-l-rol'); if(ri) ri.value = a.rol || 'Asesor InnovaIA';
+    var wi = document.getElementById('ss-l-wa'); if(wi) wi.value = a.whatsapp || CU.whatsapp || '';
+    var mi = document.getElementById('ss-l-msg'); if(mi) mi.value = a.mensaje || '';
+    if(a.foto) {
+      _ssLandingPhoto = a.foto;
+      var pv = document.getElementById('ss-l-foto-preview');
+      if(pv) pv.innerHTML = '<img src="'+a.foto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    }
+  }).catch(function(){
+    var loading = document.getElementById('ss-landing-loading');
+    if(loading) loading.textContent = '\u274C Error cargando perfil';
+  });
+  // Load stats
+  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getStats'})})
+  .then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('ss-landing-stats');
+    if(!el) return;
+    var stats = d.stats || {};
+    var myVisits = stats[ref] || 0;
+    var totalVisits = Object.values(stats).reduce(function(s,v){return s+v;},0);
+    el.innerHTML = '<div style="display:flex;gap:12px;justify-content:center;">'
+      +'<div style="text-align:center;"><div style="font-size:24px;font-weight:900;color:#C9A84C;">'+myVisits+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Mis visitas</div></div>'
+      +'<div style="text-align:center;"><div style="font-size:24px;font-weight:900;color:#7F77DD;">'+totalVisits+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Total red</div></div>'
+      +'</div>';
+  }).catch(function(){});
+}
+
+function _ssLandingSave() {
+  var ref = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
+  var nombre = document.getElementById('ss-l-nombre');
+  var rol = document.getElementById('ss-l-rol');
+  var wa = document.getElementById('ss-l-wa');
+  var msg = document.getElementById('ss-l-msg');
+  if(!nombre||!nombre.value.trim()){showToast('Ingresa tu nombre','error');return;}
+  if(!wa||!wa.value.trim()){showToast('Ingresa tu WhatsApp','error');return;}
+  showToast('\u23F3 Publicando landing...');
+  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    action:'saveProfile', ref:ref,
+    nombre:nombre.value.trim(), rol:rol?rol.value.trim():'',
+    whatsapp:wa.value.trim(), mensaje:msg?msg.value.trim():'',
+    foto:_ssLandingPhoto||undefined
+  })}).then(function(r){return r.json();}).then(function(d){
+    if(d.ok) showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
+    else showToast('\u274C Error: '+(d.error||''),'error');
+  }).catch(function(){showToast('\u274C Error de conexi\u00f3n','error');});
+}
+
+// ── Sky Sales: Ranking ──
+function _renderSSRanking() {
+  var h = '<div class="card">';
+  h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:14px;">\uD83C\uDFC6 Ranking de Landings</div>';
+  h += '<div id="ss-ranking-list" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div>';
+  h += '</div>';
+  return h;
+}
+
+function _loadSSRanking() {
+  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking'})})
+  .then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('ss-ranking-list');
+    if(!el) return;
+    var ranking = d.ranking || [];
+    if(ranking.length === 0) { el.innerHTML = '<div style="font-size:48px;margin-bottom:8px;">\uD83C\uDFC6</div><p style="color:rgba(255,255,255,0.4);">Sin datos a\u00fan</p>'; return; }
+    var ref = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
+    var medals = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    var html = '';
+    ranking.forEach(function(u,i){
+      var isMe = u.ref === ref;
+      var ini = (u.nombre||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin-bottom:4px;'+(isMe?'background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);':'background:rgba(255,255,255,0.02);')+'">';
+      html += '<div style="width:24px;font-size:13px;font-weight:800;color:rgba(255,255,255,0.3);text-align:center;">'+(i<3?medals[i]:(i+1))+'</div>';
+      html += '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      html += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:'+(isMe?'700':'500')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+(isMe?' (t\u00fa)':'')+'</div></div>';
+      html += '<div style="text-align:right;"><div style="font-size:14px;font-weight:800;color:#C9A84C;">'+u.visitas+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);">visitas</div></div>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  }).catch(function(){
+    var el = document.getElementById('ss-ranking-list');
+    if(el) el.innerHTML = '\u274C Error cargando ranking';
+  });
+}
+
 function renderSkySales() {
   if(!CU) return;
   var landingLink = 'https://innovaia.app?ref=' + CU.ref;
@@ -7091,7 +7238,30 @@ function renderSkySales() {
     {id:'seguimiento',icon:'🔔',name:'Agente de Seguimiento',desc:'Qué mensaje enviar según la etapa del prospecto.',color:'rgba(216,90,48,0.1)',border:'rgba(216,90,48,0.2)',badge:'Próximo',bc:'#D85A30'},
     {id:'copy',icon:'✍️',name:'Agente Copywriter',desc:'Textos persuasivos para posts, bio y mensajes.',color:'rgba(212,83,126,0.1)',border:'rgba(212,83,126,0.2)',badge:'Próximo',bc:'#D4537E'}
   ];
-  var html = '<div class="sc-sub">Genera tu link, usa tus agentes IA y cierra más prospectos</div>';
+  // Sky Sales tabs
+  if(!window._ssTab) window._ssTab = 'landing';
+  var html = '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">';
+  html += '<button onclick="window._ssTab=\'landing\';renderSkySales()" class="'+(window._ssTab==='landing'?'atab-on':'atab-off')+'">\uD83D\uDD17 Mi Landing</button>';
+  html += '<button onclick="window._ssTab=\'agents\';renderSkySales()" class="'+(window._ssTab==='agents'?'atab-on':'atab-off')+'">\uD83E\uDD16 Agentes IA</button>';
+  html += '<button onclick="window._ssTab=\'ssranking\';renderSkySales()" class="'+(window._ssTab==='ssranking'?'atab-on':'atab-off')+'">\uD83C\uDFC6 Ranking</button>';
+  html += '</div>';
+
+  if(window._ssTab === 'ssranking') {
+    html += _renderSSRanking();
+    document.getElementById('skysales-content').innerHTML = html;
+    _loadSSRanking();
+    return;
+  }
+
+  if(window._ssTab === 'landing') {
+    html += _renderSSLanding();
+    document.getElementById('skysales-content').innerHTML = html;
+    _loadSSLandingProfile();
+    return;
+  }
+
+  // Agents tab
+  html += '<div class="sc-sub">Usa tus agentes IA para cerrar m\u00e1s prospectos</div>';
   html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
   html += '<div style="max-width:700px;">';
   html += '<div class="card" style="background:rgba(255,255,255,0.025);border-color:rgba(201,168,76,0.12);margin-bottom:20px;">';
