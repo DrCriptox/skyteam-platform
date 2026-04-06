@@ -3492,6 +3492,14 @@ function showApp() {
   if(al) al.style.display='none';
   if(ab) ab.style.display='none';
 
+  // Auto-detect timezone on first login (user can change in profile)
+  if(!localStorage.getItem('skyteam_tz')) {
+    try {
+      var detectedTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if(detectedTZ) { localStorage.setItem('skyteam_tz', detectedTZ); console.log('[SKY] Auto-detected timezone:', detectedTZ); }
+    } catch(e) {}
+  }
+
   // Each section loads independently — one failure doesn't break others
   var initTasks = [
     ['Sidebar', renderSidebarUser],
