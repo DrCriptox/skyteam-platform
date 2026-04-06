@@ -2481,7 +2481,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <button class="nav-item" data-sec="admin" id="nav-admin-btn" onclick="navigate('admin')" style="display:none;"><span class="nav-icon">⚙️</span>Panel Admin</button>
     </div>
     <div class="sidebar-bottom">
-      <button id="pwa-install-menu-btn" onclick="installPWA()" style="display:none !important;">📲 Instalar como App</button>
+      <button id="pwa-install-menu-btn" onclick="installPWA()" style="display:none;width:100%;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#1D9E75,#128C7E);border:none;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-align:center;letter-spacing:0.3px;">📲 Instalar como App</button>
       <button class="btn-logout" onclick="doLogout()">← Cerrar sesión</button>
     </div>
   </nav>
@@ -11591,8 +11591,6 @@ function showInstallMenuBtn() {
 }
 
 function showInstallBanner() {
-  // Install banner disabled
-  return;
   if(_pwaInstalled) return;
   if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
   if(document.getElementById('pwa-install-banner')) return;
@@ -11725,6 +11723,26 @@ function markPWAInstalled() {
     btn.textContent = '✅ App instalada';
   }
 }
+
+// First-visit install prompt for iOS (never fires beforeinstallprompt)
+(function() {
+  if(_pwaInstalled) return;
+  if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(!isMobile) return;
+  var lastShown = localStorage.getItem('skyteam_install_prompt_shown');
+  var sevenDays = 7 * 86400000;
+  if(lastShown && (Date.now() - parseInt(lastShown)) < sevenDays) return;
+  localStorage.setItem('skyteam_install_prompt_shown', String(Date.now()));
+  // Delay so page loads first
+  setTimeout(function() {
+    if(document.getElementById('install-tutorial-modal')) return;
+    showInstallBanner();
+    // On iOS where banner won't show (no deferredPrompt), show full tutorial
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if(isIOS) setTimeout(showInstallTutorial, 800);
+  }, 3000);
+})();
 
 window.addEventListener('appinstalled', function() {
   markPWAInstalled();
