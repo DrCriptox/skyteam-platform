@@ -7100,8 +7100,14 @@ function _renderSSLanding() {
   h += '<div id="ss-landing-form" style="display:none;">';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Nombre</label><input type="text" id="ss-l-nombre" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Rol / T\u00edtulo</label><input type="text" id="ss-l-rol" placeholder="Ej: Asesor InnovaIA" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
-  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label><input type="tel" id="ss-l-wa" placeholder="+57 300 123 4567" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
-  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Mensaje personalizado</label><textarea id="ss-l-msg" rows="2" placeholder="\u00a1Hola! Soy tu asesor..." style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;resize:vertical;"></textarea></div>';
+  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label>';
+  h += '<div style="display:flex;gap:6px;margin-top:4px;">';
+  h += '<select id="ss-l-country" style="background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:12px;padding:9px 6px;outline:none;font-family:Outfit,Nunito,sans-serif;min-width:90px;">';
+  h += '<option value="+57">\uD83C\uDDE8\uD83C\uDDF4 +57</option><option value="+52">\uD83C\uDDF2\uD83C\uDDFD +52</option><option value="+51">\uD83C\uDDF5\uD83C\uDDEA +51</option><option value="+56">\uD83C\uDDE8\uD83C\uDDF1 +56</option><option value="+54">\uD83C\uDDE6\uD83C\uDDF7 +54</option><option value="+58">\uD83C\uDDFB\uD83C\uDDEA +58</option><option value="+593">\uD83C\uDDEA\uD83C\uDDE8 +593</option><option value="+507">\uD83C\uDDF5\uD83C\uDDE6 +507</option><option value="+506">\uD83C\uDDE8\uD83C\uDDF7 +506</option><option value="+1">\uD83C\uDDFA\uD83C\uDDF8 +1</option><option value="+34">\uD83C\uDDEA\uD83C\uDDF8 +34</option>';
+  h += '</select>';
+  h += '<input type="tel" id="ss-l-wa" placeholder="300 123 4567" style="flex:1;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">';
+  h += '</div></div>';
+  h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Mensaje personalizado</label><textarea id="ss-l-msg" rows="3" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;resize:vertical;"></textarea><p style="font-size:9px;color:rgba(255,255,255,0.2);margin:4px 0 0;">Si lo dejas vac\u00edo, se usar\u00e1 un mensaje predeterminado</p></div>';
   h += '<div style="margin-bottom:14px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Foto de perfil</label><div style="display:flex;gap:8px;margin-top:4px;align-items:center;"><div id="ss-l-foto-preview" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;">\uD83D\uDC64</div><label style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCF7 Cambiar foto<input type="file" accept="image/*" style="display:none;" onchange="_ssLandingPhotoChange(this)"></label></div></div>';
   h += '<button onclick="_ssLandingSave()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar y publicar landing</button>';
   h += '</div></div>';
@@ -7142,7 +7148,18 @@ function _loadSSLandingProfile() {
     var a = d.asesor || {};
     var ni = document.getElementById('ss-l-nombre'); if(ni) ni.value = a.nombre || CU.name || '';
     var ri = document.getElementById('ss-l-rol'); if(ri) ri.value = a.rol || 'Asesor InnovaIA';
-    var wi = document.getElementById('ss-l-wa'); if(wi) wi.value = a.whatsapp || CU.whatsapp || '';
+    var wi = document.getElementById('ss-l-wa');
+    var ci = document.getElementById('ss-l-country');
+    var rawWa = a.whatsapp || CU.whatsapp || '';
+    // Try to split country code from number
+    if(rawWa && ci) {
+      var opts = ci.querySelectorAll('option');
+      var matched = false;
+      for(var oi=0;oi<opts.length;oi++) {
+        if(rawWa.indexOf(opts[oi].value)===0) { ci.value=opts[oi].value; rawWa=rawWa.substring(opts[oi].value.length); matched=true; break; }
+      }
+    }
+    if(wi) wi.value = rawWa;
     var mi = document.getElementById('ss-l-msg'); if(mi) mi.value = a.mensaje || '';
     if(a.foto) {
       _ssLandingPhoto = a.foto;
@@ -7176,11 +7193,15 @@ function _ssLandingSave() {
   var msg = document.getElementById('ss-l-msg');
   if(!nombre||!nombre.value.trim()){showToast('Ingresa tu nombre','error');return;}
   if(!wa||!wa.value.trim()){showToast('Ingresa tu WhatsApp','error');return;}
+  var country = document.getElementById('ss-l-country');
+  var fullWa = (country?country.value:'+57') + wa.value.trim().replace(/\s+/g,'');
+  var defaultMsg = '\u00a1Hola! Soy ' + nombre.value.trim().split(' ')[0] + ', me encantar\u00eda mostrarte c\u00f3mo puedes generar ingresos con una franquicia digital. \u00bfTienes 5 minutos? \uD83D\uDE80';
+  var finalMsg = (msg && msg.value.trim()) ? msg.value.trim() : defaultMsg;
   showToast('\u23F3 Publicando landing...');
   fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     action:'saveProfile', ref:ref,
     nombre:nombre.value.trim(), rol:rol?rol.value.trim():'',
-    whatsapp:wa.value.trim(), mensaje:msg?msg.value.trim():'',
+    whatsapp:fullWa, mensaje:finalMsg,
     foto:_ssLandingPhoto||undefined
   })}).then(function(r){return r.json();}).then(function(d){
     if(d.ok) showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
@@ -7260,12 +7281,10 @@ function renderSkySales() {
     return;
   }
 
-  // Agents tab
-  html += '<div class="sc-sub">Usa tus agentes IA para cerrar m\u00e1s prospectos</div>';
-  html += '<div style="border-bottom:0.5px solid rgba(255,255,255,0.07);margin-bottom:16px;"></div>';
+  // Agents tab — agents only (link generator moved to Mi Landing tab)
   html += '<div style="max-width:700px;">';
-  html += '<div class="card" style="background:rgba(255,255,255,0.025);border-color:rgba(201,168,76,0.12);margin-bottom:20px;">';
-  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:14px;">🔗 Genera tu link de ventas personalizado</div>';
+  // OLD LINK GENERATOR REMOVED — now in Mi Landing tab
+  if(false) { /* skip old link generator block */
   html += '<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;line-height:1.6;">Completa tus datos y genera tu link único para compartir. Cada persona que se registre desde tu link llegará directo a tu WhatsApp.</p>';
   html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">';
 
@@ -7345,8 +7364,8 @@ function renderSkySales() {
   html += '</div>';
   html += '</div>';
 
-  html += '<p style="font-size:11px;color:rgba(255,255,255,0.25);text-align:center;margin:0;">Cuando un prospecto haga clic en tu link → llega a la landing → escribe directo a tu WhatsApp</p>';
   html += '</div>';
+  } /* end if(false) — old link generator removed */
   html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-bottom:14px;">Tus agentes de IA</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">';
   var i, a, active, card;
