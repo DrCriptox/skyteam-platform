@@ -2988,7 +2988,7 @@ const MATS = [
   {id:'m10',title:'Blueprint DIAMANTE 20K',            desc:'Hoja de ruta exclusiva nivel Diamante.',         icon:'💠',rank:6,type:'PDF',   url:'#'}
 ];
 
-const RANKING_DATA = [
+var RANKING_DATA = [
   {name:'Angel Méndez',   rank:7, ventas:47, equipo:23, initials:'AM'},
   {name:'Roberto Silva',  rank:6, ventas:38, equipo:19, initials:'RS'},
   {name:'Laura Jiménez',  rank:5, ventas:29, equipo:12, initials:'LJ'},
@@ -8430,6 +8430,22 @@ function renderMateriales() {
 
 /* ── RANKING ── */
 function renderRanking() {
+  // Try to load real data from leaderboard API
+  if (!window._rankingLoaded) {
+    window._rankingLoaded = true;
+    lbApi('weeklyTop').then(function(d) {
+      if (d && d.ranking && d.ranking.length > 0) {
+        RANKING_DATA.length = 0;
+        d.ranking.forEach(function(u) {
+          var nm = u.name || u.username || 'Socio';
+          var parts = nm.trim().split(/\s+/);
+          var ini = parts.length >= 2 ? (parts[0][0]+parts[1][0]).toUpperCase() : nm.substring(0,2).toUpperCase();
+          RANKING_DATA.push({ name: nm, rank: u.rank || 0, ventas: u.score || u.citas || 0, equipo: u.verificadas || 0, initials: ini });
+        });
+        renderRanking();
+      }
+    }).catch(function(){});
+  }
   var top3 = RANKING_DATA.slice(0, 3);
   var rest = RANKING_DATA.slice(3);
   var medals = ['🥇','🥈','🥉'];
