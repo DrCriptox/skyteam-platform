@@ -7176,11 +7176,14 @@ function _loadSSLandingProfile() {
     var el = document.getElementById('ss-landing-stats');
     if(!el) return;
     var stats = d.stats || {};
-    var myVisits = stats[ref] || 0;
-    var totalVisits = Object.values(stats).reduce(function(s,v){return s+v;},0);
-    el.innerHTML = '<div style="display:flex;gap:12px;justify-content:center;">'
-      +'<div style="text-align:center;"><div style="font-size:24px;font-weight:900;color:#C9A84C;">'+myVisits+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Mis visitas</div></div>'
-      +'<div style="text-align:center;"><div style="font-size:24px;font-weight:900;color:#7F77DD;">'+totalVisits+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Total red</div></div>'
+    var _getVisits = function(v) { return typeof v === 'object' && v !== null ? (v.total || 0) : (typeof v === 'number' ? v : 0); };
+    var myVisits = _getVisits(stats[ref]);
+    var totalVisits = Object.values(stats).reduce(function(s,v){ return s + _getVisits(v); }, 0);
+    var myConversions = typeof stats[ref] === 'object' && stats[ref] ? (stats[ref].conversions || 0) : 0;
+    el.innerHTML = '<div style="display:flex;gap:16px;justify-content:center;">'
+      +'<div style="text-align:center;padding:8px 16px;background:rgba(201,168,76,0.06);border-radius:10px;border:0.5px solid rgba(201,168,76,0.15);"><div style="font-size:24px;font-weight:900;color:#C9A84C;">'+myVisits+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Mis visitas</div></div>'
+      +'<div style="text-align:center;padding:8px 16px;background:rgba(29,158,117,0.06);border-radius:10px;border:0.5px solid rgba(29,158,117,0.15);"><div style="font-size:24px;font-weight:900;color:#1D9E75;">'+myConversions+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Conversiones</div></div>'
+      +'<div style="text-align:center;padding:8px 16px;background:rgba(127,119,221,0.06);border-radius:10px;border:0.5px solid rgba(127,119,221,0.15);"><div style="font-size:24px;font-weight:900;color:#7F77DD;">'+totalVisits+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Total red</div></div>'
       +'</div>';
   }).catch(function(){});
 }

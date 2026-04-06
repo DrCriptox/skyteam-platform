@@ -111,7 +111,8 @@ export default async function handler(req, res) {
           return {
             ref: ref,
             nombre: asesor.nombre || ref,
-            visitas: stats[ref] || 0,
+            visitas: typeof stats[ref] === 'object' ? (stats[ref].total || 0) : (stats[ref] || 0),
+            conversiones: typeof stats[ref] === 'object' ? (stats[ref].conversions || 0) : 0,
             whatsapp: asesor.whatsapp || '',
             foto: asesor.foto || ''
           };
@@ -119,7 +120,8 @@ export default async function handler(req, res) {
         .sort(function(a, b) { return b.visitas - a.visitas; })
         .slice(0, 20);
 
-      return res.status(200).json({ ok: true, ranking, totalVisits: Object.values(stats).reduce(function(s,v){ return s+v; }, 0) });
+      var totalV = Object.values(stats).reduce(function(s,v){ return s + (typeof v === 'object' ? (v.total||0) : (v||0)); }, 0);
+      return res.status(200).json({ ok: true, ranking, totalVisits: totalV });
     }
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
