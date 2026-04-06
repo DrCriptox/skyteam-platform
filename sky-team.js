@@ -400,13 +400,63 @@ function _rankBadgeHTML(rank, small) {
   '</span>';
 }
 
-function _avatarHTML(name, rank, size) {
+function _avatarHTML(name, rank, size, photo) {
   var r = _getRank(rank);
   var sz = size || 32;
   var br = Math.round(sz * 0.31);
+  if (photo) {
+    return '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:' + br + 'px;border:1.5px solid ' + r.border + ';overflow:hidden;flex-shrink:0;">' +
+      '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
+    '</div>';
+  }
   return '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:' + br + 'px;background:' + r.bg + ';border:1.5px solid ' + r.border + ';display:flex;align-items:center;justify-content:center;font-size:' + Math.round(sz * 0.38) + 'px;font-weight:700;color:' + r.color + ';flex-shrink:0;">' +
     _getInitials(name) +
   '</div>';
+}
+
+function _getMemberPhoto(username) {
+  return localStorage.getItem('skyteam_photo_' + (username || '')) || '';
+}
+
+function _citasThisWeek() {
+  if (typeof agendaBookings === 'undefined' || !agendaBookings) return 0;
+  var now = new Date();
+  var startOfWeek = new Date(now);
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  var endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+  return agendaBookings.filter(function(b) {
+    if (!b.fecha_iso) return false;
+    var d = new Date(b.fecha_iso);
+    return d >= startOfWeek && d < endOfWeek && b.status !== 'cancelada';
+  }).length;
+}
+
+function _calcRacha() {
+  var hasP = typeof crmProspectos !== 'undefined' && crmProspectos;
+  var hasA = typeof agendaBookings !== 'undefined' && agendaBookings;
+  if (!hasP && !hasA) return 0;
+  var streak = 0;
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (var i = 0; i < 30; i++) {
+    var day = new Date(today);
+    day.setDate(today.getDate() - i);
+    var nextDay = new Date(day);
+    nextDay.setDate(day.getDate() + 1);
+    var hadProspect = hasP && crmProspectos.some(function(p) {
+      var d = new Date(p.created_at || p.fecha || 0);
+      return d >= day && d < nextDay;
+    });
+    var hadCita = hasA && agendaBookings.some(function(b) {
+      if (!b.fecha_iso) return false;
+      var d = new Date(b.fecha_iso);
+      return d >= day && d < nextDay && (b.status === 'confirmada' || b.status === 'confirmed');
+    });
+    if (hadProspect && hadCita) { streak++; } else { break; }
+  }
+  return streak;
 }
 
 function _spinnerHTML() {
@@ -1067,7 +1117,7 @@ function renderSTRanking() {
 
       html += '<div class="st-rank-row' + (isMe ? ' is-me' : '') + '" onclick="openMemberDetail(\'' + _safe(m.username) + '\')">';
       html += '<div class="st-rank-pos">#' + (i + 1) + '</div>';
-      html += _avatarHTML(m.name || m.username, m.rank, 34);
+      html += _avatarHTML(m.name || m.username, m.rank, 34, _getMemberPhoto(m.username));
       html += '<div class="st-rank-info">';
       html += '<div class="st-rank-name">' + _safe(m.name || m.username) + ' ' + _rankBadgeHTML(m.rank, true) + '</div>';
       html += '</div>';
@@ -1108,7 +1158,7 @@ function _renderPodium(top) {
     html += '<div class="st-podium-col" onclick="openMemberDetail(\'' + _safe(m.username) + '\')" style="cursor:pointer;">';
     html += '<div class="st-podium-block ' + o.cls + '">';
     html += '<div class="st-podium-medal">' + o.medal + '</div>';
-    html += _avatarHTML(m.name || m.username, m.rank, 44);
+    html += _avatarHTML(m.name || m.username, m.rank, 44, _getMemberPhoto(m.username));
     html += '<div class="st-podium-name">' + _safe(m.name || m.username) + '</div>';
     html += '<div class="st-podium-score">' + sc + '</div>';
     html += '</div>';
@@ -1920,10 +1970,12 @@ function openMemberDetail(username) {
   var onbDay = m.onboarding_day || m.ob_day || 0;
   var onbPct = Math.min(Math.round((onbDay / 7) * 100), 100);
 
-  var prospects = m.prospects_score || m.prospects || 0;
-  var appointments = m.appointments || m.citas || 0;
-  var streak = m.daily_streak || m.streak || 0;
-  var xp = m.xp || 0;
+  var isSelf = (typeof CU !== 'undefined' && CU && CU.username === (m.username || username));
+  var prospects = isSelf && typeof crmProspectos !== 'undefined' && crmProspectos
+    ? crmProspectos.length
+    : (m.prospects_score || m.prospects || 0);
+  var appointments = isSelf ? _citasThisWeek() : (m.appointments || m.citas || 0);
+  var streak = isSelf ? _calcRacha() : (m.daily_streak || m.streak || 0);
   var sales = m.sales_score || m.sales || 0;
 
   // Determine if CU is sponsor (direct)
@@ -1945,8 +1997,9 @@ function openMemberDetail(username) {
   html += '<button class="st-detail-close" onclick="_closeMemberDetail()">&times;</button>';
 
   // Header
+  var memberPhoto = _getMemberPhoto(m.username || username) || m.photo || m.foto || '';
   html += '<div class="st-detail-header">';
-  html += _avatarHTML(m.name || username, m.rank, 56);
+  html += _avatarHTML(m.name || username, m.rank, 56, memberPhoto);
   html += '<div>';
   html += '<div class="st-detail-name">' + _safe(m.name || username) + '</div>';
   html += '<div class="st-detail-rank" style="background:' + rk.bg + ';color:' + rk.color + ';border:0.5px solid ' + rk.border + ';">';
@@ -2017,16 +2070,11 @@ function openMemberDetail(username) {
   html += '</div>';
 
   html += '<div class="st-detail-stat">';
-  html += '<div class="st-detail-stat-val">' + xp + '</div>';
-  html += '<div class="st-detail-stat-label">XP</div>';
-  html += '</div>';
-
-  html += '<div class="st-detail-stat">';
   html += '<div class="st-detail-stat-val">' + sales + '</div>';
   html += '<div class="st-detail-stat-label">Ventas</div>';
   html += '</div>';
 
-  html += '<div class="st-detail-stat">';
+  html += '<div class="st-detail-stat" style="grid-column:span 2;">';
   html += '<div class="st-detail-stat-val" style="color:' + _statusColor(status) + ';">' + _statusLabel(status) + '</div>';
   html += '<div class="st-detail-stat-label">' + _memberActivityLabel(m) + '</div>';
   html += '</div>';
