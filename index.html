@@ -7185,13 +7185,13 @@ function _loadSSLandingProfile() {
     // Conversions only count from unique IPs
     var validConversions = Math.min(myConversions, myIps);
     // Score: visits*1 - ipDupes*2 + validConversions*20
-    var myScore = Math.max(0, (myVisits * 1) - (ipDupes * 2) + (validConversions * 20));
+    var myScore = Math.max(0, (myVisits * 1) - (ipDupes * 2) + (validConversions * 15));
     el.innerHTML = '<div style="display:flex;gap:12px;justify-content:center;">'
       +'<div style="text-align:center;padding:10px 18px;background:rgba(201,168,76,0.06);border-radius:10px;border:0.5px solid rgba(201,168,76,0.15);flex:1;"><div style="font-size:22px;font-weight:900;color:#C9A84C;">'+myIps+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Visitas \u00fanicas</div></div>'
       +'<div style="text-align:center;padding:10px 18px;background:rgba(29,158,117,0.06);border-radius:10px;border:0.5px solid rgba(29,158,117,0.15);flex:1;"><div style="font-size:22px;font-weight:900;color:#1D9E75;">'+myConversions+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Conversiones</div></div>'
       +'<div style="text-align:center;padding:10px 18px;background:rgba(127,119,221,0.06);border-radius:10px;border:0.5px solid rgba(127,119,221,0.15);flex:1;"><div style="font-size:22px;font-weight:900;color:#7F77DD;">'+myScore+'</div><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Puntaje</div></div>'
       +'</div>'
-      +'<p style="font-size:8px;color:rgba(255,255,255,0.15);text-align:center;margin:6px 0 0;">PTS = visitas\u00d71 - IPs duplicados\u00d72 + conversiones(\u00fanicos)\u00d720</p>';
+      ;
   }).catch(function(){});
 }
 
@@ -7304,7 +7304,7 @@ function _loadSSRanking() {
     if(inTop && !myPos) {
       html += '<div style="text-align:center;margin-top:8px;font-size:10px;color:#C9A84C;">\u2B50 \u00a1Est\u00e1s en el Top 20!</div>';
     }
-    html += '<p style="font-size:8px;color:rgba(255,255,255,0.12);text-align:center;margin:10px 0 0;">PTS = visitas\u00d71 - IPs duplicados\u00d72 + conversiones(\u00fanicos)\u00d720</p>';
+    // Formula footer removed
     el.innerHTML = html;
   }).catch(function(){
     var el = document.getElementById('ss-ranking-list');
