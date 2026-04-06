@@ -25,6 +25,7 @@ async function writeGHFile(file, data, sha, message) {
   const body = { message, content: toBase64(JSON.stringify(data, null, 2)), branch: BRANCH };
   if (sha) body.sha = sha;
   const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + file, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if (!r.ok) { const err = await r.text().catch(()=>''); console.error('[Landing] GitHub write error:', r.status, err.substring(0, 200)); }
   return r.ok;
 }
 
@@ -83,7 +84,11 @@ export default async function handler(req, res) {
       }
 
       if (saved) return res.status(200).json({ ok: true, slug, link: 'https://innovaia.app?ref=' + slug });
-      return res.status(500).json({ error: 'Write failed after 3 attempts' });
+      // Debug: try one more time and return the actual error
+      const { data: debugData, sha: debugSha } = await readGHFile(FILE_ASESORES);
+      const debugR = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + FILE_ASESORES, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify({ message: 'debug', content: toBase64(JSON.stringify(debugData, null, 2)), branch: BRANCH, ...(debugSha ? {sha: debugSha} : {}) }) });
+      const debugErr = await debugR.text().catch(()=>'');
+      return res.status(500).json({ error: 'Write failed', status: debugR.status, github: debugErr.substring(0, 300) });
     }
 
     // ── GET STATS: read visit stats ──
