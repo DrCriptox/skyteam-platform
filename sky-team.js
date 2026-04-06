@@ -730,7 +730,7 @@ function renderSTArbol() {
   html += '<select id="st-filter-rank" onchange="stState.treeFilterRank=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
   html += '<option value="all">Rango: Todos</option>';
   var rankOptions = [
-    {v:'0',l:'\u26AA Cliente'},{v:'1',l:'\uD83E\uDD48 INN 200'},{v:'2',l:'\uD83D\uDFE3 INN 500'},
+    {v:'0',l:'\u26AA Cliente'},{v:'1',l:'\uD83C\uDFF5\uFE0F INN 200'},{v:'2',l:'\uD83D\uDFE3 INN 500'},
     {v:'3',l:'\uD83D\uDD35 NOVA 1500'},{v:'4',l:'\uD83D\uDD34 NOVA 5K'},{v:'5',l:'\uD83D\uDFE2 NOVA 10K'},
     {v:'6',l:'\uD83D\uDC8E NOVA DIAMOND'},{v:'7',l:'\uD83D\uDC8E\uD83D\uDC8E NOVA 50K'},{v:'8',l:'\uD83D\uDC8E\uD83D\uDC8E\uD83D\uDC8E NOVA 100K'}
   ];
