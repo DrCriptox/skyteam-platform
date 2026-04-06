@@ -3858,10 +3858,10 @@ function renderAgendaUI(el) {
   html += '<button onclick="switchAgendaTab(\'config\')" class="' + (agendaTab==='config'?'atab-on':'atab-off') + '">⚙️ Configurar</button>';
   html += '<button onclick="switchAgendaTab(\'citas\')" class="' + (agendaTab==='citas'?'atab-on':'atab-off') + '">📋 Citas (' + pendientes.length + ')</button>';
   html += '<button onclick="switchAgendaTab(\'plandiario\')" class="' + (agendaTab==='plandiario'?'atab-on':'atab-off') + '">\uD83D\uDCC5 Mi Agenda</button>';
-  // Ranking tab removed — now in Sky Sales IA
+  html += '<button onclick="switchAgendaTab(\'sjranking\')" class="' + (agendaTab==='sjranking'?'atab-on':'atab-off') + '">\uD83C\uDFC6 Ranking</button>';
   html += '</div>';
 
-  html += agendaTab === 'config' ? renderAgendaConfigUI() : agendaTab === 'plandiario' ? renderPlanDiarioUI() : renderAgendaCitasUI();
+  html += agendaTab === 'config' ? renderAgendaConfigUI() : agendaTab === 'plandiario' ? renderPlanDiarioUI() : agendaTab === 'sjranking' ? renderSJRankingUI() : renderAgendaCitasUI();
   html += '</div>';
   el.innerHTML = html;
   setTimeout(function(){
