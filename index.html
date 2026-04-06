@@ -9459,7 +9459,12 @@ function _adminViewProfile(username) {
   h += '</div></div>';
 
   // Registration screenshot button
-  h += '<button onclick="_adminLoadScreenshot(\''+_safe(u.innova_user||username)+'\')" style="width:100%;padding:8px;margin-top:10px;border-radius:8px;background:rgba(127,119,221,0.08);border:0.5px solid rgba(127,119,221,0.20);color:#7F77DD;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDDBC\uFE0F Ver imagen de registro</button>';
+  // Password + Screenshot buttons
+  h += '<div style="display:flex;gap:6px;margin-top:10px;">';
+  h += '<button onclick="_adminShowPassword(\''+_safe(u.innova_user||username)+'\')" style="flex:1;padding:8px;border-radius:8px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.20);color:#E24B4A;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDD11 Ver contrase\u00f1a</button>';
+  h += '<button onclick="_adminLoadScreenshot(\''+_safe(u.innova_user||username)+'\')" style="flex:1;padding:8px;border-radius:8px;background:rgba(127,119,221,0.08);border:0.5px solid rgba(127,119,221,0.20);color:#7F77DD;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDDBC\uFE0F Imagen registro</button>';
+  h += '</div>';
+  h += '<div id="admin-password-area" style="margin-top:6px;"></div>';
   h += '<div id="admin-screenshot-area" style="margin-top:8px;"></div>';
 
   // Buttons
@@ -9532,6 +9537,26 @@ function _adminLoadScreenshot(innovaUser) {
   }).catch(function(){ area.innerHTML = '<div style="color:#E24B4A;font-size:10px;">Error cargando datos</div>'; });
 }
 window._adminLoadScreenshot = _adminLoadScreenshot;
+
+function _adminShowPassword(innovaUser) {
+  var area = document.getElementById('admin-password-area');
+  if(!area) return;
+  area.innerHTML = '<div style="text-align:center;padding:6px;color:rgba(255,255,255,0.3);font-size:10px;">\u23F3 Buscando...</div>';
+  fetch('/api/solicitudes?limit=50').then(function(r){return r.json();}).then(function(d) {
+    var sols = d.solicitudes || [];
+    var found = sols.find(function(s) { return (s.innovaUser||'').toLowerCase() === innovaUser.toLowerCase(); });
+    if(!found || !found.password) {
+      area.innerHTML = '<div style="padding:6px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:6px;font-size:10px;color:rgba(255,255,255,0.3);">No se encontr\u00f3 contrase\u00f1a en solicitudes</div>';
+      return;
+    }
+    area.innerHTML = '<div style="padding:8px 12px;background:rgba(226,75,74,0.06);border:0.5px solid rgba(226,75,74,0.15);border-radius:8px;display:flex;align-items:center;gap:8px;">'
+      + '<span style="font-size:9px;color:rgba(255,255,255,0.3);">\uD83D\uDD11</span>'
+      + '<span style="font-family:monospace;font-size:13px;color:#F0EDE6;font-weight:700;flex:1;">' + found.password + '</span>'
+      + '<button onclick="copyText(\''+found.password.replace(/'/g,"\\'")+'\');showToast(\'\uD83D\uDD11 Contrase\u00f1a copiada\')" style="padding:3px 8px;border-radius:5px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.5);font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDD17 Copiar</button>'
+      + '</div>';
+  }).catch(function(){ area.innerHTML = '<div style="color:#E24B4A;font-size:10px;">Error</div>'; });
+}
+window._adminShowPassword = _adminShowPassword;
 
 function _adminExtendDays(username, days) {
   if(!days || days < 1) return;
