@@ -4670,11 +4670,17 @@ function openPlanDiarioEdit(id) {
   var catLabels={personal:'👤 Personal',gym:'💪 Gym',estudio:'📚 Estudio',trabajo:'💼 Trabajo',salud:'🏥 Salud',otro:'📌 Otro'};
   cats.forEach(function(c){ html += '<option value="'+c+'"'+(block.categoria===c?' selected':'')+'>'+catLabels[c]+'</option>'; });
   html += '</select>';
+  // Check if there are similar blocks (same hour, different days)
+  var similarCount = planDiarioBlocks.filter(function(pb){ return pb.id !== id && pb.hora_inicio === block.hora_inicio && pb.hora_fin === block.hora_fin; }).length;
   html += '<div style="display:flex;gap:8px;">';
-  html += '<button onclick="updatePlanDiarioBlock(\''+id+'\')" style="flex:1;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">💾 Guardar</button>';
-  html += '<button onclick="deletePlanDiarioBlock(\''+id+'\')" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.25);color:rgba(255,100,100,0.8);border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">🗑️</button>';
-  html += '<button onclick="document.getElementById(\'pd-modal-overlay\').remove()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">✕</button>';
-  html += '</div></div></div>';
+  html += '<button onclick="updatePlanDiarioBlock(\''+id+'\')" style="flex:1;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDCBE Guardar</button>';
+  html += '<button onclick="deletePlanDiarioBlock(\''+id+'\')" style="background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.25);color:rgba(255,100,100,0.8);border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDDD1\uFE0F</button>';
+  html += '<button onclick="document.getElementById(\'pd-modal-overlay\').remove()" style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2715</button>';
+  html += '</div>';
+  if(similarCount > 0) {
+    html += '<button onclick="updatePlanDiarioBlockAll(\''+id+'\')" style="width:100%;margin-top:8px;background:rgba(127,119,221,0.10);border:0.5px solid rgba(127,119,221,0.25);color:#7F77DD;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDD04 Aplicar a los '+similarCount+' bloques iguales</button>';
+  }
+  html += '</div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
@@ -4689,6 +4695,29 @@ function updatePlanDiarioBlock(id) {
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok){showToast('✅ Actividad actualizada');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();}else showToast('❌ Error');})
     .catch(function(){showToast('❌ Error de conexión');});
+}
+
+function updatePlanDiarioBlockAll(id) {
+  var titulo=document.getElementById('pd-edit-titulo');
+  var cat=document.getElementById('pd-edit-cat');
+  if(!titulo||!titulo.value.trim()){showToast('Ingresa un t\u00edtulo');return;}
+  var block = planDiarioBlocks.find(function(b){return b.id===id;});
+  if(!block) return;
+  // Find all blocks with same hora_inicio and hora_fin
+  var similar = planDiarioBlocks.filter(function(b){ return b.hora_inicio===block.hora_inicio && b.hora_fin===block.hora_fin && b.id!==id; });
+  var newTitle = titulo.value.trim();
+  var newCat = cat ? cat.value : 'personal';
+  var promises = similar.map(function(b) {
+    return fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:b.id,updates:{titulo:newTitle,categoria:newCat}})});
+  });
+  // Also update the current one
+  promises.push(fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:id,updates:{titulo:newTitle,hora_inicio:document.getElementById('pd-edit-ini').value,hora_fin:document.getElementById('pd-edit-fin').value,categoria:newCat}})}));
+  showToast('\u23F3 Actualizando ' + (similar.length+1) + ' bloques...');
+  Promise.all(promises).then(function(){
+    showToast('\u2705 ' + (similar.length+1) + ' bloques actualizados');
+    var m=document.getElementById('pd-modal-overlay');if(m)m.remove();
+    loadPlanDiario();
+  }).catch(function(){ showToast('\u274C Error'); });
 }
 
 function deletePlanDiarioBlock(id) {
