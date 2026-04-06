@@ -11971,7 +11971,7 @@ function openCrmModalAdd(editId) {
   if (tempInput2 && tempDisp) tempDisp.textContent = (tempInput2.value || 50) + '\u00B0';
 
   crmEditingId = editId || null;
-  modal.style.display = 'block';
+  modal.style.display = 'flex';
 
   // Show rating section for new prospects
   if (!isEditing) {
@@ -12112,7 +12112,7 @@ function openCrmDetail(id) {
   }
 
   crmDetailId = id;
-  modal.style.display = 'block';
+  modal.style.display = 'flex';
 }
 
 function closeCrmModalDetail() {
