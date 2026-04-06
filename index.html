@@ -11907,6 +11907,9 @@ function crmInstagramAppUrl(username) {
    ======================================== */
 
 function openCrmModalAdd(editId) {
+  // Close sidebar so it doesn't interfere with modal
+  if(typeof closeSidebar === 'function') closeSidebar();
+
   var modal = document.getElementById('crm-modal-add');
   if (!modal) return;
 
