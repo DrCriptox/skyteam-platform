@@ -7220,16 +7220,22 @@ function _ssLandingSave() {
 }
 
 // ── Sky Sales: Ranking ──
+var _ssRankPeriod = 'weekly';
 function _renderSSRanking() {
   var h = '<div class="card">';
-  h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:14px;">\uD83C\uDFC6 Ranking de Landings</div>';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
+  h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking de Landings</div>';
+  h += '<div style="display:flex;gap:4px;">';
+  h += '<button onclick="_ssRankPeriod=\'weekly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='weekly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='weekly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='weekly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Semanal</button>';
+  h += '<button onclick="_ssRankPeriod=\'monthly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='monthly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='monthly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='monthly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Mensual</button>';
+  h += '</div></div>';
   h += '<div id="ss-ranking-list" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div>';
   h += '</div>';
   return h;
 }
 
 function _loadSSRanking() {
-  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking'})})
+  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:_ssRankPeriod})})
   .then(function(r){return r.json();}).then(function(d){
     var el = document.getElementById('ss-ranking-list');
     if(!el) return;
@@ -7241,13 +7247,25 @@ function _loadSSRanking() {
     ranking.forEach(function(u,i){
       var isMe = u.ref === ref;
       var ini = (u.nombre||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin-bottom:4px;'+(isMe?'background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);':'background:rgba(255,255,255,0.02);')+'">';
+      var convRate = u.visitas > 0 ? Math.round((u.conversiones / u.visitas) * 100) : 0;
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:5px;'+(isMe?'background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);':'background:rgba(255,255,255,0.02);')+'">';
+      // Position
       html += '<div style="width:24px;font-size:13px;font-weight:800;color:rgba(255,255,255,0.3);text-align:center;">'+(i<3?medals[i]:(i+1))+'</div>';
-      html += '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
-      html += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:'+(isMe?'700':'500')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+(isMe?' (t\u00fa)':'')+'</div></div>';
-      html += '<div style="text-align:right;"><div style="font-size:14px;font-weight:800;color:#C9A84C;">'+(u.score||u.visitas)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.3);">pts</div></div>';
+      // Avatar
+      html += '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      // Name
+      html += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:'+(isMe?'700':'500')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+(isMe?' (t\u00fa)':'')+'</div>';
+      // Stats row: visitas | conversiones | % | pts
+      html += '<div style="display:flex;gap:8px;margin-top:3px;">';
+      html += '<span style="font-size:9px;color:#C9A84C;font-weight:600;">'+u.visitas+' <span style="color:rgba(255,255,255,0.2);">vis</span></span>';
+      html += '<span style="font-size:9px;color:#1D9E75;font-weight:600;">'+u.conversiones+' <span style="color:rgba(255,255,255,0.2);">conv</span></span>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">'+convRate+'%</span>';
+      html += '</div></div>';
+      // Score
+      html += '<div style="text-align:right;flex-shrink:0;"><div style="font-size:16px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</div><div style="font-size:8px;color:rgba(255,255,255,0.25);font-weight:700;">PTS</div></div>';
       html += '</div>';
     });
+    html += '<p style="font-size:8px;color:rgba(255,255,255,0.12);text-align:center;margin:10px 0 0;">PTS = visitas\u00d71 - IPs duplicados\u00d72 + conversiones(\u00fanicos)\u00d720</p>';
     el.innerHTML = html;
   }).catch(function(){
     var el = document.getElementById('ss-ranking-list');
