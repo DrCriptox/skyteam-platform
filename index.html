@@ -9228,8 +9228,26 @@ function renderAdminUsuarios() {
   if(!el) return;
   var userList = Object.keys(USERS).map(function(username) {
     var u = USERS[username];
-    return { user: username, name: u.name||'', rank: u.rank||0, ref: u.ref||'', sponsor: u.sponsor||'', ventas: u.ventas||0, wa: u.wa||u.whatsapp||'', email: u.email||'', isAdmin: u.isAdmin||false, expiry: u.expiry||null, innova_user: u.innova_user||'', created_at: u.created_at||'' };
+    return { user: username, name: u.name||'', rank: u.rank||0, ref: u.ref||'', sponsor: u.sponsor||'', ventas: u.ventas||0, wa: u.wa||u.whatsapp||'', email: u.email||'', isAdmin: u.isAdmin||false, expiry: u.expiry||null, innova_user: u.innova_user||'', created_at: u.created_at||'', original_sponsor: u.original_sponsor||'' };
   });
+
+  // Calculate depth level for each user relative to CU (admin)
+  var cuRef = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
+  var cuUser = CU ? (CU.username||'').toLowerCase() : '';
+  function getLevel(u, visited) {
+    if(!visited) visited = {};
+    if(visited[u.user]) return 99;
+    visited[u.user] = true;
+    var sp = (u.sponsor||'').toLowerCase();
+    if(!sp) return 99;
+    if(sp === cuRef || sp === cuUser) return 1;
+    var parent = userList.find(function(x){ return x.user.toLowerCase() === sp || (x.ref||'').toLowerCase() === sp; });
+    if(!parent) return 99;
+    var parentLevel = getLevel(parent, visited);
+    return parentLevel < 99 ? parentLevel + 1 : 99;
+  }
+  userList.forEach(function(u) { u.level = (u.user === (CU?CU.username:'')) ? 0 : getLevel(u, {}); });
+
   var nonAdminList = userList.filter(function(u){ return !u.isAdmin; });
   var totalUsers = nonAdminList.length;
   var activeUsers = nonAdminList.filter(function(u){ return !u.expiry || Date.now() <= u.expiry; }).length;
@@ -9262,6 +9280,7 @@ function renderAdminUsuarios() {
   html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;letter-spacing:1px;">Usuario</th>';
   html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Nombre</th>';
   html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Sponsor</th>';
+  html += '<th style="text-align:center;padding:6px 4px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Nivel</th>';
   html += '<th style="text-align:left;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Email / WA</th>';
   html += '<th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Vence</th>';
   html += '<th style="text-align:center;padding:6px 8px;color:rgba(255,255,255,0.3);font-size:9px;text-transform:uppercase;">Rango</th>';
@@ -9285,7 +9304,10 @@ function renderAdminUsuarios() {
     html += '<tr data-search="' + _safe(u.user+' '+u.name+' '+(u.email||'')+' '+(u.sponsor||'')+' '+(u.wa||'')).toLowerCase() + '" style="border-bottom:0.5px solid rgba(255,255,255,0.04);' + (isMe?'background:rgba(201,168,76,0.04);':'') + '">';
     html += '<td style="padding:5px 8px;font-family:monospace;color:rgba(255,255,255,0.5);font-size:10px;">' + _safe(u.user) + '</td>';
     html += '<td style="padding:5px 8px;font-weight:600;color:#F0EDE6;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">' + _safe(u.name||u.user) + '</td>';
-    html += '<td style="padding:5px 8px;font-size:10px;color:#4ade80;font-weight:600;">' + _safe(u.sponsor||'\u2014') + '</td>';
+    html += '<td style="padding:5px 8px;font-size:10px;color:#4ade80;font-weight:600;">' + _safe(u.sponsor||'\u2014') + (u.original_sponsor ? '<br><span style="font-size:8px;color:rgba(255,165,0,0.6);">\u23F3 orig: '+_safe(u.original_sponsor)+'</span>' : '') + '</td>';
+    var lvlColor = u.level === 1 ? '#C9A84C' : u.level === 2 ? '#7F77DD' : u.level <= 5 ? '#1D9E75' : 'rgba(255,255,255,0.3)';
+    var lvlLabel = u.level === 0 ? 'T\u00fa' : u.level < 99 ? 'N'+u.level : '\u2014';
+    html += '<td style="padding:5px 4px;text-align:center;font-size:10px;font-weight:800;color:'+lvlColor+';">'+lvlLabel+'</td>';
     html += '<td style="padding:5px 8px;font-size:10px;color:rgba(255,255,255,0.4);max-width:140px;overflow:hidden;text-overflow:ellipsis;">' + _safe(u.email||'') + (u.wa ? '<br><span style="color:rgba(255,255,255,0.25);">' + _safe(u.wa) + '</span>' : '') + '</td>';
     html += '<td style="padding:5px 8px;text-align:center;">' + expiryStr + '</td>';
     html += '<td style="padding:5px 4px;text-align:center;"><select data-uname="'+_safe(u.user)+'" onchange="cambiarRango(this.dataset.uname,this.value)" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;color:#F0EDE6;font-size:10px;padding:3px 4px;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;max-width:100px;">' + rankOpts + '</select></td>';

@@ -109,6 +109,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent: false, refLink, alreadyExisted: true });
     }
 
+    // Check if sponsor exists in DB — if not, assign to "legend" temporarily and save original
+    let finalSponsor = sol.sponsor || null;
+    let originalSponsor = null;
+    if (finalSponsor) {
+      const sponsorClean = finalSponsor.toLowerCase().trim();
+      const sponsorCheck = await fetch(SUPABASE_URL + '/rest/v1/users?or=(username.eq.' + encodeURIComponent(sponsorClean) + ',ref.eq.' + encodeURIComponent(sponsorClean) + ')&select=username&limit=1', { headers: HEADERS });
+      const sponsorRows = await sponsorCheck.json();
+      if (!Array.isArray(sponsorRows) || sponsorRows.length === 0) {
+        console.log('[APROBAR] Sponsor "' + finalSponsor + '" not found in DB — assigning to LEGEND temporarily');
+        originalSponsor = finalSponsor; // save for later reassignment
+        finalSponsor = 'LEGEND';
+      }
+    }
+
     // Delete the solicitud (only if it came from DB)
     if (!directData && id) {
       await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
@@ -121,7 +135,7 @@ export default async function handler(req, res) {
       finalExpiry = Date.now() + (8 * 86400000); // 8 days from now
       console.log('[APROBAR] Migration grace: user expired/no expiry, granting 8 days. New expiry:', new Date(finalExpiry).toISOString());
     }
-    const fullPayload = { username: finalUsername, name: sol.name || null, sponsor: sol.sponsor || null, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, innova_user: innovaUser, birthday: sol.birthday || null };
+    const fullPayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, rank, innova_user: innovaUser, birthday: sol.birthday || null, original_sponsor: originalSponsor };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
       { ...fullPayload, rank: undefined },                                                         // 2. no rank
@@ -143,6 +157,26 @@ export default async function handler(req, res) {
         throw new Error('No se pudo crear el usuario: ' + insertR.status + ' — ' + errTxt.substring(0, 120));
       }
     }
+
+    // Auto-reassign orphaned users: if someone registered before their sponsor,
+    // they were temporarily assigned to LEGEND with original_sponsor saved.
+    // Now that this new user exists, check if anyone was waiting for them.
+    const newUserRef = (sol.ref || finalUsername).toLowerCase();
+    const newUserName = finalUsername.toLowerCase();
+    try {
+      // Find users whose original_sponsor matches this new user's username or ref
+      const orphanCheck = await fetch(SUPABASE_URL + '/rest/v1/users?or=(original_sponsor.ilike.' + encodeURIComponent(newUserRef) + ',original_sponsor.ilike.' + encodeURIComponent(newUserName) + ')&select=username,original_sponsor', { headers: HEADERS });
+      const orphans = await orphanCheck.json();
+      if (Array.isArray(orphans) && orphans.length > 0) {
+        for (const orphan of orphans) {
+          console.log('[APROBAR] Reassigning orphan "' + orphan.username + '" from LEGEND to "' + (sol.ref || finalUsername).toUpperCase() + '"');
+          await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(orphan.username), {
+            method: 'PATCH', headers: HEADERS,
+            body: JSON.stringify({ sponsor: (sol.ref || finalUsername).toUpperCase(), original_sponsor: null })
+          });
+        }
+      }
+    } catch(e) { console.warn('[APROBAR] Orphan reassign check failed:', e.message); }
 
     // Create empty agenda config for the new user
     await fetch(SUPABASE_URL + '/rest/v1/agenda_configs', {
