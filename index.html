@@ -7252,14 +7252,14 @@ function _loadSSRanking() {
       // Position
       html += '<div style="width:20px;font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(i<3?medals[i]:(i+1))+'</div>';
       // Avatar
-      html += '<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1px solid '+(isMe?'rgba(201,168,76,0.4)':'rgba(255,255,255,0.06)')+'">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
-      // Name + stats inline
+      html += '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+(isMe?'rgba(201,168,76,0.4)':'rgba(255,255,255,0.06)')+'">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      // Name + stats below name
       html += '<div style="flex:1;min-width:0;">';
-      html += '<div style="font-size:12px;font-weight:'+(isMe?'700':'500')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+(isMe?' <span style="font-size:8px;color:#C9A84C;">(t\u00fa)</span>':'')+'</div>';
-      html += '<div style="display:flex;gap:6px;margin-top:1px;"><span style="font-size:8px;color:#C9A84C;">'+u.visitas+' vis</span><span style="font-size:8px;color:#1D9E75;">'+u.conversiones+' conv</span><span style="font-size:8px;color:#7F77DD;">'+convRate+'%</span></div>';
+      html += '<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+(isMe?' <span style="font-size:8px;color:#C9A84C;">(t\u00fa)</span>':'')+'</div>';
+      html += '<div style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+u.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+u.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+convRate+'%</span></div>';
       html += '</div>';
       // Score
-      html += '<div style="flex-shrink:0;text-align:right;"><span style="font-size:15px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
+      html += '<div style="flex-shrink:0;text-align:right;"><span style="font-size:16px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       html += '</div>';
     });
     html += '<p style="font-size:8px;color:rgba(255,255,255,0.12);text-align:center;margin:10px 0 0;">PTS = visitas\u00d71 - IPs duplicados\u00d72 + conversiones(\u00fanicos)\u00d720</p>';
