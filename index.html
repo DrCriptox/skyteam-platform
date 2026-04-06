@@ -9454,34 +9454,35 @@ function _adminLoadScreenshot(innovaUser) {
 window._adminLoadScreenshot = _adminLoadScreenshot;
 
 function cambiarRango(username, newRank) {
-  if(USERS[username]) {
-    var oldRank = USERS[username].rank;
-    USERS[username].rank = +newRank;
-    if(CU && CU.username === username) {
-      CU.rank = +newRank;
-      try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
-    }
-    // Sync to server — wait for response
-    fetch('/api/update-user', {
-      method: 'PATCH',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username: username, updates: {rank: +newRank}})
-    }).then(function(r){ return r.json(); }).then(function(d) {
-      if(d.ok) {
-        var rk2 = RANKS[+newRank]||RANKS[0];
-        showToast('\u2705 Rango de @' + username + ' actualizado a ' + rk2.icon + ' ' + rk2.name);
-      } else {
-        showToast('\u274C Error guardando rango: ' + (d.error||''), 'error');
-        USERS[username].rank = oldRank; // revert
+  if(!USERS[username]) return;
+  var oldRank = USERS[username].rank;
+  if(+newRank === oldRank) return; // no change
+  var rk = RANKS[+newRank]||RANKS[0];
+  showToast('\u23F3 Guardando rango de @' + username + '...');
+
+  fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: username, updates: {rank: +newRank}})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if(d.ok) {
+      // Update local objects AFTER server confirms
+      USERS[username].rank = +newRank;
+      if(CU && CU.username === username) {
+        CU.rank = +newRank;
+        try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
       }
-    }).catch(function(e){
-      showToast('\u274C Error de conexi\u00f3n al guardar rango', 'error');
-      USERS[username].rank = oldRank; // revert
-    });
-    var rk = RANKS[+newRank]||RANKS[0];
-    showToast('Rango actualizado → ' + rk.icon + ' ' + rk.name);
-    if(typeof renderRanking === 'function') renderRanking();
-  }
+      showToast('\u2705 @' + username + ' \u2192 ' + rk.icon + ' ' + rk.name);
+      if(typeof renderRanking === 'function') renderRanking();
+    } else {
+      showToast('\u274C Error: ' + (d.error||'No se pudo guardar'), 'error');
+      // Revert dropdown
+      renderAdminUsuarios();
+    }
+  }).catch(function(e){
+    showToast('\u274C Error de conexi\u00f3n', 'error');
+    renderAdminUsuarios();
+  });
 }
 
 function toggleStatus(username) {

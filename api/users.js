@@ -41,8 +41,8 @@ export default async function handler(req, res) {
       };
     }
 
-    // Cache for 30 seconds on CDN, 10 seconds in browser
-    res.setHeader('Cache-Control', 's-maxage=30, max-age=10, stale-while-revalidate=60');
+    // No CDN cache — admin changes must reflect immediately
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.status(200).json({ users });
 
   } catch (error) {
