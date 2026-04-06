@@ -703,7 +703,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 .crm-prospect-card{cursor:grab;transition:all 0.15s;}
 .crm-prospect-card:hover{transform:translateY(-2px);}
 .crm-prospect-card.dragging{opacity:0.5;cursor:grabbing;}
-.crm-modal{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.crm-modal{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
 .crm-modal-content{background:#0a0a12;border:0.5px solid rgba(255,255,255,0.08);border-radius:18px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
 .crm-modal-detail-content{max-width:640px;}
 .crm-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid rgba(255,255,255,0.06);}
@@ -3452,6 +3452,16 @@ function doLogout() {
   document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
   var homeBtn = document.querySelector('.nav-item[data-sec="home"]');
   if(homeBtn) homeBtn.classList.add('active');
+  // Close sidebar + overlay
+  var _sb = document.getElementById('sidebar');
+  var _sbOv = document.getElementById('sb-overlay');
+  if(_sb) _sb.classList.remove('open');
+  if(_sbOv) _sbOv.classList.remove('show');
+
+  // Remove coach IA fab
+  var _fab = document.getElementById('coach-fab');
+  if(_fab) _fab.style.display = 'none';
+
   // Show landing (not login)
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
