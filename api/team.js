@@ -5,15 +5,21 @@ const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Auth
 
 async function sb(path, opts) {
   const url = SUPABASE_URL + '/rest/v1/' + path;
-  const r = await fetch(url, {
-    method: (opts && opts.method) || 'GET',
-    headers: { ...HEADERS, ...(opts && opts.headers ? opts.headers : {}) },
-    body: opts && opts.body ? opts.body : undefined
-  });
-  if (!r.ok) return [];
-  const text = await r.text();
-  if (!text) return [];
-  return JSON.parse(text);
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), 15000);
+  try {
+    const r = await fetch(url, {
+      method: (opts && opts.method) || 'GET',
+      headers: { ...HEADERS, ...(opts && opts.headers ? opts.headers : {}) },
+      body: opts && opts.body ? opts.body : undefined,
+      signal: ac.signal
+    });
+    clearTimeout(t);
+    if (!r.ok) return [];
+    const text = await r.text();
+    if (!text) return [];
+    return JSON.parse(text);
+  } catch(e) { clearTimeout(t); return []; }
 }
 
 function getServerDownline(allUsers, userRef, maxLevel) {

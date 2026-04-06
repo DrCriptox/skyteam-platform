@@ -4,10 +4,15 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
 async function sb(path, opts = {}) {
-  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: HEADERS, ...opts });
-  if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('Supabase ' + r.status + ': ' + t.substring(0, 200)); }
-  const text = await r.text();
-  return text ? JSON.parse(text) : null;
+  const ac = new AbortController();
+  const tm = setTimeout(() => ac.abort(), 15000);
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: HEADERS, ...opts, signal: ac.signal });
+    clearTimeout(tm);
+    if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('Supabase ' + r.status + ': ' + t.substring(0, 200)); }
+    const text = await r.text();
+    return text ? JSON.parse(text) : null;
+  } catch(e) { clearTimeout(tm); throw e; }
 }
 
 // === VALIDATION HELPERS ===

@@ -12060,9 +12060,11 @@ document.addEventListener('DOMContentLoaded', function() {
 async function crmSaveProspect(e){
   if(e)e.preventDefault();var nombre=document.getElementById("crm-input-nombre").value.trim();
   if(!nombre){crmToast("El nombre es obligatorio","error");return;}
+  var _crmEmail=document.getElementById("crm-input-email").value.trim();
+  if(_crmEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(_crmEmail)){crmToast("Email inv\u00e1lido","error");return;}
   var _igEl=document.getElementById("crm-input-instagram");
   var data={nombre:nombre,telefono:document.getElementById("crm-input-telefono").value.trim()||null,
-    email:document.getElementById("crm-input-email").value.trim()||null,
+    email:_crmEmail||null,
     etapa:document.getElementById("crm-input-etapa").value||"nuevo",
     fuente:document.getElementById("crm-input-fuente").value||"manual",
     temperatura:parseInt(document.getElementById("crm-input-temperatura").value)||50,
