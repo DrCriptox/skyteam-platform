@@ -4692,19 +4692,32 @@ function updatePlanDiarioBlock(id) {
   if(!titulo||!titulo.value.trim()){showToast('Ingresa un t\u00edtulo');return;}
   if(ini.value>=fin.value){showToast('La hora de inicio debe ser antes del fin');return;}
   var block = planDiarioBlocks.find(function(b){return b.id===id;});
-  var similar = block ? planDiarioBlocks.filter(function(b){ return b.id!==id && b.hora_inicio===block.hora_inicio && b.hora_fin===block.hora_fin; }) : [];
-  var applyAll = similar.length > 0 && confirm('\u00bfAplicar este cambio a los otros ' + similar.length + ' bloques con el mismo horario?');
   var newTitle = titulo.value.trim();
   var newCat = cat ? cat.value : 'personal';
-  var promises = [fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:id,updates:{titulo:newTitle,hora_inicio:ini.value,hora_fin:fin.value,categoria:newCat}})})];
-  if(applyAll) {
-    similar.forEach(function(b) {
-      promises.push(fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:b.id,updates:{titulo:newTitle,categoria:newCat}})}));
-    });
-  }
-  Promise.all(promises).then(function(){
-    showToast('\u2705 ' + (applyAll ? (similar.length+1)+' bloques actualizados' : 'Actividad actualizada'));
-    var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();
+  // First save this block
+  fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:id,updates:{titulo:newTitle,hora_inicio:ini.value,hora_fin:fin.value,categoria:newCat}})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(!d.ok){showToast('\u274C Error');return;}
+    if(!block){showToast('\u2705 Guardado');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();return;}
+    // Fetch ALL blocks (no week filter) to find similar across all days
+    fetch('/api/plan-diario?user='+(CU.ref||CU.user||''))
+    .then(function(r2){return r2.json();})
+    .then(function(d2){
+      var allBlocks = d2.blocks||[];
+      var similar = allBlocks.filter(function(b){ return b.id!==id && b.hora_inicio===block.hora_inicio && b.hora_fin===block.hora_fin; });
+      if(similar.length > 0 && confirm('\u00bfAplicar este cambio a los otros ' + similar.length + ' bloques con el mismo horario?')) {
+        var updates = similar.map(function(b){
+          return fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.ref||CU.user||'',id:b.id,updates:{titulo:newTitle,categoria:newCat}})});
+        });
+        Promise.all(updates).then(function(){
+          showToast('\u2705 ' + (similar.length+1) + ' bloques actualizados');
+          var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();
+        });
+      } else {
+        showToast('\u2705 Guardado');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();
+      }
+    }).catch(function(){showToast('\u2705 Guardado');var m=document.getElementById('pd-modal-overlay');if(m)m.remove();loadPlanDiario();});
   }).catch(function(){showToast('\u274C Error de conexi\u00f3n');});
 }
 
