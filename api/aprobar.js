@@ -151,10 +151,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Delete the solicitud (only if it came from DB)
-    if (!directData && id) {
-      await sbFetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
-    }
+    // NOTE: solicitud deletion moved AFTER successful INSERT (prevents data loss on failure)
 
     // Create user in users table — try progressively minimal payloads if columns are missing
     // Migration grace: if expiry is past or null, give 8 days from now
@@ -205,6 +202,11 @@ export default async function handler(req, res) {
       if (insertR.status !== 400 || i === attempts.length - 1) {
         throw new Error('No se pudo crear el usuario: ' + insertR.status + ' — ' + errTxt.substring(0, 120));
       }
+    }
+
+    // DELETE solicitud AFTER successful INSERT (data is safe now)
+    if (!directData && id) {
+      try { await sbFetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS }); } catch(e) {}
     }
 
     // If INSERT succeeded on a fallback attempt that dropped original_sponsor,

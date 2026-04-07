@@ -3,6 +3,20 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
+// Fields that ONLY admins can change
+const ADMIN_ONLY_FIELDS = ['rank', 'is_admin', 'expiry', 'ventas', 'equipo', 'sponsor', 'original_sponsor', 'ref'];
+// Fields that the user can change on their own profile
+const SELF_FIELDS = ['name', 'email', 'whatsapp', 'photo', 'birthday', 'valor_inscripcion'];
+
+async function isAdmin(username) {
+  if (!username) return false;
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&select=is_admin,rank', { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' } });
+    const rows = await r.json();
+    return rows && rows[0] && (rows[0].is_admin === true || rows[0].rank >= 7);
+  } catch(e) { return false; }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
@@ -11,15 +25,20 @@ export default async function handler(req, res) {
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { username, updates } = req.body || {};
+    const { username, updates, requestedBy } = req.body || {};
     if (!username) return res.status(400).json({ error: 'Missing username' });
 
-    // Only allow safe fields to be updated
-    // Special: rename username (admin only, one-time)
+    // Determine who is making the request
+    const caller = (requestedBy || username).toLowerCase().trim();
+    const target = username.toLowerCase().trim();
+    const callerIsAdmin = await isAdmin(caller);
+    const isSelfUpdate = caller === target;
+
+    // Special: rename username (admin only)
     if (updates && updates._rename && typeof updates._rename === 'string') {
+      if (!callerIsAdmin) return res.status(403).json({ error: 'Solo admins pueden renombrar usuarios' });
       const newUsername = updates._rename.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (!newUsername || newUsername.length < 2) return res.status(400).json({ error: 'Invalid new username' });
-      // Copy row with new username, then delete old
       const getR = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&select=*', { headers: HEADERS });
       const rows = await getR.json();
       if (!rows || rows.length === 0) return res.status(404).json({ error: 'User not found' });
@@ -33,12 +52,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, oldUsername: username, newUsername: newUsername });
     }
 
-    const allowed = ['rank', 'name', 'ventas', 'equipo', 'expiry', 'ref', 'sponsor', 'email', 'whatsapp', 'photo', 'is_admin', 'original_sponsor', 'birthday', 'valor_inscripcion'];
+    // Filter allowed fields based on role
+    const allowedFields = callerIsAdmin ? [...ADMIN_ONLY_FIELDS, ...SELF_FIELDS] : (isSelfUpdate ? SELF_FIELDS : []);
+    if (allowedFields.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este usuario' });
+
     const safe = {};
-    for (const key of allowed) {
+    for (const key of allowedFields) {
       if (updates && updates[key] !== undefined) safe[key] = updates[key];
     }
     if (Object.keys(safe).length === 0) return res.status(400).json({ error: 'No valid fields' });
+
+    // Log admin actions for audit
+    if (callerIsAdmin && caller !== target) {
+      console.log('[ADMIN] ' + caller + ' updating ' + target + ': ' + JSON.stringify(safe));
+    }
 
     const r = await fetch(
       SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username),
