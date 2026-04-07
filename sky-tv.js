@@ -566,7 +566,7 @@ function openAdminEventForm(existingEvent) {
       }
     } else if (ff.type === 'file') {
       input = document.createElement('div');
-      input.name = ff.name;
+      input.setAttribute('name', ff.name);
       input.style.cssText = 'display:flex;align-items:center;gap:10px;';
       var preview = document.createElement('div');
       preview.id = 'flyer-preview';
