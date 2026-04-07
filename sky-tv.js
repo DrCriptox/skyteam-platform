@@ -813,6 +813,8 @@ function checkSkyTvNotifications() {
     var dt = new Date(ev.fecha + 'T' + ev.hora_inicio);
     var diff = (dt - now) / 60000; // diff in minutes
     var evId = ev.id || ev.titulo;
+    var cat = (ev.categoria || '').toLowerCase();
+    var isLiderazgo = cat.indexOf('trading') === -1; // trading = solo 1h + en vivo; todo lo demás = cadencia completa
 
     // Google Calendar URL for "Agregar a calendario"
     var _gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
@@ -821,8 +823,8 @@ function checkSkyTvNotifications() {
       + '/' + ev.fecha.replace(/-/g,'') + 'T' + (ev.hora_fin||ev.hora_inicio||'10:00').replace(':','') + '00'
       + '&details=' + encodeURIComponent((ev.descripcion||'') + (ev.zoom_link ? '\nZoom: '+ev.zoom_link : ''));
 
-    // 8 hours before
-    if (diff > 7*60 && diff <= 8*60 && !_skyTvNotifSent['8h_' + evId]) {
+    // 8 hours before (liderazgo only — trading skips this)
+    if (isLiderazgo && diff > 7*60 && diff <= 8*60 && !_skyTvNotifSent['8h_' + evId]) {
       _skyTvNotifSent['8h_' + evId] = true;
       pushNotification({
         id: 'skytv_8h_'+evId, type: 'event', icon: '\uD83D\uDCC5',
@@ -833,8 +835,8 @@ function checkSkyTvNotifications() {
       });
     }
 
-    // 4 hours before
-    if (diff > 3*60 && diff <= 4*60 && !_skyTvNotifSent['4h_' + evId]) {
+    // 4 hours before (liderazgo only — trading skips this)
+    if (isLiderazgo && diff > 3*60 && diff <= 4*60 && !_skyTvNotifSent['4h_' + evId]) {
       _skyTvNotifSent['4h_' + evId] = true;
       pushNotification({
         id: 'skytv_4h_'+evId, type: 'event', icon: '\u23F0',
