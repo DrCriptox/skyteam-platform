@@ -123,7 +123,20 @@ export default async function handler(req, res) {
       // After April 9 2026 (Wednesday), only count landings created from skyteam (asesores-skyteam.json)
       const cutoffDate = new Date('2026-04-09T00:00:00');
       const onlyNew = Date.now() >= cutoffDate.getTime();
-      const allAsesores = onlyNew ? skyAsesores : Object.assign({}, oldAsesores, skyAsesores);
+      // Merge: skyAsesores takes priority for all fields EXCEPT foto — use whichever source has it
+      let allAsesores;
+      if (onlyNew) {
+        allAsesores = skyAsesores;
+      } else {
+        allAsesores = Object.assign({}, oldAsesores);
+        Object.keys(skyAsesores).forEach(function(ref) {
+          const old = oldAsesores[ref] || {};
+          const sky = skyAsesores[ref] || {};
+          allAsesores[ref] = Object.assign({}, old, sky, {
+            foto: sky.foto || old.foto || ''
+          });
+        });
+      }
 
       // Colombia time (UTC-5) for period calculations
       const nowCol = new Date(Date.now() - 18000000);
