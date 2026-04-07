@@ -2403,6 +2403,11 @@ document.addEventListener('DOMContentLoaded',function(){
         </div>
         <input type="date" id="sol-birthday" placeholder="Fecha de cumpleaños" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 12px;outline:none;margin-bottom:8px;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
         <p style="font-size:9px;color:rgba(255,255,255,0.25);margin:-4px 0 8px 2px;">🎂 Fecha de cumpleaños (para celebrarte)</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.55);margin:8px 0 6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">💰 Valor de tu membresía</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <input type="number" id="sol-valor-inscripcion" placeholder="0" min="0" step="1" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
+          <span style="color:rgba(201,168,76,0.8);font-size:14px;font-weight:900;flex-shrink:0;">USD</span>
+        </div>
         <div style="width:100%;height:0.5px;background:rgba(255,255,255,0.06);margin:6px 0 10px;"></div>
         <p style="font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">🔑 Crea tu contraseña de acceso</p>
         <div style="position:relative;margin-bottom:8px;">
@@ -11202,6 +11207,7 @@ function sendSolicitud() {
               + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 
     var birthday = document.getElementById('sol-birthday') ? document.getElementById('sol-birthday').value : '';
+    var valorInscripcion = document.getElementById('sol-valor-inscripcion') ? parseInt(document.getElementById('sol-valor-inscripcion').value) || 0 : 0;
     // Get registration screenshot thumbnail for admin audit
     var _regScreenshot = null;
     try {
@@ -11214,7 +11220,7 @@ function sendSolicitud() {
       sponsor:sponsor||'Sin especificar', innovaUser:innovaUser,
       patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
       fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
-      password:pass, birthday: birthday || null,
+      password:pass, birthday: birthday || null, valor_inscripcion: valorInscripcion || null,
       phone: expiryData ? JSON.stringify({ expiry_ts: expiryData.expiry_ts, expiry_label: expiryData.expiry_label, days_remaining: expiryData.days_remaining, screenshot: _regScreenshot }) : null
     };
 

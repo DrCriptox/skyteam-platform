@@ -215,47 +215,90 @@ async function handleTriggers(req, res) {
 
     } // end TRIGGER 5 hour check
 
-    // ── TRIGGER 6: New registration — notify up to 4 levels of upline ──
+    // ── TRIGGER 6: New registration — notify sponsor + 2 levels with USD amount ──
     try {
       const fifteenMinAgoISO = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
       const newUsers = await sb(
-        'users?select=username,name,sponsor,created_at' +
+        'users?select=username,name,sponsor,created_at,valor_inscripcion,rank' +
         '&created_at=gte.' + fifteenMinAgoISO +
         '&sponsor=not.is.null' +
         '&order=created_at.desc&limit=20'
       );
 
       if (newUsers && newUsers.length > 0) {
-        // Get all users to resolve sponsor chain
         const allUsers = await sb('users?select=username,name,sponsor&limit=5000');
         const userMap = {};
         if (allUsers) allUsers.forEach(u => { userMap[u.username.toLowerCase()] = u; });
 
         for (const newUser of newUsers) {
           const fullName = newUser.name || newUser.username;
+          const valor = newUser.valor_inscripcion ? '$' + Number(newUser.valor_inscripcion).toLocaleString() + ' USD' : '';
           const tag = 'skyteam-newreg-' + newUser.username + '-' + now.toISOString().slice(0, 16);
 
-          // Walk up to 4 levels of sponsor chain
           let currentSponsor = newUser.sponsor ? newUser.sponsor.toLowerCase() : null;
-          const levels = ['1ra línea (directo)', '2da línea', '3ra línea', '4ta línea'];
+          const levels = ['1ra línea (directo)', '2da línea', '3ra línea'];
 
-          for (let level = 0; level < 4 && currentSponsor; level++) {
+          for (let level = 0; level < 3 && currentSponsor; level++) {
             const sponsorData = userMap[currentSponsor];
             if (!sponsorData) break;
 
-            const title = '🎉 Nuevo socio en tu red';
-            const body = fullName + ' se registró en tu ' + levels[level] + '. ¡Tu equipo crece!';
+            const title = '🎉 ¡Nuevo cliente!';
+            const body = fullName + ' se registró en tu ' + levels[level] + (valor ? ' con membresía de ' + valor : '') + '. ¡Tu equipo crece! 🚀';
 
             const r = await pushToUser(currentSponsor, title, body, '/?nav=home', tag + '-L' + (level+1));
-            results.triggers.push({ type: 'new_referral_L' + (level+1), sponsor: currentSponsor, newUser: newUser.username, sent: r.sent });
+            results.triggers.push({ type: 'new_client_L' + (level+1), sponsor: currentSponsor, newUser: newUser.username, valor: newUser.valor_inscripcion, sent: r.sent });
             results.sent += r.sent;
 
-            // Move to next level
             currentSponsor = sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;
           }
         }
       }
-    } catch (e) { results.errors.push('new_referral: ' + e.message); }
+    } catch (e) { results.errors.push('new_client: ' + e.message); }
+
+    // ── TRIGGER 6b: Rank promotion — notify 3 levels up with estimated income ──
+    try {
+      const rankIncomes = { 1: 400, 2: 900, 3: 2000, 4: 6000, 5: 12000, 6: 25000, 7: 60000, 8: 100000 };
+      const rankNames = { 0:'Cliente', 1:'INN 200', 2:'INN 500', 3:'NOVA 1500', 4:'NOVA 5K', 5:'NOVA 10K', 6:'NOVA DIAMOND', 7:'NOVA 50K', 8:'NOVA 100K' };
+      const fifteenMinAgo2 = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+      const recentUpdated = await sb(
+        'users?select=username,name,sponsor,rank,updated_at' +
+        '&updated_at=gte.' + fifteenMinAgo2 +
+        '&rank=gt.0' +
+        '&sponsor=not.is.null' +
+        '&order=updated_at.desc&limit=30'
+      );
+
+      if (recentUpdated && recentUpdated.length > 0) {
+        const allUsers2 = await sb('users?select=username,name,sponsor&limit=5000');
+        const userMap2 = {};
+        if (allUsers2) allUsers2.forEach(u => { userMap2[u.username.toLowerCase()] = u; });
+
+        for (const user of recentUpdated) {
+          const income = rankIncomes[user.rank];
+          if (!income) continue;
+          const rName = rankNames[user.rank] || 'Rango ' + user.rank;
+          const fullName = user.name || user.username;
+          const tag = 'skyteam-rank-' + user.username + '-' + user.rank + '-' + todayKey;
+
+          let currentSponsor = user.sponsor ? user.sponsor.toLowerCase() : null;
+          const levels = ['1ra línea', '2da línea', '3ra línea'];
+
+          for (let level = 0; level < 3 && currentSponsor; level++) {
+            const sponsorData = userMap2[currentSponsor];
+            if (!sponsorData) break;
+
+            const title = '🏆 ¡Nuevo rango en tu equipo!';
+            const body = fullName + ' subió a ' + rName + ', ganando +$' + income.toLocaleString() + ' USD/mes. ¡Felicidades! 🔥';
+
+            const r = await pushToUser(currentSponsor, title, body, '/?nav=home', tag + '-L' + (level+1));
+            results.triggers.push({ type: 'rank_promo_L' + (level+1), sponsor: currentSponsor, user: user.username, rank: rName, sent: r.sent });
+            results.sent += r.sent;
+
+            currentSponsor = sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;
+          }
+        }
+      }
+    } catch (e) { results.errors.push('rank_promo: ' + e.message); }
 
     // ── TRIGGER 7: Daily motivational reminder (7-9am Colombia / UTC-5) ──
     try {

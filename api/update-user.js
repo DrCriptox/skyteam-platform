@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, oldUsername: username, newUsername: newUsername });
     }
 
-    const allowed = ['rank', 'name', 'ventas', 'equipo', 'expiry', 'ref', 'sponsor', 'email', 'whatsapp', 'photo', 'is_admin', 'original_sponsor', 'birthday'];
+    const allowed = ['rank', 'name', 'ventas', 'equipo', 'expiry', 'ref', 'sponsor', 'email', 'whatsapp', 'photo', 'is_admin', 'original_sponsor', 'birthday', 'valor_inscripcion'];
     const safe = {};
     for (const key of allowed) {
       if (updates && updates[key] !== undefined) safe[key] = updates[key];

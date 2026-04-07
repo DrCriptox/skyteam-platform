@@ -155,7 +155,7 @@ export default async function handler(req, res) {
     // ref MUST be unique per user — for 2nd account, use finalUsername (with "2" suffix) as ref
     const finalRef = innovaCount === 1 ? finalUsername : (sol.ref || finalUsername);
     const corePayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: finalRef, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, innova_user: innovaUser };
-    const fullPayload = { ...corePayload, rank, birthday: sol.birthday || null, original_sponsor: originalSponsor };
+    const fullPayload = { ...corePayload, rank, birthday: sol.birthday || null, original_sponsor: originalSponsor, valor_inscripcion: sol.valor_inscripcion || null };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
       { ...fullPayload, original_sponsor: undefined },                                             // 2. no original_sponsor (column may not exist yet)
