@@ -5508,7 +5508,8 @@ function stopAgendaPoll(){if(agendaPollInterval){clearInterval(agendaPollInterva
 // ═══════════════════════════════════════════════════
 var _notifOpen = false;
 var _notifInterval = null;
-var _notifDismissed = JSON.parse(sessionStorage.getItem('skyteam_notif_dismissed')||'{}');
+var _notifDismissedKey = 'skyteam_notif_dismissed_' + new Date().toDateString();
+var _notifDismissed = JSON.parse(localStorage.getItem(_notifDismissedKey)||'{}');
 // General notification queue for non-agenda notifications (content, events, etc.)
 var _notifQueue = JSON.parse(localStorage.getItem('skyteam_notif_queue_'+(typeof CU!=='undefined'&&CU?(CU.ref||CU.user):''))||'[]');
 var _notifFirstSeen = JSON.parse(sessionStorage.getItem('skyteam_notif_firstseen')||'{}');
@@ -5789,14 +5790,12 @@ function _activatePushFromSidebar() {
   });
 }
 
-// Fire native notifications when user leaves the app (background)
-function _onVisibilityChange() {
-  if (!document.hidden) return; // only when going to background
+// Fire native notification for current hour (called on app open + on background)
+function _fireCurrentHourNative() {
   if (_nativeNotifPermission !== 'granted') return;
   var _bgKey = 'skyteam_bg_sent_' + new Date().toDateString();
   var _bgSent = JSON.parse(localStorage.getItem(_bgKey) || '{}');
   var _h = new Date().getHours();
-  // Map of hour → notification to show
   var _hourMsgs = {
     6: {t:'📚 15 minutos que cambian tu negocio',b:'La Academia te espera. Los que se capacitan cierran 3x más.'},
     7: {t:'🗓️ Te tengo tu plan para hoy',b:'Revisa tu agenda y prepárate para cerrar.'},
@@ -5804,13 +5803,13 @@ function _onVisibilityChange() {
     9: {t:'🔥 Tienes prospectos calientes',b:'No dejes enfriar el interés. ¡Escríbeles ahora!'},
     10:{t:'🧠 ¿Cómo estás hoy?',b:'Tu Coach IA está listo para escucharte.'},
     11:{t:'📊 Reporte de tu organización',b:'Tu equipo tiene novedades. Revisa Sky Team.'},
-    12:{t:'🍽️ Hora del almuerzo — hora de saludar',b:'Un mensaje casual abre puertas. Tus prospectos están en su break.'},
+    12:{t:'🍽️ Hora del almuerzo — hora de saludar',b:'Un mensaje casual abre puertas.'},
     13:{t:'🔗 Comparte tu link y genera visitas',b:'Cada visita es un prospecto potencial.'},
     14:{t:'🤖 Genera un post que venda por ti',b:'Un buen post genera prospectos mientras duermes.'},
     15:{t:'🏆 ¿Ya viste tu posición en el ranking?',b:'Compite y sube de nivel esta semana.'},
     16:{t:'📅 Agenda una cita para mañana',b:'Los que agendan citas cierran 5x más.'},
     17:{t:'📺 ¿Hay eventos hoy en Sky TV?',b:'Las sesiones en vivo te dan ventaja.'},
-    18:{t:'📱 Hora de seguimiento',b:'Al final del día todos revisan WhatsApp. Es TU momento.'},
+    18:{t:'📱 Hora de seguimiento',b:'Todos revisan WhatsApp ahora. Es TU momento.'},
     19:{t:'💬 ¿Ya le escribiste a tus prospectos?',b:'Un mensaje puede cambiar tu semana.'},
     20:{t:'🌅 Resumen de tu día',b:'Revisa tu actividad y planea mañana.'},
     21:{t:'✨ Descansa bien, mañana seguimos',b:'Consistencia > intensidad. ¡Tú puedes!'},
@@ -5822,6 +5821,12 @@ function _onVisibilityChange() {
     localStorage.setItem(_bgKey, JSON.stringify(_bgSent));
     showNativeNotification(_msg.t, _msg.b);
   }
+}
+
+// Fire native notifications when user leaves the app (background)
+function _onVisibilityChange() {
+  if (document.visibilityState === "visible" && !document.hidden) return;
+  _fireCurrentHourNative();
 }
 
 function _updatePushButton() {
@@ -5861,8 +5866,16 @@ function startNotifEngine() {
   _notifInterval = setInterval(refreshNotifications, 60000);
 
   // When user LEAVES the app (goes to WhatsApp, etc.) → fire pending native notifications
+  // Multiple events for iOS PWA compatibility
   document.removeEventListener('visibilitychange', _onVisibilityChange);
   document.addEventListener('visibilitychange', _onVisibilityChange);
+  window.removeEventListener('blur', _onVisibilityChange);
+  window.addEventListener('blur', _onVisibilityChange);
+  window.removeEventListener('pagehide', _onVisibilityChange);
+  window.addEventListener('pagehide', _onVisibilityChange);
+
+  // Also fire native notification immediately for current hour (in case app just opened)
+  setTimeout(function(){ _fireCurrentHourNative(); }, 3000);
   // Update sidebar push button
   _updatePushButton();
   // Show notification permission banner after 3 seconds
@@ -6323,7 +6336,7 @@ function _nSwipeEnd(e, el, id) {
 
 function dismissNotif(id) {
   _notifDismissed[id] = true;
-  sessionStorage.setItem('skyteam_notif_dismissed', JSON.stringify(_notifDismissed));
+  localStorage.setItem(_notifDismissedKey, JSON.stringify(_notifDismissed));
   // Also remove from general queue
   _notifQueue = _notifQueue.filter(function(n){ return n.id !== id; });
   localStorage.setItem('skyteam_notif_queue_'+(CU?(CU.ref||CU.user):''), JSON.stringify(_notifQueue));
