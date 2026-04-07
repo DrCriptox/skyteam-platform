@@ -186,8 +186,9 @@ export default async function handler(req, res) {
             // ── All-time ──
             visitas = s.total || 0;
             uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
-            // Prefer unique conversion IPs if tracked, else raw count
-            conversiones = s.conversions_ips ? Object.keys(s.conversions_ips).length : (s.conversions || 0);
+            // Use raw historical count — conversions_ips only exists since the tracking update
+            // so using it alone would discard all pre-update conversions. Cap is applied below.
+            conversiones = s.conversions || 0;
           }
 
           // If IP tracking data is missing/incomplete for period, assume all visits are unique
