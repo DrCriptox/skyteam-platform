@@ -3530,6 +3530,17 @@ function showApp() {
     }
   }, 1500);
 
+  // Silently sync profile photo to landing file (only fills empty foto, never overwrites custom)
+  setTimeout(function() {
+    var _spFoto = CU && (CU.photo || localStorage.getItem('skyteam_photo_' + (CU.username||'')) || '');
+    var _spRef  = CU && (CU.ref || CU.username || '');
+    if (_spFoto && _spRef) {
+      fetch('/api/landing', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'syncPhoto', ref:_spRef, foto:_spFoto })
+      }).catch(function(){});
+    }
+  }, 3000);
+
   // Renewal warning: grace period banner + notifications
   if(CU && CU.expiry && Number(CU.expiry) > 0) {
     var _msLeft = Number(CU.expiry) - Date.now();

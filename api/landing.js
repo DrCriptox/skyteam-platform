@@ -53,6 +53,23 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, asesor, exists: !!asesor });
     }
 
+    // ── SYNC PHOTO: silently update foto only if currently empty (never overwrites custom photos) ──
+    if (action === 'syncPhoto') {
+      const { foto } = req.body;
+      if (!ref || !foto) return res.status(400).json({ error: 'Missing ref or foto' });
+      if (!TOKEN()) return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
+      const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, sha } = await readGHFile(FILE_ASESORES);
+        const existing = data[slug] || {};
+        if (existing.foto) return res.status(200).json({ ok: true, skipped: true }); // already has photo, skip
+        data[slug] = Object.assign({}, existing, { foto });
+        if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: syncPhoto ' + slug))
+          return res.status(200).json({ ok: true });
+      }
+      return res.status(500).json({ error: 'Write failed' });
+    }
+
     // ── SAVE PROFILE: write to asesores-skyteam.json AND asesores.json ──
     if (action === 'saveProfile') {
       if (!ref) return res.status(400).json({ error: 'Missing ref' });
