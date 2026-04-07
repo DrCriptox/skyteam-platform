@@ -2875,8 +2875,24 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
+<div id="crm-modal-ig" class="crm-modal" style="display:none;">
+  <div class="crm-modal-content">
+    <div class="crm-modal-header"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2" stroke-linecap="round" style="vertical-align:middle;margin-right:6px;"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#E1306C" stroke="none"/></svg>Mensaje Instagram con IA</h2><button class="crm-modal-close" onclick="closeCrmModalIg()">✕</button></div>
+    <div class="crm-modal-body">
+      <div class="crm-form-group"><label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Escribe el contexto del mensaje</label>
+        <textarea id="crm-ig-context" class="crm-form-textarea" placeholder="Ej: Invitar a ver presentación, Seguimiento, Felicitar por publicación..." rows="3" style="width:100%;"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="crm-btn-primary" onclick="crmGenerateIgMessage()" style="flex:1;">🤖 Generar con IA</button>
+        <button onclick="copyCrmIgMessage()" style="flex-shrink:0;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#F0EDE6;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📋 Copiar</button>
+      </div>
+      <div class="crm-form-actions">
+        <button type="button" onclick="sendViaCrmInstagram()" style="width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#E1306C,#C13584);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#fff" stroke="none"/></svg> Ir al DM de Instagram</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-  
 <!-- SKY TV SECTION -->
 <div id="section-sky-tv" class="section">
 <div class="topbar"><div class="topbar-title">📺 SKY TV</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
@@ -13332,6 +13348,7 @@ function crmKeydownHandler(e) {
     closeCrmModalAdd();
     closeCrmModalDetail();
     closeCrmModalWa();
+    closeCrmModalIg();
   }
 }
 
@@ -13456,41 +13473,68 @@ function crmStartRatingWizard(prospectoId,onComplete){
 
 function crmOpenDetail(id){openCrmDetail(id);}
 function crmQuickWA(id){crmDetailId=id;openCrmModalWa();}
-async function _crmOpenInstagramDM(){
-  var igUser = window._crmDetailIgUser;
-  if(!igUser) return;
-  // Get current prospect to generate message
+function _crmOpenInstagramDM(){
+  var modal = document.getElementById('crm-modal-ig');
+  if(modal) modal.style.display = 'flex';
+  var ctx = document.getElementById('crm-ig-context');
+  if(ctx) ctx.value = '';
+}
+
+function closeCrmModalIg(){
+  var modal = document.getElementById('crm-modal-ig');
+  if(modal) modal.style.display = 'none';
+}
+
+async function crmGenerateIgMessage(){
   var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
-  var nombre = p ? (p.nombre||'').split(' ')[0] : '';
-  // Try to generate AI message first
-  crmToast('Generando mensaje para Instagram...', 'info');
-  var msg = '';
-  try {
-    var res = await crmApi('generarMensajeWA', {
-      prospecto_id: crmDetailId,
-      contexto: 'Mensaje para Instagram DM, corto y casual',
-      nombre: p ? p.nombre : '',
-      etapa: p ? p.etapa : 'nuevo',
-      temperatura: p ? p.temperatura : 50
-    });
-    if(res && res.mensaje) msg = res.mensaje;
-  } catch(e){}
-  // Fallback message
-  if(!msg) msg = 'Hola ' + nombre + '! Soy parte del equipo SKYTEAM. Me encantaría conversar contigo sobre una oportunidad increíble. ¿Tienes un momento? 🚀';
-  // Copy to clipboard
-  try {
-    await navigator.clipboard.writeText(msg);
-    crmToast('✅ Mensaje copiado — pégalo en Instagram', 'success');
-  } catch(e) {
-    // Fallback copy
-    var ta = document.createElement('textarea'); ta.value = msg;
-    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    crmToast('✅ Mensaje copiado — pégalo en Instagram', 'success');
+  if(!p){ crmToast('Selecciona un prospecto primero','error'); return; }
+  var ctx = document.getElementById('crm-ig-context');
+  crmToast('Generando mensaje para Instagram...','info');
+  var res = await crmApi('generarMensajeWA', {
+    prospecto_id: crmDetailId,
+    contexto: (ctx ? ctx.value : '') + ' (mensaje para Instagram DM, casual y corto)',
+    nombre: p.nombre,
+    etapa: p.etapa,
+    temperatura: p.temperatura
+  });
+  if(res && res.mensaje){
+    if(ctx) ctx.value = res.mensaje;
+    crmToast('Mensaje generado','success');
+  } else {
+    var nombre = (p.nombre||'').split(' ')[0];
+    if(ctx) ctx.value = 'Hola ' + nombre + '! Soy parte del equipo SKYTEAM. Me encantaría conversar contigo sobre una oportunidad increíble. ¿Tienes un momento? 🚀';
+    crmToast('Mensaje por defecto generado','info');
   }
-  // Open Instagram DM after short delay so user sees the toast
+}
+
+function copyCrmIgMessage(){
+  var ctx = document.getElementById('crm-ig-context');
+  if(!ctx || !ctx.value){ crmToast('No hay mensaje para copiar','error'); return; }
+  navigator.clipboard.writeText(ctx.value).then(function(){
+    crmToast('✅ Mensaje copiado al portapapeles','success');
+  }).catch(function(){
+    var ta = document.createElement('textarea'); ta.value = ctx.value;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    crmToast('✅ Mensaje copiado','success');
+  });
+}
+
+function sendViaCrmInstagram(){
+  var igUser = window._crmDetailIgUser;
+  if(!igUser){ crmToast('No tiene Instagram','error'); return; }
+  // Copy message first
+  var ctx = document.getElementById('crm-ig-context');
+  if(ctx && ctx.value){
+    navigator.clipboard.writeText(ctx.value).catch(function(){
+      var ta = document.createElement('textarea'); ta.value = ctx.value;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    });
+    crmToast('✅ Mensaje copiado — pégalo en el DM','success');
+  }
   setTimeout(function(){
     window.open('https://ig.me/m/' + igUser, '_blank');
-  }, 800);
+    closeCrmModalIg();
+  }, 600);
 }
 function crmTempColor(v) {
   if(v <= 25) return {color:'#9E9E9E',label:'Fr\u00edo',emoji:'\u2744\uFE0F'};
