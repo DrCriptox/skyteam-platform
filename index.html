@@ -5988,86 +5988,92 @@ function refreshNotifications() {
     }
   }
 
-  // ── Daily productive activity reminders (based on hour of day) ──
+  // ── SMART ACTION NOTIFICATIONS — personalized by hour + prospect data ──
   var currentHour = new Date().getHours();
   var dailyKey = 'daily_' + new Date().toDateString() + '_';
+  var _prospects = (typeof crmProspectos !== 'undefined' && crmProspectos) ? crmProspectos.filter(function(p){ return p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; }) : [];
+  var _hotProspects = _prospects.filter(function(p){ return (p.temperatura||0) >= 60; });
+  var _coldProspects = _prospects.filter(function(p){ var u=p.updated_at?new Date(p.updated_at).getTime():0; return (now-u)>2*86400000; });
+  var _dayRotation = Math.floor(Date.now() / 86400000);
+  var _pName = function(arr,idx){ var p=arr[(idx||0)%Math.max(1,arr.length)]; return p?(p.nombre||'').split(' ')[0]:''; };
+  var _pCount = _prospects.length;
+  var _bookingsToday = (typeof agendaBookings!=='undefined'&&agendaBookings)?agendaBookings.filter(function(b){return b.status!=='cancelada'&&b.fechaISO&&b.fechaISO.indexOf(new Date().toISOString().slice(0,10))===0;}).length:0;
 
-  // Early morning — Academia (6-8 AM)
-  if(currentHour >= 6 && currentHour < 8 && !_notifDismissed[dailyKey+'earlymorning']) {
-    notifs.push({
-      id: dailyKey+'earlymorning', type: 'system', icon: '☀️',
-      title: 'Empieza el día aprendiendo',
-      subtitle: 'La Academia te espera',
-      msg: 'Dedica 15 minutos a la Academia antes de empezar. Quienes aprenden más, cierran más.',
-      action: {label: '🎓 Ir a la Academia', url: 'javascript:navigate("academia")'},
-      priority: 0.7
-    });
-    activeCount++;
+  function _addNotif(id,icon,title,sub,msg,action,prio){
+    if(!_notifDismissed[dailyKey+id]){notifs.push({id:dailyKey+id,type:'system',icon:icon,title:title,subtitle:sub,msg:msg,action:action,priority:prio||0.7});activeCount++;}
   }
 
-  // Morning motivation (8-11 AM)
-  if(currentHour >= 8 && currentHour < 11 && !_notifDismissed[dailyKey+'morning']) {
-    notifs.push({
-      id: dailyKey+'morning', type: 'system', icon: '🌅',
-      title: '¡Buenos días! Tu día productivo empieza ahora',
-      subtitle: 'Revisa tu agenda y contacta a tus prospectos',
-      msg: 'Las primeras horas son las m\u00e1s valiosas. Revisa tu agenda y empieza con tus tareas de mayor impacto.',
-      action: {label: '📅 Mi Agenda', url: 'javascript:navigate("agenda");setTimeout(function(){switchAgendaTab("plandiario")},300)'},
-      priority: 0.8
-    });
-    activeCount++;
+  // 6-7 AM — Capacitación
+  if(currentHour>=6&&currentHour<7) {
+    _addNotif('6am_academia','📚','15 minutos que cambian tu negocio','La Academia tiene contenido nuevo','Los que se capacitan 15 min/día cierran 3x más ventas. ¿Empezamos?',{label:'🎓 Ir a la Academia',url:'javascript:navigate("academia")'},0.7);
   }
-
-  // Midday — Prospecting (12-2 PM)
-  if(currentHour >= 12 && currentHour < 14 && !_notifDismissed[dailyKey+'midday']) {
-    notifs.push({
-      id: dailyKey+'midday', type: 'system', icon: '🎯',
-      title: 'Mediodía: momento ideal para prospectar',
-      subtitle: 'La gente está en su descanso, más receptiva',
-      msg: 'Aprovecha el mediodía para contactar nuevos prospectos y compartir tu link. Es el mejor momento para abrir conversaciones.',
-      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("prospectos")'},
-      priority: 0.7
-    });
-    activeCount++;
+  // 7-8 AM — Plan del día
+  if(currentHour>=7&&currentHour<8) {
+    _addNotif('7am_plan','🗓️','Te tengo tu plan para hoy','Tu agenda productiva está lista',_bookingsToday>0?'Hoy tienes '+_bookingsToday+' cita'+((_bookingsToday>1)?'s':'')+'. Prepárate para cerrar.':'Hoy no tienes citas. ¡Agenda al menos una para avanzar!',{label:'📅 Ver mi agenda',url:'javascript:navigate("agenda")'},0.8);
   }
-
-  // Afternoon — Sky Sales IA content (4-6 PM)
-  if(currentHour >= 16 && currentHour < 18 && !_notifDismissed[dailyKey+'afternoon']) {
-    notifs.push({
-      id: dailyKey+'afternoon', type: 'system', icon: '🤖',
-      title: 'Crea contenido y comparte tu enlace',
-      subtitle: 'Usa los agentes IA para cerrar más',
-      msg: 'La tarde es perfecta para publicar contenido. Usa Sky Sales IA para crear posts, responder objeciones y compartir tu landing.',
-      action: {label: '🚀 Sky Sales IA', url: 'javascript:navigate("skysales")'},
-      priority: 0.6
-    });
-    activeCount++;
+  // 8-9 AM — Buenos días + prospectos
+  if(currentHour>=8&&currentHour<9) {
+    var _8msg = _pCount>0?'Tienes '+_pCount+' prospecto'+((_pCount>1)?'s':'')+' esperando. '+(_pName(_prospects,_dayRotation)||'Tu próximo cierre')+' podría ser hoy.':'¡Hoy es el día perfecto para conseguir tu primer prospecto!';
+    _addNotif('8am_buenosdias','☀️','¡Buenos días! Tu negocio te espera',_8msg,'Las primeras horas son oro. Abre tu CRM y empieza con acción.',{label:'📋 Mis prospectos',url:'javascript:navigate("prospectos")'},0.9);
   }
-
-  // Evening follow-up (6-8 PM)
-  if(currentHour >= 18 && currentHour < 20 && !_notifDismissed[dailyKey+'evening']) {
-    notifs.push({
-      id: dailyKey+'evening', type: 'system', icon: '🌙',
-      title: 'Hora del seguimiento — cierre del día',
-      subtitle: 'Los prospectos están más disponibles ahora',
-      msg: 'Al final del día la gente revisa más su celular. Es el mejor momento para hacer seguimiento y agendar citas.',
-      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("prospectos")'},
-      priority: 0.7
-    });
-    activeCount++;
+  // 9-10 AM — Mensaje a prospecto caliente
+  if(currentHour>=9&&currentHour<10&&_hotProspects.length>0) {
+    var _hp = _pName(_hotProspects,_dayRotation);
+    _addNotif('9am_caliente','🔥',_hp+' está caliente — ¡escríbele!','Temperatura alta, no dejes enfriar el interés','Tengo un mensaje ganador listo para '+_hp+'. Solo necesitas enviarlo.',{label:'💬 Enviar mensaje',url:'javascript:navigate("prospectos")'},0.9);
   }
-
-  // Night wrap-up (9-10 PM)
-  if(currentHour >= 21 && currentHour < 22 && !_notifDismissed[dailyKey+'night']) {
-    notifs.push({
-      id: dailyKey+'night', type: 'system', icon: '✅',
-      title: '¿Cómo cerraste el día?',
-      subtitle: 'Revisa tu ranking y celebra tus logros',
-      msg: 'Antes de dormir revisa tu progreso en el ranking y planea mañana. Consistencia es la clave del éxito.',
-      action: {label: '🏆 Ver Ranking', url: 'javascript:navigate("ranking")'},
-      priority: 0.5
-    });
-    activeCount++;
+  // 10-11 AM — Coaching / Mentoría
+  if(currentHour>=10&&currentHour<11) {
+    _addNotif('10am_mentoria','🧠','¿Cómo estás hoy mental y emocionalmente?','Tu Coach IA está listo para escucharte','Cuéntale cómo te sientes. Un líder que se conoce, lidera mejor.',{label:'🤖 Abrir Coach IA',url:'javascript:navigate("home")'},0.6);
+  }
+  // 11 AM — Reporte equipo
+  if(currentHour>=11&&currentHour<12) {
+    _addNotif('11am_equipo','📊','Reporte de tu organización','Tu equipo tiene novedades','Revisa cómo va tu equipo. Hay cosas que debes ver en Sky Team.',{label:'👥 Ver Sky Team',url:'javascript:navigate("skyteam")'},0.6);
+  }
+  // 12-1 PM — Hora del almuerzo = saludar
+  if(currentHour>=12&&currentHour<13) {
+    var _lunchP = _pName(_coldProspects.length>0?_coldProspects:_prospects,_dayRotation+1);
+    _addNotif('12pm_almuerzo','🍽️','Hora del almuerzo — hora de saludar','Es buen momento para un mensaje casual',_lunchP?_lunchP+' y otros prospectos están en su break. Un saludo casual abre puertas.':'La gente en su descanso está más receptiva. ¡Envía un mensaje!',{label:'📋 Mis prospectos',url:'javascript:navigate("prospectos")'},0.8);
+  }
+  // 1-2 PM — Compartir landing
+  if(currentHour>=13&&currentHour<14) {
+    _addNotif('1pm_landing','🔗','Comparte tu link y genera visitas','Tu landing está activa 24/7','Cada visita es un prospecto potencial. Comparte tu link en redes y WhatsApp.',{label:'🚀 Sky Sales IA',url:'javascript:navigate("skysales")'},0.7);
+  }
+  // 2-3 PM — Contenido IA
+  if(currentHour>=14&&currentHour<15) {
+    _addNotif('2pm_contenido','🤖','Genera un post que venda por ti','La IA crea contenido en segundos','Un buen post genera prospectos mientras duermes. Créalo ahora con IA.',{label:'🚀 Sky Sales IA',url:'javascript:navigate("skysales")'},0.6);
+  }
+  // 3-4 PM — Ranking
+  if(currentHour>=15&&currentHour<16) {
+    _addNotif('3pm_ranking','🏆','¿Ya viste tu posición en el ranking?','Compite y sube de nivel','Revisa quién va ganando esta semana. ¡Tú puedes estar arriba!',{label:'🏆 Ver Ranking',url:'javascript:navigate("ranking")'},0.5);
+  }
+  // 4-5 PM — Agenda citas
+  if(currentHour>=16&&currentHour<17) {
+    _addNotif('4pm_agenda','📅','Agenda una cita para mañana','Las citas son el corazón del negocio','Los que agendan citas cierran 5x más. ¿Ya tienes reuniones para mañana?',{label:'📅 Mi Agenda',url:'javascript:navigate("agenda")'},0.7);
+  }
+  // 5-6 PM — Sky TV evento
+  if(currentHour>=17&&currentHour<18) {
+    _addNotif('5pm_skytv','📺','¿Hay eventos hoy en Sky TV?','No te pierdas las capacitaciones en vivo','Revisa la programación. Las sesiones en vivo te dan ventaja sobre la competencia.',{label:'📺 Sky TV',url:'javascript:navigate("sky-tv")'},0.5);
+  }
+  // 6-7 PM — Follow-up con nombres
+  if(currentHour>=18&&currentHour<19) {
+    var _evNames = [];
+    _coldProspects.slice(0,3).forEach(function(p){ _evNames.push((p.nombre||'').split(' ')[0]); });
+    var _evSub = _evNames.length>0?_evNames.join(', ')+' esperan tu mensaje':'Tus prospectos esperan noticias tuyas';
+    _addNotif('6pm_followup','📱','Hora de seguimiento — la gente revisa el celular',_evSub,'Al final del día todos revisan WhatsApp. Es TU momento para conectar.',{label:'📋 Mis prospectos',url:'javascript:navigate("prospectos")'},0.8);
+  }
+  // 7-8 PM — WhatsApp masivo
+  if(currentHour>=19&&currentHour<20) {
+    var _7p = _pName(_prospects,_dayRotation+3);
+    _addNotif('7pm_whatsapp','💬','¿Ya le escribiste a '+(_7p||'tus prospectos')+'?','Un mensaje puede cambiar tu semana',_7p?'Tengo un mensaje personalizado listo para '+_7p+'. Solo necesitas enviarlo.':'Abre el CRM y envía un mensaje con IA. Toma 30 segundos.',{label:'📋 Enviar mensaje',url:'javascript:navigate("prospectos")'},0.8);
+  }
+  // 8-9 PM — Resumen del día
+  if(currentHour>=20&&currentHour<21) {
+    _addNotif('8pm_resumen','🌅','Resumen de tu día','¿Cuántos prospectos tocaste hoy?','Revisa tu actividad del día y planea mañana. La consistencia es la clave.',{label:'📋 Ver prospectos',url:'javascript:navigate("prospectos")'},0.6);
+  }
+  // 9-10 PM — Cierre y motivación
+  if(currentHour>=21&&currentHour<22) {
+    var _frases = ['Cada día que trabajas, estás más cerca de tu libertad financiera.','Los que no se rinden, ganan. Mañana será mejor.','Tu equipo cuenta contigo. Descansa y vuelve con todo.','Hoy plantaste semillas. Pronto verás los frutos.'];
+    _addNotif('9pm_cierre','✨',_frases[_dayRotation%_frases.length],'Descansa bien, mañana seguimos','Revisa tu ranking antes de dormir. Consistencia > intensidad.',{label:'🏆 Mi ranking',url:'javascript:navigate("ranking")'},0.5);
   }
 
   // Send ONE native notification per time slot (for iOS notification center)
