@@ -13202,7 +13202,7 @@ async function crmSaveProspect(e){
     }
     closeCrmModalAdd();crmLoadData();}
   else{res=await crmApi("add",data);if(res&&res.ok){crmToast("Prospecto agregado!","success");
-    closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){crmLoadData();crmStartRatingWizard(newId);}else crmLoadData();}
+    closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){crmLoadData();var _alreadyRated=crmRatingAnswers&&(crmRatingAnswers.calif_positivo!==undefined);if(!_alreadyRated){crmStartRatingWizard(newId);}else{crmApi('update',{id:newId,updates:crmRatingAnswers});}}else crmLoadData();}
     else{closeCrmModalAdd();crmLoadData();}}}
 
 function crmStartRatingWizard(prospectoId,onComplete){
