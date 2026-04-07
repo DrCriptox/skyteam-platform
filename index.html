@@ -7330,10 +7330,11 @@ function _loadSSRanking() {
       var convRate = u.visitas > 0 ? Math.round((u.conversiones / u.visitas) * 100) : 0;
       var flag = _waFlag(u.whatsapp||'');
       var isPodium = i < 3;
-      var rowBg = isMe ? 'rgba(201,168,76,0.08)' : isPodium ? podiumBg[i] : 'rgba(255,255,255,0.02)';
-      var rowBorder = isMe ? '1px solid rgba(201,168,76,0.25)' : isPodium ? '0.5px solid '+podiumBorder[i] : 'none';
-      var rowShadow = isMe ? 'box-shadow:0 0 15px rgba(201,168,76,0.1);' : '';
-      var avatarBorder = isMe ? 'rgba(201,168,76,0.5)' : isPodium ? podiumBorder[i] : (u.newLanding ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.06)');
+      var meColor = isPodium ? '' : 'rgba(127,119,221,'; // purple for non-podium "you"
+      var rowBg = (isMe && !isPodium) ? meColor+'0.08)' : isPodium ? podiumBg[i] : 'rgba(255,255,255,0.02)';
+      var rowBorder = (isMe && !isPodium) ? '1px solid '+meColor+'0.30)' : isPodium ? '0.5px solid '+podiumBorder[i] : 'none';
+      var rowShadow = (isMe && !isPodium) ? 'box-shadow:0 0 15px '+meColor+'0.12);' : '';
+      var avatarBorder = (isMe && !isPodium) ? 'rgba(127,119,221,0.5)' : isMe ? podiumBorder[i] : isPodium ? podiumBorder[i] : 'rgba(255,255,255,0.06)';
       html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';'+rowShadow+'">';
       // Position
       html += '<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?medals[i]:(i+1))+'</div>';
@@ -7342,7 +7343,7 @@ function _loadSSRanking() {
       html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(_fotoUrl?'<img src="'+_fotoUrl+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats
       html += '<div style="flex:1;min-width:0;">';
-      html += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span class="ss-rk-tu" style="font-size:8px;color:#C9A84C;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      html += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span class="ss-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
       html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+u.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+u.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+convRate+'%</span></div>';
       html += '</div>';
       // Score
@@ -7357,12 +7358,12 @@ function _loadSSRanking() {
       var mConvRate = mu.visitas > 0 ? Math.round((mu.conversiones / mu.visitas) * 100) : 0;
       var mFlag = _waFlag(mu.whatsapp||'');
       html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.06);">';
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.20);box-shadow:0 0 12px rgba(201,168,76,0.08);">';
-      html += '<div style="width:20px;font-size:12px;font-weight:800;color:#C9A84C;text-align:center;flex-shrink:0;">'+myPos.position+'</div>';
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.25);box-shadow:0 0 12px rgba(127,119,221,0.10);">';
+      html += '<div style="width:20px;font-size:12px;font-weight:800;color:#7F77DD;text-align:center;flex-shrink:0;">'+myPos.position+'</div>';
       var _mFotoUrl = _normFoto(mu.foto);
-      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(201,168,76,0.4);">'+(_mFotoUrl?'<img src="'+_mFotoUrl+'" style="width:100%;height:100%;object-fit:cover;">':mIni)+'</div>';
+      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(127,119,221,0.5);">'+(_mFotoUrl?'<img src="'+_mFotoUrl+'" style="width:100%;height:100%;object-fit:cover;">':mIni)+'</div>';
       html += '<div style="flex:1;min-width:0;">';
-      html += '<div class="ss-rk-name" style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(mu.nombre||mu.ref)+mFlag+' <span style="font-size:13px;color:#C9A84C;">(t\u00fa)</span></div>';
+      html += '<div class="ss-rk-name" style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(mu.nombre||mu.ref)+mFlag+' <span class="ss-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
       html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+mu.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+mu.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+mConvRate+'%</span></div>';
       html += '</div>';
       html += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(mu.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
