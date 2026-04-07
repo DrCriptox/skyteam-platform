@@ -195,7 +195,7 @@ export default async function handler(req, res) {
           const ipDupes = Math.max(0, visitas - effectiveUniqueIps);
           const cap = effectiveUniqueIps > 0 ? effectiveUniqueIps : visitas;
           const validConversions = Math.min(conversiones, cap);
-          const score = Math.max(0, visitas - (ipDupes * 2) + (validConversions * 20));
+          const score = Math.max(0, Math.round(visitas - (ipDupes * 1.5) + (validConversions * 20)));
           return {
             ref: ref, nombre: asesor.nombre || ref,
             visitas: visitas, uniqueVisitas: effectiveUniqueIps, conversiones: validConversions, score: score,
