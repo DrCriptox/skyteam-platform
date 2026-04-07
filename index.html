@@ -3532,6 +3532,30 @@ var _lpEl = document.getElementById('lp');
 if(_lpEl) _lpEl.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
 
+// BANKCODE helpers
+var _bkColors = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
+var _bkNames = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
+function renderBankcodeBadge(code, size) {
+  if (!code) return '';
+  var s = size || 'small';
+  var fs = s === 'tiny' ? '9px' : s === 'small' ? '12px' : '16px';
+  var pad = s === 'tiny' ? '1px 4px' : s === 'small' ? '3px 8px' : '5px 12px';
+  var gap = s === 'tiny' ? '1px' : '3px';
+  var html = '<span style="display:inline-flex;gap:'+gap+';background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:'+pad+';font-family:Outfit,Nunito,sans-serif;">';
+  for (var i = 0; i < code.length; i++) {
+    var c = code[i];
+    html += '<span style="color:'+(_bkColors[c]||'#fff')+';font-size:'+fs+';font-weight:900;">'+c+'</span>';
+  }
+  html += '</span>';
+  return html;
+}
+function renderBankcodeDetail(code) {
+  if (!code) return '';
+  var dominant = code[0];
+  var descMap = {B:'Planificador, estructurado',A:'Ejecutor, energ\u00e9tico',N:'Emp\u00e1tico, conecta personas',K:'Anal\u00edtico, investigador'};
+  return '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">' + renderBankcodeBadge(code, 'small') + '<span style="font-size:10px;color:rgba(255,255,255,0.4);">' + (_bkNames[dominant]||'') + ' \u2014 ' + (descMap[dominant]||'') + '</span></div>';
+}
+
 // BANKCODE SURVEY - First login personality test
 function _showBankcodeSurvey() {
   if (!CU || CU.bankcode) return;
@@ -3946,11 +3970,12 @@ function renderSidebarUser() {
   } else {
     daysLeft = '<div class="su-days-left" style="color:rgba(255,255,255,0.3);">⏱ Sin vencimiento</div>';
   }
+  var _bkBadge = CU.bankcode ? renderBankcodeBadge(CU.bankcode, 'tiny') : '';
   document.getElementById('sidebar-user').innerHTML = `
     ${avatarHtml}
     <div class="su-info">
       <div class="su-name">${CU.name}</div>
-      ${rankBadge(CU.rank, 'tiny')}
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${rankBadge(CU.rank, 'tiny')} ${_bkBadge}</div>
       ${daysLeft}
       <button class="sidebar-perfil-btn" style="margin-top:3px;font-size:8px;padding:2px 7px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.3px;width:fit-content;display:inline-flex;align-items:center;gap:3px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver perfil</button>
     </div>
@@ -11611,6 +11636,7 @@ function renderPerfil() {
     + '<div class="perfil-name">'+CU.name+'</div>'
     + '<div class="perfil-username">@'+CU.username+'</div>'
     + '<div style="margin-top:6px;">'+rankBadge(CU.rank)+'</div>'
+    + (CU.bankcode ? '<div style="margin-top:6px;">' + renderBankcodeDetail(CU.bankcode) + '</div>' : '')
     + (function(){ if(!CU.expiry || !Number(CU.expiry)) return ''; var _pd=Math.ceil((Number(CU.expiry)-Date.now())/86400000); var _pc=getDaysColor(Math.max(0,_pd)); return '<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_pc+';">\u23F1 '+(_pd>0?_pd+' d\u00edas restantes':'\u26A0\uFE0F Expirado')+'</div>'; })()
     + '</div>'
     + '<div class="perfil-data-card">'

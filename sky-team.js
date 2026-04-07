@@ -2016,6 +2016,10 @@ function openMemberDetail(username) {
   html += '<div class="st-detail-rank" style="background:' + rk.bg + ';color:' + rk.color + ';border:0.5px solid ' + rk.border + ';">';
   html += rk.icon + ' ' + _safe(rk.name);
   html += '</div>';
+  // BANKCODE badge
+  if (m.bankcode && typeof renderBankcodeBadge === 'function') {
+    html += '<div style="margin-top:4px;">' + renderBankcodeBadge(m.bankcode, 'small') + ' <span style="font-size:9px;color:rgba(255,255,255,0.35);">' + ({B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'}[m.bankcode[0]]||'') + '</span></div>';
+  }
   html += '</div>';
   html += '</div>';
 
@@ -2091,6 +2095,23 @@ function openMemberDetail(username) {
   html += '</div>';
 
   html += '</div>';
+
+  // BANKCODE coaching tip for sponsors
+  if (m.bankcode && !isSelf) {
+    var _bkTips = {
+      B: 'Mu\u00e9strale el plan paso a paso. Le gustan los sistemas claros y la estructura.',
+      A: 'S\u00e9 directo y energ\u00e9tico. No le des mucha teor\u00eda, ll\u00e9valo a la acci\u00f3n r\u00e1pido.',
+      N: 'Conecta emocionalmente primero. Preg\u00fantale c\u00f3mo se siente y cu\u00e9ntale historias.',
+      K: 'Dale datos, n\u00fameros y evidencia. Necesita entender todo antes de moverse.'
+    };
+    var _domTip = _bkTips[m.bankcode[0]] || '';
+    if (_domTip) {
+      html += '<div style="background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);border-radius:10px;padding:10px 12px;margin-top:8px;">';
+      html += '<div style="font-size:9px;color:#C9A84C;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">\uD83E\uDDE0 C\u00f3mo hablarle</div>';
+      html += '<div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">' + _domTip + '</div>';
+      html += '</div>';
+    }
+  }
 
   // WhatsApp button (only if CU is direct sponsor)
   if (isDirect && whatsapp) {
