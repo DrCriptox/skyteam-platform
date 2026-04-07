@@ -720,7 +720,7 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 .crm-form-textarea{resize:vertical;min-height:70px;line-height:1.5;}
 .crm-form-select{cursor:pointer;}
 .crm-form-select option{background:#0a0a12;color:#F0EDE6;}
-.crm-form-slider{width:100%;cursor:pointer;accent-color:#C9A84C;}
+.crm-form-slider{width:100%;cursor:pointer;accent-color:#E8D48B;}
 .crm-temperature-slider{display:flex;align-items:center;gap:12px;}
 .crm-temperature-slider span{font-size:13px;color:#C9A84C;font-weight:700;white-space:nowrap;}
 .crm-form-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:8px;}
@@ -12753,10 +12753,12 @@ function openCrmModalAdd(editId) {
     }
   }
 
-  // Update temperature display
+  // Update temperature display with color
   var tempInput2 = form.querySelector('#crm-input-temperatura');
-  var tempDisp = document.getElementById('crm-temperatura-display');
-  if (tempInput2 && tempDisp) tempDisp.textContent = (tempInput2.value || 50) + '\u00B0';
+  if(tempInput2) {
+    crmTempDisp(tempInput2.value || 50);
+    tempInput2.oninput = function() { crmTempDisp(this.value); };
+  }
 
   crmEditingId = editId || null;
   modal.style.display = 'flex';
@@ -13135,10 +13137,7 @@ document.addEventListener('keydown', crmKeydownHandler);
 document.addEventListener('DOMContentLoaded', function() {
   var tempInput = document.querySelector('#crm-input-temperatura');
   if (tempInput) {
-    tempInput.addEventListener('input', function() {
-      var display = document.getElementById('crm-temperatura-display');
-      if (display) display.textContent = this.value + '\u00B0';
-    });
+    tempInput.addEventListener('input', function() { crmTempDisp(this.value); });
   }
 
   var tabButtons = document.querySelectorAll('[data-tab]');
@@ -13250,7 +13249,19 @@ function crmStartRatingWizard(prospectoId,onComplete){
 
 function crmOpenDetail(id){openCrmDetail(id);}
 function crmQuickWA(id){crmDetailId=id;openCrmModalWa();}
-function crmTempDisp(v){var d=document.getElementById('crm-temperatura-display');if(d)d.textContent=v+'/100';}
+function crmTempColor(v) {
+  if(v <= 25) return {color:'#9E9E9E',label:'Fr\u00edo',emoji:'\u2744\uFE0F'};
+  if(v <= 50) return {color:'#E8D48B',label:'Tibio',emoji:'\uD83D\uDE10'};
+  if(v <= 75) return {color:'#FF8C00',label:'C\u00e1lido',emoji:'\uD83D\uDD25'};
+  return {color:'#E24B4A',label:'Caliente',emoji:'\uD83D\uDCA5'};
+}
+function crmTempDisp(v) {
+  var d = document.getElementById('crm-temperatura-display');
+  var s = document.getElementById('crm-input-temperatura');
+  var t = crmTempColor(+v);
+  if(d) d.innerHTML = '<span style="color:'+t.color+';font-weight:800;">'+v+'</span><span style="color:rgba(255,255,255,0.2);">/100</span> <span style="font-size:10px;">'+t.emoji+' '+t.label+'</span>';
+  if(s) s.style.accentColor = t.color;
+}
 function crmOpenEdit(id){
   var p=crmProspectos.find(function(x){return x.id===id;});if(!p)return;
   crmEditingId=id;var m=document.getElementById('crm-modal-add');if(!m)return;
