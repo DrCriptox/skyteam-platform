@@ -318,6 +318,14 @@ function renderCartelera() {
         evDiv.dataset.eventId = ev.id;
         evDiv.onclick = (function(evt) { return function() { openEventDetail(evt); }; })(ev);
 
+        // Flyer thumbnail in card
+        if (ev.flyer_url) {
+          var thumb = document.createElement('img');
+          thumb.src = ev.flyer_url;
+          thumb.style.cssText = 'width:100%;height:60px;object-fit:cover;border-radius:6px;margin-bottom:6px;';
+          thumb.alt = '';
+          evDiv.appendChild(thumb);
+        }
         var timeDiv = document.createElement('div');
         timeDiv.className = 'skytv-event-time';
         timeDiv.textContent = (ev.en_vivo ? '\u25CF EN VIVO \u2022 ' : '') + formatTime(ev.hora_inicio) + (ev.hora_fin ? ' - ' + formatTime(ev.hora_fin) : '');
@@ -363,8 +371,25 @@ function openEventDetail(ev) {
   closeBtn.onclick = function() { overlay.remove(); };
   modal.appendChild(closeBtn);
 
+  // Flyer — cinema-style poster
+  if (ev.flyer_url) {
+    var flyerWrap = document.createElement('div');
+    flyerWrap.style.cssText = 'margin:-20px -22px 16px;border-radius:16px 16px 0 0;overflow:hidden;position:relative;';
+    var flyerImg = document.createElement('img');
+    flyerImg.src = ev.flyer_url;
+    flyerImg.style.cssText = 'width:100%;max-height:400px;object-fit:cover;display:block;';
+    flyerImg.alt = ev.titulo;
+    // Gradient overlay at bottom for text readability
+    var flyerGrad = document.createElement('div');
+    flyerGrad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));';
+    flyerWrap.appendChild(flyerImg);
+    flyerWrap.appendChild(flyerGrad);
+    modal.appendChild(flyerWrap);
+  }
+
   var title = document.createElement('h3');
   title.textContent = ev.titulo;
+  title.style.cssText = 'font-size:20px;font-weight:900;margin:0 0 12px;';
   modal.appendChild(title);
 
   if (ev.en_vivo) {
