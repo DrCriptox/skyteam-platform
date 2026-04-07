@@ -5590,8 +5590,16 @@ function showNativeNotification(title, body, icon, url) {
 
 function showNotifBanner() {
   if(!_nativeNotifEnabled) return;
-  if(_nativeNotifPermission === 'granted') return;
-  if(_nativeNotifPermission === 'denied') return;
+  // If already granted, auto-subscribe silently — no banner needed
+  if(_nativeNotifPermission === 'granted') {
+    tryPushSubscribe();
+    return;
+  }
+  // If denied, show a small persistent hint instead of the full banner
+  if(_nativeNotifPermission === 'denied') {
+    console.log('[PUSH] Notifications denied by browser. User must unblock in settings.');
+    return;
+  }
   // Re-show after 7 days if previously dismissed
   var dismissedAt = localStorage.getItem('skyteam_notif_banner_dismissed');
   if(dismissedAt && dismissedAt !== 'true') {
@@ -5684,7 +5692,12 @@ function startNotifEngine() {
   // Show notification permission banner after 3 seconds
   setTimeout(function(){ showNotifBanner(); }, 3000);
   // Try to subscribe if already granted
-  if(_nativeNotifPermission === 'granted') tryPushSubscribe();
+  if(_nativeNotifPermission === 'granted') {
+    console.log('[PUSH] Permission already granted, auto-subscribing...');
+    tryPushSubscribe();
+  } else {
+    console.log('[PUSH] Permission status:', _nativeNotifPermission, '— banner will show');
+  }
   // Handle notification click from Service Worker
   if('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', function(event) {
@@ -5955,8 +5968,19 @@ function renderNotifList(notifs) {
   var list = document.getElementById('notif-list');
   if(!list) return;
 
+  // Push status card at top
+  var pushCard = '';
+  if(_nativeNotifEnabled && _nativeNotifPermission !== 'granted') {
+    pushCard = '<div style="background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.03));border:0.5px solid rgba(201,168,76,0.20);border-radius:12px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;">'
+      + '<div style="font-size:24px;flex-shrink:0;">🔔</div>'
+      + '<div style="flex:1;"><p style="margin:0 0 2px;font-size:12px;font-weight:800;color:#C9A84C;">' + (_nativeNotifPermission==='denied' ? 'Notificaciones bloqueadas' : 'Activa las notificaciones') + '</p>'
+      + '<p style="margin:0;font-size:10px;color:rgba(255,255,255,0.40);line-height:1.4;">' + (_nativeNotifPermission==='denied' ? 'Ve a ajustes del navegador > Sitio > Notificaciones' : 'Recibe alertas de citas, seguimiento y más') + '</p></div>'
+      + (_nativeNotifPermission!=='denied' ? '<button onclick="requestNotifPermission()" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:900;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Activar</button>' : '')
+      + '</div>';
+  }
+
   if(!notifs.length) {
-    list.innerHTML = '<div style="text-align:center;padding:30px 10px;">'
+    list.innerHTML = pushCard + '<div style="text-align:center;padding:30px 10px;">'
       + '<div style="font-size:36px;margin-bottom:10px;">✅</div>'
       + '<p style="font-size:13px;color:rgba(255,255,255,0.3);margin:0;">Todo al día</p>'
       + '<p style="font-size:11px;color:rgba(255,255,255,0.15);margin:6px 0 0;">Aquí verás recordatorios de citas, contenido nuevo, eventos y más</p>'
@@ -5964,7 +5988,7 @@ function renderNotifList(notifs) {
     return;
   }
 
-  var html = '';
+  var html = pushCard;
   notifs.forEach(function(n) {
     var cardClass = 'notif-card';
     if(n.type === 'urgent') cardClass += ' urgent';
