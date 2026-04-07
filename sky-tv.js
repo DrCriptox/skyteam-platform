@@ -251,14 +251,13 @@ function renderCountdown(container) {
     cd.appendChild(joinBtn);
   }
 
-  container.appendChild(cd);
-
-  // "Agregar a calendario" button BELOW the countdown card (not inside)
+  // Add calendar button inside countdown, below the meta text
   if (totalMins > 5) {
     var calBtn = document.createElement('button');
-    calBtn.style.cssText = 'display:block;width:100%;margin-top:8px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.6);font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-align:center;';
+    calBtn.style.cssText = 'display:inline-block;margin-top:6px;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-size:10px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;';
     calBtn.textContent = '\uD83D\uDCC5 Agregar a mi calendario';
-    calBtn.onclick = function() {
+    calBtn.onclick = function(e) {
+      e.stopPropagation();
       var startD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00';
       var endD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_fin||next.hora_inicio||'10:00').replace(':','') + '00';
       var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
@@ -268,8 +267,10 @@ function renderCountdown(container) {
         + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom');
       window.open(gcalUrl, '_blank');
     };
-    container.appendChild(calBtn);
+    info2.appendChild(calBtn);
   }
+
+  container.appendChild(cd);
 }
 
 // --- CARTELERA (BILLBOARD) ---
