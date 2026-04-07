@@ -193,7 +193,7 @@ export default async function handler(req, res) {
           const ipDupes = Math.max(0, visitas - uniqueIps);
           const cap = uniqueIps > 0 ? uniqueIps : visitas; // fallback si no hay tracking de IPs
           const validConversions = Math.min(conversiones, cap);
-          const score = Math.max(0, visitas - (ipDupes * 2) + (validConversions * 15));
+          const score = Math.max(0, visitas - (ipDupes * 2) + (validConversions * 20));
           return {
             ref: ref, nombre: asesor.nombre || ref,
             visitas: uniqueIps || visitas, conversiones: validConversions, score: score,

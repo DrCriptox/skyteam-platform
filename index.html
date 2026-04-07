@@ -7228,7 +7228,7 @@ function _loadSSLandingProfile() {
     var totalConversions = myData.conversions || 0;
     var validConversions = Math.min(totalConversions, uniqueIps);
     var efectividad = uniqueIps > 0 ? Math.round((validConversions / uniqueIps) * 100) : 0;
-    var puntaje = Math.max(0, (totalVisits * 1) - (ipDupes * 2) + (validConversions * 15));
+    var puntaje = Math.max(0, (totalVisits * 1) - (ipDupes * 2) + (validConversions * 20));
     var cs = 'text-align:center;padding:10px 12px;border-radius:10px;flex:1;min-width:0;';
     el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
       +'<div style="'+cs+'background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);"><div style="font-size:20px;font-weight:900;color:#C9A84C;">'+visitasUnicas+'</div><div style="font-size:8px;color:rgba(255,255,255,0.30);text-transform:uppercase;margin-top:2px;">Visitas \u00fanicas</div></div>'
