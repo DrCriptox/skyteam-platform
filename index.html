@@ -5503,7 +5503,7 @@ function requestNotifPermission(silent) {
   if(_nativeNotifPermission === 'granted') {
     if(!silent) showToast('✅ Notificaciones ya activadas');
     // Ensure push subscription exists even if already granted
-    tryPushSubscribe();
+    tryPushSubscribe(true);
     return;
   }
   if(_nativeNotifPermission === 'denied') {
@@ -5517,8 +5517,8 @@ function requestNotifPermission(silent) {
       localStorage.removeItem('skyteam_notif_banner_dismissed');
       showToast('🔔 ¡Notificaciones activadas! Recibirás alertas de citas y seguimiento.');
       hideNotifBanner();
-      // Register for push subscription
-      tryPushSubscribe();
+      // Register for push subscription (user-initiated)
+      tryPushSubscribe(true);
       // Show a test notification immediately
       setTimeout(function(){
         showNativeNotification('🔔 SKYTEAM', '¡Notificaciones activadas! Te avisaremos cuando tengas citas o seguimientos pendientes.', null, '/');
@@ -5532,10 +5532,10 @@ function requestNotifPermission(silent) {
   });
 }
 
-function tryPushSubscribe() {
+function tryPushSubscribe(userInitiated) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.warn('[PUSH] Service Worker or PushManager not supported');
-    if(typeof showToast==='function') showToast('⚠️ Tu navegador no soporta push notifications');
+    if(userInitiated && typeof showToast==='function') showToast('⚠️ Tu navegador no soporta push notifications');
     return;
   }
   if (!CU || !CU.username) {
@@ -5560,14 +5560,19 @@ function tryPushSubscribe() {
           if(d.ok) {
             localStorage.setItem('skyteam_push_subscribed', 'true');
             _updatePushButton();
-            if(typeof showToast==='function') showToast('✅ Push activo para ' + CU.username);
+            if(userInitiated && typeof showToast==='function') showToast('✅ Push activo para ' + CU.username);
           } else {
-            if(typeof showToast==='function') showToast('⚠️ Error sync push: ' + (d.error||''));
+            if(userInitiated && typeof showToast==='function') showToast('⚠️ Error sync: ' + (d.error||''));
           }
         });
       }
-      // No existing subscription — create new one
-      console.log('[PUSH] Creating new subscription...');
+      // No existing subscription — ONLY create if user clicked (iOS requires user gesture)
+      if (!userInitiated) {
+        console.log('[PUSH] No subscription yet — waiting for user click to subscribe');
+        _updatePushButton();
+        return;
+      }
+      console.log('[PUSH] Creating new subscription (user-initiated)...');
       return fetch('/api/push', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -5762,8 +5767,8 @@ function _activatePushFromSidebar() {
     return;
   }
   if(Notification.permission === 'granted') {
-    // Already granted, just subscribe
-    tryPushSubscribe();
+    // Already granted, just subscribe (user-initiated)
+    tryPushSubscribe(true);
     if(btn) { btn.textContent = '✅ Notificaciones activas'; btn.style.background = 'rgba(29,158,117,0.2)'; btn.style.color = '#1D9E75'; btn.style.border = '1px solid rgba(29,158,117,0.3)'; }
     if(typeof showToast==='function') showToast('🔔 ¡Suscribiendo a notificaciones push!');
     return;
@@ -5778,7 +5783,7 @@ function _activatePushFromSidebar() {
     if(p === 'granted') {
       localStorage.setItem('skyteam_notif_granted', 'true');
       localStorage.removeItem('skyteam_notif_banner_dismissed');
-      tryPushSubscribe();
+      tryPushSubscribe(true);
       if(btn) { btn.textContent = '✅ Notificaciones activas'; btn.style.background = 'rgba(29,158,117,0.2)'; btn.style.color = '#1D9E75'; btn.style.border = '1px solid rgba(29,158,117,0.3)'; }
       if(typeof showToast==='function') showToast('🔔 ¡Notificaciones activadas!');
       hideNotifBanner();
