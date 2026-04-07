@@ -265,6 +265,15 @@ function renderCartelera() {
   // Date range navigation
   var weekNav = document.createElement('div');
   weekNav.className = 'skytv-week-nav';
+  var prevBtn = document.createElement('button');
+  prevBtn.className = 'skytv-nav-btn';
+  prevBtn.textContent = '\u2190';
+  prevBtn.onclick = function() {
+    var d = new Date(skyTvState.selectedWeek);
+    d.setDate(d.getDate() - 7);
+    skyTvState.selectedWeek = d;
+    renderCartelera();
+  };
   var weekLabel = document.createElement('span');
   weekLabel.className = 'skytv-week-label';
   var days = getWeekDays(skyTvState.selectedWeek);
@@ -287,6 +296,7 @@ function renderCartelera() {
     skyTvState.selectedWeek = new Date();
     renderCartelera();
   };
+  weekNav.appendChild(prevBtn);
   weekNav.appendChild(weekLabel);
   weekNav.appendChild(nextBtn);
   weekNav.appendChild(todayBtn);
