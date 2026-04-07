@@ -75,8 +75,8 @@ export default async function handler(req, res) {
     if (innovaCount >= 2) {
       return res.status(400).json({ error: 'Este usuario de Innova ya tiene 2 sociedades registradas. No se puede crear otra.' });
     }
-    // If innova_user already has 1 account, append .2 to username to differentiate
-    const finalUsername = innovaCount === 1 ? username + '.2' : username;
+    // If innova_user already has 1 account, append 2 to username to differentiate
+    const finalUsername = innovaCount === 1 ? username + '2' : username;
 
     // Check duplicate email (if provided)
     if (sol.email) {
@@ -152,7 +152,9 @@ export default async function handler(req, res) {
       console.log('[APROBAR] Trial period: 7 days granted. Expiry:', new Date(finalExpiry).toISOString());
     }
     // Core: fields that MUST be in every INSERT attempt (never lose email, expiry, whatsapp)
-    const corePayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: sol.ref || finalUsername, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, innova_user: innovaUser };
+    // ref MUST be unique per user — for 2nd account, use finalUsername (with "2" suffix) as ref
+    const finalRef = innovaCount === 1 ? finalUsername : (sol.ref || finalUsername);
+    const corePayload = { username: finalUsername, name: sol.name || null, sponsor: finalSponsor, ref: finalRef, password, expiry: finalExpiry, email: sol.email || null, whatsapp: sol.whatsapp || null, innova_user: innovaUser };
     const fullPayload = { ...corePayload, rank, birthday: sol.birthday || null, original_sponsor: originalSponsor };
     const attempts = [
       fullPayload,                                                                                 // 1. all fields
