@@ -5844,7 +5844,7 @@ function refreshNotifications() {
           title: staleProspects.length + ' prospecto' + (staleProspects.length>1?'s':'') + ' sin seguimiento',
           subtitle: names + (staleProspects.length>3 ? ' y ' + (staleProspects.length-3) + ' más' : ''),
           msg: 'Llevan más de 3 días sin contacto. El seguimiento constante es la clave del cierre.',
-          action: {label: '📋 Ver prospectos', url: 'javascript:navigate("sky-prospectos")'},
+          action: {label: '📋 Ver prospectos', url: 'javascript:navigate("prospectos")'},
           priority: 1.5
         });
         activeCount++;
@@ -5889,7 +5889,7 @@ function refreshNotifications() {
       title: 'Mediodía: momento ideal para prospectar',
       subtitle: 'La gente está en su descanso, más receptiva',
       msg: 'Aprovecha el mediodía para contactar nuevos prospectos y compartir tu link. Es el mejor momento para abrir conversaciones.',
-      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("sky-prospectos")'},
+      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("prospectos")'},
       priority: 0.7
     });
     activeCount++;
@@ -5915,7 +5915,7 @@ function refreshNotifications() {
       title: 'Hora del seguimiento — cierre del día',
       subtitle: 'Los prospectos están más disponibles ahora',
       msg: 'Al final del día la gente revisa más su celular. Es el mejor momento para hacer seguimiento y agendar citas.',
-      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("sky-prospectos")'},
+      action: {label: '📋 Mis prospectos', url: 'javascript:navigate("prospectos")'},
       priority: 0.7
     });
     activeCount++;
