@@ -5552,7 +5552,7 @@ function tryPushSubscribe() {
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
             action: 'subscribe',
-            username: CU.username,
+            user: CU.username,
             subscription: existingSub.toJSON()
           })
         }).then(function(r){return r.json()}).then(function(d) {
@@ -5598,7 +5598,7 @@ function tryPushSubscribe() {
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({
             action: 'subscribe',
-            username: CU.username,
+            user: CU.username,
             subscription: subscription.toJSON()
           })
         }).then(function(r){return r.json()}).then(function(d) {
