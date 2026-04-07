@@ -5533,108 +5533,80 @@ function requestNotifPermission(silent) {
 }
 
 function tryPushSubscribe(userInitiated) {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('[PUSH] Service Worker or PushManager not supported');
-    if(userInitiated && typeof showToast==='function') showToast('⚠️ Tu navegador no soporta push notifications');
-    return;
-  }
-  if (!CU || !CU.username) {
-    console.warn('[PUSH] No user logged in, skipping push subscribe');
-    return;
-  }
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      if(userInitiated) showToast('⚠️ Tu navegador no soporta push');
+      return;
+    }
+    if (!CU || !CU.username) return;
+  } catch(e) { return; }
+
   navigator.serviceWorker.ready.then(function(reg) {
-    // Check if already subscribed
     return reg.pushManager.getSubscription().then(function(existingSub) {
       if (existingSub) {
-        console.log('[PUSH] Already subscribed, syncing to server...');
+        // Existing subscription — just sync to server (no user gesture needed)
         return fetch('/api/push', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            action: 'subscribe',
-            user: CU.username,
-            subscription: existingSub.toJSON()
-          })
+          body: JSON.stringify({ action: 'subscribe', user: CU.username, subscription: existingSub.toJSON() })
         }).then(function(r){return r.json()}).then(function(d) {
-          console.log('[PUSH] Subscription synced:', d.ok ? 'success' : d.error||'failed');
           if(d.ok) {
             localStorage.setItem('skyteam_push_subscribed', 'true');
             _updatePushButton();
-            if(userInitiated && typeof showToast==='function') showToast('✅ Push activo para ' + CU.username);
-          } else {
-            if(userInitiated && typeof showToast==='function') showToast('⚠️ Error sync: ' + (d.error||''));
+            if(userInitiated) showToast('✅ Push activo para ' + CU.username);
           }
-        });
+        }).catch(function(){});
       }
-      // No existing subscription — ONLY create if user clicked (iOS requires user gesture)
+
+      // No subscription exists — only create on user click
       if (!userInitiated) {
-        console.log('[PUSH] No subscription yet — waiting for user click to subscribe');
         _updatePushButton();
         return;
       }
-      console.log('[PUSH] Creating new subscription (user-initiated)...');
+
+      // Fetch VAPID key and create new subscription
       return fetch('/api/push', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({action:'getPublicKey'})
       }).then(function(r){return r.json()}).then(function(data) {
-        if (!data.publicKey) {
-          console.warn('[PUSH] No VAPID public key from server');
-          if(typeof showToast==='function') showToast('⚠️ VAPID key no configurada en servidor');
-          return null;
-        }
-        console.log('[PUSH] Got VAPID public key (' + data.publicKey.length + ' chars), subscribing...');
-        // Convert base64url to Uint8Array (robust method)
-        function urlBase64ToUint8Array(b64) {
-          var p = '='.repeat((4 - b64.length % 4) % 4);
-          var s = (b64 + p).replace(/-/g, '+').replace(/_/g, '/');
-          var r = atob(s);
-          var a = new Uint8Array(r.length);
-          for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i);
-          return a;
-        }
-        var serverKey = urlBase64ToUint8Array(data.publicKey);
-        console.log('[PUSH] Key decoded to ' + serverKey.length + ' bytes');
-
-        return reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: serverKey
-        }).catch(function(subErr) {
-          console.warn('[PUSH] Subscribe failed, trying unsubscribe+resubscribe...', subErr.message);
-          // Might fail if old subscription used different key — unsubscribe and retry
-          return reg.pushManager.getSubscription().then(function(oldSub) {
-            if (oldSub) return oldSub.unsubscribe();
-          }).then(function() {
-            return reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: serverKey
-            });
-          });
-        });
+        if (!data.publicKey) { showToast('⚠️ Servidor sin VAPID key'); return null; }
+        var p = '='.repeat((4 - data.publicKey.length % 4) % 4);
+        var s = (data.publicKey + p).replace(/-/g, '+').replace(/_/g, '/');
+        var r = atob(s);
+        var a = new Uint8Array(r.length);
+        for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i);
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: a });
       }).then(function(subscription) {
         if (!subscription) return;
-        console.log('[PUSH] Browser subscription created, saving to server...');
         return fetch('/api/push', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            action: 'subscribe',
-            user: CU.username,
-            subscription: subscription.toJSON()
-          })
+          body: JSON.stringify({ action: 'subscribe', user: CU.username, subscription: subscription.toJSON() })
         }).then(function(r){return r.json()}).then(function(d) {
           if(d.ok) {
-            console.log('[PUSH] ✅ Subscription saved successfully!');
             localStorage.setItem('skyteam_push_subscribed', 'true');
+            _updatePushButton();
+            showToast('✅ ¡Push activado! Recibirás notificaciones.');
           } else {
-            console.warn('[PUSH] Subscription save failed:', d.error||'unknown error');
+            showToast('⚠️ Error guardando: ' + (d.error||''));
           }
         });
+      }).catch(function(err) {
+        // iOS may not support push even if PushManager exists
+        console.warn('[PUSH]', err.message);
+        if(err.message && err.message.indexOf('expected pattern') !== -1) {
+          showToast('⚠️ Tu dispositivo no soporta push todavía. Intenta desde Chrome en computador.');
+          localStorage.setItem('skyteam_push_unsupported', 'true');
+          _updatePushButton();
+        } else {
+          showToast('⚠️ Error push: ' + err.message);
+        }
       });
     });
-  }).catch(function(err) {
-    console.warn('[PUSH] Subscribe error:', err.message);
-    if(typeof showToast==='function') showToast('⚠️ Push error: ' + err.message);
+  }).catch(function(e) {
+    // Silent fail on auto — only show on user click
+    if(userInitiated) showToast('⚠️ Error: ' + e.message);
   });
 }
 window.subscribeToPush = tryPushSubscribe;
@@ -5800,7 +5772,15 @@ function _activatePushFromSidebar() {
 function _updatePushButton() {
   var btn = document.getElementById('push-activate-btn');
   if(!btn) return;
-  if(!('Notification' in window) || !('PushManager' in window)) { btn.style.display = 'none'; return; }
+  if(!('Notification' in window) || !('PushManager' in window) || localStorage.getItem('skyteam_push_unsupported')) {
+    btn.textContent = '🔕 Push no disponible';
+    btn.style.display = 'block';
+    btn.style.background = 'rgba(255,255,255,0.04)';
+    btn.style.color = 'rgba(255,255,255,0.3)';
+    btn.style.border = '1px solid rgba(255,255,255,0.06)';
+    btn.onclick = function(){ showToast('Tu dispositivo no soporta push. Usa Chrome en computador.'); };
+    return;
+  }
   if(Notification.permission === 'granted' && localStorage.getItem('skyteam_push_subscribed')) {
     btn.textContent = '✅ Notificaciones activas';
     btn.style.display = 'block';
