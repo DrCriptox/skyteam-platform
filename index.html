@@ -2858,7 +2858,7 @@ document.addEventListener('DOMContentLoaded',function(){
         </div>
       </div>
     </div>
-    <div class="crm-modal-footer"><button type="button" class="crm-btn-danger" onclick="deleteCrmProspect()">🗑️ Eliminar</button><button type="button" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;color:#0a0a12;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="closeCrmModalDetail();crmStartRatingWizard(crmDetailId)">⭐ Calificar</button><button type="button" class="crm-btn-secondary" onclick="closeCrmModalDetail()">Cerrar</button></div>
+    <div class="crm-modal-footer"><button type="button" class="crm-btn-danger" onclick="deleteCrmProspect()">🗑️ Eliminar</button><button type="button" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;color:#0a0a12;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="closeCrmModalDetail()">Guardar</button><button type="button" class="crm-btn-secondary" onclick="closeCrmModalDetail()">Cerrar</button></div>
   </div>
 </div>
 
@@ -13095,6 +13095,16 @@ function openCrmDetail(id) {
 
   crmDetailId = id;
   modal.style.display = 'flex';
+
+  // Cleanup: remove any duplicate mic buttons injected by other scripts
+  setTimeout(function(){
+    var form = modal.querySelector('.crm-add-interaction-form');
+    if(form) {
+      var mics = form.querySelectorAll('[onclick*="ToggleVoice"], [onclick*="toggleVoice"]');
+      // Keep only the first mic button with id="crm-int-mic"
+      mics.forEach(function(m){ if(m.id !== 'crm-int-mic') m.remove(); });
+    }
+  }, 100);
 }
 
 function closeCrmModalDetail() {
