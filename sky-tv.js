@@ -178,17 +178,17 @@ function renderCountdown(container) {
 
   container.innerHTML = '';
 
-  // Flyer hero — cinema-style poster for next event
+  // Flyer hero — full poster for next event (no crop)
   if (next.flyer_url) {
     var flyerHero = document.createElement('div');
-    flyerHero.style.cssText = 'position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px;cursor:pointer;';
+    flyerHero.style.cssText = 'position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px;cursor:pointer;background:#0a0a12;';
     flyerHero.onclick = function() { openEventDetail(next); };
     var heroImg = document.createElement('img');
     heroImg.src = next.flyer_url;
     heroImg.alt = next.titulo;
-    heroImg.style.cssText = 'width:100%;max-height:350px;object-fit:cover;display:block;border-radius:16px;';
+    heroImg.style.cssText = 'width:100%;display:block;border-radius:16px;';
     var heroGrad = document.createElement('div');
-    heroGrad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
+    heroGrad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
     var heroInfo = document.createElement('div');
     heroInfo.style.cssText = 'position:absolute;bottom:12px;left:16px;right:16px;';
     heroInfo.innerHTML = '<div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);">' + (next.titulo||'') + '</div>'
