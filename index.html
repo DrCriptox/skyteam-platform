@@ -2482,6 +2482,7 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
     <div class="sidebar-bottom">
       <button id="pwa-install-menu-btn" onclick="installPWA()" style="display:none;width:100%;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#1D9E75,#128C7E);border:none;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-align:center;letter-spacing:0.3px;">📲 Instalar como App</button>
+      <button id="push-activate-btn" onclick="_activatePushFromSidebar()" style="display:none;width:100%;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:13px;font-weight:900;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-align:center;letter-spacing:0.3px;">🔔 Activar Notificaciones</button>
       <button class="btn-logout" onclick="doLogout()">← Cerrar sesión</button>
     </div>
   </nav>
@@ -5726,12 +5727,72 @@ function notifyRenewalConfirmed(username, months) {
   });
 }
 
+function _activatePushFromSidebar() {
+  var btn = document.getElementById('push-activate-btn');
+  if(!('Notification' in window)) {
+    if(typeof showToast==='function') showToast('Tu navegador no soporta notificaciones');
+    return;
+  }
+  if(Notification.permission === 'granted') {
+    // Already granted, just subscribe
+    tryPushSubscribe();
+    if(btn) { btn.textContent = '✅ Notificaciones activas'; btn.style.background = 'rgba(29,158,117,0.2)'; btn.style.color = '#1D9E75'; btn.style.border = '1px solid rgba(29,158,117,0.3)'; }
+    if(typeof showToast==='function') showToast('🔔 ¡Suscribiendo a notificaciones push!');
+    return;
+  }
+  if(Notification.permission === 'denied') {
+    if(typeof showToast==='function') showToast('⚠️ Notificaciones bloqueadas. Ve a Ajustes del navegador > Sitio > Notificaciones y actívalas.');
+    return;
+  }
+  // Request permission
+  Notification.requestPermission().then(function(p) {
+    _nativeNotifPermission = p;
+    if(p === 'granted') {
+      localStorage.setItem('skyteam_notif_granted', 'true');
+      localStorage.removeItem('skyteam_notif_banner_dismissed');
+      tryPushSubscribe();
+      if(btn) { btn.textContent = '✅ Notificaciones activas'; btn.style.background = 'rgba(29,158,117,0.2)'; btn.style.color = '#1D9E75'; btn.style.border = '1px solid rgba(29,158,117,0.3)'; }
+      if(typeof showToast==='function') showToast('🔔 ¡Notificaciones activadas!');
+      hideNotifBanner();
+      // Test notification
+      setTimeout(function(){
+        showNativeNotification('🔔 SKYTEAM', '¡Notificaciones activadas! Te avisaremos cuando tengas citas o eventos.');
+      }, 1000);
+    } else if(p === 'denied') {
+      if(typeof showToast==='function') showToast('⚠️ Bloqueaste las notificaciones. Puedes activarlas en ajustes del navegador.');
+    }
+  });
+}
+
+function _updatePushButton() {
+  var btn = document.getElementById('push-activate-btn');
+  if(!btn) return;
+  if(!('Notification' in window) || !('PushManager' in window)) { btn.style.display = 'none'; return; }
+  if(Notification.permission === 'granted' && localStorage.getItem('skyteam_push_subscribed')) {
+    btn.textContent = '✅ Notificaciones activas';
+    btn.style.display = 'block';
+    btn.style.background = 'rgba(29,158,117,0.15)';
+    btn.style.color = '#1D9E75';
+    btn.style.border = '1px solid rgba(29,158,117,0.2)';
+  } else if(Notification.permission === 'denied') {
+    btn.textContent = '🔕 Notificaciones bloqueadas';
+    btn.style.display = 'block';
+    btn.style.background = 'rgba(226,75,74,0.1)';
+    btn.style.color = '#E24B4A';
+    btn.style.border = '1px solid rgba(226,75,74,0.2)';
+  } else {
+    btn.style.display = 'block';
+  }
+}
+
 function startNotifEngine() {
   if(_notifInterval) clearInterval(_notifInterval);
   injectBellIntoTopbars();
   clearOldNotifications();
   refreshNotifications();
   _notifInterval = setInterval(refreshNotifications, 60000);
+  // Update sidebar push button
+  _updatePushButton();
   // Show notification permission banner after 3 seconds
   setTimeout(function(){ showNotifBanner(); }, 3000);
   // Try to subscribe if already granted
