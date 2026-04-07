@@ -666,14 +666,33 @@ function loadEventos(callback) {
 }
 
 function saveEvento(data, action, callback) {
+  var method = action === 'update' ? 'PUT' : 'POST';
   fetch('/api/eventos.js?action=' + action, {
-    method: 'POST',
+    method: method,
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data)
   })
     .then(function(r) { return r.json(); })
     .then(function(res) {
+      if(!res.ok && res.error) {
+        if (typeof crmToast === 'function') crmToast('Error: ' + res.error, 'error');
+        return;
+      }
       if (typeof crmToast === 'function') crmToast(action === 'create' ? 'Evento creado' : 'Evento actualizado', 'success');
+      // Push notification to all subscribers for new/updated events
+      if (action === 'create' || action === 'update') {
+        fetch('/api/push', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action: 'broadcast',
+            title: '\uD83D\uDCFA ' + (data.titulo || 'Nuevo evento'),
+            body: (data.fecha || '') + ' ' + (data.hora_inicio || '') + ' \u2014 \u00A1No te lo pierdas!',
+            url: '/?nav=sky-tv',
+            adminKey: typeof CU !== 'undefined' && CU ? CU.username : ''
+          })
+        }).catch(function(){});
+      }
       if (callback) callback(res);
     })
     .catch(function(err) {
@@ -683,10 +702,9 @@ function saveEvento(data, action, callback) {
 }
 
 function deleteEvento(id, callback) {
-  fetch('/api/eventos.js?action=delete', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id: id, username: (typeof CU !== 'undefined' && CU && CU.username) ? CU.username : undefined})
+  var username = (typeof CU !== 'undefined' && CU && CU.username) ? CU.username : '';
+  fetch('/api/eventos.js?action=delete&id=' + encodeURIComponent(id) + '&username=' + encodeURIComponent(username), {
+    method: 'DELETE'
   })
     .then(function(r) { return r.json(); })
     .then(function() {
