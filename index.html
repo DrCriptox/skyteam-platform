@@ -7263,9 +7263,9 @@ function _renderSSRanking() {
   h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
   h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking de Landings</div>';
   h += '<div style="display:flex;gap:4px;">';
-  h += '<button onclick="_ssRankPeriod=\'daily\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='daily'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='daily'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='daily'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Hoy</button>';
-  h += '<button onclick="_ssRankPeriod=\'weekly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='weekly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='weekly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='weekly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Semanal</button>';
-  h += '<button onclick="_ssRankPeriod=\'monthly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='monthly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='monthly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='monthly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Mensual</button>';
+  h += '<button id="ss-rk-btn-daily" onclick="_ssRankPeriod=\'daily\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='daily'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='daily'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='daily'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Hoy</button>';
+  h += '<button id="ss-rk-btn-weekly" onclick="_ssRankPeriod=\'weekly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='weekly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='weekly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='weekly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Semanal</button>';
+  h += '<button id="ss-rk-btn-monthly" onclick="_ssRankPeriod=\'monthly\';_loadSSRanking()" style="padding:5px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(_ssRankPeriod==='monthly'?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(_ssRankPeriod==='monthly'?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(_ssRankPeriod==='monthly'?'#C9A84C':'rgba(255,255,255,0.3)')+';">Mensual</button>';
   h += '</div></div>';
   h += '<style>@media(min-width:769px){.ss-rk-name{font-size:17px !important;}.ss-rk-stats{font-size:11px !important;}.ss-rk-pts{font-size:20px !important;}.ss-rk-avatar{width:42px !important;height:42px !important;font-size:13px !important;}}</style>';
   h += '<div id="ss-ranking-list" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div>';
@@ -7274,6 +7274,17 @@ function _renderSSRanking() {
 }
 
 function _loadSSRanking() {
+  // Update tab button active styles
+  ['daily','weekly','monthly'].forEach(function(p) {
+    var btn = document.getElementById('ss-rk-btn-'+p);
+    if(!btn) return;
+    var on = _ssRankPeriod === p;
+    btn.style.border = on ? '1px solid rgba(201,168,76,0.3)' : '0.5px solid rgba(255,255,255,0.06)';
+    btn.style.background = on ? 'rgba(201,168,76,0.10)' : 'rgba(255,255,255,0.02)';
+    btn.style.color = on ? '#C9A84C' : 'rgba(255,255,255,0.3)';
+  });
+  var el = document.getElementById('ss-ranking-list');
+  if(el) el.innerHTML = '<div style="padding:20px;color:rgba(255,255,255,0.3);">⏳ Cargando...</div>';
   var _myRef = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
   fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:_ssRankPeriod,ref:_myRef})})
   .then(function(r){return r.json();}).then(function(d){
