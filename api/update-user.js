@@ -15,6 +15,24 @@ export default async function handler(req, res) {
     if (!username) return res.status(400).json({ error: 'Missing username' });
 
     // Only allow safe fields to be updated
+    // Special: rename username (admin only, one-time)
+    if (updates && updates._rename && typeof updates._rename === 'string') {
+      const newUsername = updates._rename.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!newUsername || newUsername.length < 2) return res.status(400).json({ error: 'Invalid new username' });
+      // Copy row with new username, then delete old
+      const getR = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&select=*', { headers: HEADERS });
+      const rows = await getR.json();
+      if (!rows || rows.length === 0) return res.status(404).json({ error: 'User not found' });
+      const oldUser = rows[0];
+      oldUser.username = newUsername;
+      if (updates._newRef) oldUser.ref = updates._newRef;
+      delete oldUser.id; delete oldUser.created_at;
+      const insR = await fetch(SUPABASE_URL + '/rest/v1/users', { method: 'POST', headers: { ...HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify(oldUser) });
+      if (!insR.ok) { const e = await insR.text(); return res.status(500).json({ error: 'Insert failed: ' + e.substring(0, 200) }); }
+      await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username), { method: 'DELETE', headers: HEADERS });
+      return res.status(200).json({ ok: true, oldUsername: username, newUsername: newUsername });
+    }
+
     const allowed = ['rank', 'name', 'ventas', 'equipo', 'expiry', 'ref', 'sponsor', 'email', 'whatsapp', 'photo', 'is_admin', 'original_sponsor', 'birthday'];
     const safe = {};
     for (const key of allowed) {
