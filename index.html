@@ -743,8 +743,8 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
 .crm-detail-label{display:block;font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600;}
 .crm-detail-value{font-size:13px;color:#fff;font-weight:600;}
 .crm-detail-notes{background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;}
-.crm-add-interaction-form,.crm-add-reminder-form{margin-top:14px;padding:14px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;}
-.crm-add-interaction-form h4,.crm-add-reminder-form h4{font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:10px;}
+.crm-add-interaction-form,.crm-add-reminder-form{margin-top:8px;padding:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;}
+.crm-add-interaction-form h4,.crm-add-reminder-form h4{font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:6px;}
 .crm-wa-message-display{min-height:80px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;}
 .crm-list-table-container{overflow-x:auto;}
 .crm-list-table{width:100%;border-collapse:collapse;min-width:700px;}
@@ -2837,19 +2837,26 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="crm-detail-section">
         <h3 class="crm-detail-section-title">📅 Historial de Interacciones</h3>
         <div id="crm-detail-interactions-timeline"></div>
-        <div class="crm-add-interaction-form">
-          <h4>Registrar Interacción</h4>
-          <div class="crm-form-group"><label>Tipo</label><select id="crm-interaction-tipo" class="crm-form-select"><option value="">Seleccionar...</option><option value="llamada">📞 Llamada</option><option value="whatsapp">💬 WhatsApp</option><option value="reunion">🤝 Reunión</option><option value="email">📧 Email</option><option value="nota">📝 Nota</option><option value="presentacion">🎯 Presentación</option><option value="seguimiento">👁️ Seguimiento</option><option value="cierre">✅ Cierre</option></select></div>
-          <div class="crm-form-group"><label>Descripción</label><textarea id="crm-interaction-texto" class="crm-form-textarea" placeholder="Detalles..." rows="2"></textarea></div>
-          <button type="button" class="crm-btn-primary" onclick="addCrmInteraction()">Guardar Interacción</button>
+        <div class="crm-add-interaction-form" style="padding:10px;margin-top:10px;">
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <select id="crm-interaction-tipo" class="crm-form-select" style="flex:1;padding:8px;font-size:12px;"><option value="">Tipo...</option><option value="llamada">📞 Llamada</option><option value="whatsapp">💬 WhatsApp</option><option value="reunion">🤝 Reunión</option><option value="email">📧 Email</option><option value="nota">📝 Nota</option><option value="presentacion">🎯 Presentación</option><option value="seguimiento">👁️ Seguimiento</option><option value="cierre">✅ Cierre</option></select>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;">
+            <textarea id="crm-interaction-texto" class="crm-form-textarea" placeholder="Detalles de la interacción..." rows="2" style="flex:1;font-size:12px;padding:8px;"></textarea>
+            <button id="crm-int-mic" onclick="_crmIntToggleVoice()" title="Dictar" style="flex-shrink:0;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎙️</button>
+          </div>
+          <button type="button" class="crm-btn-primary" onclick="addCrmInteraction()" style="width:100%;padding:8px;font-size:12px;">Guardar Interacción</button>
         </div>
       </div>
       <div class="crm-detail-section">
         <h3 class="crm-detail-section-title">⏰ Recordatorio</h3>
-        <div class="crm-add-reminder-form">
-          <div class="crm-form-group"><label>Fecha y Hora</label><input type="datetime-local" id="crm-reminder-fecha" class="crm-form-input" /></div>
-          <div class="crm-form-group"><label>Nota</label><textarea id="crm-reminder-texto" class="crm-form-textarea" placeholder="¿Qué recordar?" rows="2"></textarea></div>
-          <button type="button" class="crm-btn-primary" onclick="addCrmReminder()">Crear Recordatorio</button>
+        <div class="crm-add-reminder-form" style="padding:10px;">
+          <div class="crm-form-group" style="margin-bottom:8px;"><input type="datetime-local" id="crm-reminder-fecha" class="crm-form-input" style="padding:8px;font-size:12px;" /></div>
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;">
+            <textarea id="crm-reminder-texto" class="crm-form-textarea" placeholder="¿Qué recordar?" rows="2" style="flex:1;font-size:12px;padding:8px;"></textarea>
+            <button id="crm-rem-mic" onclick="_crmRemToggleVoice()" title="Dictar" style="flex-shrink:0;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎙️</button>
+          </div>
+          <button type="button" class="crm-btn-primary" onclick="addCrmReminder()" style="width:100%;padding:8px;font-size:12px;">Crear Recordatorio</button>
         </div>
       </div>
     </div>
@@ -13197,10 +13204,44 @@ function crmShowStarsPopup(anchorEl, prospect) {
    INTERACTION & REMINDER FUNCTIONS
    ======================================== */
 
+// Voice dictation for interactions and reminders
+function _crmVoiceToggle(btnId, textareaId, stateKey) {
+  var btn = document.getElementById(btnId);
+  var ctx = document.getElementById(textareaId);
+  if(window[stateKey + '_active'] && window[stateKey + '_rec']) {
+    window[stateKey + '_rec'].stop();
+    window[stateKey + '_active'] = false;
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) { crmToast('Tu navegador no soporta voz','error'); return; }
+  var rec = new SR();
+  rec.lang = 'es-CO'; rec.continuous = true; rec.interimResults = true;
+  var prev = ctx ? ctx.value : '';
+  rec.onresult = function(e) {
+    var t = '';
+    for(var i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+    if(ctx) ctx.value = prev + (prev ? ' ' : '') + t;
+  };
+  rec.onend = function() {
+    window[stateKey + '_active'] = false;
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+  };
+  rec.onerror = function(e) { if(e.error !== 'no-speech') crmToast('Error: ' + e.error,'error'); };
+  rec.start();
+  window[stateKey + '_active'] = true;
+  window[stateKey + '_rec'] = rec;
+  if(btn) { btn.style.background = 'rgba(226,75,74,0.2)'; btn.style.borderColor = 'rgba(226,75,74,0.5)'; }
+  crmToast('🎙️ Escuchando...','info');
+}
+function _crmIntToggleVoice() { _crmVoiceToggle('crm-int-mic','crm-interaction-texto','_crmIntV'); }
+function _crmRemToggleVoice() { _crmVoiceToggle('crm-rem-mic','crm-reminder-texto','_crmRemV'); }
+
 async function addCrmInteraction() {
   if (!crmDetailId) return;
-  var tipo = document.getElementById('crm-interaccion-tipo');
-  var texto = document.getElementById('crm-interaccion-texto');
+  var tipo = document.getElementById('crm-interaction-tipo');
+  var texto = document.getElementById('crm-interaction-texto');
   if (!texto || !texto.value.trim()) { crmToast('Escriba la interaccion', 'error'); return; }
   var res = await crmApi('addInteraccion', {
     prospecto_id: crmDetailId,
