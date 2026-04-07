@@ -6070,6 +6070,32 @@ function refreshNotifications() {
     activeCount++;
   }
 
+  // Send ONE native notification per time slot (for iOS notification center)
+  var _nativeSentKey = 'skyteam_native_sent_' + new Date().toDateString();
+  var _nativeSent = JSON.parse(localStorage.getItem(_nativeSentKey) || '{}');
+  var hourSlots = {
+    'earlymorning': {h:[6,8]}, 'morning': {h:[8,11]}, 'midday': {h:[12,14]},
+    'afternoon': {h:[16,18]}, 'evening': {h:[18,20]}, 'night': {h:[21,22]}
+  };
+  var _curHour = new Date().getHours();
+  notifs.forEach(function(n) {
+    var slotId = (n.id || '').split('_').pop();
+    if(hourSlots[slotId] && !_nativeSent[slotId] && _curHour >= hourSlots[slotId].h[0] && _curHour < hourSlots[slotId].h[1]) {
+      _nativeSent[slotId] = true;
+      localStorage.setItem(_nativeSentKey, JSON.stringify(_nativeSent));
+      showNativeNotification(n.title || 'SKYTEAM', n.subtitle || n.msg || '', null, n.action ? n.action.url : null);
+    }
+  });
+  // Also send stale prospect native notification once per day
+  if(!_nativeSent['stale']) {
+    var staleNotif = notifs.find(function(n){ return (n.id||'').indexOf('prospect_stale') !== -1; });
+    if(staleNotif) {
+      _nativeSent['stale'] = true;
+      localStorage.setItem(_nativeSentKey, JSON.stringify(_nativeSent));
+      showNativeNotification(staleNotif.title || 'Seguimiento', staleNotif.subtitle || staleNotif.msg || '');
+    }
+  }
+
   // Stamp first-seen timestamp on each notification
   notifs.forEach(function(n) {
     if(!_notifFirstSeen[n.id]) {
