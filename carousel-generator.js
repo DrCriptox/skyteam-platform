@@ -915,6 +915,13 @@
   async function fetchContent(topic, mode) {
     var usr = (typeof CU !== 'undefined' && CU) ? (CU.ref || CU.user || 'socio') : 'socio';
     var prompt = mode === 'story' ? STORY_PROMPT : (mode === 'info' ? INFO_PROMPT : CAROUSEL_PROMPT);
+    // Inject BANKCODE personality for personalized tone
+    if (typeof CU !== 'undefined' && CU && CU.bankcode) {
+      var _styleMap = {casual:'coloquial, como hablando con un pana',formal:'profesional y elegante',amigable:'cercano y amigable',profesional:'serio y con autoridad'};
+      var _style = _styleMap[CU.comm_style] || 'natural';
+      prompt += '\nESTILO DEL CREADOR: BANKCODE=' + CU.bankcode + '. Escribe con tono ' + _style + '. ';
+      if (CU.profession) prompt += 'Profesion: ' + CU.profession + '. Usa referencias de su campo. ';
+    }
     var res = await fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agent: 'carousel', user: usr, systemPrompt: prompt, messages: [{ role: 'user', content: topic }] })

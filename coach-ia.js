@@ -1094,6 +1094,19 @@ function sendCoachMessage(text) {
     if (CU.income_goal) bankInfo += 'Meta mensual: $' + CU.income_goal + ' USD. ';
     if (CU.comm_style) bankInfo += 'Estilo de comunicacion: ' + CU.comm_style + '. ';
     if (bankInfo) bankInfo += 'ADAPTA tu lenguaje y estilo al perfil del usuario. ';
+    // If on SkyTeam section, add team member BANKCODEs for coaching advice
+    if (sec === 'skyteam' && typeof stState !== 'undefined' && stState.data && stState.data.members) {
+      var teamCtx = 'EQUIPO DEL LIDER: ';
+      var _bkTipsCoach = {B:'planificador, dale estructura',A:'ejecutor, motivalo con accion',N:'empatico, conecta emocionalmente',K:'analitico, dale datos y evidencia'};
+      stState.data.members.slice(0, 15).forEach(function(m) {
+        if (m.bankcode) {
+          teamCtx += (m.name||m.username) + '(BANK:' + m.bankcode + ',' + (_bkTipsCoach[m.bankcode[0]]||'') + ') ';
+        } else {
+          teamCtx += (m.name||m.username) + '(sin BANK) ';
+        }
+      });
+      bankInfo += teamCtx + 'Cuando el lider pregunte sobre un miembro, dale consejos de como hablarle segun su BANKCODE. ';
+    }
   }
 
   var systemPrompt = 'Eres Coach IA, un asistente de ventas y network marketing para la plataforma SkyTeam. '
