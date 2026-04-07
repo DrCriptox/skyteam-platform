@@ -78,15 +78,13 @@ var DIAS_ES = ['Domingo','Lunes','Martes','Mi\u00e9rcoles','Jueves','Viernes','S
 var MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 function getWeekDays(refDate) {
-  var d = new Date(refDate);
-  var day = d.getDay();
-  var diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  var monday = new Date(d.setDate(diff));
-  monday.setHours(0,0,0,0);
+  // Start from TODAY and show next 6 days (7 total)
+  var today = new Date();
+  today.setHours(0,0,0,0);
   var days = [];
   for (var i = 0; i < 7; i++) {
-    var dd = new Date(monday);
-    dd.setDate(monday.getDate() + i);
+    var dd = new Date(today);
+    dd.setDate(today.getDate() + i);
     days.push(dd);
   }
   return days;
@@ -264,42 +262,21 @@ function renderCartelera() {
   container.appendChild(countdownDiv);
   renderCountdown(countdownDiv);
 
-  // Week navigation
+  // Date range label (today + next 6 days)
   var weekNav = document.createElement('div');
   weekNav.className = 'skytv-week-nav';
-  var prevBtn = document.createElement('button');
-  prevBtn.className = 'skytv-nav-btn';
-  prevBtn.textContent = '\u2190';
-  prevBtn.onclick = function() {
-    var d = new Date(skyTvState.selectedWeek);
-    d.setDate(d.getDate() - 7);
-    skyTvState.selectedWeek = d;
-    renderCartelera();
-  };
+  weekNav.style.justifyContent = 'center';
   var weekLabel = document.createElement('span');
   weekLabel.className = 'skytv-week-label';
-  var days = getWeekDays(skyTvState.selectedWeek);
-  weekLabel.textContent = days[0].getDate() + ' ' + MESES_ES[days[0].getMonth()] + ' - ' + days[6].getDate() + ' ' + MESES_ES[days[6].getMonth()];
-  var nextBtn = document.createElement('button');
-  nextBtn.className = 'skytv-nav-btn';
-  nextBtn.textContent = '\u2192';
-  nextBtn.onclick = function() {
-    var d = new Date(skyTvState.selectedWeek);
-    d.setDate(d.getDate() + 7);
-    skyTvState.selectedWeek = d;
-    renderCartelera();
-  };
+  var days = getWeekDays();
+  weekLabel.textContent = 'Hoy, ' + days[0].getDate() + ' ' + MESES_ES[days[0].getMonth()] + ' \u2014 ' + days[6].getDate() + ' ' + MESES_ES[days[6].getMonth()];
   var todayBtn = document.createElement('button');
-  todayBtn.className = 'skytv-today-btn';
-  todayBtn.textContent = 'Hoy';
+  todayBtn.style.display = 'none';
   todayBtn.onclick = function() {
     skyTvState.selectedWeek = new Date();
     renderCartelera();
   };
-  weekNav.appendChild(prevBtn);
   weekNav.appendChild(weekLabel);
-  weekNav.appendChild(nextBtn);
-  weekNav.appendChild(todayBtn);
   container.appendChild(weekNav);
 
   // Cartelera grid
