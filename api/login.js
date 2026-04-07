@@ -5,6 +5,17 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
 
+// Rate limiting: max 10 login attempts per IP per 5 minutes
+const _loginRateMap = {};
+function _checkLoginRate(ip) {
+  const now = Date.now();
+  if (!_loginRateMap[ip]) _loginRateMap[ip] = [];
+  _loginRateMap[ip] = _loginRateMap[ip].filter(t => now - t < 300000);
+  if (_loginRateMap[ip].length >= 10) return false;
+  _loginRateMap[ip].push(now);
+  return true;
+}
+
 // Verifica contraseña: soporta hash nuevo (salt:hash) y texto plano legacy
 function checkPassword(plain, stored) {
   if (!plain || !stored) return false;
@@ -33,6 +44,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // Rate limiting
+    const clientIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+    if (!_checkLoginRate(clientIP)) {
+      return res.status(429).json({ error: 'Demasiados intentos. Espera unos minutos.' });
+    }
+
     const { username, password } = req.body || {};
 
     // Input validation

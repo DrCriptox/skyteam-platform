@@ -53,11 +53,25 @@ export default async function handler(req, res) {
       results.push({ table: 'push_subscriptions', status: 'check_error', code: checkR.status });
     }
 
-    // Also check recordatorios table
+    // Check recordatorios table
     const checkR2 = await fetch(SUPABASE_URL + '/rest/v1/recordatorios?select=id&limit=1', {
       headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
     });
     results.push({ table: 'recordatorios', status: checkR2.ok ? 'exists' : 'missing' });
+
+    // Check if valor_inscripcion column exists in users table
+    try {
+      const colCheck = await fetch(SUPABASE_URL + '/rest/v1/users?select=valor_inscripcion&limit=1', {
+        headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+      });
+      if (colCheck.ok) {
+        results.push({ column: 'users.valor_inscripcion', status: 'exists' });
+      } else {
+        results.push({ column: 'users.valor_inscripcion', status: 'MISSING — run: ALTER TABLE users ADD COLUMN valor_inscripcion integer;' });
+      }
+    } catch(e) {
+      results.push({ column: 'users.valor_inscripcion', status: 'check_error', error: e.message });
+    }
 
   } catch (error) {
     results.push({ error: error.message });

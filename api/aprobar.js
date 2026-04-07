@@ -5,6 +5,28 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
 
+// Simple rate limiting: max 3 registrations per IP per 5 minutes
+const _regRateMap = {};
+function _checkRateLimit(ip) {
+  const now = Date.now();
+  if (!_regRateMap[ip]) _regRateMap[ip] = [];
+  _regRateMap[ip] = _regRateMap[ip].filter(t => now - t < 300000);
+  if (_regRateMap[ip].length >= 3) return false;
+  _regRateMap[ip].push(now);
+  return true;
+}
+
+// Fetch with timeout (15s)
+async function sbFetch(url, opts) {
+  const ac = new AbortController();
+  const tm = setTimeout(() => ac.abort(), 15000);
+  try {
+    const r = await fetch(url, { ...opts, signal: ac.signal });
+    clearTimeout(tm);
+    return r;
+  } catch(e) { clearTimeout(tm); throw e; }
+}
+
 function hashPassword(plain) {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(plain, salt, 32).toString('hex');
@@ -35,6 +57,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Rate limiting: 3 registrations per IP per 5 minutes
+  const clientIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  if (!_checkRateLimit(clientIP)) {
+    return res.status(429).json({ error: 'Demasiados registros desde esta IP. Espera unos minutos.' });
+  }
+
   try {
     const { id, expiryTs, directData } = req.body;
     if (!id && !directData) return res.status(400).json({ error: 'Missing id or directData' });
@@ -44,7 +72,7 @@ export default async function handler(req, res) {
     if (directData) {
       sol = directData; // { name, email, password, sponsor, innova_user, ref }
     } else {
-      const sr = await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { headers: HEADERS });
+      const sr = await sbFetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { headers: HEADERS });
       if (!sr.ok) throw new Error('Supabase GET failed: ' + sr.status);
       const sols = await sr.json();
       if (!sols || sols.length === 0) return res.status(404).json({ error: 'Solicitud not found' });
@@ -69,7 +97,7 @@ export default async function handler(req, res) {
 
     // Check innova_user count — max 2 sociedades per innova_user
     const innovaUser = (sol.innova_user || username).toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
-    const innovaCheck = await fetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username', { headers: HEADERS });
+    const innovaCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username', { headers: HEADERS });
     const innovaRows = await innovaCheck.json();
     const innovaCount = Array.isArray(innovaRows) ? innovaRows.length : 0;
     if (innovaCount >= 2) {
@@ -81,7 +109,7 @@ export default async function handler(req, res) {
     // Check duplicate email (if provided)
     if (sol.email) {
       const emailClean = sol.email.toLowerCase().trim();
-      const emailCheck = await fetch(SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(emailClean) + '&select=username&limit=1', { headers: HEADERS });
+      const emailCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(emailClean) + '&select=username&limit=1', { headers: HEADERS });
       const emailRows = await emailCheck.json();
       if (Array.isArray(emailRows) && emailRows.length > 0) {
         return res.status(400).json({ error: 'El email ' + emailClean + ' ya est\u00e1 registrado con el usuario "' + emailRows[0].username + '". Usa otro email.' });
@@ -92,7 +120,7 @@ export default async function handler(req, res) {
     if (sol.whatsapp) {
       const waClean = sol.whatsapp.replace(/[^0-9]/g, '');
       if (waClean.length >= 8) {
-        const waCheck = await fetch(SUPABASE_URL + '/rest/v1/users?whatsapp=like.*' + encodeURIComponent(waClean.slice(-8)) + '*&select=username&limit=1', { headers: HEADERS });
+        const waCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?whatsapp=like.*' + encodeURIComponent(waClean.slice(-8)) + '*&select=username&limit=1', { headers: HEADERS });
         const waRows = await waCheck.json();
         if (Array.isArray(waRows) && waRows.length > 0) {
           return res.status(400).json({ error: 'El WhatsApp ' + sol.whatsapp + ' ya est\u00e1 registrado con el usuario "' + waRows[0].username + '". Usa otro n\u00famero.' });
@@ -101,11 +129,11 @@ export default async function handler(req, res) {
     }
 
     // Check if user already exists (prevent duplicates from race conditions)
-    const existCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername) + '&limit=1', { headers: HEADERS });
+    const existCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername) + '&limit=1', { headers: HEADERS });
     const existUsers = await existCheck.json();
     if (existUsers && existUsers.length > 0) {
       // User already exists — just delete solicitud and return success
-      await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
+      await sbFetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
       return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent: false, refLink, alreadyExisted: true });
     }
 
@@ -114,7 +142,7 @@ export default async function handler(req, res) {
     let originalSponsor = null;
     if (finalSponsor) {
       const sponsorClean = finalSponsor.toLowerCase().trim();
-      const sponsorCheck = await fetch(SUPABASE_URL + '/rest/v1/users?or=(username.eq.' + encodeURIComponent(sponsorClean) + ',ref.eq.' + encodeURIComponent(sponsorClean) + ')&select=username&limit=1', { headers: HEADERS });
+      const sponsorCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?or=(username.eq.' + encodeURIComponent(sponsorClean) + ',ref.eq.' + encodeURIComponent(sponsorClean) + ')&select=username&limit=1', { headers: HEADERS });
       const sponsorRows = await sponsorCheck.json();
       if (!Array.isArray(sponsorRows) || sponsorRows.length === 0) {
         console.log('[APROBAR] Sponsor "' + finalSponsor + '" not found in DB — assigning to LEGEND temporarily');
@@ -125,7 +153,7 @@ export default async function handler(req, res) {
 
     // Delete the solicitud (only if it came from DB)
     if (!directData && id) {
-      await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
+      await sbFetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: HEADERS });
     }
 
     // Create user in users table — try progressively minimal payloads if columns are missing
@@ -166,7 +194,7 @@ export default async function handler(req, res) {
     let insertR = null;
     let insertAttemptIdx = 0;
     for (let i = 0; i < attempts.length; i++) {
-      insertR = await fetch(SUPABASE_URL + '/rest/v1/users', {
+      insertR = await sbFetch(SUPABASE_URL + '/rest/v1/users', {
         method: 'POST',
         headers: { ...HEADERS, Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify(attempts[i])
@@ -183,7 +211,7 @@ export default async function handler(req, res) {
     // try to PATCH it now so orphan reassignment can work later.
     if (originalSponsor && insertAttemptIdx > 0 && !attempts[insertAttemptIdx].original_sponsor) {
       try {
-        await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername), {
+        await sbFetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(finalUsername), {
           method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' },
           body: JSON.stringify({ original_sponsor: originalSponsor })
         });
@@ -209,13 +237,13 @@ export default async function handler(req, res) {
       const orClauses = Array.from(searchTerms).map(function(t) {
         return 'original_sponsor.ilike.' + pct + encodeURIComponent(t) + pct;
       }).join(',');
-      const orphanCheck = await fetch(SUPABASE_URL + '/rest/v1/users?or=(' + orClauses + ')&select=username,original_sponsor,sponsor', { headers: HEADERS });
+      const orphanCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?or=(' + orClauses + ')&select=username,original_sponsor,sponsor', { headers: HEADERS });
       const orphans = await orphanCheck.json();
       if (Array.isArray(orphans) && orphans.length > 0) {
         for (const orphan of orphans) {
           const newSponsor = sol.ref || finalUsername;
           console.log('[APROBAR] Reassigning orphan "' + orphan.username + '" original_sponsor="' + orphan.original_sponsor + '" → sponsor="' + newSponsor + '"');
-          await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(orphan.username), {
+          await sbFetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(orphan.username), {
             method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' },
             body: JSON.stringify({ sponsor: newSponsor, original_sponsor: null })
           });
@@ -224,7 +252,7 @@ export default async function handler(req, res) {
     } catch(e) { console.warn('[APROBAR] Orphan reassign check failed:', e.message); }
 
     // Create empty agenda config for the new user
-    await fetch(SUPABASE_URL + '/rest/v1/agenda_configs', {
+    await sbFetch(SUPABASE_URL + '/rest/v1/agenda_configs', {
       method: 'POST',
       headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ username: finalUsername, config: {} })
