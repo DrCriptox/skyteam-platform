@@ -12367,7 +12367,7 @@ function crmRenderKanban(){
   crmSetupDrag();crmCleanupCards();}
 
 function crmCard(p){
-  var temp=p.temperatura||50;var tc=temp<=33?'#C9A84C':temp<=66?'#FFD700':'#E24B4A';
+  var temp=p.temperatura||50;var tc=crmTempColor(temp).color;
   var d=new Date(p.updated_at);var now=new Date();var hh=d.getHours();var ampm=hh>=12?'pm':'am';var h12=hh%12||12;var timeStr=String(h12).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+ampm;var isToday=d.toDateString()===now.toDateString();var yest=new Date(now);yest.setDate(yest.getDate()-1);var isYest=d.toDateString()===yest.toDateString();var dl;if(isToday){dl='hoy, '+timeStr;}else if(isYest){dl='ayer, '+timeStr;}else{var dias=['dom','lun','mar','mie','jue','vie','sab'];var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];dl=dias[d.getDay()]+' '+d.getDate()+' '+meses[d.getMonth()]+', '+timeStr;}
   var ig=p.instagram?(p.instagram+'').replace('@','').trim():'';
   var starsCount=crmCalcStars(p);var starsStr='';for(var si=0;si<5;si++)starsStr+=(si<starsCount)?'\u2B50':'\u2606';
