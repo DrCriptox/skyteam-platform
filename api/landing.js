@@ -190,13 +190,15 @@ export default async function handler(req, res) {
             conversiones = s.conversions_ips ? Object.keys(s.conversions_ips).length : (s.conversions || 0);
           }
 
-          const ipDupes = Math.max(0, visitas - uniqueIps);
-          const cap = uniqueIps > 0 ? uniqueIps : visitas; // fallback si no hay tracking de IPs
+          // If IP tracking data is missing/incomplete for period, assume all visits are unique
+          const effectiveUniqueIps = (uniqueIps === 0 && visitas > 0) ? visitas : uniqueIps;
+          const ipDupes = Math.max(0, visitas - effectiveUniqueIps);
+          const cap = effectiveUniqueIps > 0 ? effectiveUniqueIps : visitas;
           const validConversions = Math.min(conversiones, cap);
           const score = Math.max(0, visitas - (ipDupes * 2) + (validConversions * 20));
           return {
             ref: ref, nombre: asesor.nombre || ref,
-            visitas: uniqueIps || visitas, conversiones: validConversions, score: score,
+            visitas: visitas, uniqueVisitas: effectiveUniqueIps, conversiones: validConversions, score: score,
             whatsapp: asesor.whatsapp || '', foto: asesor.foto || '',
             newLanding: !!skyAsesores[ref]
           };
