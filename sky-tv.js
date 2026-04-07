@@ -236,12 +236,10 @@ function renderCartelera() {
   if (!container) return;
   container.innerHTML = '';
 
-  // Header
+  // Action buttons (no duplicate header — title is in topbar)
   var header = document.createElement('div');
   header.className = 'skytv-header';
-  var h2 = document.createElement('h2');
-  h2.textContent = '\u26A1 SKY TV';
-  header.appendChild(h2);
+  header.style.justifyContent = 'flex-end';
   var actions = document.createElement('div');
   actions.className = 'skytv-header-actions';
   var refreshBtn = document.createElement('button');
@@ -901,10 +899,8 @@ function startSkyTvNotifEngine() {
 
 // --- INIT ---
 window.initSkyTv = function() {
-  var container = document.getElementById('sky-tv-content') || document.querySelector('#section-sky-tv .sc');
-  if (container && !container.querySelector('.sky-tv-loaded')) {
-    container.insertAdjacentHTML('afterbegin', '<div class="sky-tv-loading" style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:12px;">Cargando programaci\u00f3n...</div>');
-  }
+  if (window._skyTvInitialized) return;
+  window._skyTvInitialized = true;
   skyTvState.userIsAdmin = !!(typeof CU !== 'undefined' && CU && CU.isAdmin);
   skyTvState.selectedWeek = new Date();
   loadEventos(function() { startSkyTvNotifEngine(); });
