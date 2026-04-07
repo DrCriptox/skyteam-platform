@@ -13096,15 +13096,30 @@ function openCrmDetail(id) {
   crmDetailId = id;
   modal.style.display = 'flex';
 
-  // Cleanup: remove any duplicate mic buttons injected by other scripts
+  // Cleanup: remove any duplicate mic/voice buttons injected by other scripts
   setTimeout(function(){
     var form = modal.querySelector('.crm-add-interaction-form');
     if(form) {
-      var mics = form.querySelectorAll('[onclick*="ToggleVoice"], [onclick*="toggleVoice"]');
-      // Keep only the first mic button with id="crm-int-mic"
-      mics.forEach(function(m){ if(m.id !== 'crm-int-mic') m.remove(); });
+      // Remove ALL buttons/elements that look like mics except our crm-int-mic
+      form.querySelectorAll('button').forEach(function(b){
+        if(b.id === 'crm-int-mic') return; // keep ours
+        if(b.className === 'crm-btn-primary' && b.onclick) return; // keep save button
+        var txt = (b.textContent||'').trim();
+        if(txt.indexOf('🎙') !== -1 || txt.indexOf('🎤') !== -1 || b.id.indexOf('mic') !== -1 || b.id.indexOf('voice') !== -1) {
+          b.remove();
+        }
+      });
+      // Also remove any stray mic elements after the save button row
+      var rows = form.children;
+      for(var i = rows.length - 1; i >= 0; i--){
+        var el = rows[i];
+        if(el.tagName === 'BUTTON' && el.id !== 'crm-int-mic' && !el.classList.contains('crm-btn-primary')){
+          var t = (el.textContent||'').trim();
+          if(t.indexOf('🎙') !== -1 || t.indexOf('🎤') !== -1) el.remove();
+        }
+      }
     }
-  }, 100);
+  }, 150);
 }
 
 function closeCrmModalDetail() {
