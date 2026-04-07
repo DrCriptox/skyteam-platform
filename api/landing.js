@@ -167,7 +167,8 @@ export default async function handler(req, res) {
           return {
             ref: ref, nombre: asesor.nombre || ref,
             visitas: uniqueIps || visitas, conversiones: validConversions, score: score,
-            whatsapp: asesor.whatsapp || '', foto: asesor.foto || ''
+            whatsapp: asesor.whatsapp || '', foto: asesor.foto || '',
+            newLanding: !!skyAsesores[ref]
           };
         })
         .filter(function(r) { return dateFrom ? (r.visitas > 0 || r.score > 0) : true; })

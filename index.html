@@ -7246,7 +7246,7 @@ function _ssLandingSave() {
     action:'saveProfile', ref:ref,
     nombre:nombre.value.trim(), rol:rol?rol.value.trim():'',
     whatsapp:fullWa, mensaje:finalMsg,
-    foto:_ssLandingPhoto||undefined
+    foto:_ssLandingPhoto||(CU&&CU.photo)||undefined
   })}).then(function(r){return r.json();}).then(function(d){
     if(d.ok) {
       showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
@@ -7316,11 +7316,12 @@ function _loadSSRanking() {
       var rowBg = isMe ? 'rgba(201,168,76,0.08)' : isPodium ? podiumBg[i] : 'rgba(255,255,255,0.02)';
       var rowBorder = isMe ? '1px solid rgba(201,168,76,0.25)' : isPodium ? '0.5px solid '+podiumBorder[i] : 'none';
       var rowShadow = isMe ? 'box-shadow:0 0 15px rgba(201,168,76,0.1);' : '';
+      var avatarBorder = isMe ? 'rgba(201,168,76,0.5)' : isPodium ? podiumBorder[i] : (u.newLanding ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.06)');
       html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';'+rowShadow+'">';
       // Position
       html += '<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?medals[i]:(i+1))+'</div>';
-      // Avatar
-      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+(isMe?'rgba(201,168,76,0.4)':isPodium?podiumBorder[i]:'rgba(255,255,255,0.06)')+'">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      // Avatar — gold ring if newLanding
+      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats
       html += '<div style="flex:1;min-width:0;">';
       html += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span style="font-size:8px;color:#C9A84C;">(t\u00fa)</span>':'')+'</div>';
