@@ -338,10 +338,95 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('weekly_summary: ' + e.message); }
 
-    // ── TRIGGER 9 (placeholder): New Academy content ──
-    // TODO: Implement when Academy content management system is built.
-    // Will query a content/lessons table for items published in last 15 min,
-    // then push to all subscribed users.
+    // ── TRIGGER 9: Midday motivation (12-1pm Colombia) ──
+    try {
+      const colombiaHour3 = (now.getUTCHours() - 5 + 24) % 24;
+      if (colombiaHour3 >= 12 && colombiaHour3 <= 13) {
+        const todayDate3 = now.toISOString().slice(0, 10);
+        const allSubs3 = await sb('push_subscriptions?select=username&order=username');
+        if (allSubs3 && allSubs3.length > 0) {
+          const uniqueUsers3 = [...new Set(allSubs3.map(s => s.username))];
+          const frases = [
+            '¿Ya hablaste con alguien hoy? Un mensaje puede cambiar tu semana.',
+            'Los que más ganan son los que más contactan. ¡Haz tu próximo contacto!',
+            'Cada conversación es una oportunidad. ¿Cuántas llevas hoy?',
+            'El éxito no llega solo. Abre tu agenda y agenda tu próxima cita.',
+            'Tu negocio crece cuando tú te mueves. ¡Acción!',
+            'Un prospecto al día mantiene tu negocio vivo. ¿Ya lo hiciste?',
+            'Los líderes no esperan. Toma el teléfono y haz que pase.',
+            'Recuerda: cada "no" te acerca más al próximo "sí".'
+          ];
+          const fraseIdx = Math.floor((Date.now() / 86400000)) % frases.length;
+          for (const username of uniqueUsers3) {
+            const tag = 'skyteam-midday-' + todayDate3;
+            const r = await pushToUser(username, '💪 ¡Hora de acción!', frases[fraseIdx], '/?nav=prospectos', tag);
+            results.triggers.push({ type: 'midday_motivation', user: username, sent: r.sent });
+            results.sent += r.sent;
+          }
+        }
+      }
+    } catch (e) { results.errors.push('midday_motivation: ' + e.message); }
+
+    // ── TRIGGER 10: Evening recap (6-7pm Colombia) ──
+    try {
+      const colombiaHour4 = (now.getUTCHours() - 5 + 24) % 24;
+      if (colombiaHour4 >= 18 && colombiaHour4 <= 19) {
+        const todayDate4 = now.toISOString().slice(0, 10);
+        const allSubs4 = await sb('push_subscriptions?select=username&order=username');
+        if (allSubs4 && allSubs4.length > 0) {
+          const uniqueUsers4 = [...new Set(allSubs4.map(s => s.username))];
+          for (const username of uniqueUsers4) {
+            let actCount = 0;
+            try {
+              const acts = await sb(
+                'prospectos?select=id&username=eq.' + encodeURIComponent(username) +
+                '&updated_at=gte.' + todayDate4 + 'T00:00:00&limit=100'
+              );
+              actCount = acts ? acts.length : 0;
+            } catch (e) {}
+            const body = actCount > 0
+              ? 'Hoy tocaste ' + actCount + ' prospecto' + (actCount > 1 ? 's' : '') + '. ¡Sigue así mañana!'
+              : '¡Aún estás a tiempo! Envía un mensaje antes de cerrar el día.';
+            const tag = 'skyteam-evening-' + todayDate4;
+            const r = await pushToUser(username, '🌅 Resumen del día', body, '/?nav=prospectos', tag);
+            results.triggers.push({ type: 'evening_recap', user: username, sent: r.sent });
+            results.sent += r.sent;
+          }
+        }
+      }
+    } catch (e) { results.errors.push('evening_recap: ' + e.message); }
+
+    // ── TRIGGER 11: Training reminder for new users (rank 0-1, 10am Colombia) ──
+    try {
+      const colombiaHour5 = (now.getUTCHours() - 5 + 24) % 24;
+      if (colombiaHour5 >= 10 && colombiaHour5 <= 11) {
+        const todayDate5 = now.toISOString().slice(0, 10);
+        const allSubs5 = await sb('push_subscriptions?select=username&order=username');
+        if (allSubs5 && allSubs5.length > 0) {
+          const uniqueUsers5 = [...new Set(allSubs5.map(s => s.username))];
+          for (const username of uniqueUsers5) {
+            let userRank = 0;
+            try {
+              const u = await sb('users?username=eq.' + encodeURIComponent(username) + '&select=rank&limit=1');
+              if (u && u[0]) userRank = u[0].rank || 0;
+            } catch (e) {}
+            if (userRank <= 1) {
+              const msgs = [
+                '¿Ya completaste tu ruta de hoy? Cada día cuenta para tu éxito.',
+                'La academia tiene contenido nuevo esperándote. ¡No te quedes atrás!',
+                'Los que se capacitan, ganan más. Dedica 15 minutos hoy.',
+                'Tu sponsor cuenta contigo. Muestra tu progreso completando la ruta.'
+              ];
+              const mIdx = Math.floor((Date.now() / 86400000)) % msgs.length;
+              const tag = 'skyteam-training-' + todayDate5;
+              const r = await pushToUser(username, '📚 Hora de capacitarte', msgs[mIdx], '/?nav=home', tag);
+              results.triggers.push({ type: 'training_reminder', user: username, sent: r.sent });
+              results.sent += r.sent;
+            }
+          }
+        }
+      }
+    } catch (e) { results.errors.push('training_reminder: ' + e.message); }
 
     return res.status(200).json({ ok: true, ...results, checkedAt: now.toISOString() });
   } catch (error) {

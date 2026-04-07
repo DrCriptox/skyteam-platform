@@ -3525,6 +3525,9 @@ var _lpEl = document.getElementById('lp');
 if(_lpEl) _lpEl.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
 function showApp() {
+  // Check ?nav= param BEFORE clearing URL (for push notification deep-links)
+  var _pendingNav = new URLSearchParams(window.location.search).get('nav');
+
   // Hide landing page and login
   var landingEl = document.getElementById('landing-page');
   if(landingEl) landingEl.style.display='none';
@@ -3771,6 +3774,16 @@ function showApp() {
     }, 5000);
   } else if (CU && Notification && Notification.permission === 'granted') {
     tryPushSubscribe(); // Ensure subscription exists
+  }
+
+  // Deep-link from push notification: navigate to section after app is ready
+  if (_pendingNav) {
+    setTimeout(function() {
+      if (typeof navigate === 'function') {
+        console.log('[PUSH] Deep-link navigating to:', _pendingNav);
+        navigate(_pendingNav);
+      }
+    }, 1500);
   }
 }
 

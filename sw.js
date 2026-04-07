@@ -1,5 +1,5 @@
-// SKYTEAM - Service Worker v45
-var CACHE_NAME = 'skyteam-v252';
+// SKYTEAM - Service Worker v46
+var CACHE_NAME = 'skyteam-v253';
 var OFFLINE_URL = '/';
 
 // Install: cache the shell
@@ -124,17 +124,16 @@ self.addEventListener('notificationclick', function(event) {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+      // Find ANY existing app window (same origin)
       for(var i = 0; i < windowClients.length; i++) {
-        if(windowClients[i].url.indexOf(url) !== -1) {
-          windowClients[i].focus();
-          windowClients[i].postMessage({
-            type: 'NOTIFICATION_CLICKED',
-            url: url,
-            data: event.notification.data
-          });
+        var c = windowClients[i];
+        if(c.url && c.url.indexOf(self.registration.scope) !== -1) {
+          c.focus();
+          c.postMessage({ type: 'NOTIFICATION_CLICKED', url: url, data: event.notification.data });
           return;
         }
       }
+      // No existing window — open new one with nav param
       return clients.openWindow(url);
     })
   );
