@@ -204,8 +204,10 @@ export default async function handler(req, res) {
         .filter(function(r) { return dateFrom ? (r.visitas > 0 || r.score > 0) : true; })
         .sort(function(a, b) { return b.score - a.score; });
 
+      // Count ALL asesores (not just filtered) for position display
+      const totalAsesores = Object.keys(allAsesores).filter(function(r){ return r !== 'default'; }).length;
       const top20 = ranking.slice(0, 20);
-      const totalParticipants = ranking.length;
+      const totalParticipants = totalAsesores;
 
       // Find current user's position if not in top 20
       const userRef = (req.body.ref || '').toLowerCase();
