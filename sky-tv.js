@@ -14,7 +14,7 @@ css.textContent = [
   '.skytv-btn:hover{background:rgba(255,255,255,0.12);transform:translateY(-1px);}',
   '.skytv-btn-primary{background:linear-gradient(135deg,#C9A84C 0%,#E8D48B 25%,#C9A84C 50%,#E8D48B 75%,#C9A84C 100%);background-size:200% auto;animation:goldShimmer 6s linear infinite;border-color:rgba(201,168,76,0.20);color:#0a0a12;font-weight:700;}',
   '.skytv-btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(201,168,76,0.25);}',
-  '.skytv-countdown{background:rgba(255,255,255,0.025);border:1px solid rgba(201,168,76,0.12);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,0.2);position:relative;overflow:hidden;}',
+  '.skytv-countdown{background:rgba(255,255,255,0.025);border:1px solid rgba(201,168,76,0.12);border-radius:16px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,0.2);position:relative;overflow:hidden;}',
   '.skytv-countdown::before{content:\"\";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.2),transparent);}',
   '.skytv-countdown-timer{font-size:28px;font-weight:800;color:#E8D48B;min-width:120px;text-align:center;}',
   '.skytv-countdown-info{flex:1;}',
@@ -238,38 +238,34 @@ function renderCountdown(container) {
   info2.appendChild(label);
   info2.appendChild(title2);
   info2.appendChild(meta2);
-  cd.appendChild(timer);
-  cd.appendChild(info2);
+  // Timer column: countdown + calendar button below it
+  var timerCol = document.createElement('div');
+  timerCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex-shrink:0;';
+  timerCol.appendChild(timer);
 
-  // Action button inside card ONLY for Zoom join (≤5min)
-  if (next.zoom_link && totalMins <= 5) {
-    var joinBtn = document.createElement('button');
-    joinBtn.className = 'skytv-zoom-btn';
-    joinBtn.textContent = '\uD83D\uDCF9 Unirse al Zoom';
-    joinBtn.style.animation = 'skytvPulse 1.5s infinite';
-    joinBtn.onclick = function(e) { e.stopPropagation(); window.open(next.zoom_link, '_blank'); };
-    cd.appendChild(joinBtn);
-  }
-
-  // Add calendar button inside countdown, below the meta text
   if (totalMins > 5) {
     var calBtn = document.createElement('button');
-    calBtn.style.cssText = 'display:inline-block;margin-top:6px;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-size:10px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;';
-    calBtn.textContent = '\uD83D\uDCC5 Agregar a mi calendario';
+    calBtn.style.cssText = 'margin-top:4px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:9px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;';
+    calBtn.textContent = '\uD83D\uDCC5 Calendario';
     calBtn.onclick = function(e) {
       e.stopPropagation();
       var startD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00';
       var endD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_fin||next.hora_inicio||'10:00').replace(':','') + '00';
-      var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-        + '&text=' + encodeURIComponent(next.titulo || 'Evento SkyTeam')
-        + '&dates=' + startD + '/' + endD
-        + '&details=' + encodeURIComponent((next.descripcion || '') + (next.zoom_link ? '\n\nZoom: ' + next.zoom_link : ''))
-        + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom');
-      window.open(gcalUrl, '_blank');
+      window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(next.titulo || 'Evento SkyTeam') + '&dates=' + startD + '/' + endD + '&details=' + encodeURIComponent((next.descripcion || '') + (next.zoom_link ? '\nZoom: ' + next.zoom_link : '')) + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom'), '_blank');
     };
-    info2.appendChild(calBtn);
+    timerCol.appendChild(calBtn);
+  } else if (next.zoom_link && totalMins <= 5) {
+    var joinBtn = document.createElement('button');
+    joinBtn.className = 'skytv-zoom-btn';
+    joinBtn.style.cssText = 'margin-top:4px;font-size:10px;padding:4px 10px;';
+    joinBtn.textContent = '\uD83D\uDCF9 Zoom';
+    joinBtn.style.animation = 'skytvPulse 1.5s infinite';
+    joinBtn.onclick = function(e) { e.stopPropagation(); window.open(next.zoom_link, '_blank'); };
+    timerCol.appendChild(joinBtn);
   }
 
+  cd.appendChild(timerCol);
+  cd.appendChild(info2);
   container.appendChild(cd);
 }
 
