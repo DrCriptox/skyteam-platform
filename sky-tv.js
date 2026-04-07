@@ -509,7 +509,7 @@ function openAdminEventForm(existingEvent) {
     {name:'host_nombre', label:'Host', type:'text', value: ev.host_nombre||''},
     {name:'zoom_link', label:'Link Zoom', type:'text', value: ev.zoom_link||''},
     {name:'zoom_meeting_id', label:'Zoom Meeting ID', type:'text', value: ev.zoom_meeting_id||''},
-    {name:'flyer_url', label:'URL Flyer', type:'text', value: ev.flyer_url||''}
+    {name:'flyer_url', label:'Flyer del evento', type:'file', value: ev.flyer_url||''}
   ];
 
   var form = document.createElement('div');
@@ -539,6 +539,48 @@ function openAdminEventForm(existingEvent) {
         if (ff.value === ff.options[o]) opt.selected = true;
         input.appendChild(opt);
       }
+    } else if (ff.type === 'file') {
+      input = document.createElement('div');
+      input.name = ff.name;
+      input.style.cssText = 'display:flex;align-items:center;gap:10px;';
+      var preview = document.createElement('div');
+      preview.id = 'flyer-preview';
+      preview.style.cssText = 'width:60px;height:60px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;';
+      preview.innerHTML = ff.value ? '<img src="'+ff.value+'" style="width:100%;height:100%;object-fit:cover;">' : '<span style="font-size:24px;color:rgba(255,255,255,0.2);">\uD83D\uDDBC</span>';
+      var uploadBtn = document.createElement('label');
+      uploadBtn.style.cssText = 'padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;';
+      uploadBtn.textContent = '\uD83D\uDCF7 Subir flyer';
+      var fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.style.display = 'none';
+      fileInput.onchange = function(e) {
+        var file = e.target.files[0]; if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var img = new Image();
+          img.onload = function() {
+            var MAX = 800;
+            var w = img.naturalWidth, h = img.naturalHeight;
+            if(w > MAX || h > MAX) { var r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+            var c = document.createElement('canvas'); c.width = w; c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            var b64 = c.toDataURL('image/jpeg', 0.85);
+            preview.innerHTML = '<img src="'+b64+'" style="width:100%;height:100%;object-fit:cover;">';
+            input._flyerData = b64;
+            uploadBtn.textContent = '\u2705 Flyer cargado';
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+      uploadBtn.appendChild(fileInput);
+      input.appendChild(preview);
+      input.appendChild(uploadBtn);
+      group.appendChild(lbl);
+      group.appendChild(input);
+      form.appendChild(group);
+      continue;
     } else {
       input = document.createElement('input');
       input.type = ff.type;
@@ -559,8 +601,11 @@ function openAdminEventForm(existingEvent) {
     var data = {};
     var inputs = form.querySelectorAll('input,textarea,select');
     for (var i = 0; i < inputs.length; i++) {
-      data[inputs[i].name] = inputs[i].value;
+      if(inputs[i].name) data[inputs[i].name] = inputs[i].value;
     }
+    // Get flyer from upload if available
+    var flyerDiv = form.querySelector('[name="flyer_url"]');
+    if(flyerDiv && flyerDiv._flyerData) data.flyer_url = flyerDiv._flyerData;
     if (!data.titulo || !data.fecha || !data.hora_inicio) {
       if (typeof crmToast === 'function') crmToast('Completa t\u00edtulo, fecha y hora', 'error');
       return;
