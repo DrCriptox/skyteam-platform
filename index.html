@@ -5788,6 +5788,41 @@ function _activatePushFromSidebar() {
   });
 }
 
+// Fire native notifications when user leaves the app (background)
+function _onVisibilityChange() {
+  if (!document.hidden) return; // only when going to background
+  if (_nativeNotifPermission !== 'granted') return;
+  var _bgKey = 'skyteam_bg_sent_' + new Date().toDateString();
+  var _bgSent = JSON.parse(localStorage.getItem(_bgKey) || '{}');
+  var _h = new Date().getHours();
+  // Map of hour → notification to show
+  var _hourMsgs = {
+    6: {t:'📚 15 minutos que cambian tu negocio',b:'La Academia te espera. Los que se capacitan cierran 3x más.'},
+    7: {t:'🗓️ Te tengo tu plan para hoy',b:'Revisa tu agenda y prepárate para cerrar.'},
+    8: {t:'☀️ ¡Buenos días! Tu negocio te espera',b:'Abre tu CRM y empieza con acción.'},
+    9: {t:'🔥 Tienes prospectos calientes',b:'No dejes enfriar el interés. ¡Escríbeles ahora!'},
+    10:{t:'🧠 ¿Cómo estás hoy?',b:'Tu Coach IA está listo para escucharte.'},
+    11:{t:'📊 Reporte de tu organización',b:'Tu equipo tiene novedades. Revisa Sky Team.'},
+    12:{t:'🍽️ Hora del almuerzo — hora de saludar',b:'Un mensaje casual abre puertas. Tus prospectos están en su break.'},
+    13:{t:'🔗 Comparte tu link y genera visitas',b:'Cada visita es un prospecto potencial.'},
+    14:{t:'🤖 Genera un post que venda por ti',b:'Un buen post genera prospectos mientras duermes.'},
+    15:{t:'🏆 ¿Ya viste tu posición en el ranking?',b:'Compite y sube de nivel esta semana.'},
+    16:{t:'📅 Agenda una cita para mañana',b:'Los que agendan citas cierran 5x más.'},
+    17:{t:'📺 ¿Hay eventos hoy en Sky TV?',b:'Las sesiones en vivo te dan ventaja.'},
+    18:{t:'📱 Hora de seguimiento',b:'Al final del día todos revisan WhatsApp. Es TU momento.'},
+    19:{t:'💬 ¿Ya le escribiste a tus prospectos?',b:'Un mensaje puede cambiar tu semana.'},
+    20:{t:'🌅 Resumen de tu día',b:'Revisa tu actividad y planea mañana.'},
+    21:{t:'✨ Descansa bien, mañana seguimos',b:'Consistencia > intensidad. ¡Tú puedes!'},
+    22:{t:'📊 Tu resumen de rankings',b:'Así cerraste el día. ¡Mañana a subir!'}
+  };
+  var _msg = _hourMsgs[_h];
+  if (_msg && !_bgSent[_h]) {
+    _bgSent[_h] = true;
+    localStorage.setItem(_bgKey, JSON.stringify(_bgSent));
+    showNativeNotification(_msg.t, _msg.b);
+  }
+}
+
 function _updatePushButton() {
   var btn = document.getElementById('push-activate-btn');
   if(!btn) return;
@@ -5823,6 +5858,10 @@ function startNotifEngine() {
   clearOldNotifications();
   refreshNotifications();
   _notifInterval = setInterval(refreshNotifications, 60000);
+
+  // When user LEAVES the app (goes to WhatsApp, etc.) → fire pending native notifications
+  document.removeEventListener('visibilitychange', _onVisibilityChange);
+  document.addEventListener('visibilitychange', _onVisibilityChange);
   // Update sidebar push button
   _updatePushButton();
   // Show notification permission banner after 3 seconds
