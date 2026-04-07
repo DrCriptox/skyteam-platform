@@ -177,8 +177,32 @@ function renderCountdown(container) {
   var secs = Math.floor((diff % 60000) / 1000);
 
   container.innerHTML = '';
+
+  // Flyer hero — cinema-style poster for next event
+  if (next.flyer_url) {
+    var flyerHero = document.createElement('div');
+    flyerHero.style.cssText = 'position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px;cursor:pointer;';
+    flyerHero.onclick = function() { openEventDetail(next); };
+    var heroImg = document.createElement('img');
+    heroImg.src = next.flyer_url;
+    heroImg.alt = next.titulo;
+    heroImg.style.cssText = 'width:100%;max-height:350px;object-fit:cover;display:block;border-radius:16px;';
+    var heroGrad = document.createElement('div');
+    heroGrad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
+    var heroInfo = document.createElement('div');
+    heroInfo.style.cssText = 'position:absolute;bottom:12px;left:16px;right:16px;';
+    heroInfo.innerHTML = '<div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);">' + (next.titulo||'') + '</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">' + (next.fecha||'') + ' \u2022 ' + formatTime(next.hora_inicio) + '</div>';
+    flyerHero.appendChild(heroImg);
+    flyerHero.appendChild(heroGrad);
+    flyerHero.appendChild(heroInfo);
+    container.appendChild(flyerHero);
+  }
+
   var cd = document.createElement('div');
   cd.className = 'skytv-countdown';
+  cd.style.cursor = 'pointer';
+  cd.onclick = function() { openEventDetail(next); };
   var timer = document.createElement('div');
   timer.className = 'skytv-countdown-timer';
   if (hours > 0) {
@@ -322,7 +346,7 @@ function renderCartelera() {
         if (ev.flyer_url) {
           var thumb = document.createElement('img');
           thumb.src = ev.flyer_url;
-          thumb.style.cssText = 'width:100%;height:60px;object-fit:cover;border-radius:6px;margin-bottom:6px;';
+          thumb.style.cssText = 'width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px;';
           thumb.alt = '';
           evDiv.appendChild(thumb);
         }
@@ -879,7 +903,7 @@ function startSkyTvNotifEngine() {
 window.initSkyTv = function() {
   var container = document.getElementById('sky-tv-content') || document.querySelector('#section-sky-tv .sc');
   if (container && !container.querySelector('.sky-tv-loaded')) {
-    container.insertAdjacentHTML('afterbegin', '<div class="sky-tv-loading" style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.4);font-size:14px;">Cargando Sky TV...</div>');
+    container.insertAdjacentHTML('afterbegin', '<div class="sky-tv-loading" style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:12px;">Cargando programaci\u00f3n...</div>');
   }
   skyTvState.userIsAdmin = !!(typeof CU !== 'undefined' && CU && CU.isAdmin);
   skyTvState.selectedWeek = new Date();
