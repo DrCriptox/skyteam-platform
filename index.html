@@ -2815,7 +2815,17 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <div class="crm-detail-section">
         <h3 class="crm-detail-section-title">🌡️ Temperatura</h3>
-        <div id="crm-detail-temperature-gauge"></div>
+        <div id="crm-detail-temp-container" style="padding:4px 0;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="range" id="crm-detail-temp-slider" min="0" max="100" step="5" value="50" style="flex:1;height:6px;border-radius:3px;appearance:none;-webkit-appearance:none;background:rgba(255,255,255,0.08);outline:none;cursor:pointer;" />
+            <div id="crm-detail-temp-display" style="min-width:80px;text-align:right;font-size:13px;font-weight:800;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;padding:0 2px;">
+            <span style="font-size:9px;color:rgba(255,255,255,0.2);">0° Frío</span>
+            <span style="font-size:9px;color:rgba(255,255,255,0.2);">50° Tibio</span>
+            <span style="font-size:9px;color:rgba(255,255,255,0.2);">100° Caliente</span>
+          </div>
+        </div>
       </div>
       <div class="crm-detail-section">
         <h3 class="crm-detail-section-title">📝 Notas</h3>
@@ -12966,10 +12976,34 @@ function openCrmDetail(id) {
   var valorDisplay = modal.querySelector('#crm-detail-valor');
   if (valorDisplay) valorDisplay.textContent = prospect.valor_estimado ? '$' + prospect.valor_estimado : 'N/A';
 
-  var tempGauge = modal.querySelector('#crm-detail-temperature-gauge');
-  if (tempGauge) {
-    tempGauge.style.width = (prospect.temperatura || 50) + '%';
-    tempGauge.textContent = (prospect.temperatura || 50) + '\u00B0';
+  // Temperature slider with dynamic colors
+  var tempSlider = modal.querySelector('#crm-detail-temp-slider');
+  var tempDisplay = modal.querySelector('#crm-detail-temp-display');
+  if (tempSlider) {
+    var curTemp = prospect.temperatura || 50;
+    tempSlider.value = curTemp;
+    function _detailTempUpdate(v) {
+      v = parseInt(v);
+      var t = crmTempColor(v);
+      if(tempDisplay) tempDisplay.innerHTML = '<span style="color:'+t.color+';font-weight:900;">'+v+'°</span> <span style="font-size:10px;">'+t.emoji+' '+t.label+'</span>';
+      tempSlider.style.background = 'linear-gradient(to right, '+t.color+' 0%, '+t.color+' '+v+'%, rgba(255,255,255,0.08) '+v+'%, rgba(255,255,255,0.08) 100%)';
+    }
+    _detailTempUpdate(curTemp);
+    tempSlider.oninput = function() { _detailTempUpdate(this.value); };
+    // Save on release (mouseup/touchend)
+    var _tempSaveTimer = null;
+    tempSlider.onchange = function() {
+      var newTemp = parseInt(this.value);
+      if(newTemp === curTemp) return;
+      clearTimeout(_tempSaveTimer);
+      _tempSaveTimer = setTimeout(function(){
+        crmApi('update', {id: prospect.id, updates: {temperatura: newTemp}}).then(function(){
+          prospect.temperatura = newTemp;
+          curTemp = newTemp;
+          crmLoadData();
+        });
+      }, 300);
+    };
   }
 
   var notasDisplay = modal.querySelector('#crm-detail-notas');
