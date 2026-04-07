@@ -6075,24 +6075,60 @@ function refreshNotifications() {
     var _frases = ['Cada día que trabajas, estás más cerca de tu libertad financiera.','Los que no se rinden, ganan. Mañana será mejor.','Tu equipo cuenta contigo. Descansa y vuelve con todo.','Hoy plantaste semillas. Pronto verás los frutos.'];
     _addNotif('9pm_cierre','✨',_frases[_dayRotation%_frases.length],'Descansa bien, mañana seguimos','Revisa tu ranking antes de dormir. Consistencia > intensidad.',{label:'🏆 Mi ranking',url:'javascript:navigate("ranking")'},0.5);
   }
+  // 10 PM — Resumen nocturno con posición en rankings
+  if(currentHour>=22&&currentHour<23) {
+    (function(){
+      // Fetch ranking positions async and create notification
+      var _rkKey = dailyKey+'10pm_ranking';
+      if(!_notifDismissed[_rkKey] && !document.getElementById('ncard_'+_rkKey)) {
+        var _rkDone = localStorage.getItem('skyteam_rk_summary_'+new Date().toDateString());
+        if(!_rkDone && CU && CU.username) {
+          var _ref = CU.ref || CU.username || '';
+          // Fetch Sky Sales IA ranking
+          fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:'daily',username:CU.username})})
+          .then(function(r){return r.json()}).then(function(d){
+            var salesPos = '-';
+            if(d.ranking) {
+              for(var i=0;i<d.ranking.length;i++){
+                if(d.ranking[i].ref===_ref){salesPos='#'+(i+1)+' de '+d.ranking.length;break;}
+              }
+            }
+            // Fetch leaderboard (prospects)
+            return fetch('/api/leaderboard?action=weeklyTop').then(function(r2){return r2.json()}).then(function(lb){
+              var prospectPos = '-';
+              if(lb.ranking) {
+                for(var j=0;j<lb.ranking.length;j++){
+                  if(lb.ranking[j].username===CU.username){prospectPos='#'+(j+1)+' de '+lb.ranking.length;break;}
+                }
+              }
+              var sub = '🚀 Sky Sales: '+salesPos+' | 👥 Prospectos: '+prospectPos;
+              var msg = 'Así cerraste el día en los rankings. ¡Mañana a subir posiciones!';
+              _addNotif('10pm_ranking','📊','Tu resumen de rankings del día',sub,msg,{label:'🏆 Ver Rankings',url:'javascript:navigate("ranking")'},0.6);
+              localStorage.setItem('skyteam_rk_summary_'+new Date().toDateString(), '1');
+              // Fire native notification
+              showNativeNotification('📊 Tu resumen de rankings', sub);
+            });
+          }).catch(function(){});
+        }
+      }
+    })();
+  }
 
   // Send ONE native notification per time slot (for iOS notification center)
   var _nativeSentKey = 'skyteam_native_sent_' + new Date().toDateString();
   var _nativeSent = JSON.parse(localStorage.getItem(_nativeSentKey) || '{}');
-  var hourSlots = {
-    'earlymorning': {h:[6,8]}, 'morning': {h:[8,11]}, 'midday': {h:[12,14]},
-    'afternoon': {h:[16,18]}, 'evening': {h:[18,20]}, 'night': {h:[21,22]}
-  };
   var _curHour = new Date().getHours();
+  // Send native for ALL hourly notifications (each fires once per day)
   notifs.forEach(function(n) {
-    var slotId = (n.id || '').split('_').pop();
-    if(hourSlots[slotId] && !_nativeSent[slotId] && _curHour >= hourSlots[slotId].h[0] && _curHour < hourSlots[slotId].h[1]) {
+    if(!n.id || n.id.indexOf(dailyKey) !== 0) return; // only daily-keyed notifs
+    var slotId = n.id.replace(dailyKey, '');
+    if(!_nativeSent[slotId]) {
       _nativeSent[slotId] = true;
       localStorage.setItem(_nativeSentKey, JSON.stringify(_nativeSent));
       showNativeNotification(n.title || 'SKYTEAM', n.subtitle || n.msg || '', null, n.action ? n.action.url : null);
     }
   });
-  // Also send stale prospect native notification once per day
+  // Stale prospect native notification once per day
   if(!_nativeSent['stale']) {
     var staleNotif = notifs.find(function(n){ return (n.id||'').indexOf('prospect_stale') !== -1; });
     if(staleNotif) {
