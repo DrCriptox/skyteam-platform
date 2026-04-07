@@ -7330,10 +7330,11 @@ function _loadSSRanking() {
       var convRate = u.visitas > 0 ? Math.round((u.conversiones / u.visitas) * 100) : 0;
       var flag = _waFlag(u.whatsapp||'');
       var isPodium = i < 3;
-      var meColor = isPodium ? '' : 'rgba(127,119,221,'; // purple for non-podium "you"
+      var meColor = isPodium ? '' : 'rgba(127,119,221,';
+      var podiumGlow = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.20)','rgba(205,127,50,0.20)'];
       var rowBg = (isMe && !isPodium) ? meColor+'0.08)' : isPodium ? podiumBg[i] : 'rgba(255,255,255,0.02)';
-      var rowBorder = (isMe && !isPodium) ? '1px solid '+meColor+'0.30)' : isPodium ? '0.5px solid '+podiumBorder[i] : 'none';
-      var rowShadow = (isMe && !isPodium) ? 'box-shadow:0 0 15px '+meColor+'0.12);' : '';
+      var rowBorder = (isMe && !isPodium) ? '1px solid '+meColor+'0.30)' : (isMe && isPodium) ? '1.5px solid '+podiumBorder[i] : isPodium ? '0.5px solid '+podiumBorder[i] : 'none';
+      var rowShadow = (isMe && !isPodium) ? 'box-shadow:0 0 15px '+meColor+'0.12);' : (isMe && isPodium) ? 'box-shadow:0 0 20px '+podiumGlow[i]+',0 0 40px '+podiumGlow[i]+';' : '';
       var avatarBorder = (isMe && !isPodium) ? 'rgba(127,119,221,0.5)' : isMe ? podiumBorder[i] : isPodium ? podiumBorder[i] : 'rgba(255,255,255,0.06)';
       html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';'+rowShadow+'">';
       // Position
