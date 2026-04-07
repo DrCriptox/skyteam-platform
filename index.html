@@ -2879,8 +2879,11 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="crm-modal-content">
     <div class="crm-modal-header"><h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2" stroke-linecap="round" style="vertical-align:middle;margin-right:6px;"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#E1306C" stroke="none"/></svg>Mensaje Instagram con IA</h2><button class="crm-modal-close" onclick="closeCrmModalIg()">✕</button></div>
     <div class="crm-modal-body">
-      <div class="crm-form-group"><label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Escribe el contexto del mensaje</label>
-        <textarea id="crm-ig-context" class="crm-form-textarea" placeholder="Ej: Invitar a ver presentación, Seguimiento, Felicitar por publicación..." rows="3" style="width:100%;"></textarea>
+      <div class="crm-form-group"><label style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;">Escribe o dicta el contexto del mensaje</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="crm-ig-context" class="crm-form-textarea" placeholder="Ej: Invitar a ver presentación, Seguimiento, Felicitar por publicación..." rows="3" style="flex:1;"></textarea>
+          <button id="crm-ig-mic-btn" onclick="_crmIgToggleVoice()" title="Dictar por voz" style="flex-shrink:0;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;">🎙️</button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="crm-btn-primary" onclick="crmGenerateIgMessage()" style="flex:1;">🤖 Generar con IA</button>
@@ -13473,6 +13476,40 @@ function crmStartRatingWizard(prospectoId,onComplete){
 
 function crmOpenDetail(id){openCrmDetail(id);}
 function crmQuickWA(id){crmDetailId=id;openCrmModalWa();}
+var _crmIgVoiceActive = false;
+var _crmIgRecognition = null;
+function _crmIgToggleVoice() {
+  var btn = document.getElementById('crm-ig-mic-btn');
+  if (_crmIgVoiceActive && _crmIgRecognition) {
+    _crmIgRecognition.stop();
+    _crmIgVoiceActive = false;
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { crmToast('Tu navegador no soporta voz', 'error'); return; }
+  _crmIgRecognition = new SR();
+  _crmIgRecognition.lang = 'es-CO';
+  _crmIgRecognition.continuous = true;
+  _crmIgRecognition.interimResults = true;
+  var ctx = document.getElementById('crm-ig-context');
+  var prevText = ctx ? ctx.value : '';
+  _crmIgRecognition.onresult = function(e) {
+    var transcript = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    if (ctx) ctx.value = prevText + (prevText ? ' ' : '') + transcript;
+  };
+  _crmIgRecognition.onend = function() {
+    _crmIgVoiceActive = false;
+    if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+  };
+  _crmIgRecognition.onerror = function(e) { if(e.error !== 'no-speech') crmToast('Error de voz: ' + e.error, 'error'); };
+  _crmIgRecognition.start();
+  _crmIgVoiceActive = true;
+  if(btn) { btn.style.background = 'rgba(226,75,74,0.2)'; btn.style.borderColor = 'rgba(226,75,74,0.5)'; }
+  crmToast('🎙️ Escuchando... habla ahora', 'info');
+}
+
 function _crmOpenInstagramDM(){
   var modal = document.getElementById('crm-modal-ig');
   if(modal) modal.style.display = 'flex';
