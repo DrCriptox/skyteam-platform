@@ -67,10 +67,13 @@ async function handleTriggers(req, res) {
   }
 
   const now = new Date();
+  const cHour = (now.getUTCHours() - 5 + 24) % 24;
+  const todayKey = todayKey;
   const results = { triggers: [], sent: 0, errors: [] };
 
   try {
     // ââ TRIGGER 1: Prospectos sin seguimiento 3+ dÃ­as ââ
+    if (cHour >= 8 && cHour <= 9) {
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
     // Get prospects that are active (not closed) and haven't been updated in 3+ days
     const staleProspects = await sb(
@@ -105,6 +108,8 @@ async function handleTriggers(req, res) {
         results.sent += r.sent;
       }
     }
+
+    } // end TRIGGER 1 hour check
 
     // ââ TRIGGER 2: Reuniones/bookings prÃ³ximos (en los prÃ³ximos 30 min) ââ
     const in30min = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
@@ -156,6 +161,7 @@ async function handleTriggers(req, res) {
     }
 
     // ââ TRIGGER 4: Fecha de cierre estimada = hoy o maÃ±ana ââ
+    if (cHour >= 9 && cHour <= 10) {
     const today = now.toISOString().slice(0, 10);
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const closingProspects = await sb(
@@ -177,7 +183,10 @@ async function handleTriggers(req, res) {
       }
     }
 
+    } // end TRIGGER 4 hour check
+
     // ââ TRIGGER 5: Prospectos calientes sin acciÃ³n (temperatura >= 70, sin interacciÃ³n 2+ dÃ­as) ââ
+    if (cHour >= 14 && cHour <= 15) {
     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const hotStale = await sb(
       'prospectos?select=id,username,nombre,temperatura,updated_at' +
@@ -203,6 +212,8 @@ async function handleTriggers(req, res) {
         results.sent += r.sent;
       }
     }
+
+    } // end TRIGGER 5 hour check
 
     // ── TRIGGER 6: New registration — notify up to 4 levels of upline ──
     try {
