@@ -241,23 +241,24 @@ function renderCountdown(container) {
   cd.appendChild(timer);
   cd.appendChild(info2);
 
-  // Action button: changes based on time
+  // Action button inside card ONLY for Zoom join (≤5min)
   if (next.zoom_link && totalMins <= 5) {
-    // ≤5 min: "Unirse al Zoom" — sala abierta
     var joinBtn = document.createElement('button');
     joinBtn.className = 'skytv-zoom-btn';
     joinBtn.textContent = '\uD83D\uDCF9 Unirse al Zoom';
     joinBtn.style.animation = 'skytvPulse 1.5s infinite';
     joinBtn.onclick = function(e) { e.stopPropagation(); window.open(next.zoom_link, '_blank'); };
     cd.appendChild(joinBtn);
-  } else {
-    // >5 min: "Agregar a mi calendario"
+  }
+
+  container.appendChild(cd);
+
+  // "Agregar a calendario" button BELOW the countdown card (not inside)
+  if (totalMins > 5) {
     var calBtn = document.createElement('button');
-    calBtn.className = 'skytv-btn';
-    calBtn.style.cssText = 'flex-shrink:0;font-size:11px;padding:8px 12px;';
-    calBtn.textContent = '\uD83D\uDCC5 Agregar a calendario';
-    calBtn.onclick = function(e) {
-      e.stopPropagation();
+    calBtn.style.cssText = 'display:block;width:100%;margin-top:8px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.6);font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-align:center;';
+    calBtn.textContent = '\uD83D\uDCC5 Agregar a mi calendario';
+    calBtn.onclick = function() {
       var startD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00';
       var endD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_fin||next.hora_inicio||'10:00').replace(':','') + '00';
       var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
@@ -267,10 +268,8 @@ function renderCountdown(container) {
         + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom');
       window.open(gcalUrl, '_blank');
     };
-    cd.appendChild(calBtn);
+    container.appendChild(calBtn);
   }
-
-  container.appendChild(cd);
 }
 
 // --- CARTELERA (BILLBOARD) ---
