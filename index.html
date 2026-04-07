@@ -2813,7 +2813,7 @@ document.addEventListener('DOMContentLoaded',function(){
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
           <button class="crm-btn-whatsapp" onclick="openCrmModalWa()"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg> WhatsApp con IA</button>
-          <button id="crm-btn-ig-dm" onclick="_crmOpenInstagramDM()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,#E1306C,#C13584,#833AB4);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#fff" stroke="none"/></svg> Instagram DM</button>
+          <button id="crm-btn-ig-dm" onclick="_crmOpenInstagramDM()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,#E1306C,#C13584);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-top:10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="#fff" stroke="none"/></svg> Instagram DM</button>
         </div>
       </div>
       <div class="crm-detail-section">
@@ -13456,11 +13456,41 @@ function crmStartRatingWizard(prospectoId,onComplete){
 
 function crmOpenDetail(id){openCrmDetail(id);}
 function crmQuickWA(id){crmDetailId=id;openCrmModalWa();}
-function _crmOpenInstagramDM(){
+async function _crmOpenInstagramDM(){
   var igUser = window._crmDetailIgUser;
   if(!igUser) return;
-  // ig.me/m/USERNAME opens DM directly on mobile Instagram app
-  window.open('https://ig.me/m/' + igUser, '_blank');
+  // Get current prospect to generate message
+  var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
+  var nombre = p ? (p.nombre||'').split(' ')[0] : '';
+  // Try to generate AI message first
+  crmToast('Generando mensaje para Instagram...', 'info');
+  var msg = '';
+  try {
+    var res = await crmApi('generarMensajeWA', {
+      prospecto_id: crmDetailId,
+      contexto: 'Mensaje para Instagram DM, corto y casual',
+      nombre: p ? p.nombre : '',
+      etapa: p ? p.etapa : 'nuevo',
+      temperatura: p ? p.temperatura : 50
+    });
+    if(res && res.mensaje) msg = res.mensaje;
+  } catch(e){}
+  // Fallback message
+  if(!msg) msg = 'Hola ' + nombre + '! Soy parte del equipo SKYTEAM. Me encantaría conversar contigo sobre una oportunidad increíble. ¿Tienes un momento? 🚀';
+  // Copy to clipboard
+  try {
+    await navigator.clipboard.writeText(msg);
+    crmToast('✅ Mensaje copiado — pégalo en Instagram', 'success');
+  } catch(e) {
+    // Fallback copy
+    var ta = document.createElement('textarea'); ta.value = msg;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    crmToast('✅ Mensaje copiado — pégalo en Instagram', 'success');
+  }
+  // Open Instagram DM after short delay so user sees the toast
+  setTimeout(function(){
+    window.open('https://ig.me/m/' + igUser, '_blank');
+  }, 800);
 }
 function crmTempColor(v) {
   if(v <= 25) return {color:'#9E9E9E',label:'Fr\u00edo',emoji:'\u2744\uFE0F'};
