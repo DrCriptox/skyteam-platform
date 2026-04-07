@@ -5943,8 +5943,12 @@ function refreshNotifications() {
     n.timestamp = _notifFirstSeen[n.id];
   });
 
-  // Sort by priority (most urgent first)
-  notifs.sort(function(a,b){ return b.priority - a.priority; });
+  // Sort by timestamp (newest first), tiebreak by priority
+  notifs.sort(function(a,b){
+    var ta = a.timestamp || 0, tb = b.timestamp || 0;
+    if(tb !== ta) return tb - ta;
+    return b.priority - a.priority;
+  });
 
   // Update badges
   updateNotifBadges(activeCount);
