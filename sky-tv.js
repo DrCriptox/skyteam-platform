@@ -243,29 +243,37 @@ function renderCountdown(container) {
   timerCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex-shrink:0;';
   timerCol.appendChild(timer);
 
+  var isDesktop = window.innerWidth > 768;
+  var _calGcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(next.titulo || 'Evento SkyTeam') + '&dates=' + next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00/' + next.fecha.replace(/-/g,'') + 'T' + (next.hora_fin||next.hora_inicio||'10:00').replace(':','') + '00&details=' + encodeURIComponent((next.descripcion || '') + (next.zoom_link ? '\nZoom: ' + next.zoom_link : '')) + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom');
+
   if (totalMins > 5) {
     var calBtn = document.createElement('button');
-    calBtn.style.cssText = 'margin-top:6px;padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.10);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;';
-    calBtn.textContent = '\uD83D\uDCC5 Reservar';
-    calBtn.onclick = function(e) {
-      e.stopPropagation();
-      var startD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00';
-      var endD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_fin||next.hora_inicio||'10:00').replace(':','') + '00';
-      window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(next.titulo || 'Evento SkyTeam') + '&dates=' + startD + '/' + endD + '&details=' + encodeURIComponent((next.descripcion || '') + (next.zoom_link ? '\nZoom: ' + next.zoom_link : '')) + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom'), '_blank');
-    };
-    timerCol.appendChild(calBtn);
-  } else if (next.zoom_link && totalMins <= 5) {
+    calBtn.onclick = function(e) { e.stopPropagation(); window.open(_calGcalUrl, '_blank'); };
+    if (isDesktop) {
+      // Desktop: button on the right side of the card
+      calBtn.style.cssText = 'flex-shrink:0;padding:8px 16px;border-radius:10px;background:rgba(201,168,76,0.10);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:12px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;';
+      calBtn.textContent = '\uD83D\uDCC5 Agregar al calendario';
+    } else {
+      // Mobile: small button below timer
+      calBtn.style.cssText = 'margin-top:6px;padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.10);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;';
+      calBtn.textContent = '\uD83D\uDCC5 Reservar';
+      timerCol.appendChild(calBtn);
+    }
+  }
+
+  if (next.zoom_link && totalMins <= 5) {
     var joinBtn = document.createElement('button');
     joinBtn.className = 'skytv-zoom-btn';
-    joinBtn.style.cssText = 'margin-top:4px;font-size:10px;padding:4px 10px;';
-    joinBtn.textContent = '\uD83D\uDCF9 Zoom';
+    joinBtn.style.cssText = isDesktop ? 'flex-shrink:0;' : 'margin-top:4px;font-size:10px;padding:4px 10px;';
+    joinBtn.textContent = isDesktop ? '\uD83D\uDCF9 Unirse al Zoom' : '\uD83D\uDCF9 Zoom';
     joinBtn.style.animation = 'skytvPulse 1.5s infinite';
     joinBtn.onclick = function(e) { e.stopPropagation(); window.open(next.zoom_link, '_blank'); };
-    timerCol.appendChild(joinBtn);
+    if (isDesktop) cd.appendChild(joinBtn); else timerCol.appendChild(joinBtn);
   }
 
   cd.appendChild(timerCol);
   cd.appendChild(info2);
+  if (isDesktop && totalMins > 5 && calBtn) cd.appendChild(calBtn);
   container.appendChild(cd);
 }
 
