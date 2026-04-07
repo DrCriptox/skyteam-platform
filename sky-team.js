@@ -501,8 +501,15 @@ function initSkyTeam() {
   }
 
   // Fetch data — API expects action:'dashboard', user, ref
-  var userRef = CU.ref || CU.username || '';
-  var body = JSON.stringify({ action: 'dashboard', user: CU.username, ref: userRef });
+  // For second accounts (username ends in "2"), use the base account to get same team data
+  var baseUsername = CU.username || '';
+  if (baseUsername.length > 1 && baseUsername.endsWith('2')) {
+    var possibleBase = baseUsername.slice(0, -1);
+    // Only treat as second account if the base is purely alphanumeric (not just any name ending in 2)
+    if (possibleBase.length >= 2) baseUsername = possibleBase;
+  }
+  var userRef = CU.ref || baseUsername || '';
+  var body = JSON.stringify({ action: 'dashboard', user: baseUsername, ref: userRef });
 
   try {
   _skyFetch(TEAM_API, {
