@@ -11728,6 +11728,10 @@ function saveBirthday(val) {
   });
 
   try {
+    // If ?agenda= param present, show public booking page — skip auto-login
+    if(new URLSearchParams(window.location.search).get('agenda')) {
+      checkPublicAgenda();
+    } else {
     const saved = localStorage.getItem('skyteam_u');
     if(saved) {
       const parsed = JSON.parse(saved);
@@ -11770,6 +11774,7 @@ function saveBirthday(val) {
         localStorage.removeItem('skyteam_u');
       }
     }
+    } // close else for agenda check
   } catch(e) {
     localStorage.removeItem('skyteam_u');
   }
