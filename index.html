@@ -7115,8 +7115,24 @@ function _renderSSLanding() {
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Nombre</label><input type="text" id="ss-l-nombre" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Rol / T\u00edtulo</label><input type="text" id="ss-l-rol" placeholder="Ej: Asesor InnovaIA" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
   var _curWa = CU ? (CU.whatsapp || CU.phone || '') : '';
+  var _waLockKey = 'skyteam_ss_wa_lock_' + (CU ? CU.username : '');
+  var _waLastSave = localStorage.getItem(_waLockKey);
+  var _waLocked = false;
+  var _waDaysLeft = 0;
+  if(_waLastSave) {
+    var _waElapsed = Date.now() - parseInt(_waLastSave);
+    var _wa15d = 15 * 86400000;
+    if(_waElapsed < _wa15d) { _waLocked = true; _waDaysLeft = Math.ceil((_wa15d - _waElapsed) / 86400000); }
+  }
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label>';
-  h += phoneCountrySelectHTML('ss-l-wa-phone', _curWa);
+  if(_waLocked) {
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;padding:9px 12px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;">';
+    h += '<span style="font-size:13px;color:#F0EDE6;">'+_safe(_curWa)+'</span>';
+    h += '<span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:auto;">\uD83D\uDD12 '+_waDaysLeft+'d</span>';
+    h += '</div>';
+  } else {
+    h += phoneCountrySelectHTML('ss-l-wa-phone', _curWa);
+  }
   h += '</div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Texto de tu landing</label><textarea id="ss-l-msg" rows="3" placeholder="Ej: Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;resize:vertical;"></textarea><p style="font-size:9px;color:rgba(255,255,255,0.2);margin:4px 0 0;">Este texto aparece en tu landing visible al p\u00fablico</p></div>';
   var _initFoto = (CU && CU.photo) || localStorage.getItem('skyteam_photo_' + (CU ? CU.username : '')) || '';
@@ -7261,6 +7277,8 @@ function _ssLandingSave() {
   })}).then(function(r){return r.json();}).then(function(d){
     if(d.ok) {
       showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
+      // Lock WhatsApp for 15 days after save
+      localStorage.setItem('skyteam_ss_wa_lock_' + (CU?CU.username:''), String(Date.now()));
       // Landing photo is independent — does NOT overwrite profile photo
     }
     else showToast('\u274C Error: '+(d.error||''),'error');
