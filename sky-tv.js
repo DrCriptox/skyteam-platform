@@ -245,8 +245,8 @@ function renderCountdown(container) {
 
   if (totalMins > 5) {
     var calBtn = document.createElement('button');
-    calBtn.style.cssText = 'margin-top:4px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:9px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;';
-    calBtn.textContent = '\uD83D\uDCC5 Calendario';
+    calBtn.style.cssText = 'margin-top:6px;padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.10);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;';
+    calBtn.textContent = '\uD83D\uDCC5 Reservar';
     calBtn.onclick = function(e) {
       e.stopPropagation();
       var startD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00';
