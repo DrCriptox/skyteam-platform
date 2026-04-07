@@ -12080,11 +12080,10 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
   el.innerHTML=html;}
 
 function crmCalcStars(p) {
-  var f = ['calif_positivo','calif_emprendedor','calif_dinero','calif_lider','calif_social'];
-  var v = f.map(function(k){ return p[k]; }).filter(function(x){ return x !== null && x !== undefined && x > 0; });
-  if (v.length === 0) return 0;
-  var avg = v.reduce(function(a,b){return a+b;},0) / v.length;
-  return Math.min(5, Math.max(0, Math.round(avg * 5)));
+  var f = ['calif_positivo','calif_social','calif_emprendedor','calif_dinero','calif_lider'];
+  var count = 0;
+  f.forEach(function(k){ if(p[k] && p[k] > 0) count++; });
+  return count;
 }
 
 function crmRenderKanban(){
@@ -12853,6 +12852,7 @@ function openCrmModalAdd(editId) {
 
       crmRatingAnswers = {
         calif_positivo: prospect.calif_positivo || 0,
+        calif_social: prospect.calif_social || 0,
         calif_emprendedor: prospect.calif_emprendedor || 0,
         calif_dinero: prospect.calif_dinero || 0,
         calif_lider: prospect.calif_lider || 0
@@ -13059,6 +13059,7 @@ function crmShowStarsPopup(anchorEl, prospect) {
 
   var items = [
     { key: 'calif_positivo', label: 'Positivo' },
+    { key: 'calif_social', label: 'Social' },
     { key: 'calif_emprendedor', label: 'Emprendedor' },
     { key: 'calif_dinero', label: 'Dinero' },
     { key: 'calif_lider', label: 'L\u00EDder' }
@@ -13100,12 +13101,12 @@ function crmShowStarsPopup(anchorEl, prospect) {
       crmStartRatingWizard(prospect.id,function(answers) {
         crmRatingAnswers = answers;
         prospect.calif_positivo = answers.calif_positivo;
+        prospect.calif_social = answers.calif_social;
         prospect.calif_emprendedor = answers.calif_emprendedor;
         prospect.calif_dinero = answers.calif_dinero;
         prospect.calif_lider = answers.calif_lider;
-        crmApi('update', { prospecto: prospect }).then(function() {
-          openCrmDetail(prospect.id);
-        });
+        // Wizard already saved to DB — just refresh detail view
+        openCrmDetail(prospect.id);
       });
     });
   }
