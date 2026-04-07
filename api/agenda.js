@@ -73,6 +73,11 @@ export default async function handler(req, res) {
       const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
       const bookings = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&status=neq.cancelada&order=fecha_iso.asc');
 
+      // Fetch user's profile photo + name from users table
+      const userProfile = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=photo,name');
+      const profilePhoto = userProfile && userProfile[0] ? userProfile[0].photo : null;
+      const profileName = userProfile && userProfile[0] ? userProfile[0].name : null;
+
       // Fetch plan_diario blocks for next 8 days to block personal time in agenda
       const today = new Date();
       const fechaIni = today.toISOString().slice(0,10);
@@ -89,7 +94,13 @@ export default async function handler(req, res) {
       }
 
       const cfgOut = configs && configs[0] ? Object.assign({}, configs[0].config) : null;
-      if (cfgOut) cfgOut.bloqueos_personales = bloqueos_personales;
+      if (cfgOut) {
+        cfgOut.bloqueos_personales = bloqueos_personales;
+        // Inject profile photo if agenda config doesn't have one
+        if (!cfgOut.foto && profilePhoto) cfgOut.foto = profilePhoto;
+        // Inject profile name if agenda config doesn't have one
+        if (!cfgOut.nombre && profileName) cfgOut.nombre = profileName;
+      }
 
       return res.status(200).json({
         config: cfgOut,

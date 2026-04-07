@@ -2135,6 +2135,7 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 <!-- ══════════════ LANDING PAGE ══════════════ -->
+<script>if(new URLSearchParams(window.location.search).get('agenda'))document.write('<style>#landing-page{display:none!important}</style>');</script>
 <div id="landing-page">
   <!-- NAV -->
   <nav class="landing-nav" id="landing-nav">
@@ -5994,7 +5995,7 @@ function checkPublicAgenda() {
 }
 
 function showPublicBookingPage(username) {
-  document.querySelectorAll('#app,#login,#login-screen').forEach(function(el){if(el)el.style.display='none';});
+  document.querySelectorAll('#app,#login,#login-screen,#landing-page').forEach(function(el){if(el)el.style.display='none';});
   var old=document.getElementById('public-booking'); if(old) old.remove();
   var div=document.createElement('div'); div.id='public-booking';
   div.style.cssText='min-height:100dvh;background:#0a0a12;color:#F0EDE6;font-family:Outfit,Nunito,sans-serif;overflow-x:hidden;width:100%;max-width:100vw;';
@@ -11555,7 +11556,16 @@ function saveBirthday(val) {
 
 
 
-// Run public agenda check after everything loads
+// Run public agenda check IMMEDIATELY — hide landing before it shows
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('agenda')) {
+    var lp = document.getElementById('landing-page');
+    if(lp) lp.style.display = 'none';
+    checkPublicAgenda();
+    return;
+  }
+})();
 window.addEventListener('DOMContentLoaded', function(){
   var params = new URLSearchParams(window.location.search);
   if(params.get('agenda')) {
