@@ -6016,6 +6016,33 @@ function refreshNotifications() {
     }
   });
 
+  // ── Schedule native notifications for today's reminders ──
+  if(typeof crmApi === 'function' && CU && !window._reminderTimersSet) {
+    window._reminderTimersSet = true;
+    crmApi('getAll').then(function(res) {
+      // Nothing here - reminders are fetched per-prospect
+    }).catch(function(){});
+    // Fetch all reminders for this user via a lightweight query
+    fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRecordatorios',user:CU.username,prospecto_id:'all'})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(!d.recordatorios) return;
+      var _rSentKey = 'skyteam_rem_native_' + new Date().toDateString();
+      var _rSent = JSON.parse(localStorage.getItem(_rSentKey)||'{}');
+      d.recordatorios.forEach(function(rem){
+        if(!rem.fecha_recordatorio || _rSent[rem.id]) return;
+        var remTime = new Date(rem.fecha_recordatorio).getTime();
+        var msUntil = remTime - Date.now();
+        if(msUntil > 0 && msUntil < 24*3600000) {
+          setTimeout(function(){
+            _rSent[rem.id] = true;
+            localStorage.setItem(_rSentKey, JSON.stringify(_rSent));
+            showNativeNotification('⏰ Recordatorio', rem.mensaje || 'Seguimiento pendiente');
+          }, msUntil);
+        }
+      });
+    }).catch(function(){});
+  }
+
   // ── Prospect follow-up reminders ──
   if(typeof crmProspectos !== 'undefined' && crmProspectos && crmProspectos.length) {
     var staleThreshold = 3 * 86400000; // 3 days
@@ -13507,15 +13534,29 @@ async function addCrmReminder() {
   if (!fecha || !fecha.value || !texto || !texto.value.trim()) {
     crmToast('Completa fecha y texto del recordatorio', 'error'); return;
   }
+  // Convert local datetime to ISO with timezone
+  var fechaLocal = new Date(fecha.value);
+  var fechaISO = fechaLocal.toISOString();
+  var mensajeTexto = texto.value.trim();
+
   var res = await crmApi('addRecordatorio', {
     prospecto_id: crmDetailId,
-    fecha_recordatorio: fecha.value,
-    mensaje: texto.value.trim()
+    fecha_recordatorio: fechaISO,
+    mensaje: mensajeTexto
   });
   if (res && res.ok) {
+    // Schedule local native notification at the exact time
+    var msUntil = fechaLocal.getTime() - Date.now();
+    if (msUntil > 0) {
+      setTimeout(function(){
+        var p = crmProspectos.find(function(x){return x.id === crmDetailId;});
+        var nombre = p ? (p.nombre||'').split(' ')[0] : 'Prospecto';
+        showNativeNotification('⏰ Recordatorio: ' + nombre, mensajeTexto);
+      }, msUntil);
+    }
     fecha.value = '';
     texto.value = '';
-    crmToast('Recordatorio creado', 'success');
+    crmToast('Recordatorio creado para ' + fechaLocal.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true}), 'success');
     await crmLoadData();
     if (typeof crmDashAddXP === 'function') crmDashAddXP('reminder', 5);
   }
