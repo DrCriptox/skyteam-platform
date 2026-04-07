@@ -212,7 +212,22 @@ function renderCountdown(container) {
   info2.className = 'skytv-countdown-info';
   var label = document.createElement('div');
   label.className = 'skytv-countdown-label';
-  label.textContent = 'Pr\u00f3ximo evento en';
+
+  // Dynamic message based on time remaining
+  var totalMins = Math.floor(diff / 60000);
+  if (totalMins <= 5) {
+    label.textContent = '\uD83D\uDD34 \u00A1La sala est\u00e1 abierta!';
+    label.style.color = '#E24B4A';
+    label.style.fontWeight = '900';
+  } else if (totalMins <= 60) {
+    label.textContent = '\u23F0 Falta menos de 1 hora';
+    label.style.color = '#FFD700';
+  } else if (hours <= 4) {
+    label.textContent = '\uD83D\uDD14 Evento en ' + hours + ' hora' + (hours>1?'s':'');
+  } else {
+    label.textContent = 'Pr\u00f3ximo evento en';
+  }
+
   var title2 = document.createElement('div');
   title2.className = 'skytv-countdown-title';
   title2.textContent = next.titulo;
@@ -225,6 +240,36 @@ function renderCountdown(container) {
   info2.appendChild(meta2);
   cd.appendChild(timer);
   cd.appendChild(info2);
+
+  // Action button: changes based on time
+  if (next.zoom_link && totalMins <= 5) {
+    // ≤5 min: "Unirse al Zoom" — sala abierta
+    var joinBtn = document.createElement('button');
+    joinBtn.className = 'skytv-zoom-btn';
+    joinBtn.textContent = '\uD83D\uDCF9 Unirse al Zoom';
+    joinBtn.style.animation = 'skytvPulse 1.5s infinite';
+    joinBtn.onclick = function(e) { e.stopPropagation(); window.open(next.zoom_link, '_blank'); };
+    cd.appendChild(joinBtn);
+  } else {
+    // >5 min: "Agregar a mi calendario"
+    var calBtn = document.createElement('button');
+    calBtn.className = 'skytv-btn';
+    calBtn.style.cssText = 'flex-shrink:0;font-size:11px;padding:8px 12px;';
+    calBtn.textContent = '\uD83D\uDCC5 Agregar a calendario';
+    calBtn.onclick = function(e) {
+      e.stopPropagation();
+      var startD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_inicio||'09:00').replace(':','') + '00';
+      var endD = next.fecha.replace(/-/g,'') + 'T' + (next.hora_fin||next.hora_inicio||'10:00').replace(':','') + '00';
+      var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+        + '&text=' + encodeURIComponent(next.titulo || 'Evento SkyTeam')
+        + '&dates=' + startD + '/' + endD
+        + '&details=' + encodeURIComponent((next.descripcion || '') + (next.zoom_link ? '\n\nZoom: ' + next.zoom_link : ''))
+        + '&location=' + encodeURIComponent(next.zoom_link || 'Zoom');
+      window.open(gcalUrl, '_blank');
+    };
+    cd.appendChild(calBtn);
+  }
+
   container.appendChild(cd);
 }
 
@@ -769,6 +814,13 @@ function checkSkyTvNotifications() {
     var diff = (dt - now) / 60000; // diff in minutes
     var evId = ev.id || ev.titulo;
 
+    // Google Calendar URL for "Agregar a calendario"
+    var _gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      + '&text=' + encodeURIComponent(ev.titulo || 'Evento SkyTeam')
+      + '&dates=' + ev.fecha.replace(/-/g,'') + 'T' + (ev.hora_inicio||'09:00').replace(':','') + '00'
+      + '/' + ev.fecha.replace(/-/g,'') + 'T' + (ev.hora_fin||ev.hora_inicio||'10:00').replace(':','') + '00'
+      + '&details=' + encodeURIComponent((ev.descripcion||'') + (ev.zoom_link ? '\nZoom: '+ev.zoom_link : ''));
+
     // 8 hours before
     if (diff > 7*60 && diff <= 8*60 && !_skyTvNotifSent['8h_' + evId]) {
       _skyTvNotifSent['8h_' + evId] = true;
@@ -776,8 +828,8 @@ function checkSkyTvNotifications() {
         id: 'skytv_8h_'+evId, type: 'event', icon: '\uD83D\uDCC5',
         title: '\uD83D\uDCC5 Evento en 8 horas',
         subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
-        msg: 'Prep\u00e1rate para la sesi\u00f3n de hoy.',
-        action: ev.zoom_link ? {label: '\uD83D\uDCF9 Unirse a Zoom', url: ev.zoom_link} : {label: '\uD83D\uDCFA Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+        msg: 'Prep\u00e1rate para la sesi\u00f3n de hoy. \u00A1Agr\u00e9galo a tu calendario!',
+        action: {label: '\uD83D\uDCC5 Agregar a calendario', url: _gcalUrl}
       });
     }
 
@@ -788,8 +840,8 @@ function checkSkyTvNotifications() {
         id: 'skytv_4h_'+evId, type: 'event', icon: '\u23F0',
         title: '\u23F0 Evento en 4 horas',
         subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
-        msg: 'No olvides conectarte.',
-        action: ev.zoom_link ? {label: '\uD83D\uDCF9 Unirse a Zoom', url: ev.zoom_link} : {label: '\uD83D\uDCFA Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+        msg: 'No olvides conectarte. \u00A1Agr\u00e9galo a tu calendario!',
+        action: {label: '\uD83D\uDCC5 Agregar a calendario', url: _gcalUrl}
       });
     }
 
@@ -797,23 +849,23 @@ function checkSkyTvNotifications() {
     if (diff > 30 && diff <= 60 && !_skyTvNotifSent['1h_'+evId]) {
       _skyTvNotifSent['1h_'+evId] = true;
       pushNotification({
-        id: 'skytv_1h_'+evId, type: 'event', icon: '📺',
-        title: '📺 Evento en 1 hora',
-        subtitle: ev.titulo + ' — ' + formatTime(ev.hora_inicio),
-        msg: (ev.host_nombre ? 'Con ' + ev.host_nombre + '. ' : '') + 'Prepárate para conectarte.',
-        action: ev.zoom_link ? {label: '📹 Unirse a Zoom', url: ev.zoom_link} : {label: '📺 Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+        id: 'skytv_1h_'+evId, type: 'event', icon: '\uD83D\uDCFA',
+        title: '\uD83D\uDCFA \u00A1Evento en 1 hora!',
+        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
+        msg: (ev.host_nombre ? 'Con ' + ev.host_nombre + '. ' : '') + 'Prep\u00e1rate para conectarte.',
+        action: {label: '\uD83D\uDCC5 Agregar a calendario', url: _gcalUrl}
       });
     }
 
-    // 15 minutes before — urgent reminder
-    if (diff > 0 && diff <= 15 && !_skyTvNotifSent['15m_'+evId]) {
-      _skyTvNotifSent['15m_'+evId] = true;
+    // 5 minutes before — sala abierta
+    if (diff > 0 && diff <= 5 && !_skyTvNotifSent['5m_'+evId]) {
+      _skyTvNotifSent['5m_'+evId] = true;
       pushNotification({
-        id: 'skytv_15m_'+evId, type: 'event', icon: '⏰',
-        title: '⏰ ¡Evento en 15 minutos!',
-        subtitle: ev.titulo,
-        msg: 'La sala se abrirá pronto. Ten listo tu Zoom.',
-        action: ev.zoom_link ? {label: '📹 Unirse a Zoom', url: ev.zoom_link} : {label: '📺 Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
+        id: 'skytv_5m_'+evId, type: 'booking', icon: '\uD83D\uDD34',
+        title: '\uD83D\uDD34 \u00A1La sala est\u00e1 abierta!',
+        subtitle: ev.titulo + ' \u2014 Estamos a punto de comenzar',
+        msg: '\u00A1\u00DAnete ahora! La sesi\u00f3n inicia en minutos.',
+        action: ev.zoom_link ? {label: '\uD83D\uDCF9 Unirse al Zoom', url: ev.zoom_link} : {label: '\uD83D\uDCFA Ver Sky TV', url: 'javascript:navigate("sky-tv")'}
       });
     }
 
