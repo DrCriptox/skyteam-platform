@@ -7305,6 +7305,12 @@ function _loadSSRanking() {
     if(ranking.length === 0) { el.innerHTML = '<div style="font-size:48px;margin-bottom:8px;">\uD83C\uDFC6</div><p style="color:rgba(255,255,255,0.4);">Sin datos a\u00fan</p>'; return; }
     var ref = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
     var medals = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    // Normalize foto: relative paths like "fotos/x.jpg" come from innovaia.app, need full URL
+    var _normFoto = function(f) {
+      if (!f) return '';
+      if (f.indexOf('fotos/') === 0) return 'https://innovaia.app/' + f;
+      return f;
+    };
     var html = '';
     // Country flag from WhatsApp number — uses flagcdn.com images (works on all platforms)
     var _waFlag = function(wa) {
@@ -7332,7 +7338,8 @@ function _loadSSRanking() {
       // Position
       html += '<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?medals[i]:(i+1))+'</div>';
       // Avatar — gold ring if newLanding
-      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(u.foto?'<img src="'+u.foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      var _fotoUrl = _normFoto(u.foto);
+      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(_fotoUrl?'<img src="'+_fotoUrl+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats
       html += '<div style="flex:1;min-width:0;">';
       html += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span style="font-size:8px;color:#C9A84C;">(t\u00fa)</span>':'')+'</div>';
@@ -7352,7 +7359,8 @@ function _loadSSRanking() {
       html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.06);">';
       html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.20);box-shadow:0 0 12px rgba(201,168,76,0.08);">';
       html += '<div style="width:20px;font-size:12px;font-weight:800;color:#C9A84C;text-align:center;flex-shrink:0;">'+myPos.position+'</div>';
-      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(201,168,76,0.4);">'+(mu.foto?'<img src="'+mu.foto+'" style="width:100%;height:100%;object-fit:cover;">':mIni)+'</div>';
+      var _mFotoUrl = _normFoto(mu.foto);
+      html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(201,168,76,0.4);">'+(_mFotoUrl?'<img src="'+_mFotoUrl+'" style="width:100%;height:100%;object-fit:cover;">':mIni)+'</div>';
       html += '<div style="flex:1;min-width:0;">';
       html += '<div class="ss-rk-name" style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(mu.nombre||mu.ref)+mFlag+' <span style="font-size:13px;color:#C9A84C;">(t\u00fa)</span></div>';
       html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+mu.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+mu.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+mConvRate+'%</span></div>';
