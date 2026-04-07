@@ -6,7 +6,7 @@ const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Auth
 // Fields that ONLY admins can change
 const ADMIN_ONLY_FIELDS = ['rank', 'is_admin', 'expiry', 'ventas', 'equipo', 'sponsor', 'original_sponsor', 'ref'];
 // Fields that the user can change on their own profile
-const SELF_FIELDS = ['name', 'email', 'whatsapp', 'photo', 'birthday', 'valor_inscripcion'];
+const SELF_FIELDS = ['name', 'email', 'whatsapp', 'photo', 'birthday', 'valor_inscripcion', 'bankcode', 'profession', 'income_goal', 'comm_style'];
 
 async function isAdmin(username) {
   if (!username) return false;

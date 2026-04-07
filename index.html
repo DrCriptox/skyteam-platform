@@ -3531,6 +3531,111 @@ function doLogout() {
 var _lpEl = document.getElementById('lp');
 if(_lpEl) _lpEl.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
+
+// BANKCODE SURVEY - First login personality test
+function _showBankcodeSurvey() {
+  if (!CU || CU.bankcode) return;
+  var scores = {B:0, A:0, N:0, K:0};
+  var answers = {profession:'', income_goal:'', comm_style:''};
+  var step = 0;
+  var questions = [
+    {type:'text', key:'profession', q:'¿A qué te dedicas actualmente?', placeholder:'Ej: Vendedor, Ingeniero, Ama de casa...', icon:'💼'},
+    {type:'select', key:'income_goal', q:'¿Cuánto necesitas ganar al mes para dedicarte 100% a esto?', icon:'💰',
+      opts:[{l:'$500 USD/mes',v:'500'},{l:'$1,000 USD/mes',v:'1000'},{l:'$2,000 USD/mes',v:'2000'},{l:'$5,000 USD/mes',v:'5000'},{l:'$10,000+ USD/mes',v:'10000'}]},
+    {type:'bank', q:'Cuando empiezas algo nuevo, ¿qué haces primero?', icon:'🧠',
+      opts:[{l:'Investigo todo antes de actuar',s:'K'},{l:'Empiezo de una, aprendo haciendo',s:'A'},{l:'Pregunto a alguien con experiencia',s:'N'},{l:'Hago un plan paso a paso',s:'B'}]},
+    {type:'bank', q:'¿Cómo saludas a alguien que acabas de conocer?', icon:'👋',
+      opts:[{l:'Directo al punto, sin rodeos',s:'A'},{l:'Con calidez, pregunto cómo está',s:'N'},{l:'Profesional, me presento y qué hago',s:'B'},{l:'Le hago preguntas para conocerlo',s:'K'}]},
+    {type:'bank', q:'Si un amigo te pide consejo para un negocio, ¿qué le dices?', icon:'💡',
+      opts:[{l:'¡Hazlo ya! No pienses tanto',s:'A'},{l:'Déjame mostrarte los datos',s:'K'},{l:'Te acompaño en el proceso',s:'N'},{l:'Primero arma un plan de acción',s:'B'}]},
+    {type:'bank', q:'En una reunión, ¿cuál es tu rol natural?', icon:'🤝',
+      opts:[{l:'Tomo decisiones rápido',s:'A'},{l:'Organizo y estructuro',s:'B'},{l:'Cuido que todos se sientan bien',s:'N'},{l:'Aporto datos e información clave',s:'K'}]},
+    {type:'bank', q:'¿Cómo describirían tus amigos tu comunicación?', icon:'🗣',
+      opts:[{l:'Energético y motivador',s:'A'},{l:'Organizado y claro',s:'B'},{l:'Cálido y empático',s:'N'},{l:'Analítico y preciso',s:'K'}]},
+    {type:'bank', q:'¿Qué te motiva más en un negocio?', icon:'🔥',
+      opts:[{l:'Los resultados rápidos',s:'A'},{l:'El sistema y la estructura',s:'B'},{l:'Ayudar a otros a crecer',s:'N'},{l:'Entender cómo funciona todo',s:'K'}]},
+    {type:'comm', q:'¿Cómo le escribirías a un desconocido por WhatsApp?', icon:'📱',
+      opts:[{l:'¡Hola! Te tengo algo increíble',v:'casual'},{l:'Buenos días, mi nombre es...',v:'formal'},{l:'Hey! ¿Cómo estás? Vi tu perfil y...',v:'amigable'},{l:'Hola, tengo info que podría interesarte',v:'profesional'}]},
+    {type:'comm2', q:'Selecciona el mensaje que más se parece a ti:', icon:'✍️',
+      opts:[{l:'Hermano, esto es una locura 🔥',v:'ultra_casual'},{l:'Hola, ¿tienes un momento?',v:'neutro'},{l:'Estimado, permítame presentarle...',v:'muy_formal'}]}
+  ];
+  var overlay = document.createElement('div');
+  overlay.id = 'bankcode-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:100000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);font-family:Outfit,Nunito,sans-serif;overflow-y:auto;padding:20px;';
+  function render() {
+    if (step >= questions.length) { showResult(); return; }
+    var q = questions[step];
+    var progress = Math.round(((step)/questions.length)*100);
+    var html = '<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(201,168,76,0.15);border-radius:24px;padding:32px 28px;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">';
+    html += '<div style="text-align:center;margin-bottom:4px;"><img src="/logo-skyteam.png" style="height:28px;opacity:0.6;" /></div>';
+    html += '<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:16px;overflow:hidden;"><div style="width:'+progress+'%;height:100%;background:linear-gradient(90deg,#C9A84C,#E8D48B);border-radius:2px;transition:width 0.3s;"></div></div>';
+    html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:12px;">Pregunta '+(step+1)+' de '+questions.length+'</div>';
+    html += '<div style="text-align:center;font-size:36px;margin-bottom:10px;">'+q.icon+'</div>';
+    html += '<div style="text-align:center;font-size:17px;font-weight:900;color:#F0EDE6;margin-bottom:18px;line-height:1.4;">'+q.q+'</div>';
+    if (q.type === 'text') {
+      html += '<input id="bk-input" type="text" placeholder="'+(q.placeholder||'')+'" style="width:100%;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:15px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:14px;" />';
+      html += '<button id="bk-next" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:15px;font-weight:900;border:none;cursor:pointer;font-family:inherit;">Siguiente →</button>';
+    } else {
+      q.opts.forEach(function(o, i) {
+        html += '<button class="bk-opt" data-idx="'+i+'" style="display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:8px;border-radius:12px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);color:#F0EDE6;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;">'+o.l+'</button>';
+      });
+    }
+    html += '</div>';
+    overlay.innerHTML = html;
+    if (q.type === 'text') {
+      var btn = overlay.querySelector('#bk-next');
+      var inp = overlay.querySelector('#bk-input');
+      btn.onclick = function() { var val = inp.value.trim(); if (!val) { inp.style.borderColor = 'rgba(226,75,74,0.5)'; return; } answers[q.key] = val; step++; render(); };
+      inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') btn.click(); });
+      setTimeout(function(){ inp.focus(); }, 100);
+    } else {
+      overlay.querySelectorAll('.bk-opt').forEach(function(btn) {
+        btn.onclick = function() {
+          var idx = parseInt(btn.dataset.idx); var opt = q.opts[idx];
+          btn.style.background = 'rgba(201,168,76,0.15)'; btn.style.borderColor = 'rgba(201,168,76,0.5)'; btn.style.color = '#C9A84C';
+          setTimeout(function() {
+            if (q.type === 'bank') scores[opt.s] += 2;
+            else if (q.type === 'select') answers[q.key] = opt.v;
+            else if (q.type === 'comm') answers.comm_style = opt.v;
+            else if (q.type === 'comm2') { if (opt.v === 'ultra_casual') answers.comm_style = 'casual'; else if (opt.v === 'muy_formal') answers.comm_style = 'formal'; }
+            step++; render();
+          }, 300);
+        };
+      });
+    }
+  }
+  function showResult() {
+    var sorted = Object.entries(scores).sort(function(a,b){return b[1]-a[1];});
+    var code = sorted.map(function(s){return s[0];}).join('');
+    var colors = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
+    var names = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
+    var dominant = sorted[0][0];
+    var descMap = {B:'Eres un planificador nato. Te gusta la estructura y tener todo organizado.',A:'Eres una persona de acción. No esperas, ejecutas. Tu energía contagia.',N:'Eres empático y cuidadoso. Conectas con las personas y las haces sentir valoradas.',K:'Eres analítico e investigador. Entiendes todo a fondo antes de decidir.'};
+    var html = '<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(201,168,76,0.15);border-radius:24px;padding:36px 28px;max-width:420px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">Tu código de personalidad</div>';
+    html += '<div style="font-size:48px;font-weight:900;letter-spacing:6px;margin-bottom:16px;">';
+    for (var i = 0; i < code.length; i++) html += '<span style="color:'+colors[code[i]]+';text-shadow:0 0 20px '+colors[code[i]]+'40;">'+code[i]+'</span>';
+    html += '</div>';
+    html += '<div style="display:inline-block;padding:6px 16px;border-radius:20px;background:'+colors[dominant]+'20;border:1px solid '+colors[dominant]+'40;color:'+colors[dominant]+';font-size:14px;font-weight:800;margin-bottom:16px;">'+names[dominant]+'</div>';
+    html += '<p style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:24px;">'+descMap[dominant]+'</p>';
+    html += '<p style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:20px;">Tu IA ahora generará mensajes adaptados a tu estilo.</p>';
+    html += '<button id="bk-done" style="width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:16px;font-weight:900;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(201,168,76,0.3);">¡Comenzar! 🚀</button>';
+    html += '</div>';
+    overlay.innerHTML = html;
+    overlay.querySelector('#bk-done').onclick = function() {
+      overlay.remove();
+      var updates = {bankcode: code, profession: answers.profession, income_goal: answers.income_goal, comm_style: answers.comm_style};
+      CU.bankcode = code; CU.profession = answers.profession; CU.income_goal = answers.income_goal; CU.comm_style = answers.comm_style;
+      localStorage.setItem('skyteam_u', JSON.stringify(CU));
+      fetch('/api/update-user', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:CU.username, updates:updates, requestedBy:CU.username})}).catch(function(){});
+      if(typeof showToast === 'function') showToast('✅ Perfil BANKCODE guardado: ' + code);
+    };
+  }
+  document.body.appendChild(overlay);
+  render();
+}
+
+
 function showApp() {
   // Check ?nav= param BEFORE clearing URL (for push notification deep-links)
   var _pendingNav = new URLSearchParams(window.location.search).get('nav');
@@ -3792,6 +3897,13 @@ function showApp() {
       }
     }, 1500);
   }
+
+  // BANKCODE survey — show on first login if user hasn't completed it
+  setTimeout(function() {
+    if (CU && !CU.bankcode && typeof _showBankcodeSurvey === 'function') {
+      _showBankcodeSurvey();
+    }
+  }, 2000);
 }
 
 function rankBadge(r, small) {

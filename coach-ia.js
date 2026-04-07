@@ -1082,9 +1082,24 @@ function sendCoachMessage(text) {
   var prospectNames = prospects.slice(0, 10).map(function(p) { return (p.nombre || '?') + '(' + (p.etapa || 'nuevo') + ',' + (p.temperatura || 0) + '%)'; }).join(', ');
   if (prospectNames) contextInfo += 'Prospectos activos: ' + prospectNames + '. ';
 
+  // BANKCODE personality context for AI personalization
+  var bankInfo = '';
+  if (typeof CU !== 'undefined' && CU) {
+    if (CU.bankcode) {
+      var _bkNames = {B:'Blueprint (planificador)',A:'Action (ejecutor)',N:'Nurturing (empatico)',K:'Knowledge (analitico)'};
+      var _dominant = CU.bankcode[0];
+      bankInfo += 'PERFIL DEL USUARIO: Codigo BANKCODE=' + CU.bankcode + '. Tipo dominante: ' + (_bkNames[_dominant]||'') + '. ';
+    }
+    if (CU.profession) bankInfo += 'Profesion: ' + CU.profession + '. ';
+    if (CU.income_goal) bankInfo += 'Meta mensual: $' + CU.income_goal + ' USD. ';
+    if (CU.comm_style) bankInfo += 'Estilo de comunicacion: ' + CU.comm_style + '. ';
+    if (bankInfo) bankInfo += 'ADAPTA tu lenguaje y estilo al perfil del usuario. ';
+  }
+
   var systemPrompt = 'Eres Coach IA, un asistente de ventas y network marketing para la plataforma SkyTeam. '
     + 'Respondes de forma breve, directa y motivacional. '
     + 'Das consejos pr\u00e1cticos sobre ventas, seguimiento de prospectos, cierre y crecimiento de red. '
+    + bankInfo
     + contextInfo
     + 'IMPORTANTE: Puedes ejecutar acciones por comando de voz. Si el usuario quiere hacer algo sobre un prospecto, gu\u00edalo con el formato correcto: '
     + '"agrega nota a [nombre]: [nota]", "sube temperatura de [nombre] a [N]", "mueve a [nombre] a [etapa]", '

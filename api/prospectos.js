@@ -218,8 +218,21 @@ export default async function handler(req, res) {
       const interacciones = await sb('interacciones?prospecto_id=eq.' + encodeURIComponent(prospecto_id) + '&order=created_at.desc&limit=5');
       const historial = (interacciones || []).map(i => i.tipo + ': ' + (i.contenido || '')).join('\n');
 
+      // Get user's BANKCODE profile for personalization
+      let userProfile = '';
+      try {
+        const userData = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=bankcode,comm_style,profession&limit=1');
+        if (userData && userData[0]) {
+          const u = userData[0];
+          if (u.bankcode) userProfile += 'BANKCODE del vendedor: ' + u.bankcode + '. ';
+          if (u.comm_style) userProfile += 'Estilo: ' + u.comm_style + '. ';
+          if (u.profession) userProfile += 'Profesion: ' + u.profession + '. ';
+          if (userProfile) userProfile = 'ADAPTA el mensaje al estilo del vendedor: ' + userProfile;
+        }
+      } catch(e) {}
+
       const mensaje = await askClaude(
-        'Networker profesional. Genera 1 mensaje WhatsApp: corto(3-4 lineas), natural, persuasivo, emojis moderados, CTA claro. SOLO el mensaje. NUNCA menciones SKYTEAM/Innova, solo franquicia digital o negocio digital.',
+        'Networker profesional. Genera 1 mensaje WhatsApp: corto(3-4 lineas), natural, persuasivo, emojis moderados, CTA claro. SOLO el mensaje. NUNCA menciones SKYTEAM/Innova, solo franquicia digital o negocio digital. ' + userProfile,
         prospecto.nombre + '|' + prospecto.etapa + '|temp:' + prospecto.temperatura + '|notas:' + (prospecto.notas||'-') + '|historial:' + (historial||'-') + '|ctx:' + (contexto||'seguimiento')
       );
 

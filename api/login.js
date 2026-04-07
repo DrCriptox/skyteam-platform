@@ -94,7 +94,11 @@ export default async function handler(req, res) {
         expiry: user.expiry || null,
         isAdmin: user.is_admin || false,
         photo: user.photo || null,
-        birthday: user.birthday || null
+        birthday: user.birthday || null,
+        bankcode: user.bankcode || null,
+        profession: user.profession || null,
+        income_goal: user.income_goal || null,
+        comm_style: user.comm_style || null
       }
     });
 
