@@ -108,15 +108,17 @@ export default async function handler(req, res) {
       const onlyNew = Date.now() >= cutoffDate.getTime();
       const allAsesores = onlyNew ? skyAsesores : Object.assign({}, oldAsesores, skyAsesores);
 
-      // Calculate date range for period filter
-      const now = new Date();
+      // Colombia time (UTC-5) for period calculations
+      const nowCol = new Date(Date.now() - 18000000);
       let dateFrom = null;
-      if (period === 'weekly') {
-        const day = now.getDay(); const diff = day === 0 ? 6 : day - 1;
-        const monday = new Date(now); monday.setDate(now.getDate() - diff); monday.setHours(0,0,0,0);
+      if (period === 'daily') {
+        dateFrom = nowCol.toISOString().split('T')[0];
+      } else if (period === 'weekly') {
+        const day = nowCol.getUTCDay(); const diff = day === 0 ? 6 : day - 1;
+        const monday = new Date(nowCol.getTime()); monday.setUTCDate(nowCol.getUTCDate() - diff);
         dateFrom = monday.toISOString().split('T')[0];
       } else if (period === 'monthly') {
-        dateFrom = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
+        dateFrom = nowCol.getUTCFullYear() + '-' + String(nowCol.getUTCMonth()+1).padStart(2,'0') + '-01';
       }
 
       const ranking = Object.keys(allAsesores)
@@ -125,37 +127,50 @@ export default async function handler(req, res) {
           const asesor = allAsesores[ref] || {};
           const s = typeof stats[ref] === 'object' ? stats[ref] : {};
 
-          // Filter visits by period using days data
-          let visitas = 0, uniqueIps = 0, conversiones = s.conversions || 0;
-          if (dateFrom && s.days) {
-            // Count only visits in the date range
-            Object.keys(s.days).forEach(function(d) { if (d >= dateFrom) visitas += (typeof s.days[d] === 'number' ? s.days[d] : 0); });
-            // Count unique IPs in date range
+          let visitas = 0, uniqueIps = 0, conversiones = 0;
+
+          if (dateFrom) {
+            // ── Period filter ──
+            if (s.days) Object.keys(s.days).forEach(function(d) { if (d >= dateFrom) visitas += (typeof s.days[d] === 'number' ? s.days[d] : 0); });
+            // Unique visit IPs in period
             if (s.days_ips) {
               const periodIps = {};
               Object.keys(s.days_ips).forEach(function(d) {
-                if (d >= dateFrom && typeof s.days_ips[d] === 'object') {
+                if (d >= dateFrom && typeof s.days_ips[d] === 'object')
                   Object.keys(s.days_ips[d]).forEach(function(ip) { periodIps[ip] = true; });
-                }
               });
               uniqueIps = Object.keys(periodIps).length;
-            } else {
-              uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
+            } else { uniqueIps = s.ips ? Object.keys(s.ips).length : 0; }
+            // Unique conversion IPs in period (each IP máx 1 conversión)
+            if (s.days_conversions_ips) {
+              const convIps = {};
+              Object.keys(s.days_conversions_ips).forEach(function(d) {
+                if (d >= dateFrom && typeof s.days_conversions_ips[d] === 'object')
+                  Object.keys(s.days_conversions_ips[d]).forEach(function(ip) { convIps[ip] = true; });
+              });
+              conversiones = Object.keys(convIps).length;
+            } else if (s.days_conversions) {
+              Object.keys(s.days_conversions).forEach(function(d) { if (d >= dateFrom) conversiones += s.days_conversions[d] || 0; });
             }
           } else {
+            // ── All-time ──
             visitas = s.total || 0;
             uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
+            // Prefer unique conversion IPs if tracked, else raw count
+            conversiones = s.conversions_ips ? Object.keys(s.conversions_ips).length : (s.conversions || 0);
           }
 
           const ipDupes = Math.max(0, visitas - uniqueIps);
-          const validConversions = Math.min(conversiones, uniqueIps);
-          const score = Math.max(0, (visitas * 1) - (ipDupes * 2) + (validConversions * 15));
+          const cap = uniqueIps > 0 ? uniqueIps : visitas; // fallback si no hay tracking de IPs
+          const validConversions = Math.min(conversiones, cap);
+          const score = Math.max(0, visitas - (ipDupes * 2) + (validConversions * 15));
           return {
             ref: ref, nombre: asesor.nombre || ref,
-            visitas: uniqueIps, conversiones: validConversions, score: score,
+            visitas: uniqueIps || visitas, conversiones: validConversions, score: score,
             whatsapp: asesor.whatsapp || '', foto: asesor.foto || ''
           };
         })
+        .filter(function(r) { return dateFrom ? (r.visitas > 0 || r.score > 0) : true; })
         .sort(function(a, b) { return b.score - a.score; });
 
       const top20 = ranking.slice(0, 20);
