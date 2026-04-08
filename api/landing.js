@@ -280,9 +280,30 @@ export default async function handler(req, res) {
                 s.days_ips[v.day][v.ip] = true;
               }
             });
-            // Merge: Supabase data takes priority (has all new visits)
-            // GitHub data used as fallback for refs not yet in Supabase
-            Object.keys(sbStats).forEach(function(ref) { stats[ref] = sbStats[ref]; });
+            // Merge: combine GitHub + Supabase data (sum visits, union IPs)
+            Object.keys(sbStats).forEach(function(ref) {
+              var gh = stats[ref] || {};
+              var sb = sbStats[ref];
+              // For days: take the MAX of each source (avoids double-counting)
+              var merged = { total: Math.max(gh.total||0, sb.total||0), ips: {}, conversions: Math.max(gh.conversions||0, sb.conversions||0), days: {}, days_ips: {}, days_conversions: {}, conversions_ips: {} };
+              // Union IPs from both sources
+              if(gh.ips) Object.keys(gh.ips).forEach(function(ip){ merged.ips[ip] = Math.max(gh.ips[ip]||0, (sb.ips||{})[ip]||0); });
+              if(sb.ips) Object.keys(sb.ips).forEach(function(ip){ if(!merged.ips[ip]) merged.ips[ip] = sb.ips[ip]; });
+              // Days: take MAX per day (GitHub had old data, Supabase has new)
+              var allDays = {};
+              if(gh.days) Object.keys(gh.days).forEach(function(d){ allDays[d] = true; });
+              if(sb.days) Object.keys(sb.days).forEach(function(d){ allDays[d] = true; });
+              Object.keys(allDays).forEach(function(d){
+                merged.days[d] = Math.max((gh.days||{})[d]||0, (sb.days||{})[d]||0);
+                merged.days_ips[d] = Object.assign({}, (gh.days_ips||{})[d]||{}, (sb.days_ips||{})[d]||{});
+              });
+              // Conversions: union
+              if(gh.conversions_ips) Object.keys(gh.conversions_ips).forEach(function(ip){ merged.conversions_ips[ip] = true; });
+              if(sb.conversions_ips) Object.keys(sb.conversions_ips).forEach(function(ip){ merged.conversions_ips[ip] = true; });
+              if(gh.days_conversions) Object.keys(gh.days_conversions).forEach(function(d){ merged.days_conversions[d] = Math.max((gh.days_conversions||{})[d]||0, (sb.days_conversions||{})[d]||0); });
+              if(sb.days_conversions) Object.keys(sb.days_conversions).forEach(function(d){ if(!merged.days_conversions[d]) merged.days_conversions[d] = sb.days_conversions[d]; });
+              stats[ref] = merged;
+            });
           }
         } catch(e) { console.warn('[Ranking] SB visits read failed:', e.message); }
       }
