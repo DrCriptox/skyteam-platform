@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     const { imageBase64, mimeType } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'imageBase64 requerido' });
 
-    const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+    const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
     if (!OPENAI_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
     const prompt = `Analiza esta captura de pantalla del perfil de 8innova.biz/profile.

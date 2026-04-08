@@ -96,9 +96,9 @@ module.exports = async (req, res) => {
           citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].proofs,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes, ipFlags: userStats[u].ipFlags
         };
-      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 10);
+      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 
-      return res.status(200).json({ ok: true, period: 'weekly', from: mondayISO, to: sundayISO, ranking: ranking.slice(0,20) });
+      return res.status(200).json({ ok: true, period: 'weekly', from: mondayISO, to: sundayISO, ranking: ranking });
     }
 
     // ===== GET MONTHLY TOP 20 =====
@@ -152,7 +152,7 @@ module.exports = async (req, res) => {
       const toISO = today10pm.toISOString();
 
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&created_at=gte.' + fromISO + '&created_at=lt.' + toISO + '&status=in.(activa,completada,verificada)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada)'
       );
 
       const userStats = {};

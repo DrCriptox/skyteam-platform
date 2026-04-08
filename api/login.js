@@ -11,7 +11,7 @@ function _checkLoginRate(ip) {
   const now = Date.now();
   if (!_loginRateMap[ip]) _loginRateMap[ip] = [];
   _loginRateMap[ip] = _loginRateMap[ip].filter(t => now - t < 300000);
-  if (_loginRateMap[ip].length >= 500) return false;
+  if (_loginRateMap[ip].length >= 10) return false;
   _loginRateMap[ip].push(now);
   return true;
 }

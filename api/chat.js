@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
 
-    const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+    const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
     if (!OPENAI_KEY) {
       clearTimeout(timeout);
       return res.status(500).json({ error: 'OPENAI_API_KEY not configured', content: [{ text: 'Error: API key no configurada.' }] });

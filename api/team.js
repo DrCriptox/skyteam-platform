@@ -336,7 +336,7 @@ async function handleCoach(req, res, user, ref) {
   summary += 'Top 3: ' + members.slice(0, 3).map(function(m) { return m.name + ' (score:' + m.sky_score + ')'; }).join(', ') + '. ';
   summary += 'Alertas urgentes: ' + urgentAlerts + '. ';
 
-  var OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+  var OPENAI_KEY = process.env.OPENAI_API_KEY || '';
   if (!OPENAI_KEY) return res.status(200).json({ recommendations: ['API key no configurada'] });
 
   var r = await fetch('https://api.openai.com/v1/chat/completions', {

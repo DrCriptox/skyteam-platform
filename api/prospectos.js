@@ -1,7 +1,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
-const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
 
 async function sb(path, opts) {
   const url = SUPABASE_URL + '/rest/v1/' + path;
@@ -23,7 +23,7 @@ async function sb(path, opts) {
 }
 
 async function askClaude(systemPrompt, userMsg) {
-  const OPENAI_KEY = process.env.OPENAT_API_KEY || process.env.OPENAI_API_KEY || '';
+  const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
   if (!OPENAI_KEY) return null;
   const r = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
