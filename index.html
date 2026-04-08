@@ -7670,7 +7670,9 @@ function _renderSSLanding() {
   var _waLastSave = localStorage.getItem(_waLockKey);
   var _waLocked = false;
   var _waDaysLeft = 0;
-  if(_waLastSave) {
+  // Only lock AFTER first successful save (not on first use)
+  var _hasLanding = localStorage.getItem('skyteam_ss_landing_saved_' + (CU ? CU.username : ''));
+  if(_waLastSave && _hasLanding) {
     var _waElapsed = Date.now() - parseInt(_waLastSave);
     var _wa15d = 15 * 86400000;
     if(_waElapsed < _wa15d) { _waLocked = true; _waDaysLeft = Math.ceil((_wa15d - _waElapsed) / 86400000); }
@@ -7834,8 +7836,9 @@ function _ssLandingSave() {
   })}).then(function(r){return r.json();}).then(function(d){
     if(d.ok) {
       showToast('\u2705 Landing publicada en innovaia.app?ref='+ref);
-      // Lock WhatsApp for 15 days after save
+      // Lock WhatsApp for 15 days after save (only after first save)
       localStorage.setItem('skyteam_ss_wa_lock_' + (CU?CU.username:''), String(Date.now()));
+      localStorage.setItem('skyteam_ss_landing_saved_' + (CU?CU.username:''), '1');
       // Landing photo is independent — does NOT overwrite profile photo
     }
     else showToast('\u274C Error: '+(d.error||''),'error');

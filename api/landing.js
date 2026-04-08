@@ -90,17 +90,18 @@ export default async function handler(req, res) {
         mensaje: (mensaje || 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes').trim()
       };
 
-      // Write to new skyteam file
+      // Write to new skyteam file (5 retries with random delay for concurrency)
       let saved = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 500 + Math.random() * 1500));
         const { data, sha } = await readGHFile(FILE_ASESORES);
         data[slug] = asesorData;
         if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) { saved = true; break; }
       }
 
-      // Also write to old asesores.json so innovaia.app landing works
-      // IMPORTANT: never write base64 photos to asesores.json — bloats the file and causes timeouts
-      for (let attempt = 0; attempt < 3; attempt++) {
+      // Also write to old asesores.json (5 retries, no base64 photos)
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 500 + Math.random() * 1500));
         const { data, sha } = await readGHFile('asesores.json');
         const existing = data[slug] || {};
         const newFoto = foto && !foto.startsWith('data:') ? foto : (existing.foto || '');
