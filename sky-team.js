@@ -2117,22 +2117,21 @@ function openMemberDetail(username) {
   var cuRank = (typeof CU !== 'undefined' && CU) ? (CU.rank || 0) : 0;
   if (!isSelf && cuRank >= 3) {
     var _curBank = m.bankcode || '';
-    html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;margin-top:8px;">';
-    html += '<div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Editar c\u00f3digo BANK</div>';
-    html += '<div style="display:flex;gap:4px;align-items:center;">';
-    var _bkLetters = ['B','A','N','K'];
     var _bkCols = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
-    var _bkLabels = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
-    _bkLetters.forEach(function(letter, idx) {
-      html += '<select id="st-bank-'+idx+'" style="flex:1;background:rgba(255,255,255,0.04);border:0.5px solid '+_bkCols[letter]+'40;border-radius:6px;color:'+_bkCols[letter]+';font-size:14px;font-weight:900;padding:6px;text-align:center;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">';
-      _bkLetters.forEach(function(opt) {
-        var sel = (_curBank[idx] === opt) ? ' selected' : '';
-        html += '<option value="'+opt+'" style="color:'+_bkCols[opt]+';font-weight:900;"'+sel+'>'+opt+' ('+_bkLabels[opt]+')</option>';
+    var _bkOpts = [{v:'B',l:'B'},{v:'A',l:'A'},{v:'N',l:'N'},{v:'K',l:'K'}];
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
+    html += '<span style="font-size:9px;color:rgba(255,255,255,0.3);">BANK:</span>';
+    for (var _bi = 0; _bi < 3; _bi++) {
+      html += '<select id="st-bank-'+_bi+'" style="width:36px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:13px;font-weight:900;padding:4px 2px;text-align:center;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">';
+      html += '<option value="">-</option>';
+      _bkOpts.forEach(function(o) {
+        var sel = (_curBank[_bi] === o.v) ? ' selected' : '';
+        html += '<option value="'+o.v+'"'+sel+' style="color:'+_bkCols[o.v]+';">'+o.l+'</option>';
       });
       html += '</select>';
-    });
-    html += '<button onclick="_saveMemberBankcode(\''+_safe(m.username||username)+'\')" style="padding:6px 12px;border-radius:6px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">Guardar</button>';
-    html += '</div></div>';
+    }
+    html += '<button onclick="_saveMemberBankcode(\''+_safe(m.username||username)+'\')" style="padding:4px 10px;border-radius:6px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:9px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">OK</button>';
+    html += '</div>';
   }
 
   // WhatsApp button (only if CU is direct sponsor)
@@ -2159,15 +2158,15 @@ function openMemberDetail(username) {
 
 function _saveMemberBankcode(username) {
   var code = '';
-  for (var i = 0; i < 4; i++) {
+  for (var i = 0; i < 3; i++) {
     var sel = document.getElementById('st-bank-' + i);
-    if (sel) code += sel.value;
+    if (sel && sel.value) code += sel.value;
   }
-  if (code.length !== 4) return;
+  if (code.length < 1) { if (typeof showToast === 'function') showToast('Selecciona al menos 1 letra'); return; }
   // Check no duplicates
   var unique = new Set(code.split(''));
-  if (unique.size !== 4) {
-    if (typeof showToast === 'function') showToast('Cada letra debe ser diferente (B, A, N, K)');
+  if (unique.size !== code.length) {
+    if (typeof showToast === 'function') showToast('No repitas letras');
     return;
   }
   var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
