@@ -36,7 +36,7 @@ async function sendWebPush(subscription, payload) {
 
 // ââ Send push to a specific user (internal helper) ââ
 async function pushToUser(username, title, body, url, tag) {
-  const subs = await sb('push_subscriptions?username=eq.' + encodeURIComponent(username));
+  const subs = await sb('push_subscriptions?username=ilike.' + encodeURIComponent(username));
   if (!subs || subs.length === 0) return { sent: 0 };
   const payload = { title, body, url: url || '/', tag: tag || 'skyteam-' + Date.now(), data: { url: url || '/' } };
   let sent = 0, expired = [];
