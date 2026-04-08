@@ -99,9 +99,12 @@ export default async function handler(req, res) {
       }
 
       // Also write to old asesores.json so innovaia.app landing works
+      // IMPORTANT: never write base64 photos to asesores.json — bloats the file and causes timeouts
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data, sha } = await readGHFile('asesores.json');
-        data[slug] = asesorData;
+        const existing = data[slug] || {};
+        const newFoto = foto && !foto.startsWith('data:') ? foto : (existing.foto || '');
+        data[slug] = Object.assign({}, asesorData, { foto: newFoto });
         if (await writeGHFile('asesores.json', data, sha, 'skyteam: sync ' + slug)) break;
       }
 
