@@ -98,6 +98,56 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'User not found', ok: false });
     }
 
+    // ── Sync name/whatsapp to landing_profiles + GitHub (fire-and-forget) ──
+    const syncFields = ['name', 'whatsapp'];
+    const needsSync = syncFields.some(f => safe[f] !== undefined);
+    if (needsSync && rows[0]) {
+      const user = rows[0];
+      const userRef = (user.ref || user.username || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (userRef) {
+        (async function() {
+          try {
+            // 1) Update Supabase landing_profiles (instant — ranking reads this)
+            const lpUpdates = {};
+            if (safe.name !== undefined) lpUpdates.nombre = safe.name;
+            if (safe.whatsapp !== undefined) lpUpdates.whatsapp = safe.whatsapp;
+            lpUpdates.updated_at = new Date().toISOString();
+            await fetch(SUPABASE_URL + '/rest/v1/landing_profiles?ref=eq.' + encodeURIComponent(userRef), {
+              method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' },
+              body: JSON.stringify(lpUpdates)
+            });
+            console.log('[SYNC] landing_profiles updated for', userRef, lpUpdates);
+
+            // 2) Update GitHub asesores-skyteam.json (background)
+            const GH_TOKEN = process.env.GITHUB_TOKEN;
+            if (GH_TOKEN) {
+              const REPO = 'DrCriptox/innova-ia-landing';
+              const FILE = 'asesores-skyteam.json';
+              const ghHeaders = { Authorization: 'token ' + GH_TOKEN, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'SkyTeam-Platform' };
+              for (let attempt = 0; attempt < 3; attempt++) {
+                if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
+                try {
+                  const rawR = await fetch('https://raw.githubusercontent.com/' + REPO + '/main/' + FILE);
+                  const data = rawR.ok ? await rawR.json() : {};
+                  const shaR = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + FILE + '?ref=main', { headers: ghHeaders });
+                  const shaData = shaR.ok ? await shaR.json() : {};
+                  if (data[userRef]) {
+                    if (safe.name !== undefined) data[userRef].nombre = safe.name;
+                    if (safe.whatsapp !== undefined) data[userRef].whatsapp = safe.whatsapp;
+                    const putR = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + FILE, {
+                      method: 'PUT', headers: ghHeaders,
+                      body: JSON.stringify({ message: 'sync: update ' + userRef, content: Buffer.from(JSON.stringify(data, null, 2)).toString('base64'), sha: shaData.sha, branch: 'main' })
+                    });
+                    if (putR.ok) { console.log('[SYNC] GitHub updated for', userRef); break; }
+                  } else { break; } // ref not in GitHub file, skip
+                } catch(e) { console.warn('[SYNC] GitHub attempt', attempt, 'failed:', e.message); }
+              }
+            }
+          } catch(e) { console.warn('[SYNC] background sync failed:', e.message); }
+        })();
+      }
+    }
+
     return res.status(200).json({ ok: true, updated: rows.length });
   } catch (error) {
     console.error('update-user error:', error.message);
