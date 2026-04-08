@@ -55,6 +55,24 @@ export default async function handler(req, res) {
       extracted = { found: false };
     }
 
+    // Validate 4 required fields — reject if any missing
+    if (extracted.found) {
+      var missing = [];
+      if (!extracted.days_remaining && extracted.days_remaining !== 0 && !extracted.expiry_date) missing.push('Dias restantes o vencimiento');
+      if (!extracted.classification) missing.push('Clasificacion/Rango');
+      if (!extracted.username) missing.push('Usuario de Innova');
+      if (!extracted.sponsor) missing.push('Patrocinador/Sponsor');
+      if (missing.length > 0) {
+        return res.status(200).json({
+          found: false,
+          reason: 'La imagen no incluye todos los datos necesarios',
+          missing: missing,
+          missingList: 'Faltan: ' + missing.join(', '),
+          partial: extracted
+        });
+      }
+    }
+
     // Calculate timestamps and labels
     if (extracted.found) {
       // Prefer direct days_remaining from image badge; fallback to computing from expiry_date

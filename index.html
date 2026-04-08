@@ -10635,10 +10635,9 @@ function _adminSaveProfile(username) {
   fetch('/api/update-user', {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username: username, updates: updates })
+    body: JSON.stringify({ username: username, updates: updates, requestedBy: CU ? CU.username : username })
   }).then(function(r){ return r.json(); }).then(function(d) {
     if(d.ok) {
-      // Update local
       if(USERS[username]) Object.assign(USERS[username], updates);
       showToast('\u2705 Perfil de @' + username + ' actualizado');
       document.getElementById('admin-profile-overlay').remove();
@@ -10712,7 +10711,7 @@ function _adminExtendDays(username, days) {
   fetch('/api/update-user', {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username: username, updates: { expiry: newExpiry } })
+    body: JSON.stringify({ username: username, updates: { expiry: newExpiry }, requestedBy: CU ? CU.username : username })
   }).then(function(r){ return r.json(); }).then(function(d) {
     if(d.ok) {
       var newDays = Math.ceil((newExpiry - Date.now()) / 86400000);
@@ -10740,7 +10739,7 @@ function cambiarRango(username, newRank) {
   fetch('/api/update-user', {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({username: username, updates: {rank: +newRank}})
+    body: JSON.stringify({username: username, updates: {rank: +newRank}, requestedBy: CU ? CU.username : username})
   }).then(function(r){ return r.json(); }).then(function(d) {
     if(d.ok) {
       showToast('\u2705 @' + username + ' \u2192 ' + rk.icon + ' ' + rk.name);
@@ -11409,15 +11408,20 @@ function onSolImgChange(input) {
         } else {
           input._expiryData = null;
           document.getElementById('sol-autofill-section').style.display = 'none';
-          // Specific message based on what's missing
-          var _missing = [];
-          if(!d.expiry_ts && !d.days_remaining) _missing.push('los días activos en la plataforma');
-          if(!d.username) _missing.push('el usuario de Innova');
-          if(!d.sponsor) _missing.push('el patrocinador (Sponsor o Patrocinador como aparezca en tu perfil)');
-          var _missingMsg = _missing.length
-            ? 'En la imagen no se visualiza ' + _missing.join(' ni ') + '. Sube una captura donde se vean claramente los 4 datos requeridos.'
-            : 'No se pudo procesar la imagen. Intenta con una captura de pantalla más clara.';
-          preview.innerHTML = '❌ ' + _missingMsg;
+          var _errMsg = '';
+          if (d.missingList) {
+            _errMsg = '❌ ' + d.missingList + '.<br><br>Tu captura debe mostrar estos 4 datos:<br>1️⃣ Días restantes<br>2️⃣ Clasificación/Rango<br>3️⃣ Usuario de Innova<br>4️⃣ Patrocinador<br><br>Sube una captura completa del perfil de Innova.';
+          } else {
+            var _missing = [];
+            if(!d.expiry_ts && !d.days_remaining) _missing.push('los días activos');
+            if(!d.username) _missing.push('el usuario de Innova');
+            if(!d.classification) _missing.push('la clasificación/rango');
+            if(!d.sponsor) _missing.push('el patrocinador');
+            _errMsg = _missing.length
+              ? '❌ No se detectó: ' + _missing.join(', ') + '.<br><br>Tu captura debe mostrar:<br>1️⃣ Días restantes<br>2️⃣ Clasificación/Rango<br>3️⃣ Usuario de Innova<br>4️⃣ Patrocinador'
+              : '❌ No se pudo procesar la imagen. Intenta con una captura más clara.';
+          }
+          preview.innerHTML = _errMsg;
           preview.style.color = '#f87171';
           preview.style.borderColor = 'rgba(248,113,113,0.3)';
           preview.style.background = 'rgba(248,113,113,0.06)';
