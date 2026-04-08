@@ -37,20 +37,20 @@ function hashPassword(plain) {
 // 0=Cliente, 1=INN200, 2=INN500, 3=NOVA1500, 4=NOVA5K, 5=NOVA10K, 6=NOVA DIAMOND(25K), 7=NOVA50K, 8=NOVA100K
 function mapInnovaRank(classification) {
   if (!classification) return 0;
-  // Clean: remove extra whitespace, newlines, special chars
   const c = classification.toUpperCase().trim().replace(/\s+/g, ' ').replace(/[^A-Z0-9 ]/g, '');
-  console.log('[RANK] Mapping classification: "' + c + '" from raw: "' + classification + '"');
-  if (c.includes('100K'))                                    return 8; // NOVA 100K
-  if (c.includes('50K'))                                     return 7; // NOVA 50K
-  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('25K')) return 6; // NOVA DIAMOND
-  if (c.includes('10K'))                                     return 5; // NOVA 10K
-  if (c.includes('5K'))                                      return 4; // NOVA 5K
-  if (c.includes('1500'))                                    return 3; // NOVA 1500
-  if (c.includes('NOVA'))                                    return 3; // "NOVA" anywhere = NOVA 1500
-  if (c.includes('500'))                                     return 2; // INN 500
-  if (c.includes('200') || c.includes('INN'))                return 1; // INN 200
-  if (c.includes('PIONEER') || c.includes('PAQUETE'))        return 1; // Pioneer Package = INN 200
-  return 0; // Cliente
+  console.log('[RANK] Mapping: "' + c + '"');
+  if (c.includes('100K'))                                    return 8;
+  if (c.includes('50K'))                                     return 7;
+  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('25K')) return 6;
+  if (c.includes('10K'))                                     return 5;
+  if (c.includes('5K'))                                      return 4;
+  if (c.includes('1500'))                                    return 3;
+  // NOVA solo (sin número) = NOVA 1500, pero NO matchear INNOVA
+  if (/\bNOVA\b/.test(c) && !c.includes('INNOVA'))          return 3;
+  if (c.includes('500'))                                     return 2;
+  if (c.includes('200'))                                     return 1;
+  if (/\bINN\b/.test(c) && !c.includes('INNOVA'))           return 1;
+  return 0;
 }
 
 export default async function handler(req, res) {
