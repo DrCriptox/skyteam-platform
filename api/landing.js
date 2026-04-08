@@ -272,7 +272,7 @@ export default async function handler(req, res) {
       let stats = {};
       if (SB_URL2 && SB_KEY2) {
         try {
-          const sbVisR = await fetch(SB_URL2 + '/rest/v1/landing_visits?select=ref,ip,type,day&limit=50000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
+          const sbVisR = await fetch(SB_URL2 + '/rest/v1/landing_visits?select=ref,ip,type,day&limit=50000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, 'Range': '0-49999' } });
           const sbVisits = await sbVisR.json();
           if (Array.isArray(sbVisits)) {
             sbVisits.forEach(function(v) {
@@ -341,8 +341,12 @@ export default async function handler(req, res) {
         dateFrom = nowCol.getUTCFullYear() + '-' + String(nowCol.getUTCMonth()+1).padStart(2,'0') + '-01';
       }
 
-      const ranking = Object.keys(allAsesores)
-        .filter(function(ref) { return ref !== 'default'; })
+      // Include ALL refs that have stats OR are in asesores (union of both)
+      const allRefs = {};
+      Object.keys(allAsesores).forEach(function(r){ if(r!=='default') allRefs[r]=true; });
+      Object.keys(stats).forEach(function(r){ allRefs[r]=true; });
+
+      const ranking = Object.keys(allRefs)
         .map(function(ref) {
           const asesor = allAsesores[ref] || {};
           const s = typeof stats[ref] === 'object' ? stats[ref] : {};
