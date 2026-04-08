@@ -8,7 +8,7 @@ const ADMIN_ONLY_FIELDS = ['rank', 'is_admin', 'expiry', 'ventas', 'equipo', 'sp
 // Fields that leaders (NOVA+ rank>=3) can change on team members
 const LEADER_FIELDS = ['bankcode'];
 // Fields that the user can change on their own profile
-const SELF_FIELDS = ['name', 'email', 'whatsapp', 'photo', 'birthday', 'valor_inscripcion', 'bankcode', 'profession', 'income_goal', 'comm_style'];
+const SELF_FIELDS = ['name', 'email', 'whatsapp', 'photo', 'birthday', 'valor_inscripcion', 'bankcode', 'profession', 'income_goal', 'comm_style', 'instagram'];
 
 async function getUserRole(username) {
   if (!username) return { isAdmin: false, isLeader: false, rank: 0 };

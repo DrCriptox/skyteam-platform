@@ -40,6 +40,10 @@ var stState = {
   treeFilterScore: 'all',
   treeFilterDays: 'all',
   treeFilterLevel: 'all',
+  treeShowCount: 20,
+  treePageSize: 20,
+  sociosSearch: '',
+  sociosShowCount: 20,
   rankPeriod: 'monthly',
   coachData: null,
   mentorTool: null,
@@ -565,6 +569,7 @@ function renderSkyTeam() {
   var tabs = [
     { id: 'dashboard', icon: '📊', label: 'Dashboard' },
     { id: 'arbol',     icon: '🌳', label: 'Arbol' },
+    { id: 'socios',    icon: '👥', label: 'Socios' },
     { id: 'ranking',   icon: '🏆', label: 'Ranking' },
     { id: 'alertas',   icon: '🔔', label: 'Alertas' },
     { id: 'mentor',    icon: '🧠', label: 'Mentor IA' }
@@ -589,6 +594,7 @@ function renderSkyTeam() {
   switch (stState.tab) {
     case 'dashboard': html += renderSTDashboard(); break;
     case 'arbol':     html += renderSTArbol();     break;
+    case 'socios':    html += renderSTSocios();    break;
     case 'ranking':   html += renderSTRanking();   break;
     case 'alertas':   html += renderSTAlertas();   break;
     case 'mentor':    html += renderSTMentor();    break;
@@ -605,10 +611,22 @@ function renderSkyTeam() {
       searchInput.value = stState.treeSearch;
       searchInput.addEventListener('input', function(e) {
         stState.treeSearch = e.target.value;
+        stState.treeShowCount = stState.treePageSize;
         var listEl = document.getElementById('st-tree-list-container');
-        if (listEl) {
-          listEl.innerHTML = _buildTreeHTML();
-        }
+        if (listEl) listEl.innerHTML = _buildTreeHTML();
+      });
+    }
+  }
+  // Bind socios search
+  if (stState.tab === 'socios') {
+    var sInput = document.getElementById('st-socios-search');
+    if (sInput) {
+      sInput.value = stState.sociosSearch || '';
+      sInput.addEventListener('input', function(e) {
+        stState.sociosSearch = e.target.value;
+        stState.sociosShowCount = 20;
+        var listEl = document.getElementById('st-socios-list');
+        if (listEl) listEl.innerHTML = _buildSociosList();
       });
     }
   }
@@ -934,15 +952,20 @@ function _buildTreeHTML() {
     });
   }
 
-  // Flat view (search or filter active)
+  // Flat view (search or filter active) — with pagination
   if (showFlat) {
     if (pool.length === 0) {
       var msg = search ? 'No se encontraron resultados para "' + _safe(stState.treeSearch) + '"' : 'Ning\u00fan miembro coincide con los filtros';
       return '<div class="st-tree-empty">' + msg + '</div>';
     }
-    var html = '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:8px;">' + pool.length + ' miembro' + (pool.length !== 1 ? 's' : '') + '</div>';
-    for (var j = 0; j < pool.length; j++) {
+    var pageSize = stState.treePageSize || 20;
+    var showing = Math.min(pool.length, (stState.treeShowCount || pageSize));
+    var html = '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:8px;">Mostrando ' + showing + ' de ' + pool.length + ' miembro' + (pool.length !== 1 ? 's' : '') + '</div>';
+    for (var j = 0; j < showing; j++) {
       html += _renderTreeNode(pool[j], 0, childrenMap, true);
+    }
+    if (showing < pool.length) {
+      html += '<button onclick="stState.treeShowCount=(stState.treeShowCount||20)+20;renderSkyTeam();" style="display:block;width:100%;padding:12px;margin-top:10px;border-radius:10px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);color:#C9A84C;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Mostrar 20 m\u00e1s (' + (pool.length - showing) + ' restantes)</button>';
     }
     return html;
   }
@@ -1192,6 +1215,64 @@ function _renderPodium(top) {
 
 // ═══════════════════════════════════════════════════════════════
 //  TAB: ALERTAS
+// ═══════════════════════════════════════════════════════════════
+//  TAB: SOCIOS GENERAL
+// ═══════════════════════════════════════════════════════════════
+
+function renderSTSocios() {
+  var d = stState.data;
+  if (!d || !d.members) return _spinnerHTML();
+  var html = '<div style="margin-bottom:12px;">';
+  html += '<input id="st-socios-search" type="text" placeholder="Buscar socio..." style="width:100%;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:13px;font-family:Outfit,Nunito,sans-serif;outline:none;box-sizing:border-box;" />';
+  html += '</div>';
+  html += '<div id="st-socios-list">' + _buildSociosList() + '</div>';
+  return html;
+}
+
+function _buildSociosList() {
+  var d = stState.data;
+  if (!d || !d.members) return '';
+  var members = d.members || [];
+  var search = (stState.sociosSearch || '').toLowerCase();
+  if (search) {
+    members = members.filter(function(m) {
+      return (m.name||'').toLowerCase().indexOf(search) !== -1 || (m.username||'').toLowerCase().indexOf(search) !== -1;
+    });
+  }
+  if (members.length === 0) return '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">Sin resultados</div>';
+  var showing = Math.min(members.length, stState.sociosShowCount || 20);
+  var html = '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:8px;">' + showing + ' de ' + members.length + ' socios</div>';
+  for (var i = 0; i < showing; i++) {
+    var m = members[i];
+    var rk = _getRank(m.rank);
+    var days = m.days_remaining != null ? m.days_remaining : null;
+    var daysColor = days === null ? 'rgba(255,255,255,0.2)' : days <= 7 ? '#E24B4A' : days <= 15 ? '#FFD700' : '#4ade80';
+    var wa = (m.whatsapp || '').replace(/[^0-9]/g, '');
+    var ig = m.instagram || '';
+    var photo = m.photo || '';
+    var ini = (m.name || m.username || '?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:0.5px solid rgba(255,255,255,0.04);">';
+    // Avatar
+    html += '<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.04);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);">' + (photo ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;">' : ini) + '</div>';
+    // Info
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _safe(m.name || m.username) + '</div>';
+    html += '<div style="display:flex;gap:6px;align-items:center;margin-top:2px;">';
+    html += '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:' + rk.bg + ';border:0.5px solid ' + rk.border + ';color:' + rk.color + ';">' + rk.icon + ' ' + rk.name + '</span>';
+    if (days !== null) html += '<span style="font-size:9px;color:' + daysColor + ';">' + days + 'd</span>';
+    html += '</div></div>';
+    // Contact buttons
+    html += '<div style="display:flex;gap:6px;flex-shrink:0;">';
+    if (wa) html += '<a href="https://wa.me/' + wa + '" target="_blank" style="width:32px;height:32px;border-radius:8px;background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);display:flex;align-items:center;justify-content:center;text-decoration:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg></a>';
+    if (ig) html += '<a href="https://instagram.com/' + ig.replace('@','') + '" target="_blank" style="width:32px;height:32px;border-radius:8px;background:rgba(225,48,108,0.12);border:0.5px solid rgba(225,48,108,0.25);display:flex;align-items:center;justify-content:center;text-decoration:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/></svg></a>';
+    html += '</div></div>';
+  }
+  if (showing < members.length) {
+    html += '<button onclick="stState.sociosShowCount=(stState.sociosShowCount||20)+20;var el=document.getElementById(\'st-socios-list\');if(el)el.innerHTML=_buildSociosList();" style="display:block;width:100%;padding:12px;margin-top:10px;border-radius:10px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);color:#C9A84C;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Mostrar 20 m\u00e1s (' + (members.length - showing) + ' restantes)</button>';
+  }
+  return html;
+}
+
 // ═══════════════════════════════════════════════════════════════
 
 function renderSTAlertas() {

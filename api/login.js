@@ -98,7 +98,8 @@ export default async function handler(req, res) {
         bankcode: user.bankcode || null,
         profession: user.profession || null,
         income_goal: user.income_goal || null,
-        comm_style: user.comm_style || null
+        comm_style: user.comm_style || null,
+        instagram: user.instagram || null
       }
     });
 

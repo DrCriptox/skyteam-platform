@@ -11775,7 +11775,14 @@ function renderPerfil() {
                 + '<button onclick="guardarWaPerfil()" style="background:rgba(74,222,128,0.12);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Guardar</button>'
                 + '</div>')
           + '</div>';
-        return eRow + waRow;
+        var igRow = '<div class="perfil-data-row" style="gap:6px;">'
+          + '<span class="perfil-data-label" style="color:#E1306C;">Instagram</span>'
+          + '<div style="display:flex;gap:6px;flex:1;align-items:center;min-width:0;">'
+          + '<span style="color:#E1306C;font-size:13px;font-weight:700;">@</span>'
+          + '<input id="pf-ig" type="text" value="'+(CU.instagram||'').replace('@','')+'" placeholder="tu_usuario" style="flex:1;min-width:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(225,48,108,0.2);border-radius:7px;color:#F0EDE6;font-size:11px;padding:6px 9px;outline:none;font-family:Outfit,Nunito,sans-serif;">'
+          + '<button onclick="guardarIgPerfil()" style="background:rgba(225,48,108,0.12);border:0.5px solid rgba(225,48,108,0.3);color:#E1306C;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Guardar</button>'
+          + '</div></div>';
+        return eRow + waRow + igRow;
       })()
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
     + '<div class="perfil-data-row" style="gap:6px;"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:13px;word-break:break-all;flex:1;">innovaia.app?ref='+(CU.ref||CU.username).toLowerCase()+'</span>'
@@ -12018,6 +12025,22 @@ function guardarWaPerfil() {
       showToast('✅ WhatsApp actualizado.');
     } else { showToast('Error al guardar ⚠️'); }
   }).catch(function(){ showToast('Error de conexión ⚠️'); });
+}
+
+function guardarIgPerfil() {
+  var val = (document.getElementById('pf-ig')||{}).value || '';
+  val = val.trim().replace(/^@/,'').replace(/\s+/g,'');
+  if(!val) { showToast('Ingresa tu usuario de Instagram'); return; }
+  fetch('/api/update-user', { method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ username: CU.username, updates: { instagram: val }, requestedBy: CU.username })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(d.ok) {
+      CU.instagram = val;
+      localStorage.setItem('skyteam_u', JSON.stringify(CU));
+      renderPerfil();
+      showToast('\u2705 Instagram actualizado: @' + val);
+    } else { showToast('Error al guardar \u26A0\uFE0F'); }
+  }).catch(function(){ showToast('Error de conexi\u00f3n \u26A0\uFE0F'); });
 }
 
 function copiarLink() {
@@ -12710,27 +12733,45 @@ function crmSetupDrag(){
       var id=e.dataTransfer.getData('text/plain');var etapa=col.getAttribute('data-etapa');
       if(id&&etapa)crmMoveStage(id,etapa);});});}
 
-async function crmMoveStage(id,etapa){
+function crmMoveStage(id,etapa){
   if(etapa==='cerrado')etapa='cerrado_ganado';
   var p=crmProspectos.find(function(x){return x.id===id;});
-  var oldEtapa = p ? p.etapa : '';
-  if(p)p.etapa=etapa;
-  crmRenderKanban();
-  var res=await crmApi('moveStage',{id:id,etapa:etapa});
-  if(res&&res.ok){
-    crmToast('Movido a '+(CRM_ETAPAS[etapa]?CRM_ETAPAS[etapa].label:etapa),'success');
-    // Notification 11: Prospect stage changed
-    if(typeof pushNotification === 'function' && p && oldEtapa !== etapa) {
-      var newEtapaLabel = CRM_ETAPAS[etapa] ? CRM_ETAPAS[etapa].label : etapa;
-      pushNotification({
-        id:'prospect_move_'+id+'_'+etapa, type:'info', icon:'💬',
-        title:'💬 Prospecto actualizado',
-        subtitle: p.nombre || 'Prospecto',
-        msg: (p.nombre || 'Prospecto') + ' avanzó a etapa: ' + newEtapaLabel
-      });
+  if(!p) return;
+  var oldEtapa = p.etapa || '';
+  if(oldEtapa === etapa) return;
+  var newLabel = CRM_ETAPAS[etapa] ? CRM_ETAPAS[etapa].label : etapa;
+  // Show mandatory note modal before moving
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);padding:20px;font-family:Outfit,Nunito,sans-serif;';
+  ov.innerHTML = '<div style="background:linear-gradient(145deg,#0a0a12,#12121c);border:0.5px solid rgba(201,168,76,0.2);border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">'
+    + '<div style="font-size:14px;font-weight:800;color:#F0EDE6;margin-bottom:4px;">Mover a: <span style="color:#C9A84C;">' + newLabel + '</span></div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;">' + (p.nombre||'Prospecto') + '</div>'
+    + '<textarea id="_moveNote" placeholder="Ej: Le present\u00e9 el plan, qued\u00f3 interesado..." rows="3" style="width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;margin-bottom:12px;outline:none;"></textarea>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button id="_moveCancel" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>'
+    + '<button id="_moveConfirm" style="flex:1;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">Confirmar</button>'
+    + '</div></div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){ var ta = document.getElementById('_moveNote'); if(ta) ta.focus(); }, 100);
+  document.getElementById('_moveCancel').onclick = function() { ov.remove(); crmRenderKanban(); };
+  document.getElementById('_moveConfirm').onclick = async function() {
+    var nota = (document.getElementById('_moveNote').value || '').trim();
+    if (!nota) { document.getElementById('_moveNote').style.borderColor = 'rgba(226,75,74,0.5)'; crmToast('Escribe una nota sobre el cambio', 'error'); return; }
+    ov.remove();
+    p.etapa = etapa;
+    crmRenderKanban();
+    // Save the note as interaction FIRST, then move stage
+    await crmApi('addInteraccion', { prospecto_id: id, tipo: 'cambio_etapa', contenido: 'De ' + (CRM_ETAPAS[oldEtapa]?CRM_ETAPAS[oldEtapa].label:oldEtapa) + ' a ' + newLabel + ': ' + nota });
+    var res = await crmApi('moveStage', { id: id, etapa: etapa });
+    if (res && res.ok) {
+      crmToast('Movido a ' + newLabel, 'success');
+      if (typeof pushNotification === 'function') {
+        pushNotification({ id:'prospect_move_'+id+'_'+etapa, type:'info', icon:'\uD83D\uDCAC', title:'\uD83D\uDCAC Prospecto actualizado', subtitle: p.nombre||'Prospecto', msg: (p.nombre||'Prospecto') + ' avanz\u00f3 a ' + newLabel });
+      }
     }
-  }
-  crmLoadData();}
+    crmLoadData();
+  };
+}
 /* ============================================================================
    SKY PROSPECTOS \u2014 GAMIFICATION + METRICS ENGINE
    ============================================================================ */
