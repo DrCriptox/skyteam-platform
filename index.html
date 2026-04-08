@@ -2650,6 +2650,8 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
     <div id="crm-metrics-bar" class="crm-metrics-bar"></div>
     <div id="crm-reminders-bar" class="crm-reminders-bar" style="display:none;"></div>
+    <div id="crm-reminders-view" style="display:none;padding:14px 0;"><div id="crm-reminders-full-list"></div></div>
+    <div id="crm-ranking-view" style="display:none;padding:14px 0;"><div id="crm-ranking-content"></div></div>
     <div id="crm-kanban" class="crm-kanban-board crm-kanban-wrap">
       <div class="crm-column" data-etapa="nuevo"><div class="crm-column-header"><span class="crm-column-emoji">🆕</span><span class="crm-column-name">Nuevo</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="contactado"><div class="crm-column-header"><span class="crm-column-emoji">📞</span><span class="crm-column-name">Contactado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
@@ -2787,13 +2789,6 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 
 <!-- CRM MODALS -->
-    <div id="crm-reminders-view" style="display:none;padding:14px 0;">
-      <div id="crm-reminders-full-list"></div>
-    </div>
-    <div id="crm-ranking-view" style="display:none;padding:14px 0;">
-      <div id="crm-ranking-content"></div>
-    </div>
-
 <div id="crm-modal-add" class="crm-modal" style="display:none;">
   <div class="crm-modal-content">
     <div class="crm-modal-header"><h2 id="crm-modal-add-title">Agregar Prospecto</h2><button class="crm-modal-close" onclick="closeCrmModalAdd()">✕</button></div>
