@@ -7819,6 +7819,13 @@ function _ssLandingSave() {
   var msg = document.getElementById('ss-l-msg');
   if(!nombre||!nombre.value.trim()){showToast('Ingresa tu nombre','error');return;}
   var fullWa = getPhoneValue('ss-l-wa-phone');
+  // If WhatsApp is locked, read from the locked display
+  if(!fullWa) {
+    var _lockedEl = document.getElementById('ss-l-wa-locked-num');
+    if(_lockedEl) fullWa = _lockedEl.textContent.replace(/[^0-9+]/g,'');
+  }
+  // Fallback: use CU.whatsapp
+  if(!fullWa && CU) fullWa = CU.whatsapp || CU.phone || '';
   if(!fullWa){showToast('Ingresa tu WhatsApp','error');return;}
   var defaultMsg = 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80';
   var finalMsg = (msg && msg.value.trim()) ? msg.value.trim() : defaultMsg;
