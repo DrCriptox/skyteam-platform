@@ -11650,6 +11650,9 @@ function sendSolicitud() {
   }
 
   // Comprehensive duplicate check (email + whatsapp + innova_user)
+  var solBtn = document.querySelector('[onclick*="sendSolicitud"]');
+  var btnOrigText = solBtn ? solBtn.textContent : '';
+  if(solBtn){solBtn.disabled=true;solBtn.textContent='⏳ Verificando...';}
   var _chkIU = document.getElementById('sol-innova-user').value.trim();
   var _chkEm = document.getElementById('sol-email').value.trim();
   var _chkWN = document.getElementById('sol-wa-num').value.trim();
