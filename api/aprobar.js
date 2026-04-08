@@ -5,13 +5,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
 
-// Simple rate limiting: max 3 registrations per IP per 5 minutes
+// Rate limiting: max 30 registrations per IP per 5 minutes (high for launch events)
 const _regRateMap = {};
 function _checkRateLimit(ip) {
   const now = Date.now();
   if (!_regRateMap[ip]) _regRateMap[ip] = [];
   _regRateMap[ip] = _regRateMap[ip].filter(t => now - t < 300000);
-  if (_regRateMap[ip].length >= 3) return false;
+  if (_regRateMap[ip].length >= 30) return false;
   _regRateMap[ip].push(now);
   return true;
 }
@@ -37,16 +37,19 @@ function hashPassword(plain) {
 // 0=Cliente, 1=INN200, 2=INN500, 3=NOVA1500, 4=NOVA5K, 5=NOVA10K, 6=NOVA DIAMOND(25K), 7=NOVA50K, 8=NOVA100K
 function mapInnovaRank(classification) {
   if (!classification) return 0;
-  const c = classification.toUpperCase().trim();
+  // Clean: remove extra whitespace, newlines, special chars
+  const c = classification.toUpperCase().trim().replace(/\s+/g, ' ').replace(/[^A-Z0-9 ]/g, '');
+  console.log('[RANK] Mapping classification: "' + c + '" from raw: "' + classification + '"');
   if (c.includes('100K'))                                    return 8; // NOVA 100K
   if (c.includes('50K'))                                     return 7; // NOVA 50K
-  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('25K')) return 6; // NOVA DIAMOND (25K)
+  if (c.includes('DIAMOND') || c.includes('DIAMANTE') || c.includes('25K')) return 6; // NOVA DIAMOND
   if (c.includes('10K'))                                     return 5; // NOVA 10K
   if (c.includes('5K'))                                      return 4; // NOVA 5K
   if (c.includes('1500'))                                    return 3; // NOVA 1500
-  if (c === 'NOVA')                                          return 3; // "NOVA" solo = NOVA 1500
+  if (c.includes('NOVA'))                                    return 3; // "NOVA" anywhere = NOVA 1500
   if (c.includes('500'))                                     return 2; // INN 500
   if (c.includes('200') || c.includes('INN'))                return 1; // INN 200
+  if (c.includes('PIONEER') || c.includes('PAQUETE'))        return 1; // Pioneer Package = INN 200
   return 0; // Cliente
 }
 
