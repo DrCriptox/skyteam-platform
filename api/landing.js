@@ -90,18 +90,18 @@ export default async function handler(req, res) {
         mensaje: (mensaje || 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes').trim()
       };
 
-      // Write to new skyteam file (5 retries with random delay for concurrency)
+      // Write to new skyteam file (8 retries with increasing delay for high concurrency)
       let saved = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 500 + Math.random() * 1500));
+      for (let attempt = 0; attempt < 8; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 3000 + attempt * 500));
         const { data, sha } = await readGHFile(FILE_ASESORES);
         data[slug] = asesorData;
         if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) { saved = true; break; }
       }
 
-      // Also write to old asesores.json (5 retries, no base64 photos)
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 500 + Math.random() * 1500));
+      // Also write to old asesores.json (8 retries, no base64 photos)
+      for (let attempt = 0; attempt < 8; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 3000 + attempt * 500));
         const { data, sha } = await readGHFile('asesores.json');
         const existing = data[slug] || {};
         const newFoto = foto && !foto.startsWith('data:') ? foto : (existing.foto || '');
