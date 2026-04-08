@@ -268,6 +268,20 @@ export default async function handler(req, res) {
       const SB_URL2 = process.env.SUPABASE_URL;
       const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
       const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
+
+      // Colombia time (UTC-5) for period calculations
+      const nowCol = new Date(Date.now() - 18000000);
+      let dateFrom = null;
+      if (period === 'daily') {
+        dateFrom = nowCol.toISOString().split('T')[0];
+      } else if (period === 'weekly') {
+        const day = nowCol.getUTCDay(); const diff = day === 0 ? 6 : day - 1;
+        const monday = new Date(nowCol.getTime()); monday.setUTCDate(nowCol.getUTCDate() - diff);
+        dateFrom = monday.toISOString().split('T')[0];
+      } else if (period === 'monthly') {
+        dateFrom = nowCol.getUTCFullYear() + '-' + String(nowCol.getUTCMonth()+1).padStart(2,'0') + '-01';
+      }
+
       // Read visit data from Supabase with pagination (1000 rows per page)
       let stats = {};
       if (SB_URL2 && SB_KEY2) {
@@ -357,19 +371,6 @@ export default async function handler(req, res) {
             }
           });
         } catch(e) {}
-      }
-
-      // Colombia time (UTC-5) for period calculations
-      const nowCol = new Date(Date.now() - 18000000);
-      let dateFrom = null;
-      if (period === 'daily') {
-        dateFrom = nowCol.toISOString().split('T')[0];
-      } else if (period === 'weekly') {
-        const day = nowCol.getUTCDay(); const diff = day === 0 ? 6 : day - 1;
-        const monday = new Date(nowCol.getTime()); monday.setUTCDate(nowCol.getUTCDate() - diff);
-        dateFrom = monday.toISOString().split('T')[0];
-      } else if (period === 'monthly') {
-        dateFrom = nowCol.getUTCFullYear() + '-' + String(nowCol.getUTCMonth()+1).padStart(2,'0') + '-01';
       }
 
       // Include ALL refs that have stats OR are in asesores (union of both)
