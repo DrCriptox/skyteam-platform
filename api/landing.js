@@ -268,31 +268,28 @@ export default async function handler(req, res) {
       const SB_URL2 = process.env.SUPABASE_URL;
       const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
       const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
-      // Read ALL visit data from Supabase (single source of truth)
+      // Read aggregated stats from Supabase via SQL function (accurate, no row limits)
       let stats = {};
       if (SB_URL2 && SB_KEY2) {
         try {
-          const sbVisR = await fetch(SB_URL2 + '/rest/v1/landing_visits?select=ref,ip,type,day&limit=50000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, 'Range': '0-49999' } });
-          const sbVisits = await sbVisR.json();
-          if (Array.isArray(sbVisits)) {
-            sbVisits.forEach(function(v) {
-              if (!v.ref) return;
-              if (!stats[v.ref]) stats[v.ref] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, conversions_ips: {} };
-              const s = stats[v.ref];
-              if (v.type === 'conversion') {
-                if (!s.conversions_ips[v.ip]) { s.conversions_ips[v.ip] = true; s.conversions++; }
-                if (!s.days_conversions) s.days_conversions = {};
-                s.days_conversions[v.day] = (s.days_conversions[v.day] || 0) + 1;
-              } else {
-                s.total++;
-                s.ips[v.ip] = (s.ips[v.ip] || 0) + 1;
-                s.days[v.day] = (s.days[v.day] || 0) + 1;
-                if (!s.days_ips[v.day]) s.days_ips[v.day] = {};
-                s.days_ips[v.day][v.ip] = true;
-              }
+          const sbStatsR = await fetch(SB_URL2 + '/rest/v1/rpc/get_landing_stats', {
+            method: 'POST',
+            headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ p_from: dateFrom || null })
+          });
+          const sbStats = await sbStatsR.json();
+          if (Array.isArray(sbStats)) {
+            sbStats.forEach(function(s) {
+              stats[s.ref] = {
+                total: Number(s.total) || 0,
+                uniqueIps: Number(s.unique_ips) || 0,
+                duplicadas: Number(s.duplicadas) || 0,
+                conversions: Number(s.conversions) || 0,
+                conversionIps: Number(s.conversion_ips) || 0
+              };
             });
           }
-        } catch(e) { console.warn('[Ranking] SB visits read failed:', e.message); }
+        } catch(e) { console.warn('[Ranking] SB stats RPC failed:', e.message); }
       }
       // Overlay Supabase landing_profiles onto skyAsesores (fresher names/data)
       if (SB_URL2 && SB_KEY2) {
@@ -353,52 +350,21 @@ export default async function handler(req, res) {
       const ranking = Object.keys(allRefs)
         .map(function(ref) {
           const asesor = allAsesores[ref] || {};
-          const s = typeof stats[ref] === 'object' ? stats[ref] : {};
+          const s = stats[ref] || {};
 
-          let visitas = 0, uniqueIps = 0, conversiones = 0;
-
-          if (dateFrom) {
-            // ── Period filter ──
-            if (s.days) Object.keys(s.days).forEach(function(d) { if (d >= dateFrom) visitas += (typeof s.days[d] === 'number' ? s.days[d] : 0); });
-            // Unique visit IPs in period
-            if (s.days_ips) {
-              const periodIps = {};
-              Object.keys(s.days_ips).forEach(function(d) {
-                if (d >= dateFrom && typeof s.days_ips[d] === 'object')
-                  Object.keys(s.days_ips[d]).forEach(function(ip) { periodIps[ip] = true; });
-              });
-              uniqueIps = Object.keys(periodIps).length;
-            } else { uniqueIps = s.ips ? Object.keys(s.ips).length : 0; }
-            // Unique conversion IPs in period (each IP máx 1 conversión)
-            if (s.days_conversions_ips) {
-              const convIps = {};
-              Object.keys(s.days_conversions_ips).forEach(function(d) {
-                if (d >= dateFrom && typeof s.days_conversions_ips[d] === 'object')
-                  Object.keys(s.days_conversions_ips[d]).forEach(function(ip) { convIps[ip] = true; });
-              });
-              conversiones = Object.keys(convIps).length;
-            } else if (s.days_conversions) {
-              Object.keys(s.days_conversions).forEach(function(d) { if (d >= dateFrom) conversiones += s.days_conversions[d] || 0; });
-            }
-          } else {
-            // ── All-time ──
-            visitas = s.total || 0;
-            uniqueIps = s.ips ? Object.keys(s.ips).length : 0;
-            // Use raw historical count — conversions_ips only exists since the tracking update
-            // so using it alone would discard all pre-update conversions. Cap is applied below.
-            conversiones = s.conversions || 0;
-          }
+          // Stats come pre-aggregated from SQL function (filtered by dateFrom)
+          const visitas = s.total || 0;
+          const uniqueIps = s.uniqueIps || 0;
+          const duplicadas = s.duplicadas || 0;
+          const conversiones = s.conversionIps || s.conversions || 0;
 
           // Score = visitas(+1) - duplicadas(-0.5) + conversiones_unicas(+20)
-          // Efectividad = conversiones / visitas_unicas * 100
-          const effectiveUniqueIps = (uniqueIps === 0 && visitas > 0) ? visitas : uniqueIps;
-          const duplicadas = Math.max(0, visitas - effectiveUniqueIps);
           const validConversions = uniqueIps > 0 ? Math.min(conversiones, uniqueIps) : conversiones;
           const score = Math.max(0, Math.round(visitas - (duplicadas * 0.5) + (validConversions * 20)));
-          const efectividad = effectiveUniqueIps > 0 ? Math.round((validConversions / effectiveUniqueIps) * 100) : 0;
+          const efectividad = uniqueIps > 0 ? Math.round((validConversions / uniqueIps) * 100) : 0;
           return {
             ref: ref, nombre: asesor.nombre || ref,
-            visitas: visitas, uniqueVisitas: effectiveUniqueIps, duplicadas: duplicadas, conversiones: validConversions, score: score, efectividad: efectividad,
+            visitas: visitas, uniqueVisitas: uniqueIps, duplicadas: duplicadas, conversiones: validConversions, score: score, efectividad: efectividad,
             whatsapp: asesor.whatsapp || '', foto: asesor.foto || '',
             newLanding: !!skyAsesores[ref]
           };
