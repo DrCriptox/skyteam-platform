@@ -3057,9 +3057,9 @@ var RANKING_DATA = [
 ];
 
 const TRIPS = [
-  {dest:'Crucero Caribe 🚢', date:'Julio 2025', req:10, reqLabel:'10 ventas en el trimestre', desc:'4 noches en crucero por el Caribe. Todo incluido. Acompañante incluido para los primeros 20 clasificados.', badge:'Próximo', badgeColor:'var(--teal)', metric:'ventas'},
-  {dest:'Retiro Miami 🌴',   date:'Septiembre 2025', req:20, reqLabel:'20 ventas o equipo de 8+', desc:'3 días de bootcamp de liderazgo en Miami + día de playa. Solo para Líderes y superior.', badge:'Abierto', badgeColor:'var(--blue)', metric:'ventas'},
-  {dest:'Yate Cartagena ⛵', date:'Diciembre 2025', req:40, reqLabel:'Rango Élite o 40 ventas', desc:'2 días en yate privado. Cartagena de Indias. Solo para los top 15 del equipo este año.', badge:'Exclusivo', badgeColor:'var(--gold)', metric:'ventas'}
+  {dest:'Crucero Caribe \uD83D\uDEA2', date:'Marzo 2026', req:10, reqLabel:'10 ciclos de recalificaci\u00f3n INN 500 y NOVA', desc:'7 noches y 8 d\u00edas de crucero por el Caribe. Una experiencia \u00fanica para los l\u00edderes que cumplieron la meta.', badge:'\u2705 Realizado', badgeColor:'#1D9E75', metric:'ventas', completed:true, progress:100},
+  {dest:'Dub\u00e1i \uD83C\uDFD9\uFE0F', date:'Junio 2026', req:0, reqLabel:'Calificaci\u00f3n cerrada', desc:'3 noches y 4 d\u00edas en Dub\u00e1i. Experiencia de lujo exclusiva para los top l\u00edderes.', badge:'Calificaci\u00f3n cerrada', badgeColor:'#E24B4A', metric:'ventas', completed:false, progress:100, closed:true},
+  {dest:'Bootcamp Panam\u00e1 \uD83C\uDDF5\uD83C\uDDE6', date:'Agosto 2026', req:1500, reqLabel:'$1,500 USD en ventas', desc:'3 noches y 4 d\u00edas en Panam\u00e1. Bootcamp intensivo de liderazgo y estrategia de negocio.', badge:'Calificaci\u00f3n cerrada', badgeColor:'#E24B4A', metric:'ventas', completed:false, progress:100, closed:true}
 ];
 
 const ANUNCIOS = [
@@ -9785,11 +9785,11 @@ function renderViajes() {
       + '<span style="font-size:11px;color:var(--text);font-weight:600;">' + t.reqLabel + '</span>'
       + '</div>'
       + '<div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">'
-      + '<span style="font-size:11px;color:var(--muted);font-weight:600;">Tu progreso</span>'
-      + '<span style="font-size:11px;font-weight:700;color:' + (califica?'var(--success)':'var(--gold)') + ';">' + (califica ? '✓ Clasificado' : CU.ventas + ' / ' + t.req + ' ventas') + '</span>'
+      + '<span style="font-size:11px;color:var(--muted);font-weight:600;">' + (t.completed ? 'Estado' : t.closed ? 'Calificaci\u00f3n' : 'Tu progreso') + '</span>'
+      + '<span style="font-size:11px;font-weight:700;color:' + (t.completed?'#1D9E75':t.closed?'#E24B4A':califica?'var(--success)':'var(--gold)') + ';">' + (t.completed ? '\u2705 Viaje realizado' : t.closed ? '\uD83D\uDD12 Cerrada' : califica ? '\u2713 Clasificado' : CU.ventas + ' / ' + t.req + ' ventas') + '</span>'
       + '</div>'
       + '<div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;">'
-      + '<div style="height:100%;width:' + prog + '%;background:' + (califica?'linear-gradient(90deg,#1D9E75,#2ECC71)':'linear-gradient(90deg,#FFD700,#FF8C00)') + ';border-radius:4px;transition:width 1s cubic-bezier(0.22,1,0.36,1);"></div>'
+      + '<div style="height:100%;width:' + (t.progress||prog) + '%;background:' + (t.completed?'linear-gradient(90deg,#1D9E75,#2ECC71)':t.closed?'linear-gradient(90deg,#E24B4A,#FF6B6B)':califica?'linear-gradient(90deg,#1D9E75,#2ECC71)':'linear-gradient(90deg,#FFD700,#FF8C00)') + ';border-radius:4px;transition:width 1s cubic-bezier(0.22,1,0.36,1);"></div>'
       + '</div>'
       + '</div>'
       + '</div>';
