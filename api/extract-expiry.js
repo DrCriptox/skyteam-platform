@@ -16,40 +16,46 @@ export default async function handler(req, res) {
     const prompt = `Analiza esta captura de pantalla del perfil de 8innova.biz/profile.
 La imagen puede venir en 2 formatos. Ambos tienen los MISMOS 4 datos obligatorios.
 
-=== FORMATO VERTICAL (captura de celular) ===
-De arriba a abajo:
-- Foto circular del usuario con un BADGE de color que dice los DIAS RESTANTES (ej: "64 dias restantes")
-- NOMBRE COMPLETO en texto grande (ej: "Genesis Alejandra Sierra Ayala")
-- USUARIO: texto pequeno gris justo DEBAJO del nombre (ej: "angel2026"). Es UNA sola palabra sin espacios.
-- Mas abajo, scroll hacia abajo: campos de email, contrasena, etc.
-- Aun mas abajo: etiqueta "Clasificacion Actual:" seguida del RANGO (ej: "NOVA DIAMOND")
-- Debajo: etiqueta "Patrocinado:" o "Patrocinador:" seguida del SPONSOR (ej: "LEGEND")
+=== FORMATO 1: VERTICAL (captura de celular) ===
+De arriba a abajo en la pantalla:
+- Logo "innova" en la barra superior
+- Foto circular del usuario con BADGE de color: "67 dias restantes" ← DATO 1
+- NOMBRE COMPLETO grande: "Genesis Zaymara Rivera Ayala"
+- Texto pequeno gris debajo del nombre: "angel2026" ← DATO 2 (USUARIO)
+- "KYC Verificado"
+- Boton "Mas Informacion"
+- Correo electronico, Restablecer Contrasena (IGNORAR estos campos)
+- "Clasificacion Actual" seguido de "NOVA DIAMOND" ← DATO 3 (RANGO)
+- "Patrocinador" seguido de "LEGEND" ← DATO 4 (SPONSOR)
+- "Colocacion" (IGNORAR SIEMPRE, NO es el sponsor)
 
-=== FORMATO HORIZONTAL (captura de computadora) ===
-Mismos elementos pero distribuidos en pantalla ancha:
-- Centro/derecha: Foto circular con BADGE de DIAS RESTANTES
-- Debajo de la foto: NOMBRE COMPLETO grande, y debajo el USUARIO en texto pequeno
-- Mas abajo en la pagina: "Clasificacion Actual:" con el RANGO
-- Debajo: "Patrocinado:" con el SPONSOR
+=== FORMATO 2: HORIZONTAL (captura de computadora, puede estar rotada) ===
+La pagina se ve en pantalla ancha con tabs arriba (Detalles Personales, Detalles de Contacto, etc):
+- Foto circular con BADGE: "20 dias restantes" ← DATO 1
+- Nombre: "francis guerrero"
+- Texto pequeno debajo: "francis17" ← DATO 2 (USUARIO)
+- "KYC No Verificado"
+- "Patrocinador" seguido de "LEGEND" ← DATO 4 (SPONSOR)
+- "Colocacion" seguido de "CARMENZA26" ← IGNORAR (NO es el sponsor)
+- "Paquete" seguido de "SPECIAL INNPULSE" ← IGNORAR (NO es el rango)
+- "Clasificacion Actual" seguido de "No se Alcanzo Rango" ← DATO 3 (RANGO)
+- "Vencimiento" seguido de "27 abr 2026, 22:58:22" (fecha alternativa si no hay badge)
 
-=== LOS 4 DATOS OBLIGATORIOS ===
-1. DIAS RESTANTES: numero en el badge de color pegado a la foto circular (ej: "64 dias restantes"). Si no hay badge pero se ve "Fecha de vencimiento:", calcular los dias desde hoy hasta esa fecha.
-2. USUARIO: la palabra corta SIN ESPACIOS debajo del nombre completo. NUNCA es el nombre completo (que tiene espacios). NUNCA es el Patrocinador. NUNCA es la Colocacion. Ejemplos: "angel2026", "teamgarcia", "legend".
-3. CLASIFICACION: el texto despues de la etiqueta "Clasificacion Actual:". Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K. Si dice PIONEER, EXPLORER o Package: found=false.
-4. SPONSOR: el texto despues de "Patrocinado:" o "Patrocinador:". IGNORAR siempre "Colocacion:" (es otro campo diferente, NO es el sponsor).
+=== LOS 4 DATOS A EXTRAER ===
+1. DIAS RESTANTES: numero en el badge de color pegado a la foto (ej: "67 dias restantes" → 67). Si no hay badge, usar "Vencimiento:" y calcular dias desde hoy.
+2. USUARIO: palabra corta SIN ESPACIOS debajo del nombre completo. NUNCA confundir con el nombre (tiene espacios), ni con Patrocinador, ni con Colocacion. Ej: "angel2026", "francis17".
+3. RANGO (Clasificacion Actual): SOLO el texto despues de "Clasificacion Actual:". Valores validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K, No se Alcanzo Rango. IGNORAR "Paquete:" (SPECIAL INNPULSE, PIONEER, EXPLORER NO son rangos).
+4. SPONSOR (Patrocinador): SOLO el texto despues de "Patrocinador:". IGNORAR "Colocacion:" SIEMPRE (es otro campo completamente diferente).
 
 === RECHAZAR (found=false) SI ===
-- No es 8innova.biz/profile
+- No es 8innova.biz
 - Imagen borrosa o cortada
-- No se ve el badge de dias restantes NI fecha de vencimiento
-- No se ve el usuario (texto pequeno debajo del nombre)
-- No se ve "Clasificacion Actual:" con un rango valido
-- No se ve "Patrocinado:" o "Patrocinador:"
-- La imagen solo muestra parte del perfil (ej: solo la foto y nombre pero no la clasificacion ni el sponsor)
+- Falta CUALQUIERA de los 4 datos
+- Solo se ve la foto y nombre pero NO la clasificacion ni patrocinador (foto incompleta)
 
-Responde SOLO JSON. Ejemplos:
-Si todo esta visible: {"found":true,"days_remaining":64,"expiry_date":"2026-08-15","username":"angel2026","classification":"NOVA DIAMOND","sponsor":"LEGEND"}
-Si falta algo: {"found":false,"reason":"No se ve la Clasificacion Actual en la imagen. Se necesita una captura mas completa.","visible":{"days_remaining":true,"username":"angel2026","classification":false,"sponsor":false}}`;
+Responde SOLO JSON:
+OK: {"found":true,"days_remaining":67,"expiry_date":"2026-06-14","username":"angel2026","classification":"NOVA DIAMOND","sponsor":"LEGEND"}
+FALTA: {"found":false,"reason":"No se ve Clasificacion Actual ni Patrocinador. La captura solo muestra la parte superior del perfil.","visible":{"days_remaining":67,"username":"angel2026","classification":false,"sponsor":false}}`;
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
