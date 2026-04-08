@@ -31,13 +31,23 @@ export default async function handler(req, res) {
             },
             {
               type: 'text',
-              text: 'Analiza esta captura de pantalla del perfil de 8innova.biz/profile.\n\n=== ESTRUCTURA DE LA PAGINA ===\nLa pagina SIEMPRE tiene esta estructura en la zona IZQUIERDA:\n1. Foto circular del usuario (con borde rojo o azul)\n2. Badge con "X dias restantes" (verde o rojo)\n3. NOMBRE COMPLETO en texto GRANDE (ej: "JAVIER Y YAN C. GARCIA" o "GeorgiAlvarez YonferRojas") — ESTO NO ES EL USUARIO\n4. USUARIO en texto MAS PEQUENO justo debajo del nombre (ej: "Teamgarcia", "legend", "angel2026", "david22") — ES UNA SOLA PALABRA, sin espacios, sin mayusculas mixtas del nombre\n5. "KYC Verificado" o "KYC No Verificado"\n6. Boton "Mas Informacion"\n\nEn la zona CENTRAL/DERECHA:\n- "Patrocinador: XXXXX" (este es el SPONSOR)\n- "Colocacion: XXXXX" (IGNORAR COMPLETAMENTE — NO es sponsor)\n- "Clasificacion Actual: NOVA 50K" (o INN 200, NOVA, etc)\n- "Vencimiento: 27 mar 2026, 22:39:23"\n\nMas abajo hay "Detalles Personales" con Nombre y Apellido — NO usar estos campos.\n\n=== REGLAS CRITICAS PARA USUARIO ===\n- El USUARIO es el texto PEQUENO entre el NOMBRE GRANDE y "KYC"\n- El USUARIO es SIEMPRE una sola palabra sin espacios (ej: Teamgarcia, legend, angel2026)\n- El NOMBRE tiene espacios, mayusculas, y puede tener varios nombres/apellidos\n- Si ves "JAVIER Y YAN C. GARCIA" seguido de "Teamgarcia" → usuario = "Teamgarcia"\n- NUNCA confundir el nombre completo con el usuario\n- NUNCA usar Patrocinador ni Colocacion como usuario\n\n=== QUE EXTRAER ===\n1) DIAS RESTANTES: numero del badge "X dias restantes" (puede ser 0)\n2) VENCIMIENTO: fecha despues de "Vencimiento:" → formato YYYY-MM-DD\n3) USUARIO: la palabra corta debajo del nombre, arriba de KYC\n4) CLASIFICACION: texto de "Clasificacion Actual" (NOVA, NOVA 50K, INN 200, No se Alcanzo Rango, etc)\n5) SPONSOR: SOLO el texto de "Patrocinador:". IGNORAR "Colocacion:" completamente\n\n=== RECHAZAR SI ===
-- No es pagina de 8innova.biz: found=false
-- Imagen borrosa/cortada: found=false
-- No se ve Clasificacion Actual con un rango (NOVA, INN 200, etc): found=false, reason=No se ve Clasificacion/Rango
-- PIONEER/EXPLORER Package NO son rangos. Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K
-- Si solo ves Package sin Clasificacion Actual: found=false
-- NUNCA poner Package como classification. Si no ves Clasificacion Actual, pon classification: null
+              text: 'Analiza esta captura de pantalla del perfil de 8innova.biz/profile.
+
+=== ESTRUCTURA ===
+Zona IZQUIERDA: 1)Foto circular 2)Badge dias restantes 3)NOMBRE GRANDE 4)USUARIO pequeno debajo del nombre 5)KYC
+Zona CENTRAL: Patrocinador, Colocacion (IGNORAR), Clasificacion Actual, Vencimiento
+
+=== REGLAS USUARIO ===
+El USUARIO es la palabra corta debajo del NOMBRE GRANDE, arriba de KYC. Una sola palabra sin espacios.
+NUNCA confundir nombre completo con usuario. NUNCA usar Patrocinador ni Colocacion como usuario.
+
+=== QUE EXTRAER ===
+1)DIAS RESTANTES del badge 2)VENCIMIENTO formato YYYY-MM-DD 3)USUARIO palabra corta 4)CLASIFICACION de Clasificacion Actual 5)SPONSOR de Patrocinador (IGNORAR Colocacion)
+
+=== RECHAZAR SI ===
+No es 8innova.biz: found=false. Imagen borrosa: found=false. No se ve Clasificacion Actual: found=false.
+PIONEER/EXPLORER Package NO son rangos. Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K.
+Si solo ves Package sin Clasificacion Actual: found=false. NUNCA poner Package como classification.
 
 Responde SOLO JSON: { "found": true, "days_remaining": 0, "expiry_date": "2026-03-27", "username": "Teamgarcia", "classification": "NOVA", "sponsor": "ANGEL2026" }'
             }
