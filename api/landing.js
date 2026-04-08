@@ -111,6 +111,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, asesor, exists: !!asesor });
     }
 
+    // ── MIGRATE: bulk import historical stats to Supabase ──
+    if (action === 'migrateStats') {
+      const adminKey = req.body.adminKey;
+      if (adminKey !== process.env.ADMIN_PUSH_KEY) return res.status(401).json({ error: 'Unauthorized' });
+      const rows = req.body.rows || [];
+      if (!rows.length) return res.status(400).json({ error: 'No rows' });
+      const SB_URL_M = process.env.SUPABASE_URL;
+      const SB_KEY_M = process.env.SUPABASE_SERVICE_KEY;
+      if (!SB_URL_M || !SB_KEY_M) return res.status(500).json({ error: 'SB not configured' });
+      const sbH = { apikey: SB_KEY_M, Authorization: 'Bearer ' + SB_KEY_M, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+      const r = await fetch(SB_URL_M + '/rest/v1/landing_visits', { method: 'POST', headers: sbH, body: JSON.stringify(rows) });
+      if (!r.ok) { const t = await r.text(); return res.status(500).json({ error: t.substring(0, 200) }); }
+      return res.status(200).json({ ok: true, inserted: rows.length });
+    }
+
     // ── TRACK: count visits and conversions — Supabase (instant, atomic) ──
     if (action === 'track' || action === 'capi') {
       const trackRef = (req.body.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -251,23 +266,18 @@ export default async function handler(req, res) {
       const { period } = req.body || {};
       const SB_URL2 = process.env.SUPABASE_URL;
       const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
-      const [{ data: ghStats }, { data: skyAsesores }] = await Promise.all([
-        readGHFile(FILE_STATS),
-        readGHFile(FILE_ASESORES)
-      ]);
-      // Read Supabase landing_visits (primary, real-time) and merge with GitHub stats (legacy)
-      let stats = ghStats || {};
+      const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
+      // Read ALL visit data from Supabase (single source of truth)
+      let stats = {};
       if (SB_URL2 && SB_KEY2) {
         try {
-          const sbVisR = await fetch(SB_URL2 + '/rest/v1/landing_visits?select=ref,ip,type,day', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
+          const sbVisR = await fetch(SB_URL2 + '/rest/v1/landing_visits?select=ref,ip,type,day&limit=50000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
           const sbVisits = await sbVisR.json();
-          if (Array.isArray(sbVisits) && sbVisits.length > 0) {
-            // Build stats from Supabase visits (overrides GitHub for refs that have SB data)
-            const sbStats = {};
+          if (Array.isArray(sbVisits)) {
             sbVisits.forEach(function(v) {
               if (!v.ref) return;
-              if (!sbStats[v.ref]) sbStats[v.ref] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, conversions_ips: {} };
-              const s = sbStats[v.ref];
+              if (!stats[v.ref]) stats[v.ref] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, conversions_ips: {} };
+              const s = stats[v.ref];
               if (v.type === 'conversion') {
                 if (!s.conversions_ips[v.ip]) { s.conversions_ips[v.ip] = true; s.conversions++; }
                 if (!s.days_conversions) s.days_conversions = {};
@@ -279,30 +289,6 @@ export default async function handler(req, res) {
                 if (!s.days_ips[v.day]) s.days_ips[v.day] = {};
                 s.days_ips[v.day][v.ip] = true;
               }
-            });
-            // Merge: combine GitHub + Supabase data (sum visits, union IPs)
-            Object.keys(sbStats).forEach(function(ref) {
-              var gh = stats[ref] || {};
-              var sb = sbStats[ref];
-              // For days: take the MAX of each source (avoids double-counting)
-              var merged = { total: Math.max(gh.total||0, sb.total||0), ips: {}, conversions: Math.max(gh.conversions||0, sb.conversions||0), days: {}, days_ips: {}, days_conversions: {}, conversions_ips: {} };
-              // Union IPs from both sources
-              if(gh.ips) Object.keys(gh.ips).forEach(function(ip){ merged.ips[ip] = Math.max(gh.ips[ip]||0, (sb.ips||{})[ip]||0); });
-              if(sb.ips) Object.keys(sb.ips).forEach(function(ip){ if(!merged.ips[ip]) merged.ips[ip] = sb.ips[ip]; });
-              // Days: take MAX per day (GitHub had old data, Supabase has new)
-              var allDays = {};
-              if(gh.days) Object.keys(gh.days).forEach(function(d){ allDays[d] = true; });
-              if(sb.days) Object.keys(sb.days).forEach(function(d){ allDays[d] = true; });
-              Object.keys(allDays).forEach(function(d){
-                merged.days[d] = Math.max((gh.days||{})[d]||0, (sb.days||{})[d]||0);
-                merged.days_ips[d] = Object.assign({}, (gh.days_ips||{})[d]||{}, (sb.days_ips||{})[d]||{});
-              });
-              // Conversions: union
-              if(gh.conversions_ips) Object.keys(gh.conversions_ips).forEach(function(ip){ merged.conversions_ips[ip] = true; });
-              if(sb.conversions_ips) Object.keys(sb.conversions_ips).forEach(function(ip){ merged.conversions_ips[ip] = true; });
-              if(gh.days_conversions) Object.keys(gh.days_conversions).forEach(function(d){ merged.days_conversions[d] = Math.max((gh.days_conversions||{})[d]||0, (sb.days_conversions||{})[d]||0); });
-              if(sb.days_conversions) Object.keys(sb.days_conversions).forEach(function(d){ if(!merged.days_conversions[d]) merged.days_conversions[d] = sb.days_conversions[d]; });
-              stats[ref] = merged;
             });
           }
         } catch(e) { console.warn('[Ranking] SB visits read failed:', e.message); }
