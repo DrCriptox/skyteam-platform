@@ -11500,6 +11500,7 @@ function sendSolicitud() {
   var pass       = document.getElementById('sol-pass') ? document.getElementById('sol-pass').value : '';
   var pass2      = document.getElementById('sol-pass2') ? document.getElementById('sol-pass2').value : '';
 
+  var valorInscripcion = document.getElementById('sol-valor-inscripcion') ? parseInt(document.getElementById('sol-valor-inscripcion').value) || 0 : 0;
   var imgInput   = document.getElementById('sol-img');
   var expiryData = (imgInput && imgInput._expiryData) ? imgInput._expiryData : null;
 
