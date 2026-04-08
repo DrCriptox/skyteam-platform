@@ -3446,7 +3446,14 @@ function doLogin() {
     .then(function(res) {
       if(btn) { btn.disabled = false; btn.textContent = 'Iniciar Sesión'; }
       if(res.ok && res.data.user) {
+        // Preserve locally-saved BANKCODE if server hasn't synced yet
+        var _localBK = null;
+        try { var _prev = JSON.parse(localStorage.getItem('skyteam_u') || '{}'); _localBK = _prev.bankcode || null; } catch(e) {}
         CU = res.data.user;
+        if (!CU.bankcode && _localBK) {
+          CU.bankcode = _localBK;
+          console.log('[BANKCODE] Restored from localStorage:', _localBK);
+        }
         // Store session WITHOUT password
         try { localStorage.setItem('skyteam_u', JSON.stringify(CU)); } catch(e) {}
         // Sync photo: server ALWAYS wins over localStorage
@@ -3625,7 +3632,11 @@ function _showBankcodeSurvey() {
             if (q.type === 'bank') scores[opt.s] += 2;
             else if (q.type === 'select') answers[q.key] = opt.v;
             else if (q.type === 'comm') answers.comm_style = opt.v;
-            else if (q.type === 'comm2') { if (opt.v === 'ultra_casual') answers.comm_style = 'casual'; else if (opt.v === 'muy_formal') answers.comm_style = 'formal'; }
+            else if (q.type === 'comm2') {
+              if (opt.v === 'ultra_casual') answers.comm_style = 'casual';
+              else if (opt.v === 'muy_formal') answers.comm_style = 'formal';
+              else answers.comm_style = opt.v; // neutro, etc.
+            }
             step++; render();
           }, 300);
         };
@@ -3633,10 +3644,14 @@ function _showBankcodeSurvey() {
     }
   }
   function showResult() {
-    var sorted = Object.entries(scores).sort(function(a,b){return b[1]-a[1];});
-    // Only include letters that got at least 1 response
-    var code = sorted.filter(function(s){return s[1]>0;}).map(function(s){return s[0];}).join('');
-    if(!code) code = 'A'; // fallback
+    // Stable sort: by score desc, then by natural BANKCODE order for ties
+    var order = {B:0, A:1, N:2, K:3};
+    var sorted = Object.entries(scores).sort(function(a,b){
+      if (b[1] !== a[1]) return b[1] - a[1]; // higher score first
+      return order[a[0]] - order[b[0]]; // tie: B before A before N before K
+    });
+    // Always include all 4 letters
+    var code = sorted.map(function(s){return s[0];}).join('');
     var colors = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
     var names = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
     var dominant = sorted[0][0];
@@ -3653,25 +3668,40 @@ function _showBankcodeSurvey() {
     html += '</div>';
     overlay.innerHTML = html;
     overlay.querySelector('#bk-done').onclick = function() {
-      overlay.remove();
+      var btn = overlay.querySelector('#bk-done');
+      btn.textContent = 'Guardando...';
+      btn.style.opacity = '0.6';
+      btn.style.pointerEvents = 'none';
       var updates = {bankcode: code, profession: answers.profession, income_goal: answers.income_goal, comm_style: answers.comm_style};
-      CU.bankcode = code; CU.profession = answers.profession; CU.income_goal = answers.income_goal; CU.comm_style = answers.comm_style;
-      localStorage.setItem('skyteam_u', JSON.stringify(CU));
-      // Save to server — retry if fails
+      // Save to server FIRST — don't close until confirmed
       function _saveBankcode(attempt) {
         fetch('/api/update-user', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:CU.username, updates:updates, requestedBy:CU.username})})
         .then(function(r){return r.json()}).then(function(d){
           if(d.ok) {
             console.log('[BANKCODE] Saved successfully:', code);
+            CU.bankcode = code; CU.profession = answers.profession; CU.income_goal = answers.income_goal; CU.comm_style = answers.comm_style;
+            localStorage.setItem('skyteam_u', JSON.stringify(CU));
+            overlay.remove();
             if(typeof showToast === 'function') showToast('\u2705 Perfil BANKCODE guardado: ' + code);
           } else {
             console.warn('[BANKCODE] Save failed:', d.error, '— retrying...');
             if(attempt < 3) setTimeout(function(){ _saveBankcode(attempt+1); }, 2000);
-            else if(typeof showToast === 'function') showToast('\u26A0\uFE0F BANKCODE no se guard\u00f3 en servidor. Contacta a tu sponsor.');
+            else {
+              // After 3 retries, save locally and close — will retry on next login
+              CU.bankcode = code; CU.profession = answers.profession; CU.income_goal = answers.income_goal; CU.comm_style = answers.comm_style;
+              localStorage.setItem('skyteam_u', JSON.stringify(CU));
+              overlay.remove();
+              if(typeof showToast === 'function') showToast('\u26A0\uFE0F BANKCODE guardado localmente. Se sincronizar\u00e1 pronto.');
+            }
           }
         }).catch(function(e){
           console.warn('[BANKCODE] Network error:', e.message);
           if(attempt < 3) setTimeout(function(){ _saveBankcode(attempt+1); }, 2000);
+          else {
+            CU.bankcode = code; CU.profession = answers.profession; CU.income_goal = answers.income_goal; CU.comm_style = answers.comm_style;
+            localStorage.setItem('skyteam_u', JSON.stringify(CU));
+            overlay.remove();
+          }
         });
       }
       _saveBankcode(0);
