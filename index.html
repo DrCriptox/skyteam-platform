@@ -11523,6 +11523,7 @@ function sendSolicitud() {
   if(!emailReg.test(email)) { showToast('Ingresa un correo válido (ej: tu@email.com) ⚠️'); return; }
   if(!name) { showToast('Escribe tu nombre y apellido ⚠️'); return; }
   if(!waNum) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
+  if(!valorInscripcion || valorInscripcion <= 0) { showToast('Ingresa el valor de tu membresía en USD 💰'); var _vi=document.getElementById('sol-valor-inscripcion'); if(_vi)_vi.focus(); return; }
   if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
   if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
 
