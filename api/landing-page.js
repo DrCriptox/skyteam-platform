@@ -3,13 +3,12 @@ const REPO = 'DrCriptox/innova-ia-landing';
 const BRANCH = 'main';
 
 async function ghFetch(file) {
-  const TOKEN = process.env.GITHUB_TOKEN || '';
-  const headers = TOKEN ? { Authorization: 'token ' + TOKEN, 'User-Agent': 'skyteam' } : { 'User-Agent': 'skyteam' };
   try {
-    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + file + '?ref=' + BRANCH, { headers });
+    // Use raw.githubusercontent.com directly (works for any file size, no token needed)
+    const r = await fetch('https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/' + file);
     if (!r.ok) return {};
-    const d = await r.json();
-    return JSON.parse(Buffer.from(d.content, 'base64').toString('utf-8'));
+    const text = await r.text();
+    return JSON.parse(text);
   } catch(e) { return {}; }
 }
 
