@@ -12504,9 +12504,12 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
   var el=document.getElementById('crm-reminders-bar');if(!el)return;
   var now=new Date();var activos=(crmRecordatorios||[]).filter(function(r){return !r.completado;});
   if(activos.length===0){el.style.display='none';return;}
+  // Sort by date, show only nearest 3
+  activos.sort(function(a,b){return new Date(a.fecha_recordatorio)-new Date(b.fecha_recordatorio);});
+  var visibles = activos.slice(0, 3);
   el.style.display='block';
   var html='<div style="font-size:13px;font-weight:800;color:#FFD700;margin-bottom:8px;">\u23F0 Recordatorios ('+activos.length+')</div>';
-  activos.forEach(function(r){
+  visibles.forEach(function(r){
     var fecha=new Date(r.fecha_recordatorio);var diff=fecha-now;
     var urgente=diff<0;var pronto=diff<3600000&&diff>=0;
     var nombre=r.prospectos?r.prospectos.nombre:'Prospecto';
@@ -13684,14 +13687,17 @@ async function addCrmReminder() {
   if (!fecha || !fecha.value || !texto || !texto.value.trim()) {
     crmToast('Completa fecha y texto del recordatorio', 'error'); return;
   }
-  // Convert local datetime to ISO with timezone
+  // Save with explicit timezone offset so Supabase stores correctly
   var fechaLocal = new Date(fecha.value);
-  var fechaISO = fechaLocal.toISOString();
+  var tzOffset = fechaLocal.getTimezoneOffset(); // minutes
+  var tzH = Math.floor(Math.abs(tzOffset)/60); var tzM = Math.abs(tzOffset)%60;
+  var tzSign = tzOffset <= 0 ? '+' : '-';
+  var fechaWithTZ = fecha.value + ':00' + tzSign + String(tzH).padStart(2,'0') + ':' + String(tzM).padStart(2,'0');
   var mensajeTexto = texto.value.trim();
 
   var res = await crmApi('addRecordatorio', {
     prospecto_id: crmDetailId,
-    fecha_recordatorio: fechaISO,
+    fecha_recordatorio: fechaWithTZ,
     mensaje: mensajeTexto
   });
   if (res && res.ok) {
