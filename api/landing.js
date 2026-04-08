@@ -111,15 +111,25 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, asesor, exists: !!asesor });
     }
 
-    // ── TRACK: count visits and conversions for ranking ──
+    // ── TRACK: count visits and conversions — Supabase (instant, atomic) ──
     if (action === 'track' || action === 'capi') {
       const trackRef = (req.body.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const trackType = req.body.type || 'visit'; // 'visit' or 'conversion'
+      const trackType = req.body.type || 'visit';
       const clientIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
       if (!trackRef) return res.status(200).json({ ok: true });
-
+      const SB_URL_T = process.env.SUPABASE_URL;
+      const SB_KEY_T = process.env.SUPABASE_SERVICE_KEY;
+      const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10); // Colombia time
+      if (SB_URL_T && SB_KEY_T) {
+        // Fire and forget — Supabase UPSERT is atomic, no SHA conflicts
+        const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' };
+        fetch(SB_URL_T + '/rest/v1/landing_visits', {
+          method: 'POST', headers: sbH,
+          body: JSON.stringify({ ref: trackRef, ip: clientIP, type: trackType, day: today, created_at: new Date().toISOString() })
+        }).then(function(){ console.log('[Track] +1', trackType, trackRef, clientIP.slice(0,8)); }).catch(function(e){ console.warn('[Track] SB error:', e.message); });
+      }
+      // Also write to GitHub in background (legacy, best-effort)
       if (TOKEN()) {
-        // Fire and forget — don't block response
         (async function() {
           for (let attempt = 0; attempt < 3; attempt++) {
             if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
@@ -127,34 +137,23 @@ export default async function handler(req, res) {
               const { data, sha } = await readGHFile(FILE_STATS, true);
               if (!data[trackRef]) data[trackRef] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, days_conversions_ips: {}, conversions_ips: {} };
               const s = data[trackRef];
-              const today = new Date().toISOString().slice(0, 10);
-
               if (trackType === 'conversion') {
-                // Max 1 conversion per IP
                 if (!s.conversions_ips) s.conversions_ips = {};
                 if (!s.conversions_ips[clientIP]) {
                   s.conversions_ips[clientIP] = true;
                   s.conversions = (s.conversions || 0) + 1;
                   if (!s.days_conversions) s.days_conversions = {};
                   s.days_conversions[today] = (s.days_conversions[today] || 0) + 1;
-                  if (!s.days_conversions_ips) s.days_conversions_ips = {};
-                  if (!s.days_conversions_ips[today]) s.days_conversions_ips[today] = {};
-                  s.days_conversions_ips[today][clientIP] = true;
                 }
               } else {
-                // Visit
                 s.total = (s.total || 0) + 1;
                 if (!s.ips) s.ips = {};
                 s.ips[clientIP] = (s.ips[clientIP] || 0) + 1;
                 if (!s.days) s.days = {};
                 s.days[today] = (s.days[today] || 0) + 1;
-                if (!s.days_ips) s.days_ips = {};
-                if (!s.days_ips[today]) s.days_ips[today] = {};
-                s.days_ips[today][clientIP] = true;
               }
-
               if (await writeGHFile(FILE_STATS, data, sha, 'track: +1 ' + trackType + ' ' + trackRef)) break;
-            } catch(e) { console.warn('[Track] attempt', attempt, 'failed:', e.message); }
+            } catch(e) {}
           }
         })().catch(function(){});
       }
@@ -252,10 +251,41 @@ export default async function handler(req, res) {
       const { period } = req.body || {};
       const SB_URL2 = process.env.SUPABASE_URL;
       const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
-      const [{ data: stats }, { data: skyAsesores }] = await Promise.all([
+      const [{ data: ghStats }, { data: skyAsesores }] = await Promise.all([
         readGHFile(FILE_STATS),
         readGHFile(FILE_ASESORES)
       ]);
+      // Read Supabase landing_visits (primary, real-time) and merge with GitHub stats (legacy)
+      let stats = ghStats || {};
+      if (SB_URL2 && SB_KEY2) {
+        try {
+          const sbVisR = await fetch(SB_URL2 + '/rest/v1/landing_visits?select=ref,ip,type,day', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
+          const sbVisits = await sbVisR.json();
+          if (Array.isArray(sbVisits) && sbVisits.length > 0) {
+            // Build stats from Supabase visits (overrides GitHub for refs that have SB data)
+            const sbStats = {};
+            sbVisits.forEach(function(v) {
+              if (!v.ref) return;
+              if (!sbStats[v.ref]) sbStats[v.ref] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, conversions_ips: {} };
+              const s = sbStats[v.ref];
+              if (v.type === 'conversion') {
+                if (!s.conversions_ips[v.ip]) { s.conversions_ips[v.ip] = true; s.conversions++; }
+                if (!s.days_conversions) s.days_conversions = {};
+                s.days_conversions[v.day] = (s.days_conversions[v.day] || 0) + 1;
+              } else {
+                s.total++;
+                s.ips[v.ip] = (s.ips[v.ip] || 0) + 1;
+                s.days[v.day] = (s.days[v.day] || 0) + 1;
+                if (!s.days_ips[v.day]) s.days_ips[v.day] = {};
+                s.days_ips[v.day][v.ip] = true;
+              }
+            });
+            // Merge: Supabase data takes priority (has all new visits)
+            // GitHub data used as fallback for refs not yet in Supabase
+            Object.keys(sbStats).forEach(function(ref) { stats[ref] = sbStats[ref]; });
+          }
+        } catch(e) { console.warn('[Ranking] SB visits read failed:', e.message); }
+      }
       // Overlay Supabase landing_profiles onto skyAsesores (fresher names/data)
       if (SB_URL2 && SB_KEY2) {
         try {
