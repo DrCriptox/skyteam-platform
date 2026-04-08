@@ -252,10 +252,9 @@ export default async function handler(req, res) {
       const { period } = req.body || {};
       const SB_URL2 = process.env.SUPABASE_URL;
       const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
-      const [{ data: stats }, { data: skyAsesores }, { data: oldAsesores }] = await Promise.all([
+      const [{ data: stats }, { data: skyAsesores }] = await Promise.all([
         readGHFile(FILE_STATS),
-        readGHFile(FILE_ASESORES),
-        readGHFile('asesores.json')
+        readGHFile(FILE_ASESORES)
       ]);
       // Overlay Supabase landing_profiles onto skyAsesores (fresher names/data)
       if (SB_URL2 && SB_KEY2) {
@@ -270,23 +269,9 @@ export default async function handler(req, res) {
           });
         } catch(e) {}
       }
-      // After April 9 2026 (Wednesday), only count landings created from skyteam (asesores-skyteam.json)
-      const cutoffDate = new Date('2026-04-09T00:00:00');
-      const onlyNew = Date.now() >= cutoffDate.getTime();
-      // Merge: skyAsesores takes priority for all fields EXCEPT foto — use whichever source has it
-      let allAsesores;
-      if (onlyNew) {
-        allAsesores = skyAsesores;
-      } else {
-        allAsesores = Object.assign({}, oldAsesores);
-        Object.keys(skyAsesores).forEach(function(ref) {
-          const old = oldAsesores[ref] || {};
-          const sky = skyAsesores[ref] || {};
-          allAsesores[ref] = Object.assign({}, old, sky, {
-            foto: sky.foto || old.foto || ''
-          });
-        });
-      }
+      // Only count landings created from skyteam.global (asesores-skyteam.json)
+      // No legacy innovaia.app data
+      const allAsesores = skyAsesores;
 
       // Colombia time (UTC-5) for period calculations
       const nowCol = new Date(Date.now() - 18000000);
