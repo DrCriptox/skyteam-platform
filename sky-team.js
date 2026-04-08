@@ -39,6 +39,7 @@ var stState = {
   treeFilterRank: 'all',
   treeFilterScore: 'all',
   treeFilterDays: 'all',
+  treeFilterLevel: 'all',
   rankPeriod: 'monthly',
   coachData: null,
   mentorTool: null,
@@ -814,8 +815,16 @@ function renderSTArbol() {
   html += '<option value="ok"' + (stState.treeFilterDays === 'ok' ? ' selected' : '') + '>OK (16+d)</option>';
   html += '</select>';
 
-  // CSV export button
-  html += '<button onclick="_exportTeamCSV()" style="padding:6px 12px;border-radius:8px;background:rgba(29,158,117,0.10);border:1px solid rgba(29,158,117,0.25);color:#1D9E75;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">CSV</button>';
+  // Level filter
+  html += '<select id="st-filter-level" onchange="stState.treeFilterLevel=this.value;_refreshTree()" style="' + _filterSelectCSS() + '">';
+  html += '<option value="all">Nivel: Todos</option>';
+  for (var _lvl = 1; _lvl <= 10; _lvl++) {
+    html += '<option value="' + _lvl + '"' + (stState.treeFilterLevel === String(_lvl) ? ' selected' : '') + '>Nivel ' + _lvl + '</option>';
+  }
+  html += '</select>';
+
+  // Search button
+  html += '<button onclick="_refreshTree()" style="padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.10);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">Buscar</button>';
 
   html += '</div>';
 
@@ -825,6 +834,7 @@ function renderSTArbol() {
   if (stState.treeFilterRank !== 'all') activeFilters++;
   if (stState.treeFilterScore !== 'all') activeFilters++;
   if (stState.treeFilterDays !== 'all') activeFilters++;
+  if (stState.treeFilterLevel !== 'all') activeFilters++;
   if (activeFilters > 0) {
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
     html += '<span style="font-size:11px;color:rgba(255,255,255,0.4);">' + activeFilters + ' filtro' + (activeFilters > 1 ? 's' : '') + ' activo' + (activeFilters > 1 ? 's' : '') + '</span>';
@@ -916,6 +926,10 @@ function _buildTreeHTML() {
         if (stState.treeFilterDays === 'warning' && (days <= 7 || days > 15)) return false;
         if (stState.treeFilterDays === 'ok' && days <= 15) return false;
       }
+      // Level filter
+      if (stState.treeFilterLevel !== 'all') {
+        if (String(m.level || 0) !== stState.treeFilterLevel) return false;
+      }
       return true;
     });
   }
@@ -968,37 +982,36 @@ function _renderTreeNode(m, depth, childrenMap, flat) {
 
   var html = '';
 
-  html += '<div class="st-tree-node" style="margin-left:' + indent + 'px;" onclick="openMemberDetail(\'' + _safe(ref) + '\')">';
+  html += '<div class="st-tree-node" style="margin-left:' + indent + 'px;padding:6px 10px;" onclick="openMemberDetail(\'' + _safe(ref) + '\')">';
 
   // Status border
   html += '<div class="st-tree-status" style="background:' + _statusColor(status) + ';"></div>';
 
-  // Avatar
-  html += _avatarHTML(m.name || ref, m.rank, 32);
+  // Avatar with photo
+  var _mPhoto = m.photo || m.foto || '';
+  if (_mPhoto) {
+    html += '<img src="' + _mPhoto + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(201,168,76,0.3);" />';
+  } else {
+    html += _avatarHTML(m.name || ref, m.rank, 30);
+  }
 
-  // Info
-  html += '<div class="st-tree-info">';
-  html += '<div class="st-tree-name">' + _safe(m.name || ref);
+  // Info + rank + bankcode inline
+  html += '<div class="st-tree-info" style="min-width:0;flex:1;">';
+  html += '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">';
+  html += '<span class="st-tree-name" style="font-size:12px;">' + _safe(m.name || ref) + '</span>';
   html += _rankBadgeHTML(m.rank, true);
+  if (m.bankcode && typeof renderBankcodeBadge === 'function') html += renderBankcodeBadge(m.bankcode, 'tiny');
   html += '</div>';
   html += '</div>';
 
-  // Score
-  html += '<div class="st-tree-score">';
-  html += sc.total;
-  html += '<div class="st-tree-mini-bar">';
-  var maxSc = Math.max(sc.prospects, sc.sales, sc.day, 1);
-  html += '<div style="width:' + Math.round((sc.prospects / maxSc) * 12) + 'px;height:4px;background:#1D9E75;border-radius:2px;"></div>';
-  html += '<div style="width:' + Math.round((sc.sales / maxSc) * 12) + 'px;height:4px;background:#C9A84C;border-radius:2px;"></div>';
-  html += '<div style="width:' + Math.round((sc.day / maxSc) * 12) + 'px;height:4px;background:#7F77DD;border-radius:2px;"></div>';
-  html += '</div>';
-  html += '</div>';
-
-  // Days pill
+  // Score + days compact
+  html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">';
+  html += '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.6);">' + sc.total + '</span>';
   if (days != null) {
     var dp = _daysPillColor(days);
-    html += '<div class="st-tree-days-pill" style="background:' + dp.bg + ';border:0.5px solid ' + dp.border + ';color:' + dp.color + ';">' + days + 'd</div>';
+    html += '<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:' + dp.bg + ';border:0.5px solid ' + dp.border + ';color:' + dp.color + ';">' + days + 'd</span>';
   }
+  html += '</div>';
 
   // Chevron
   if (hasChildren) {
