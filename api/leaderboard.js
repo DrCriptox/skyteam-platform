@@ -439,6 +439,74 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, proof: result ? result[0] : null });
     }
 
+    // ===== SKY PROSPECTS RANKING =====
+    if (action === 'prospectRanking') {
+      var period = body.period || req.query?.period || 'weekly';
+      var now2 = new Date();
+      var fromDate;
+      if (period === 'daily') {
+        fromDate = new Date(now2); fromDate.setHours(0,0,0,0);
+      } else if (period === 'monthly') {
+        fromDate = new Date(now2.getFullYear(), now2.getMonth(), 1);
+      } else {
+        var d2 = now2.getUTCDay(); var diff2 = d2===0?6:d2-1;
+        fromDate = new Date(now2); fromDate.setUTCDate(now2.getUTCDate()-diff2); fromDate.setUTCHours(0,0,0,0);
+      }
+      var fromISO2 = fromDate.toISOString();
+
+      // Fetch all data in parallel
+      var results2 = await Promise.all([
+        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo&limit=5000'),
+        sb('interacciones?select=username,tipo,created_at&created_at=gte.' + fromISO2 + '&limit=5000'),
+        sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2 + '&limit=5000'),
+        sb('users?select=username,name,photo&limit=5000')
+      ]);
+      var allProspectos = results2[0] || [];
+      var allInteracciones = results2[1] || [];
+      var allRecordatorios = results2[2] || [];
+      var allUsers = results2[3] || [];
+      var userMap2 = {}; allUsers.forEach(function(u){ userMap2[u.username] = u; });
+
+      var stats2 = {};
+      // Count prospects per user
+      allProspectos.forEach(function(p) {
+        if (!stats2[p.username]) stats2[p.username] = {contactos:0,interacciones:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0};
+        var s = stats2[p.username];
+        // Created in period = new contact
+        if (p.created_at >= fromISO2) s.contactos++;
+        // Qualified
+        if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
+        // Temperature thresholds
+        if ((p.temperatura||0) >= 50) s.temp50++;
+        if ((p.temperatura||0) >= 75) s.temp75++;
+        // Stage advances (count by stage weight)
+        var stageW = {nuevo:0,contactado:1,interesado:2,presentacion:3,seguimiento:4,cerrado_ganado:5,cerrado_perdido:0};
+        if (stageW[p.etapa] >= 3) s.etapaAvance++;
+        if (p.etapa === 'cerrado_ganado') s.cerrados++;
+      });
+      // Count interactions per user (in period)
+      allInteracciones.forEach(function(i) {
+        if (!stats2[i.username]) stats2[i.username] = {contactos:0,interacciones:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0};
+        stats2[i.username].interacciones++;
+      });
+      // Count reminders
+      allRecordatorios.forEach(function(r) {
+        if (!stats2[r.username]) stats2[r.username] = {contactos:0,interacciones:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0};
+        stats2[r.username].recordatorios++;
+        if (r.completado) stats2[r.username].recCompletados++;
+      });
+
+      // Calculate scores
+      var ranking2 = Object.entries(stats2).map(function(e) {
+        var u = e[0], s = e[1];
+        s.score = (s.contactos * 5) + (s.calificados * 3) + (s.interacciones * 3) + (s.temp50 * 8) + (s.temp75 * 12) + (s.etapaAvance * 3) + (s.cerrados * 10) + (s.recordatorios * 2) + (s.recCompletados * 3);
+        var usr = userMap2[u] || {};
+        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, prospectos: s.contactos, presentaciones: s.etapaAvance, cierres: s.cerrados };
+      }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
+
+      return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), period: period });
+    }
+
     return res.status(400).json({ ok: false, error: 'Unknown action: ' + action });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message });

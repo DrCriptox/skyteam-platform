@@ -13218,7 +13218,7 @@ function _renderCrmRankingTab() {
   html += '<div id="crm-ranking-list"><div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);font-size:12px;">Cargando ranking...</div></div>';
   el.innerHTML = html;
   // Fetch
-  fetch('/api/leaderboard?action='+(_crmRankPeriod==='daily'?'dailyTop':_crmRankPeriod==='weekly'?'weeklyTop':'monthlyTop'))
+  fetch('/api/leaderboard?action=prospectRanking&period='+_crmRankPeriod)
   .then(function(r){return r.json()}).then(function(d){
     var list=document.getElementById('crm-ranking-list');if(!list)return;
     var ranking=d.ranking||d.data||[];
