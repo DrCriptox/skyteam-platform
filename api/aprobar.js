@@ -304,6 +304,46 @@ export default async function handler(req, res) {
       } catch (e) { console.error('[APROBAR] Email error:', e.message); }
     }
 
+    // ── INSTANT PUSH: Notify sponsor + 2 levels up ──
+    try {
+      const VAPID_PUB = process.env.VAPID_PUBLIC_KEY;
+      const VAPID_PRIV = process.env.VAPID_PRIVATE_KEY;
+      const VAPID_SUB = process.env.VAPID_SUBJECT;
+      if (VAPID_PUB && VAPID_PRIV && finalSponsor) {
+        const webpush = require('web-push');
+        webpush.setVapidDetails(VAPID_SUB, VAPID_PUB, VAPID_PRIV);
+        const SB_H2 = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' };
+        // Get all users for sponsor chain
+        const allU = await (await sbFetch(SUPABASE_URL + '/rest/v1/users?select=username,name,sponsor&limit=5000', { headers: HEADERS })).json();
+        const uMap = {}; if(Array.isArray(allU)) allU.forEach(function(u){ uMap[(u.username||'').toLowerCase()] = u; });
+        const valor = sol.valor_inscripcion ? '$' + sol.valor_inscripcion + ' USD' : '';
+        const fullName = sol.name || finalUsername;
+        const levels = ['1ra linea (directo)', '2da linea', '3ra linea'];
+        let curSponsor = finalSponsor.toLowerCase();
+        for (let lvl = 0; lvl < 3 && curSponsor; lvl++) {
+          // Get push subscriptions for this sponsor
+          const subsR = await sbFetch(SUPABASE_URL + '/rest/v1/push_subscriptions?username=eq.' + encodeURIComponent(curSponsor), { headers: SB_H2 });
+          const subs = await subsR.json();
+          if (Array.isArray(subs) && subs.length > 0) {
+            const payload = JSON.stringify({
+              title: '\uD83C\uDF89 \u00a1Nuevo cliente!',
+              body: fullName + ' se registro en tu ' + levels[lvl] + (valor ? ' con membresia de ' + valor : '') + '. \u00a1Tu equipo crece! \uD83D\uDE80',
+              url: '/?nav=home', tag: 'skyteam-newclient-' + finalUsername
+            });
+            for (const sub of subs) {
+              try { await webpush.sendNotification(sub.subscription, payload); } catch(e) {
+                if (e.statusCode === 410 || e.statusCode === 404) {
+                  try { await sbFetch(SUPABASE_URL + '/rest/v1/push_subscriptions?endpoint=eq.' + encodeURIComponent(sub.endpoint), { method: 'DELETE', headers: SB_H2 }); } catch(x){}
+                }
+              }
+            }
+          }
+          const sponsorData = uMap[curSponsor];
+          curSponsor = sponsorData && sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;
+        }
+      }
+    } catch(e) { console.warn('[APROBAR] Push notification error:', e.message); }
+
     return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent, refLink });
 
   } catch (error) {
