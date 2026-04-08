@@ -2050,7 +2050,7 @@ function openMemberDetail(username) {
     html += '<span style="font-size:9px;color:rgba(255,255,255,0.2);">Sin definir</span>';
   }
   if (_canEditBk) {
-    html += '<button onclick="_toggleBankcodeEdit(\'' + _safe(m.username||username) + '\',\'' + _curBk + '\')" id="st-bk-edit-btn" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;padding:2px 4px;">\\u270F\\uFE0F</button>';
+    html += '<button onclick="_toggleBankcodeEdit(\'' + _safe(m.username||username) + '\',\'' + _curBk + '\')" id="st-bk-edit-btn" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;padding:2px 4px;">\u270F\uFE0F</button>';
   }
   html += '</div>';
   // Hidden inline editor
