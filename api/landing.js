@@ -14,11 +14,16 @@ function toBase64(str) {
 }
 
 async function readGHFile(file) {
-  const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + file + '?ref=' + BRANCH, { headers: ghHeaders() });
-  if (!r.ok) return { data: {}, sha: null };
-  const d = await r.json();
-  const text = Buffer.from(d.content, 'base64').toString('utf-8');
-  return { data: JSON.parse(text), sha: d.sha };
+  try {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + file + '?ref=' + BRANCH, { headers: ghHeaders() });
+    if (!r.ok) return { data: {}, sha: null };
+    const d = await r.json();
+    const text = Buffer.from(d.content, 'base64').toString('utf-8');
+    return { data: JSON.parse(text), sha: d.sha };
+  } catch (e) {
+    console.error('[Landing] readGHFile error:', file, e.message);
+    return { data: {}, sha: null };
+  }
 }
 
 async function writeGHFile(file, data, sha, message) {
