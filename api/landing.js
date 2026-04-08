@@ -268,28 +268,27 @@ export default async function handler(req, res) {
       const SB_URL2 = process.env.SUPABASE_URL;
       const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
       const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
-      // Read aggregated stats from Supabase via SQL function (accurate, no row limits)
+      // Read aggregated stats from Supabase view (accurate, grouped by ref+day in PostgreSQL)
       let stats = {};
       if (SB_URL2 && SB_KEY2) {
         try {
-          const sbStatsR = await fetch(SB_URL2 + '/rest/v1/rpc/get_landing_stats', {
-            method: 'POST',
-            headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ p_from: dateFrom || null })
-          });
-          const sbStats = await sbStatsR.json();
-          if (Array.isArray(sbStats)) {
-            sbStats.forEach(function(s) {
-              stats[s.ref] = {
-                total: Number(s.total) || 0,
-                uniqueIps: Number(s.unique_ips) || 0,
-                duplicadas: Number(s.duplicadas) || 0,
-                conversions: Number(s.conversions) || 0,
-                conversionIps: Number(s.conversion_ips) || 0
-              };
+          var statsUrl = SB_URL2 + '/rest/v1/landing_stats_view?select=ref,total,unique_ips,duplicadas,conversions,conversion_ips,day';
+          if (dateFrom) statsUrl += '&day=gte.' + dateFrom;
+          const sbStatsR = await fetch(statsUrl, { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, Range: '0-9999' } });
+          const sbRows = await sbStatsR.json();
+          if (Array.isArray(sbRows)) {
+            // Aggregate across days per ref
+            sbRows.forEach(function(r) {
+              if (!stats[r.ref]) stats[r.ref] = { total: 0, uniqueIps: 0, duplicadas: 0, conversions: 0, conversionIps: 0 };
+              var s = stats[r.ref];
+              s.total += Number(r.total) || 0;
+              s.uniqueIps += Number(r.unique_ips) || 0;
+              s.duplicadas += Number(r.duplicadas) || 0;
+              s.conversions += Number(r.conversions) || 0;
+              s.conversionIps += Number(r.conversion_ips) || 0;
             });
           }
-        } catch(e) { console.warn('[Ranking] SB stats RPC failed:', e.message); }
+        } catch(e) { console.warn('[Ranking] SB stats view failed:', e.message); }
       }
       // Overlay Supabase landing_profiles onto skyAsesores (fresher names/data)
       if (SB_URL2 && SB_KEY2) {
