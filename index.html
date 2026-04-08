@@ -3630,7 +3630,9 @@ function _showBankcodeSurvey() {
   }
   function showResult() {
     var sorted = Object.entries(scores).sort(function(a,b){return b[1]-a[1];});
-    var code = sorted.map(function(s){return s[0];}).join('');
+    // Only include letters that got at least 1 response
+    var code = sorted.filter(function(s){return s[1]>0;}).map(function(s){return s[0];}).join('');
+    if(!code) code = 'A'; // fallback
     var colors = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
     var names = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
     var dominant = sorted[0][0];
