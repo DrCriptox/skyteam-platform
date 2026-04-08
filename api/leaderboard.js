@@ -491,12 +491,18 @@ module.exports = async (req, res) => {
           }
         }
       });
-      // Count interactions — separate messages (whatsapp tipo) from others
+      // Count interactions — separate messages, invoices from others
       allInteracciones.forEach(function(i) {
         if (!stats2[i.username]) stats2[i.username] = _defStats();
         var tipo = (i.tipo||'').toLowerCase();
+        var contenido = (i.contenido||'').toLowerCase();
         if (tipo === 'whatsapp' || tipo === 'mensaje') {
           stats2[i.username].mensajes++;
+        }
+        // Invoice/factura = 50 pts bonus
+        if (tipo === 'cierre' && contenido.indexOf('factura') !== -1) {
+          if (!stats2[i.username].facturas) stats2[i.username].facturas = 0;
+          stats2[i.username].facturas++;
         }
         // All interactions count as actualizaciones (1 per prospect per day)
         var dayKey2 = i.username + '_' + (i.prospecto_id||'') + '_' + (i.created_at||'').slice(0,10);
@@ -516,7 +522,7 @@ module.exports = async (req, res) => {
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 5) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 4) + (s.temp75 * 6) + (s.etapaAvance * 3) + (s.cerrados * 7) + (s.recordatorios * 2) + (s.recCompletados * 3);
+        s.score = (s.contactos * 5) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 4) + (s.temp75 * 6) + (s.etapaAvance * 3) + (s.cerrados * 7) + ((s.facturas||0) * 50) + (s.recordatorios * 2) + (s.recCompletados * 3);
         var usr = userMap2[u] || {};
         return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, prospectos: s.contactos, actualizaciones: s.actualizaciones, mensajes: s.mensajes, presentaciones: s.etapaAvance, cierres: s.cerrados };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });

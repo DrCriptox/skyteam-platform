@@ -2870,7 +2870,7 @@ document.addEventListener('DOMContentLoaded',function(){
         </div>
       </div>
     </div>
-    <div class="crm-modal-footer"><button type="button" class="crm-btn-danger" onclick="deleteCrmProspect()">🗑️ Eliminar</button><button type="button" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;color:#0a0a12;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="closeCrmModalDetail()">Guardar</button><button type="button" class="crm-btn-secondary" onclick="closeCrmModalDetail()">Cerrar</button></div>
+    <div class="crm-modal-footer"><button type="button" class="crm-btn-danger" onclick="deleteCrmProspect()">🗑️ Eliminar</button><button id="crm-invoice-btn" type="button" style="display:none;background:linear-gradient(135deg,#1D9E75,#2ECC71);border:none;color:#fff;border-radius:12px;padding:10px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="_crmUploadInvoice()">📸 Cargar factura (+50pts)</button><button type="button" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;color:#0a0a12;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="closeCrmModalDetail()">Guardar</button><button type="button" class="crm-btn-secondary" onclick="closeCrmModalDetail()">Cerrar</button></div>
   </div>
 </div>
 
@@ -13653,6 +13653,12 @@ function openCrmDetail(id) {
   }
 
   crmDetailId = id;
+  // Show invoice button only for cerrado prospects
+  var _invBtn = document.getElementById('crm-invoice-btn');
+  if(_invBtn) {
+    var _isCerrado = prospect && (prospect.etapa === 'cerrado_ganado' || prospect.etapa === 'cerrado_perdido' || prospect.etapa === 'cerrado');
+    _invBtn.style.display = _isCerrado ? 'inline-block' : 'none';
+  }
   modal.style.display = 'flex';
 
   // Cleanup: remove any duplicate mic/voice buttons injected by other scripts
@@ -13819,6 +13825,43 @@ function _crmVoiceToggle(btnId, textareaId, stateKey) {
 }
 function _crmIntToggleVoice() { _crmVoiceToggle('crm-int-mic','crm-interaction-texto','_crmIntV'); }
 function _crmRemToggleVoice() { _crmVoiceToggle('crm-rem-mic','crm-reminder-texto','_crmRemV'); }
+
+function _crmUploadInvoice() {
+  if (!crmDetailId) return;
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function() {
+    var file = input.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var MAX = 800;
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if(w > MAX || h > MAX) { var r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        var b64 = c.toDataURL('image/jpeg', 0.8);
+        // Save as interaction with invoice proof
+        crmApi('addInteraccion', {
+          prospecto_id: crmDetailId,
+          tipo: 'cierre',
+          contenido: '\u2705 Factura/comprobante de venta cargado (+50pts)'
+        }).then(function() {
+          // Update prospect to cerrado_ganado with invoice
+          return crmApi('update', { id: crmDetailId, updates: { etapa: 'cerrado_ganado' } });
+        }).then(function() {
+          crmToast('\u2705 \u00a1Factura cargada! +50 puntos de ranking', 'success');
+          crmLoadData();
+          openCrmDetail(crmDetailId);
+        });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
 
 async function addCrmInteraction() {
   if (!crmDetailId) return;
