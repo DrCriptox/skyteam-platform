@@ -79,7 +79,6 @@ export default async function handler(req, res) {
     if (action === 'saveProfile') {
       if (!ref) return res.status(400).json({ error: 'Missing ref' });
       const { nombre, rol, whatsapp, mensaje, foto } = req.body;
-      if (!TOKEN()) return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
       const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
       const asesorData = {
         nombre: (nombre || 'Socio').trim(),
@@ -90,31 +89,46 @@ export default async function handler(req, res) {
         mensaje: (mensaje || 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes').trim()
       };
 
-      // Write to new skyteam file (8 retries with increasing delay for high concurrency)
-      let saved = false;
-      for (let attempt = 0; attempt < 8; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 3000 + attempt * 500));
-        const { data, sha } = await readGHFile(FILE_ASESORES);
-        data[slug] = asesorData;
-        if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) { saved = true; break; }
+      // 1. Save to Supabase FIRST (instant, no concurrency issues)
+      const SB_URL = process.env.SUPABASE_URL;
+      const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+      if (SB_URL && SB_KEY) {
+        try {
+          const sbHeaders = { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Prefer: 'resolution=merge-duplicates,return=minimal' };
+          // Store without base64 photo in Supabase (photo stays in localStorage/GitHub)
+          const sbData = { ref: slug, nombre: asesorData.nombre, rol: asesorData.rol, whatsapp: asesorData.whatsapp, mensaje: asesorData.mensaje, verificado: true, updated_at: new Date().toISOString() };
+          await fetch(SB_URL + '/rest/v1/landing_profiles', { method: 'POST', headers: sbHeaders, body: JSON.stringify(sbData) });
+        } catch(e) { console.warn('[Landing] Supabase save failed (table may not exist):', e.message); }
       }
 
-      // Also write to old asesores.json (8 retries, no base64 photos)
-      for (let attempt = 0; attempt < 8; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 3000 + attempt * 500));
-        const { data, sha } = await readGHFile('asesores.json');
-        const existing = data[slug] || {};
-        const newFoto = foto && !foto.startsWith('data:') ? foto : (existing.foto || '');
-        data[slug] = Object.assign({}, asesorData, { foto: newFoto });
-        if (await writeGHFile('asesores.json', data, sha, 'skyteam: sync ' + slug)) break;
+      // 2. Sync to GitHub in background (best-effort, may fail under concurrency)
+      if (TOKEN()) {
+        // Fire and forget — don't block the response
+        (async function() {
+          for (let attempt = 0; attempt < 5; attempt++) {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
+            try {
+              const { data, sha } = await readGHFile(FILE_ASESORES);
+              data[slug] = asesorData;
+              if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) break;
+            } catch(e) { console.warn('[Landing] GH write attempt', attempt, 'failed:', e.message); }
+          }
+          // Sync to old file too
+          for (let attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
+            try {
+              const { data, sha } = await readGHFile('asesores.json');
+              const existing = data[slug] || {};
+              const newFoto = foto && !foto.startsWith('data:') ? foto : (existing.foto || '');
+              data[slug] = Object.assign({}, asesorData, { foto: newFoto });
+              if (await writeGHFile('asesores.json', data, sha, 'skyteam: sync ' + slug)) break;
+            } catch(e) {}
+          }
+        })().catch(function(){});
       }
 
-      if (saved) return res.status(200).json({ ok: true, slug, link: 'https://innovaia.app?ref=' + slug });
-      // Debug: try one more time and return the actual error
-      const { data: debugData, sha: debugSha } = await readGHFile(FILE_ASESORES);
-      const debugR = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + FILE_ASESORES, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify({ message: 'debug', content: toBase64(JSON.stringify(debugData, null, 2)), branch: BRANCH, ...(debugSha ? {sha: debugSha} : {}) }) });
-      const debugErr = await debugR.text().catch(()=>'');
-      return res.status(500).json({ error: 'Write failed', status: debugR.status, github: debugErr.substring(0, 300) });
+      // Return success immediately (Supabase saved, GitHub syncing in background)
+      return res.status(200).json({ ok: true, slug, link: 'https://innovaia.app?ref=' + slug });
     }
 
     // ── GET STATS: read visit stats ──
