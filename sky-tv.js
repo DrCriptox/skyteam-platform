@@ -252,7 +252,7 @@ function renderCountdown(container) {
       }, {passive:true});
       // Auto-rotate every 10s
       var _heroTimer = null;
-      function _startAutoRotate() { _heroTimer = setInterval(function(){ _heroGo(_heroIdx + 1); }, 10000); }
+      function _startAutoRotate() { _heroTimer = setInterval(function(){ _heroGo(_heroIdx + 1); }, 15000); }
       function _resetAutoRotate() { if(_heroTimer) clearInterval(_heroTimer); _startAutoRotate(); }
       _startAutoRotate();
     }
@@ -264,6 +264,7 @@ function renderCountdown(container) {
   cd.onclick = function() { openEventDetail(next); };
   var timer = document.createElement('div');
   timer.className = 'skytv-countdown-timer';
+  timer.id = 'skytv-timer-text';
   if (hours > 0) {
     timer.textContent = hours + 'h ' + mins + 'm ' + secs + 's';
   } else {
@@ -273,6 +274,7 @@ function renderCountdown(container) {
   info2.className = 'skytv-countdown-info';
   var label = document.createElement('div');
   label.className = 'skytv-countdown-label';
+  label.id = 'skytv-timer-label';
 
   // Dynamic message based on time remaining
   var totalMins = Math.floor(diff / 60000);
@@ -502,11 +504,28 @@ function renderCartelera() {
   }
   container.appendChild(grid);
 
-  // Start countdown interval
+  // Start countdown interval — only update timer text, NOT the whole carousel
   if (window._skytvCountdownInterval) clearInterval(window._skytvCountdownInterval);
   window._skytvCountdownInterval = setInterval(function() {
-    var cdDiv = document.getElementById('skytv-countdown');
-    if (cdDiv) renderCountdown(cdDiv);
+    var timerEl = document.getElementById('skytv-timer-text');
+    var labelEl = document.getElementById('skytv-timer-label');
+    if (!timerEl) return;
+    var nxt = getNextEvent();
+    if (!nxt) return;
+    var d2 = new Date(nxt.fecha + 'T' + (nxt.hora_inicio || '00:00:00'));
+    var diff2 = d2 - new Date();
+    if (diff2 < 0) { renderCountdown(document.getElementById('skytv-countdown')); return; }
+    var h2 = Math.floor(diff2 / 3600000);
+    var m2 = Math.floor((diff2 % 3600000) / 60000);
+    var s2 = Math.floor((diff2 % 60000) / 1000);
+    timerEl.textContent = h2 > 0 ? h2 + 'h ' + m2 + 'm ' + s2 + 's' : String(m2).padStart(2,'0') + ':' + String(s2).padStart(2,'0');
+    var totalM = Math.floor(diff2 / 60000);
+    if (labelEl) {
+      if (totalM <= 5) { labelEl.textContent = '\uD83D\uDD34 \u00A1La sala est\u00e1 abierta!'; labelEl.style.color = '#E24B4A'; }
+      else if (totalM <= 60) { labelEl.textContent = '\u23F0 Falta menos de 1 hora'; labelEl.style.color = '#FFD700'; }
+      else if (h2 <= 4) { labelEl.textContent = '\uD83D\uDD14 Evento en ' + h2 + ' hora' + (h2>1?'s':''); labelEl.style.color = ''; }
+      else { labelEl.textContent = 'Pr\u00f3ximo evento en'; labelEl.style.color = ''; }
+    }
   }, 1000);
 }
 
