@@ -123,8 +123,19 @@ export default async function handler(req, res) {
   html = html.replace(/src="(?!http|data:|\/\/|#)([^"]+)"/g, 'src="' + baseUrl + '$1"');
   html = html.replace(/href="(?!http|data:|\/\/|#|javascript:|mailto:)([^"]+\.css[^"]*)"/g, 'href="' + baseUrl + '$1"');
 
-  // Inject lightweight asesor data (no base64 photos, ~500 bytes/entry)
-  const mergedJson = JSON.stringify(mergedAsesores);
+  // Build lightweight data: only include the photo for the current ?ref= asesor
+  // This keeps payload small (~500 bytes/entry) while showing the viewed asesor's photo
+  const currentRef = (req.query?.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const lightPayload = {};
+  for (const key of Object.keys(mergedAsesores)) {
+    const e = mergedAsesores[key];
+    lightPayload[key] = {
+      nombre: e.nombre || '', rol: e.rol || '', whatsapp: e.whatsapp || '',
+      mensaje: e.mensaje || '', verificado: !!e.verificado,
+      foto: (key === currentRef && e.foto) ? e.foto : ((e.foto && !e.foto.startsWith('data:')) ? e.foto : '')
+    };
+  }
+  const mergedJson = JSON.stringify(lightPayload);
 
   const injectScript = `<script>
 (function(){
@@ -153,31 +164,35 @@ export default async function handler(req, res) {
   // Fix innovaia.app references
   html = html.replace(/https?:\/\/(www\.)?innovaia\.app/g, 'https://skyteam.global/landing');
 
-  // Inject 2 WhatsApp CTA buttons: sticky bottom bar + floating button
+  // Inject WhatsApp CTA buttons + override original template buttons
   const ref = req.query?.ref || '';
   const waButtons = `
 <style>
+/* Hide original template's floating button and sticky bar (we inject our own) */
+.float-cta,.float-btn,.float-bubble{display:none!important;}
+#stickyCTABar{display:none!important;}
+/* Our sticky bottom bar */
 .sky-wa-bar{position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:8px 12px;background:rgba(6,8,16,0.95);backdrop-filter:blur(12px);border-top:1px solid rgba(37,211,102,0.2);display:flex;gap:6px;justify-content:center;}
 .sky-wa-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;font-family:'Syne','DM Sans',sans-serif;transition:transform 0.2s;flex:1;max-width:220px;justify-content:center;}
 .sky-wa-btn:hover{transform:translateY(-2px);}
 .sky-wa-btn-green{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;box-shadow:0 4px 20px rgba(37,211,102,0.3);}
 .sky-wa-btn-gold{background:linear-gradient(135deg,#D4A853,#F0C97A);color:#000;box-shadow:0 4px 20px rgba(212,168,83,0.3);}
-.sky-wa-float{position:fixed;bottom:80px;right:16px;z-index:9998;width:60px;height:60px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(37,211,102,0.4);cursor:pointer;animation:skyWaBounce 2s infinite;}
+/* Our single floating WhatsApp button */
+.sky-wa-float{position:fixed;bottom:80px;right:16px;z-index:9998;width:60px;height:60px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(37,211,102,0.4);cursor:pointer;animation:skyWaBounce 2s infinite;text-decoration:none;}
 @keyframes skyWaBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
 @media(min-width:768px){.sky-wa-bar{padding:12px 24px;}.sky-wa-btn{max-width:300px;}}
 </style>
 <div class="sky-wa-bar" id="sky-wa-bar">
-<a class="sky-wa-btn sky-wa-btn-green" id="sky-wa-cta1" href="#" target="_blank" onclick="var eid='skywa_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);if(typeof fbq==='function')fbq('track','Lead',{content_name:'WA_QuieroSaber',currency:'USD',value:100},{eventID:eid});if(typeof window.sendCAPIEvent==='function')window.sendCAPIEvent('Lead',eid,{currency:'USD',value:100});">
+<a class="sky-wa-btn sky-wa-btn-green" id="sky-wa-cta1" href="#" target="_blank">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg>
 Quiero saber m\u00e1s</a>
-<a class="sky-wa-btn sky-wa-btn-gold" id="sky-wa-cta2" href="#" target="_blank" onclick="var eid='skywa_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);if(typeof fbq==='function')fbq('track','Lead',{content_name:'WA_ActivarFranquicia',currency:'USD',value:100},{eventID:eid});if(typeof window.sendCAPIEvent==='function')window.sendCAPIEvent('Lead',eid,{currency:'USD',value:100});">\uD83D\uDE80 Activar franquicia</a>
+<a class="sky-wa-btn sky-wa-btn-gold" id="sky-wa-cta2" href="#" target="_blank">\uD83D\uDE80 Activar franquicia</a>
 </div>
-<a class="sky-wa-float" id="sky-wa-float" href="#" target="_blank" onclick="var eid='skywa_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);if(typeof fbq==='function')fbq('track','Lead',{content_name:'WA_FloatingBtn',currency:'USD',value:100},{eventID:eid});if(typeof window.sendCAPIEvent==='function')window.sendCAPIEvent('Lead',eid,{currency:'USD',value:100});">
+<a class="sky-wa-float" id="sky-wa-float" href="#" target="_blank">
 <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg>
 </a>
 <script>
 (function(){
-  // Load asesor WhatsApp from already-inlined data (no extra fetch needed)
   var _ref = new URLSearchParams(window.location.search).get('ref')||'';
   if(!_ref) return;
   var slug = _ref.toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -185,28 +200,100 @@ Quiero saber m\u00e1s</a>
   if(!a) return;
   var wa = (a.whatsapp||'').replace(/[^0-9]/g,'');
   if(!wa) return;
-  var msg1 = encodeURIComponent('Hola ' + (a.nombre||'') + ', vi tu pagina y me interesa saber mas sobre la franquicia digital');
-  var msg2 = encodeURIComponent('Hola ' + (a.nombre||'') + ', quiero activar mi franquicia digital. Me puedes dar mas informacion?');
-  var link1 = 'https://wa.me/' + wa + '?text=' + msg1;
-  var link2 = 'https://wa.me/' + wa + '?text=' + msg2;
-  document.getElementById('sky-wa-cta1').href = link1;
-  document.getElementById('sky-wa-cta2').href = link2;
-  document.getElementById('sky-wa-float').href = link1;
-  // Track conversion on ANY WhatsApp button click (max 1 per IP on server)
-  function _trackConv(){
-    if(window._convTracked) return;
-    window._convTracked = true;
-    fetch('https://skyteam.global/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'track',ref:slug,type:'conversion'}),keepalive:true}).catch(function(){});
-    if(typeof fbq==='function') fbq('track','Lead');
+  var nombre = a.nombre || '';
+
+  // Pre-built WhatsApp links
+  var msgSaber = encodeURIComponent('Hola ' + nombre + ', vi tu pagina y me interesa saber mas sobre la franquicia digital. Me puedes dar informacion?');
+  var msgActivar = encodeURIComponent('Hola ' + nombre + ', quiero activar mi franquicia digital!');
+  var linkSaber = 'https://wa.me/' + wa + '?text=' + msgSaber;
+  var linkActivar = 'https://wa.me/' + wa + '?text=' + msgActivar;
+
+  // Set our injected buttons
+  document.getElementById('sky-wa-cta1').href = linkSaber;
+  document.getElementById('sky-wa-cta2').href = linkActivar;
+  document.getElementById('sky-wa-float').href = linkSaber;
+
+  // ── Override ALL original template CTA buttons to go direct to WhatsApp ──
+  // These originally scrolled to the form (#form) — now they open WhatsApp directly
+  function _hijackBtn(el, link) {
+    if (!el) return;
+    el.href = link;
+    el.target = '_blank';
+    el.onclick = function(e) {
+      e.preventDefault(); e.stopPropagation();
+      _trackConv();
+      _fireFBEvent('CTA_Override');
+      window.open(link, '_blank');
+    };
   }
-  document.getElementById('sky-wa-cta1').addEventListener('click',_trackConv);
-  document.getElementById('sky-wa-cta2').addEventListener('click',_trackConv);
-  document.getElementById('sky-wa-float').addEventListener('click',_trackConv);
-  // Also track original form button if exists
-  var origBtn = document.querySelector('.cta-wa');
-  if(origBtn) origBtn.addEventListener('click',_trackConv);
+
+  // Wait for DOM to be ready (template loads async)
+  setTimeout(function() {
+    // Header CTA: "Quiero activar ->"
+    var ctaTop = document.querySelector('.cta-top');
+    _hijackBtn(ctaTop, linkActivar);
+
+    // Sticky bar CTA: "Activar ahora ->"
+    var stickyBtn = document.querySelector('.sticky-btn');
+    _hijackBtn(stickyBtn, linkActivar);
+
+    // End-of-video CTA: "Hablar con el equipo ahora"
+    var endCta = document.querySelector('.end-cta');
+    _hijackBtn(endCta, linkSaber);
+
+    // ALL "Quiero activar mi franquicia" inline CTAs (post-VSL + mid-page)
+    // These are <a> tags with onclick that scroll to #form
+    document.querySelectorAll('a[href="javascript:void(0)"]').forEach(function(el) {
+      var txt = (el.textContent || '').toLowerCase();
+      if (txt.indexOf('activar') > -1 || txt.indexOf('franquicia') > -1) {
+        _hijackBtn(el, linkActivar);
+      } else if (txt.indexOf('hablar') > -1 || txt.indexOf('equipo') > -1) {
+        _hijackBtn(el, linkSaber);
+      }
+    });
+
+    // Override the form's enviarWhatsApp() to use this asesor's number
+    if (typeof window.getWhatsApp === 'function') {
+      window.getWhatsApp = function() { return wa; };
+    }
+    // Also set _advisorData.whatsapp so enviarWhatsApp() uses it
+    if (window._advisorData) window._advisorData.whatsapp = wa;
+    else window._advisorData = { whatsapp: wa, nombre: nombre };
+  }, 500);
+
+  // ── Conversion tracking (max 1 per IP on server) ──
+  function _trackConv() {
+    if (window._convTracked) return;
+    window._convTracked = true;
+    fetch('https://skyteam.global/api/landing', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'track', ref: slug, type: 'conversion' }), keepalive: true
+    }).catch(function(){});
+  }
+  function _fireFBEvent(name) {
+    var eid = 'skywa_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: name, currency: 'USD', value: 100 }, { eventID: eid });
+    if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('Lead', eid, { currency: 'USD', value: 100 });
+  }
+
+  // Track clicks on our injected buttons
+  document.getElementById('sky-wa-cta1').addEventListener('click', function() { _trackConv(); _fireFBEvent('WA_QuieroSaber'); });
+  document.getElementById('sky-wa-cta2').addEventListener('click', function() { _trackConv(); _fireFBEvent('WA_ActivarFranquicia'); });
+  document.getElementById('sky-wa-float').addEventListener('click', function(e) {
+    e.preventDefault();
+    _trackConv(); _fireFBEvent('WA_FloatingBtn');
+    window.open(linkSaber, '_blank');
+  });
+
+  // Track form submit too
+  var origSubmit = document.querySelector('.submit-btn');
+  if (origSubmit) origSubmit.addEventListener('click', function() { _trackConv(); _fireFBEvent('WA_FormSubmit'); });
+
   // Track page visit
-  fetch('https://skyteam.global/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'track',ref:slug,type:'visit'}),keepalive:true}).catch(function(){});
+  fetch('https://skyteam.global/api/landing', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'track', ref: slug, type: 'visit' }), keepalive: true
+  }).catch(function(){});
 })();
 </script>`;
 
