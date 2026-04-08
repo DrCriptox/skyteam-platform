@@ -52,10 +52,10 @@ export default async function handler(req, res) {
         });
       }
       if (url === '/api/track' || url.indexOf('/api/track') === 0) {
-        return Promise.resolve(new Response('{"ok":true}', {status:200}));
+        return _origFetch('https://skyteam.global/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'track'})});
       }
       if (url === '/api/capi' || url.indexOf('/api/capi') === 0) {
-        return Promise.resolve(new Response('{"ok":true}', {status:200}));
+        return _origFetch('https://skyteam.global/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'capi'})});
       }
     }
     return _origFetch.apply(this, arguments);
@@ -68,6 +68,51 @@ export default async function handler(req, res) {
 
   // Fix innovaia.app references
   html = html.replace(/https?:\/\/(www\.)?innovaia\.app/g, 'https://skyteam.global/landing');
+
+  // Inject 2 WhatsApp CTA buttons: sticky bottom bar + floating button
+  const ref = req.query?.ref || '';
+  const waButtons = `
+<style>
+.sky-wa-bar{position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:10px 16px;background:rgba(6,8,16,0.95);backdrop-filter:blur(12px);border-top:1px solid rgba(37,211,102,0.2);display:flex;gap:8px;justify-content:center;}
+.sky-wa-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 24px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;font-family:'Syne','DM Sans',sans-serif;transition:transform 0.2s;flex:1;max-width:280px;justify-content:center;}
+.sky-wa-btn:hover{transform:translateY(-2px);}
+.sky-wa-btn-green{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;box-shadow:0 4px 20px rgba(37,211,102,0.3);}
+.sky-wa-btn-gold{background:linear-gradient(135deg,#D4A853,#F0C97A);color:#000;box-shadow:0 4px 20px rgba(212,168,83,0.3);}
+.sky-wa-float{position:fixed;bottom:80px;right:16px;z-index:9998;width:60px;height:60px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(37,211,102,0.4);cursor:pointer;animation:skyWaBounce 2s infinite;}
+@keyframes skyWaBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+@media(min-width:768px){.sky-wa-bar{padding:12px 24px;}.sky-wa-btn{max-width:300px;}}
+</style>
+<div class="sky-wa-bar" id="sky-wa-bar">
+<a class="sky-wa-btn sky-wa-btn-green" id="sky-wa-cta1" href="#" target="_blank">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg>
+Quiero saber m\\u00e1s</a>
+<a class="sky-wa-btn sky-wa-btn-gold" id="sky-wa-cta2" href="#" target="_blank">\\uD83D\\uDE80 Activar mi franquicia</a>
+</div>
+<a class="sky-wa-float" id="sky-wa-float" href="#" target="_blank">
+<svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg>
+</a>
+<script>
+(function(){
+  // Load asesor WhatsApp from data and set button links
+  var _ref = new URLSearchParams(window.location.search).get('ref')||'';
+  if(!_ref) return;
+  fetch('${baseUrl}asesores-skyteam.json').then(function(r){return r.json()}).then(function(d){
+    var a = d[_ref.toLowerCase().replace(/[^a-z0-9]/g,'')] || d[_ref] || null;
+    if(!a) return;
+    var wa = (a.whatsapp||'').replace(/[^0-9]/g,'');
+    if(!wa) return;
+    var msg1 = encodeURIComponent('Hola ' + (a.nombre||'') + ', vi tu pagina y me interesa saber mas sobre la franquicia digital');
+    var msg2 = encodeURIComponent('Hola ' + (a.nombre||'') + ', quiero activar mi franquicia digital. Me puedes dar mas informacion?');
+    var link1 = 'https://wa.me/' + wa + '?text=' + msg1;
+    var link2 = 'https://wa.me/' + wa + '?text=' + msg2;
+    document.getElementById('sky-wa-cta1').href = link1;
+    document.getElementById('sky-wa-cta2').href = link2;
+    document.getElementById('sky-wa-float').href = link1;
+  }).catch(function(){});
+})();
+</script>`;
+
+  html = html.replace('</body>', waButtons + '</body>');
 
   // Update OG meta tags
   const ref = req.query?.ref || '';
