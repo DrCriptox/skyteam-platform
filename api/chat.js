@@ -93,10 +93,16 @@ export default async function handler(req, res) {
     clearTimeout(timeout);
     const data = await response.json();
 
-    // Extract response text
-    const responseText = data.choices && data.choices[0] && data.choices[0].message
-      ? data.choices[0].message.content
-      : (data.error ? data.error.message : 'Error al procesar tu solicitud.');
+    // Extract response text — NEVER expose provider error messages to user
+    let responseText;
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      responseText = data.choices[0].message.content;
+    } else if (data.error) {
+      console.error('[CHAT] API error:', data.error.message || data.error);
+      responseText = 'Sky IA no est\u00e1 disponible en este momento. Intenta de nuevo en unos minutos.';
+    } else {
+      responseText = 'No se pudo generar una respuesta. Intenta de nuevo.';
+    }
 
     // ── Normalize response for Coach IA format ──
     if (body.agent || body.systemPrompt) {

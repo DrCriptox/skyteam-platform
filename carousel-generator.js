@@ -97,7 +97,7 @@
   var INFO_TOPICS = [
     { cat: '🤖 IA + Negocios', topics: [
       'La IA ya puede vender por ti 24/7 — así se conecta con tu negocio',
-      'ChatGPT + sistemas de venta = tu equipo de ventas automático',
+      'IA + sistemas de venta = tu equipo de ventas autom\u00e1tico',
       'Cómo la IA está reemplazando equipos de marketing completos',
       'La IA genera $15.7 trillones para 2030 — ¿tú ya estás dentro?'
     ]},
@@ -1021,7 +1021,7 @@
       '<div class="cg-pv" id="cp">' +
         '<div class="cg-ph"><p class="cg-l" style="margin:0">Vista previa</p><button class="cg-b" id="cd" style="padding:7px 16px;font-size:11px">📤 Guardar Todo</button></div>' +
         '<div class="cg-ps" id="cps"></div>' +
-        '<p class="cg-ft">IA: Claude + Flux • Formato 1080×1350 (4:5)</p>' +
+        '<p class="cg-ft">Sky IA • Formato 1080\u00d71350 (4:5)</p>' +
       '</div></div>';
 
     document.body.appendChild(ov);

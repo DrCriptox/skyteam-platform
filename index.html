@@ -8785,7 +8785,7 @@ function initAgentChat(id) {
   var desc = document.getElementById('agente-desc');
   if(desc) {
     desc.innerHTML = '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);font-size:11px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:8px;">'
-      + cfg.icon + ' ' + cfg.name + ' — Potenciado por Claude IA'
+      + cfg.icon + ' ' + cfg.name + ' — Potenciado por Sky IA'
       + '</div>';
   }
   // Focus input
@@ -14432,12 +14432,12 @@ function crmGenIgMsg(){
   if(p.fuente)um+='Fuente: '+p.fuente+'. ';
   if(p.etapa)um+='Etapa: '+p.etapa+'. ';
   if(ut)um+='Contexto: '+ut;
-  fetch('https://api.openai.com/v1/chat/completions',{
-    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(window.SKY_OAI_KEY||'')},
-    body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:sp},{role:'user',content:um}],max_tokens:150})
+  fetch('/api/chat',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'gpt-4o-mini',max_tokens:150,system:sp,messages:[{role:'user',content:um}]})
   }).then(function(r){return r.json();})
   .then(function(d){
-    var msg=d.choices&&d.choices[0]?d.choices[0].message.content:'';
+    var msg=(d.content&&d.content[0]?d.content[0].text:'') || (d.choices&&d.choices[0]?d.choices[0].message.content:'');
     var clean=crmCleanEmojis(msg);
     window._crmIgLastMsg=clean;
     var res=document.getElementById('crm-ig-result');var mt=document.getElementById('crm-ig-msg-text');

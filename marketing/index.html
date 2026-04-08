@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sky Team — Hub de Materiales</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#070711; font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; color:#fff; }
+
+  .header {
+    padding:40px 48px 32px;
+    border-bottom:1px solid rgba(201,162,39,0.18);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand { font-size:11px; letter-spacing:7px; color:rgba(201,162,39,0.65); text-transform:uppercase; }
+  .title { font-size:28px; font-weight:800; color:#fff; margin-top:4px; }
+  .title em { font-style:normal; background:linear-gradient(90deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .badge { font-size:11px; letter-spacing:3px; color:rgba(255,215,0,0.65); background:rgba(201,162,39,0.12); border:1px solid rgba(201,162,39,0.30); border-radius:20px; padding:6px 16px; }
+
+  .main { padding:40px 48px; max-width:1400px; margin:0 auto; }
+
+  .section-title { font-size:11px; letter-spacing:6px; color:rgba(201,162,39,0.50); text-transform:uppercase; margin-bottom:20px; }
+
+  .grid { display:grid; gap:16px; margin-bottom:44px; }
+  .grid-4 { grid-template-columns:repeat(4,1fr); }
+  .grid-3 { grid-template-columns:repeat(3,1fr); }
+  .grid-2 { grid-template-columns:repeat(2,1fr); }
+
+  .card {
+    background:rgba(255,255,255,0.03); border:1px solid rgba(201,162,39,0.18);
+    border-radius:10px; overflow:hidden; cursor:pointer;
+    transition:all 0.25s; text-decoration:none; display:block;
+  }
+  .card:hover { border-color:rgba(201,162,39,0.45); transform:translateY(-3px); box-shadow:0 8px 40px rgba(0,0,0,0.40); }
+
+  .card-preview {
+    height:180px; background:#030509;
+    display:flex; align-items:center; justify-content:center;
+    font-size:40px; position:relative; overflow:hidden;
+  }
+  .card-preview::before {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse 80% 80% at 30% 30%, rgba(120,0,200,0.18) 0%, transparent 60%),
+               radial-gradient(ellipse 60% 60% at 70% 70%, rgba(0,40,200,0.14) 0%, transparent 60%);
+  }
+  .card-preview iframe {
+    width:300px; height:300px; border:none; pointer-events:none;
+    transform:scale(0.6); transform-origin:top left;
+    margin-top:-30px; margin-left:-30px;
+    position:relative; z-index:1;
+  }
+  .card-preview .preview-icon { position:relative; z-index:2; font-size:48px; }
+  .card-preview .preview-label {
+    position:absolute; bottom:0; left:0; right:0;
+    font-size:10px; letter-spacing:3px; color:rgba(201,162,39,0.55); text-transform:uppercase;
+    text-align:center; padding:8px;
+    background:rgba(0,0,0,0.50); z-index:3;
+  }
+
+  .card-body { padding:16px 20px 20px; }
+  .card-name { font-size:15px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .card-desc { font-size:13px; color:rgba(255,255,255,0.38); line-height:1.5; }
+  .card-tags { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .tag { font-size:10px; letter-spacing:1px; color:rgba(255,215,0,0.65); background:rgba(201,162,39,0.10); border:1px solid rgba(201,162,39,0.22); border-radius:20px; padding:3px 10px; }
+
+  .open-btn {
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:14px; font-size:12px; font-weight:600; letter-spacing:1px;
+    color:#FFD700; text-decoration:none;
+    background:rgba(201,162,39,0.10); border:1px solid rgba(201,162,39,0.30);
+    border-radius:6px; padding:7px 16px; transition:all 0.2s;
+  }
+  .open-btn:hover { background:rgba(201,162,39,0.20); }
+
+  /* Instructions panel */
+  .info-box {
+    background:rgba(201,162,39,0.06); border:1px solid rgba(201,162,39,0.22);
+    border-radius:10px; padding:24px 28px; margin-bottom:40px;
+    display:flex; gap:28px; align-items:flex-start;
+  }
+  .info-icon { font-size:32px; flex-shrink:0; }
+  .info-content h3 { font-size:15px; font-weight:700; color:#FFD700; margin-bottom:8px; }
+  .info-content p  { font-size:13px; color:rgba(255,255,255,0.48); line-height:1.65; }
+  .info-content kbd { display:inline-block; background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.20); border-radius:4px; padding:1px 7px; font-size:12px; font-family:monospace; color:#fff; }
+
+  .divider { height:1px; background:rgba(201,162,39,0.12); margin:16px 0 36px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="brand">Sky Team Global</div>
+    <div class="title">Hub de Materiales de <em>Lanzamiento</em></div>
+  </div>
+  <div class="badge">Lunes 6 · 9:00 PM</div>
+</div>
+
+<div class="main">
+
+  <!-- Info -->
+  <div class="info-box">
+    <div class="info-icon">📌</div>
+    <div class="info-content">
+      <h3>Cómo usar estos materiales</h3>
+      <p>
+        <strong>Flyers:</strong> Abre la Galería → clic en "📸 Capturar Flyer" → se abre ventana 1080×1080 → <kbd>Win + Shift + S</kbd> para capturar.<br>
+        <strong>Videos:</strong> Abre el video → <kbd>F11</kbd> pantalla completa → <kbd>Win + G</kbd> para grabar con Xbox Game Bar → <kbd>F5</kbd> para reiniciar animación.<br>
+        <strong>Presentación:</strong> Abre → <kbd>F11</kbd> pantalla completa → navega con ← → del teclado.
+      </p>
+    </div>
+  </div>
+
+  <!-- Flyers -->
+  <div class="section-title">Flyers de Cuenta Regresiva</div>
+  <div class="grid grid-4" style="margin-bottom:12px">
+    <a class="card" href="flyers/flyer-2dias.html" target="_blank">
+      <div class="card-preview">
+        <div class="preview-label">Flyer 1</div>
+        <span class="preview-icon">🗓️</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Faltan 2 Días</div>
+        <div class="card-desc">Publicar hoy sábado en la noche · Genera expectativa inicial</div>
+        <div class="card-tags"><span class="tag">Sábado noche</span><span class="tag">1080×1080</span></div>
+        <a class="open-btn" href="flyers/flyer-2dias.html" target="_blank">↗ Abrir flyer</a>
+      </div>
+    </a>
+    <a class="card" href="flyers/flyer-1dia.html" target="_blank">
+      <div class="card-preview">
+        <div class="preview-label">Flyer 2</div>
+        <span class="preview-icon">📅</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Falta 1 Día</div>
+        <div class="card-desc">Publicar domingo en la noche · Urgencia suave</div>
+        <div class="card-tags"><span class="tag">Domingo noche</span><span class="tag">1080×1080</span></div>
+        <a class="open-btn" href="flyers/flyer-1dia.html" target="_blank">↗ Abrir flyer</a>
+      </div>
+    </a>
+    <a class="card" href="flyers/flyer-8h.html" target="_blank">
+      <div class="card-preview">
+        <div class="preview-label">Flyer 3</div>
+        <span class="preview-icon">⏱️</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Faltan 8 Horas</div>
+        <div class="card-desc">Publicar lunes 1:00 PM · Activa el modo prospectos</div>
+        <div class="card-tags"><span class="tag">Lunes 1 PM</span><span class="tag">1080×1080</span></div>
+        <a class="open-btn" href="flyers/flyer-8h.html" target="_blank">↗ Abrir flyer</a>
+      </div>
+    </a>
+    <a class="card" href="flyers/flyer-4h.html" target="_blank">
+      <div class="card-preview">
+        <div class="preview-label">Flyer 4</div>
+        <span class="preview-icon">🔥</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Faltan 4 Horas</div>
+        <div class="card-desc">Publicar lunes 5:00 PM · Urgencia real, acción ahora</div>
+        <div class="card-tags"><span class="tag">Lunes 5 PM</span><span class="tag">1080×1080</span></div>
+        <a class="open-btn" href="flyers/flyer-4h.html" target="_blank">↗ Abrir flyer</a>
+      </div>
+    </a>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:8px">
+    <a class="card" href="flyers/flyer-2h.html" target="_blank">
+      <div class="card-preview">
+        <div class="preview-label">Flyer 5</div>
+        <span class="preview-icon">⚡</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Faltan 2 Horas</div>
+        <div class="card-desc">Publicar lunes 7:00 PM · Máxima urgencia</div>
+        <div class="card-tags"><span class="tag">Lunes 7 PM</span><span class="tag">1080×1080</span></div>
+        <a class="open-btn" href="flyers/flyer-2h.html" target="_blank">↗ Abrir flyer</a>
+      </div>
+    </a>
+    <a class="card" href="flyers/flyer-1h.html" target="_blank">
+      <div class="card-preview">
+        <div class="preview-label">Flyer 6</div>
+        <span class="preview-icon">🔥</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Falta 1 Hora</div>
+        <div class="card-desc">Publicar lunes 8:00 PM · ES AHORA, conecta ya</div>
+        <div class="card-tags"><span class="tag">Lunes 8 PM</span><span class="tag">1080×1080</span></div>
+        <a class="open-btn" href="flyers/flyer-1h.html" target="_blank">↗ Abrir flyer</a>
+      </div>
+    </a>
+    <a class="card" href="galeria.html" target="_blank" style="border-color:rgba(255,215,0,0.35)">
+      <div class="card-preview" style="background:rgba(201,162,39,0.08)">
+        <div class="preview-label">Galería</div>
+        <span class="preview-icon">🖼️</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Galería Completa</div>
+        <div class="card-desc">Ve todos los flyers y captúralos como imagen uno por uno</div>
+        <div class="card-tags"><span class="tag">← → para navegar</span><span class="tag">Captura PNG</span></div>
+        <a class="open-btn" href="galeria.html" target="_blank">↗ Abrir galería</a>
+      </div>
+    </a>
+    <div class="card" style="border-style:dashed;opacity:0.45;cursor:default">
+      <div class="card-preview"><span class="preview-icon">➕</span></div>
+      <div class="card-body">
+        <div class="card-name">¿Necesitas más?</div>
+        <div class="card-desc">P\u00eddele a Sky IA que cree flyers adicionales o variaciones</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Videos -->
+  <div class="section-title">Videos Animados (Screen-Recording)</div>
+  <div class="grid grid-2">
+    <a class="card" href="video-promo.html" target="_blank">
+      <div class="card-preview" style="height:220px">
+        <div class="preview-label">Video 1 · 55 segundos</div>
+        <span class="preview-icon">🚀</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Video Promo — Expectativa</div>
+        <div class="card-desc">Cinematográfico con cohete despegando. Genera expectativa antes del lanzamiento. Comparte en grupos de WhatsApp durante los días previos.</div>
+        <div class="card-tags"><span class="tag">~55s</span><span class="tag">1920×1080</span><span class="tag">Para antes del lunes</span></div>
+        <a class="open-btn" href="video-promo.html" target="_blank">↗ Ver y grabar</a>
+      </div>
+    </a>
+    <a class="card" href="video-lanzamiento.html" target="_blank">
+      <div class="card-preview" style="height:220px">
+        <div class="preview-label">Video 2 · 40 segundos</div>
+        <span class="preview-icon">⚡</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Video Lanzamiento — Durante la llamada</div>
+        <div class="card-desc">Boot-up + reveal dramático de Sky Team. Para poner en pantalla durante el anuncio oficial. Impacto máximo en el momento del lanzamiento.</div>
+        <div class="card-tags"><span class="tag">~40s</span><span class="tag">1920×1080</span><span class="tag">Para la llamada del lunes</span></div>
+        <a class="open-btn" href="video-lanzamiento.html" target="_blank">↗ Ver y grabar</a>
+      </div>
+    </a>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Presentación -->
+  <div class="section-title">Presentación de Ventas</div>
+  <div class="grid grid-2">
+    <a class="card" href="presentacion.html" target="_blank" style="border-color:rgba(201,162,39,0.35)">
+      <div class="card-preview" style="height:200px;background:rgba(201,162,39,0.06)">
+        <div class="preview-label">15 slides · Presentación completa</div>
+        <span class="preview-icon">📊</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Presentación Sky Team Global</div>
+        <div class="card-desc">15 slides que cubren: el problema, la solución, los 6 módulos, los agentes de IA, los rangos, la tecnología $30K+, comparativa y CTA. Abre en Chrome, presiona F11 y presenta.</div>
+        <div class="card-tags"><span class="tag">15 slides</span><span class="tag">F11 para presentar</span><span class="tag">← → para navegar</span><span class="tag">Ctrl+P para PDF</span></div>
+        <a class="open-btn" href="presentacion.html" target="_blank">↗ Abrir presentación</a>
+      </div>
+    </a>
+    <div class="card" style="border-color:rgba(201,162,39,0.18);cursor:default">
+      <div class="card-preview" style="height:200px">
+        <span class="preview-icon">📄</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">Exportar como PDF</div>
+        <div class="card-desc">Desde la presentación en Chrome:</div>
+        <ol style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:10px;padding-left:18px;line-height:2">
+          <li>Abre <code style="color:#FFD700">presentacion.html</code></li>
+          <li>Presiona <kbd style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.20);border-radius:3px;padding:1px 6px;font-size:11px">Ctrl + P</kbd></li>
+          <li>Destino → <strong style="color:#fff">Guardar como PDF</strong></li>
+          <li>Diseño → <strong style="color:#fff">Horizontal</strong>, sin márgenes</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
