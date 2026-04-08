@@ -282,8 +282,8 @@ export default async function handler(req, res) {
           while (hasMore && page < 20) {
             var from = page * pageSize;
             var to = from + pageSize - 1;
-            var r = await fetch(baseUrl + '&limit=' + pageSize + '&offset=' + from, {
-              headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 }
+            var r = await fetch(baseUrl, {
+              headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, 'Range': from + '-' + to, 'Prefer': 'count=exact' }
             });
             var rows = await r.json();
             if (Array.isArray(rows) && rows.length > 0) {
