@@ -192,6 +192,21 @@ Quiero saber m\u00e1s</a>
   document.getElementById('sky-wa-cta1').href = link1;
   document.getElementById('sky-wa-cta2').href = link2;
   document.getElementById('sky-wa-float').href = link1;
+  // Track conversion on ANY WhatsApp button click (max 1 per IP on server)
+  function _trackConv(){
+    if(window._convTracked) return;
+    window._convTracked = true;
+    fetch('https://skyteam.global/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'track',ref:slug,type:'conversion'}),keepalive:true}).catch(function(){});
+    if(typeof fbq==='function') fbq('track','Lead');
+  }
+  document.getElementById('sky-wa-cta1').addEventListener('click',_trackConv);
+  document.getElementById('sky-wa-cta2').addEventListener('click',_trackConv);
+  document.getElementById('sky-wa-float').addEventListener('click',_trackConv);
+  // Also track original form button if exists
+  var origBtn = document.querySelector('.cta-wa');
+  if(origBtn) origBtn.addEventListener('click',_trackConv);
+  // Track page visit
+  fetch('https://skyteam.global/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'track',ref:slug,type:'visit'}),keepalive:true}).catch(function(){});
 })();
 </script>`;
 

@@ -111,6 +111,56 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, asesor, exists: !!asesor });
     }
 
+    // ── TRACK: count visits and conversions for ranking ──
+    if (action === 'track' || action === 'capi') {
+      const trackRef = (req.body.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const trackType = req.body.type || 'visit'; // 'visit' or 'conversion'
+      const clientIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+      if (!trackRef) return res.status(200).json({ ok: true });
+
+      if (TOKEN()) {
+        // Fire and forget — don't block response
+        (async function() {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
+            try {
+              const { data, sha } = await readGHFile(FILE_STATS, true);
+              if (!data[trackRef]) data[trackRef] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, days_conversions_ips: {}, conversions_ips: {} };
+              const s = data[trackRef];
+              const today = new Date().toISOString().slice(0, 10);
+
+              if (trackType === 'conversion') {
+                // Max 1 conversion per IP
+                if (!s.conversions_ips) s.conversions_ips = {};
+                if (!s.conversions_ips[clientIP]) {
+                  s.conversions_ips[clientIP] = true;
+                  s.conversions = (s.conversions || 0) + 1;
+                  if (!s.days_conversions) s.days_conversions = {};
+                  s.days_conversions[today] = (s.days_conversions[today] || 0) + 1;
+                  if (!s.days_conversions_ips) s.days_conversions_ips = {};
+                  if (!s.days_conversions_ips[today]) s.days_conversions_ips[today] = {};
+                  s.days_conversions_ips[today][clientIP] = true;
+                }
+              } else {
+                // Visit
+                s.total = (s.total || 0) + 1;
+                if (!s.ips) s.ips = {};
+                s.ips[clientIP] = (s.ips[clientIP] || 0) + 1;
+                if (!s.days) s.days = {};
+                s.days[today] = (s.days[today] || 0) + 1;
+                if (!s.days_ips) s.days_ips = {};
+                if (!s.days_ips[today]) s.days_ips[today] = {};
+                s.days_ips[today][clientIP] = true;
+              }
+
+              if (await writeGHFile(FILE_STATS, data, sha, 'track: +1 ' + trackType + ' ' + trackRef)) break;
+            } catch(e) { console.warn('[Track] attempt', attempt, 'failed:', e.message); }
+          }
+        })().catch(function(){});
+      }
+      return res.status(200).json({ ok: true });
+    }
+
     // ── SYNC PHOTO: silently update foto only if currently empty (never overwrites custom photos) ──
     if (action === 'syncPhoto') {
       const { foto } = req.body;
