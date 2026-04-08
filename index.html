@@ -13153,11 +13153,16 @@ crmSwitchView = function(view) {
     ranking: document.getElementById('crm-ranking-view')
   };
   Object.keys(views).forEach(function(k){ if(views[k]) views[k].style.display = (k === view) ? '' : 'none'; });
-  // Hide reminders bar and metrics bar when not on kanban
+  // Hide ALL extra elements when not on their tab
   var remBar = document.getElementById('crm-reminders-bar');
   var metBar = document.getElementById('crm-metrics-bar');
+  var searchInput = document.getElementById('crm-search-input');
+  var addBtn = document.querySelector('.crm-add-btn');
   if(remBar) remBar.style.display = (view === 'kanban') ? '' : 'none';
-  if(metBar) metBar.style.display = (view === 'kanban' || view === 'metricas') ? '' : 'none';
+  if(metBar) metBar.style.display = (view === 'kanban') ? '' : 'none';
+  // Hide search/add on ranking and reminders tabs
+  if(searchInput) searchInput.style.display = (view === 'ranking' || view === 'reminders') ? 'none' : '';
+  if(addBtn) addBtn.style.display = (view === 'ranking' || view === 'reminders') ? 'none' : '';
   document.querySelectorAll('.crm-view-btn').forEach(function(b) {
     b.classList.remove('active','crm-view-btn-active');
     var dv = b.getAttribute('data-view');
