@@ -69,7 +69,8 @@ var skyTvState = window.skyTvState || {
   eventos: [],
   liveEventos: [],
   selectedWeek: new Date(),
-  userIsAdmin: false
+  userIsAdmin: false,
+  countdownIdx: 0
 };
 window.skyTvState = skyTvState;
 
@@ -115,15 +116,20 @@ function getCatClass(cat) {
 }
 
 // --- COUNTDOWN ---
-function getNextEvent() {
+function getUpcomingEvents() {
   var now = new Date();
-  var upcoming = skyTvState.eventos.filter(function(e) {
+  return skyTvState.eventos.filter(function(e) {
     var dt = new Date(e.fecha + 'T' + (e.hora_inicio || '00:00:00'));
     return dt > now;
   }).sort(function(a, b) {
     return new Date(a.fecha + 'T' + (a.hora_inicio||'00:00:00')) - new Date(b.fecha + 'T' + (b.hora_inicio||'00:00:00'));
   });
-  return upcoming.length > 0 ? upcoming[0] : null;
+}
+function getNextEvent() {
+  var list = getUpcomingEvents();
+  var idx = skyTvState.countdownIdx || 0;
+  if (idx >= list.length) idx = 0;
+  return list.length > 0 ? list[idx] : null;
 }
 
 function renderCountdown(container) {
@@ -275,6 +281,28 @@ function renderCountdown(container) {
   cd.appendChild(info2);
   if (isDesktop && totalMins > 5 && calBtn) cd.appendChild(calBtn);
   container.appendChild(cd);
+
+  // Navigation arrows if multiple upcoming events
+  var allUpcoming = getUpcomingEvents();
+  if (allUpcoming.length > 1) {
+    var navRow = document.createElement('div');
+    navRow.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:12px;margin-top:6px;';
+    var prevE = document.createElement('button');
+    prevE.style.cssText = 'background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:4px 12px;font-size:16px;cursor:pointer;';
+    prevE.textContent = '\u25C0';
+    prevE.onclick = function() { skyTvState.countdownIdx = ((skyTvState.countdownIdx || 0) - 1 + allUpcoming.length) % allUpcoming.length; renderCountdown(container); };
+    var dots = document.createElement('span');
+    dots.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);';
+    dots.textContent = ((skyTvState.countdownIdx||0)+1) + ' / ' + allUpcoming.length;
+    var nextE = document.createElement('button');
+    nextE.style.cssText = 'background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:4px 12px;font-size:16px;cursor:pointer;';
+    nextE.textContent = '\u25B6';
+    nextE.onclick = function() { skyTvState.countdownIdx = ((skyTvState.countdownIdx || 0) + 1) % allUpcoming.length; renderCountdown(container); };
+    navRow.appendChild(prevE);
+    navRow.appendChild(dots);
+    navRow.appendChild(nextE);
+    container.appendChild(navRow);
+  }
 }
 
 // --- CARTELERA (BILLBOARD) ---
