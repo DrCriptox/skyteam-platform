@@ -98,16 +98,36 @@ export default async function handler(req, res) {
     const password = hashPassword(sol.password); // Always hash before storing
     const rank = mapInnovaRank(sol.classification || null); // Auto-assign rank from Innova classification
 
+    // ── Validate: username must NOT match sponsor (common OCR confusion) ──
+    const sponsorClean0 = (sol.sponsor || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (sponsorClean0 && username === sponsorClean0) {
+      return res.status(400).json({ error: 'El usuario detectado ("' + username + '") es igual al patrocinador. Tu foto puede estar confundiendo los campos. Sube una captura donde se vea claramente TU usuario (debajo de tu nombre).' });
+    }
+
     // Check innova_user count — max 2 sociedades per innova_user
     const innovaUser = (sol.innova_user || username).toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
-    const innovaCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username', { headers: HEADERS });
+    const innovaCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username,name,email', { headers: HEADERS });
     const innovaRows = await innovaCheck.json();
     const innovaCount = Array.isArray(innovaRows) ? innovaRows.length : 0;
     if (innovaCount >= 2) {
       return res.status(400).json({ error: 'Este usuario de Innova ya tiene 2 sociedades registradas. No se puede crear otra.' });
     }
-    // If innova_user already has 1 account, append 2 to username to differentiate
-    const finalUsername = innovaCount === 1 ? username + '2' : username;
+    // If innova_user already has 1 account, verify it's the SAME person before creating "2" account
+    let finalUsername = username;
+    if (innovaCount === 1) {
+      const existingUser = innovaRows[0];
+      // Safety: the new registrant's name or email should partially match the existing account
+      const existName = (existingUser.name || '').toLowerCase();
+      const newName = (sol.name || '').toLowerCase();
+      const existEmail = (existingUser.email || '').toLowerCase();
+      const newEmail = (sol.email || '').toLowerCase();
+      const nameMatch = newName && existName && (existName.includes(newName.split(' ')[0]) || newName.includes(existName.split(' ')[0]));
+      const emailMatch = newEmail && existEmail && newEmail === existEmail;
+      if (!nameMatch && !emailMatch) {
+        return res.status(400).json({ error: 'El usuario "' + innovaUser + '" ya pertenece a ' + (existingUser.name || existingUser.username) + '. Si esta es tu segunda sociedad, tu nombre o email debe coincidir con la cuenta existente. Si no es tu usuario, sube una foto donde se vea claramente TU perfil de Innova.' });
+      }
+      finalUsername = username + '2';
+    }
 
     // Check duplicate email (if provided)
     if (sol.email) {

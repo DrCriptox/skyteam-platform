@@ -15,23 +15,36 @@ export default async function handler(req, res) {
 
     const prompt = `Analiza esta captura de pantalla del perfil de 8innova.biz/profile.
 
-=== ESTRUCTURA ===
-Zona IZQUIERDA: 1)Foto circular 2)Badge dias restantes 3)NOMBRE GRANDE 4)USUARIO pequeno debajo del nombre 5)KYC
-Zona CENTRAL: Patrocinador, Colocacion (IGNORAR), Clasificacion Actual, Vencimiento
+=== ESTRUCTURA DE LA PAGINA (de arriba a abajo) ===
+ZONA IZQUIERDA (tarjeta del socio):
+  1. Foto circular del usuario
+  2. Badge con DIAS RESTANTES (numero en un circulo/badge)
+  3. NOMBRE COMPLETO en letras grandes
+  4. USUARIO: palabra corta SIN ESPACIOS justo debajo del nombre, arriba de "KYC"
+  5. Estado KYC
 
-=== REGLAS USUARIO ===
-El USUARIO es la palabra corta debajo del NOMBRE GRANDE, arriba de KYC. Una sola palabra sin espacios.
-NUNCA confundir nombre completo con usuario. NUNCA usar Patrocinador ni Colocacion como usuario.
+ZONA CENTRAL/DERECHA (datos del perfil):
+  - "Patrocinador:" seguido de un username → esto es el SPONSOR
+  - "Colocacion:" seguido de un username → IGNORAR completamente
+  - "Clasificacion Actual:" seguido del rango → esto es la CLASSIFICATION
+  - "Fecha de vencimiento:" → fecha de expiry
 
-=== QUE EXTRAER ===
-1)DIAS RESTANTES del badge 2)VENCIMIENTO formato YYYY-MM-DD 3)USUARIO palabra corta 4)CLASIFICACION de Clasificacion Actual 5)SPONSOR de Patrocinador (IGNORAR Colocacion)
+=== REGLAS CRITICAS ===
+1. USUARIO: es la palabra corta debajo del nombre grande. UNA sola palabra, sin espacios. NUNCA es el nombre completo. NUNCA es el Patrocinador. NUNCA es la Colocacion.
+2. SPONSOR: SOLO lo que dice en "Patrocinador:". La "Colocacion:" es OTRO campo, IGNORARLO siempre.
+3. CLASIFICACION: SOLO lo que dice en "Clasificacion Actual:". PIONEER/EXPLORER Package NO son rangos.
+4. Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K.
 
-=== RECHAZAR SI ===
-No es 8innova.biz: found=false. Imagen borrosa: found=false. No se ve Clasificacion Actual: found=false.
-PIONEER/EXPLORER Package NO son rangos. Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K.
-Si solo ves Package sin Clasificacion Actual: found=false. NUNCA poner Package como classification.
+=== RECHAZAR (found=false) SI ===
+- No es una captura de 8innova.biz/profile
+- Imagen borrosa o no se leen los textos
+- NO se ve "Clasificacion Actual:" con un rango valido
+- NO se ve "Patrocinador:"
+- NO se ve el badge de dias restantes
+- Solo se ve parte del perfil (debe verse la tarjeta izquierda Y los datos centrales)
 
-Responde SOLO JSON: { "found": true, "days_remaining": 0, "expiry_date": "2026-03-27", "username": "Teamgarcia", "classification": "NOVA", "sponsor": "ANGEL2026" }`;
+Responde SOLO JSON: { "found": true, "days_remaining": 120, "expiry_date": "2026-08-15", "username": "juandavid", "classification": "NOVA", "sponsor": "ANGEL2026" }
+Si algun dato NO es visible en la imagen: found=false, reason="No se ve X en la imagen"`;
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

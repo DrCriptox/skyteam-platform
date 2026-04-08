@@ -11403,27 +11403,26 @@ function onSolImgChange(input) {
         if(d.found && d.expiry_ts) {
           input._expiryData = d;
 
-          // Auto-fill fields — if not detected, make editable so user can type manually
+          // Auto-fill fields — ALL 4 must come from OCR (no manual override)
           var uField = document.getElementById('sol-innova-user');
           if(d.username && uField) {
             uField.value = d.username.toUpperCase();
             _solFieldEditable('sol-innova-user', false);
-          } else {
+          } else if(uField) {
             uField.value = '';
-            _solFieldEditable('sol-innova-user', true);
+            _solFieldEditable('sol-innova-user', false);
           }
 
           var sField = document.getElementById('sol-sponsor');
           if(d.sponsor && sField) {
             sField.value = d.sponsor.toUpperCase();
             _solFieldEditable('sol-sponsor', false);
-          } else {
+          } else if(sField) {
             sField.value = '';
-            _solFieldEditable('sol-sponsor', true);
+            _solFieldEditable('sol-sponsor', false);
           }
 
           var cField = document.getElementById('sol-classification');
-          // REJECT package names as classification — only valid ranks
           var _rawClassif = d.classification ? d.classification.toUpperCase().trim() : '';
           var _invalidClassif = /PIONEER|EXPLORER|PACKAGE|PAQUETE/i.test(_rawClassif);
           var _validRanks = ['CLIENTE','INN 200','INN 500','INN','NOVA','NOVA 1500','NOVA 5K','NOVA 10K','NOVA DIAMOND','NOVA DIAMANTE','NOVA 25K','NOVA 50K','NOVA 100K','NO SE ALCANZO','NO SE ALCANZ'];
@@ -11433,8 +11432,8 @@ function onSolImgChange(input) {
             _solFieldEditable('sol-classification', false);
           } else if(cField) {
             cField.value = '';
-            _solFieldEditable('sol-classification', true);
-            if(_invalidClassif) d.classification = null; // force as missing
+            _solFieldEditable('sol-classification', false);
+            if(_invalidClassif) d.classification = null;
           }
 
           // Show auto-fill section
@@ -11451,7 +11450,15 @@ function onSolImgChange(input) {
           else                 lines.push('⚠️ <span style="color:#FFD700;">Patrocinador no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
           // Show checklist summary
           var _ok = (d.days_remaining || d.days_remaining === 0) && d.username && d.classification && d.sponsor;
-          if(!_ok) lines.push('<br><span style="color:#E24B4A;font-size:11px;font-weight:700;">⚠️ Faltan datos. Tu foto debe mostrar: días restantes, rango, usuario y patrocinador.</span>');
+          if(!_ok) {
+            // Missing data → REJECT the image, don't allow registration
+            input._expiryData = null;
+            lines.push('<br><span style="color:#E24B4A;font-size:12px;font-weight:800;">FOTO RECHAZADA. Debe mostrar los 4 datos completos:</span>');
+            lines.push('<span style="color:#E24B4A;font-size:11px;">1. Dias restantes  2. Clasificacion/Rango  3. Tu usuario  4. Patrocinador</span>');
+            lines.push('<span style="color:#FFD700;font-size:11px;font-weight:700;">Sube una captura COMPLETA del perfil de Innova.</span>');
+            preview.style.borderColor = 'rgba(248,113,113,0.3)';
+            preview.style.background = 'rgba(248,113,113,0.06)';
+          }
           preview.innerHTML = lines.join('<br>');
 
         } else {
