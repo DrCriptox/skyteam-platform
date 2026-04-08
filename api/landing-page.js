@@ -70,9 +70,11 @@ async function getMergedAsesores() {
       if (Array.isArray(sbRows)) {
         sbRows.forEach(function(row) {
           if (row.ref) {
-            ghData[row.ref] = Object.assign(ghData[row.ref] || {}, {
-              nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp,
-              mensaje: row.mensaje, verificado: true
+            var existing = ghData[row.ref] || {};
+            ghData[row.ref] = Object.assign(existing, {
+              nombre: row.nombre || existing.nombre, rol: row.rol || existing.rol,
+              whatsapp: row.whatsapp || existing.whatsapp, mensaje: row.mensaje || existing.mensaje,
+              foto: row.foto || existing.foto || '', verificado: true
             });
           }
         });

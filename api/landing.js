@@ -96,7 +96,7 @@ export default async function handler(req, res) {
           const rows = await sbR.json();
           if (Array.isArray(rows) && rows.length > 0) {
             const row = rows[0];
-            return res.status(200).json({ ok: true, asesor: { nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp, mensaje: row.mensaje, verificado: true }, exists: true });
+            return res.status(200).json({ ok: true, asesor: { nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp, mensaje: row.mensaje, foto: row.foto || '', verificado: true }, exists: true, source: 'supabase' });
           }
         } catch(e) { /* fall through to GitHub */ }
       }
@@ -149,8 +149,9 @@ export default async function handler(req, res) {
       if (SB_URL && SB_KEY) {
         try {
           const sbHeaders = { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Prefer: 'resolution=merge-duplicates,return=minimal' };
-          // Store without base64 photo in Supabase (photo stays in localStorage/GitHub)
-          const sbData = { ref: slug, nombre: asesorData.nombre, rol: asesorData.rol, whatsapp: asesorData.whatsapp, mensaje: asesorData.mensaje, verificado: true, updated_at: new Date().toISOString() };
+          // Store profile including photo reference in Supabase
+          const sbFoto = (foto && foto.startsWith('data:') && foto.length < 500000) ? foto : (foto && !foto.startsWith('data:') ? foto : '');
+          const sbData = { ref: slug, nombre: asesorData.nombre, rol: asesorData.rol, whatsapp: asesorData.whatsapp, mensaje: asesorData.mensaje, foto: sbFoto, verificado: true, updated_at: new Date().toISOString() };
           await fetch(SB_URL + '/rest/v1/landing_profiles', { method: 'POST', headers: sbHeaders, body: JSON.stringify(sbData) });
         } catch(e) { console.warn('[Landing] Supabase save failed (table may not exist):', e.message); }
       }
@@ -199,11 +200,26 @@ export default async function handler(req, res) {
     // Uses cached GitHub reads (60s TTL) — 3 files read in parallel
     if (action === 'getRanking') {
       const { period } = req.body || {};
+      const SB_URL2 = process.env.SUPABASE_URL;
+      const SB_KEY2 = process.env.SUPABASE_SERVICE_KEY;
       const [{ data: stats }, { data: skyAsesores }, { data: oldAsesores }] = await Promise.all([
         readGHFile(FILE_STATS),
         readGHFile(FILE_ASESORES),
         readGHFile('asesores.json')
       ]);
+      // Overlay Supabase landing_profiles onto skyAsesores (fresher names/data)
+      if (SB_URL2 && SB_KEY2) {
+        try {
+          const sbR2 = await fetch(SB_URL2 + '/rest/v1/landing_profiles?select=ref,nombre,rol,whatsapp,foto', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
+          const sbRows2 = await sbR2.json();
+          if (Array.isArray(sbRows2)) sbRows2.forEach(function(row) {
+            if (row.ref && row.nombre) {
+              var ex = skyAsesores[row.ref] || {};
+              skyAsesores[row.ref] = Object.assign(ex, { nombre: row.nombre, rol: row.rol || ex.rol, whatsapp: row.whatsapp || ex.whatsapp, foto: row.foto || ex.foto });
+            }
+          });
+        } catch(e) {}
+      }
       // After April 9 2026 (Wednesday), only count landings created from skyteam (asesores-skyteam.json)
       const cutoffDate = new Date('2026-04-09T00:00:00');
       const onlyNew = Date.now() >= cutoffDate.getTime();
