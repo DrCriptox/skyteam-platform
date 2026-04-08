@@ -11,7 +11,7 @@ function _checkRateLimit(ip) {
   const now = Date.now();
   if (!_regRateMap[ip]) _regRateMap[ip] = [];
   _regRateMap[ip] = _regRateMap[ip].filter(t => now - t < 300000);
-  if (_regRateMap[ip].length >= 30) return false;
+  if (_regRateMap[ip].length >= 500) return false;
   _regRateMap[ip].push(now);
   return true;
 }
