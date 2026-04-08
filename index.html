@@ -2641,7 +2641,9 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="crm-view-toggles">
         <button class="crm-view-btn crm-view-btn-active" data-view="kanban">📊 Kanban</button>
         <button class="crm-view-btn" data-view="list">📋 Lista</button>
+        <button class="crm-view-btn" data-view="reminders">⏰ Recordatorios</button>
         <button class="crm-view-btn" data-view="metrics">📈 Métricas</button>
+        <button class="crm-view-btn" data-view="ranking">🏆 Ranking</button>
       </div>
       <input type="text" id="crm-search-input" class="crm-search-input" placeholder="🔍 Buscar prospectos..." />
       <button class="crm-add-btn" onclick="openCrmModalAdd()">➕ Agregar</button>
@@ -2785,6 +2787,13 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 
 <!-- CRM MODALS -->
+    <div id="crm-reminders-view" style="display:none;padding:14px 0;">
+      <div id="crm-reminders-full-list"></div>
+    </div>
+    <div id="crm-ranking-view" style="display:none;padding:14px 0;">
+      <div id="crm-ranking-content"></div>
+    </div>
+
 <div id="crm-modal-add" class="crm-modal" style="display:none;">
   <div class="crm-modal-content">
     <div class="crm-modal-header"><h2 id="crm-modal-add-title">Agregar Prospecto</h2><button class="crm-modal-close" onclick="closeCrmModalAdd()">✕</button></div>
@@ -13089,10 +13098,8 @@ setTimeout(function(){c.innerHTML='';c.style.display='none';},5000);
 var btns=document.querySelectorAll('.crm-view-btn');
 btns.forEach(function(b){
 b.addEventListener('click',function(){
-var t=this.textContent;
-if(t.includes('Kanban'))crmSwitchView('kanban');
-else if(t.includes('Lista'))crmSwitchView('lista');
-else if(t.includes('trica'))crmSwitchView('metricas');
+var dv = this.getAttribute('data-view');
+if(dv) crmSwitchView(dv);
 });
 });
 })();
@@ -13138,25 +13145,110 @@ function initSkyProspectos() {
 
 crmSwitchView = function(view) {
   crmCurrentView = view;
-  var k = document.getElementById('crm-kanban');
-  var l = document.getElementById('crm-list-view');
-  var m = document.getElementById('crm-metrics-view');
-  if (k) k.style.display = view === 'kanban' ? '' : 'none';
-  if (l) l.style.display = view === 'lista' ? '' : 'none';
-  if (m) m.style.display = view === 'metricas' ? '' : 'none';
+  var views = {
+    kanban: document.getElementById('crm-kanban'),
+    lista: document.getElementById('crm-list-view'),
+    metricas: document.getElementById('crm-metrics-view'),
+    reminders: document.getElementById('crm-reminders-view'),
+    ranking: document.getElementById('crm-ranking-view')
+  };
+  Object.keys(views).forEach(function(k){ if(views[k]) views[k].style.display = (k === view) ? '' : 'none'; });
   document.querySelectorAll('.crm-view-btn').forEach(function(b) {
-    b.classList.remove('active');
-    b.classList.remove('crm-view-btn-active');
-    var t = b.textContent;
-    if ((view === 'kanban' && t.includes('Kanban')) ||
-        (view === 'lista' && t.includes('Lista')) ||
-        (view === 'metricas' && t.includes('tricas')))
-      b.classList.add('crm-view-btn-active');
+    b.classList.remove('active','crm-view-btn-active');
+    var dv = b.getAttribute('data-view');
+    if (dv === view) b.classList.add('crm-view-btn-active');
   });
   if (view === 'kanban' && typeof crmRenderKanban === 'function') crmRenderKanban();
-      if (view === 'lista' && typeof crmRenderList === 'function') crmRenderList();
-      if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
+  if (view === 'lista' && typeof crmRenderList === 'function') crmRenderList();
+  if (view === 'metricas' && typeof crmDashInit === 'function') crmDashInit();
+  if (view === 'reminders') _renderCrmRemindersTab();
+  if (view === 'ranking') _renderCrmRankingTab();
 };
+
+// ══════════════════════════════════════════
+//  RECORDATORIOS TAB
+// ══════════════════════════════════════════
+function _renderCrmRemindersTab() {
+  var el = document.getElementById('crm-reminders-full-list');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:12px;">Cargando recordatorios...</div>';
+  fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRecordatorios',user:CU.username,prospecto_id:'all'})})
+  .then(function(r){return r.json()}).then(function(d){
+    var rems = (d.recordatorios||[]).sort(function(a,b){return new Date(a.fecha_recordatorio)-new Date(b.fecha_recordatorio);});
+    if(!rems.length){el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);"><div style="font-size:32px;margin-bottom:8px;">\u2705</div>Sin recordatorios pendientes</div>';return;}
+    var now=new Date();
+    var html='<div style="font-size:14px;font-weight:800;color:#FFD700;margin-bottom:12px;">\u23F0 '+rems.length+' recordatorio'+(rems.length>1?'s':'')+' pendiente'+(rems.length>1?'s':'')+'</div>';
+    rems.forEach(function(r){
+      var fecha=new Date(r.fecha_recordatorio);var diff=fecha-now;
+      var urgente=diff<0;var pronto=diff<3600000&&diff>=0;
+      var bg=urgente?'rgba(226,75,74,0.06)':pronto?'rgba(255,160,0,0.04)':'rgba(255,255,255,0.02)';
+      var bc=urgente?'rgba(226,75,74,0.3)':pronto?'rgba(255,160,0,0.25)':'rgba(255,255,255,0.06)';
+      var timeStr=fecha.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'})+' '+fecha.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true});
+      html+='<div style="background:'+bg+';border:0.5px solid '+bc+';border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">'
+        +'<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:#fff;">'+crmEsc(r.mensaje||'Seguimiento')+'</div>'
+        +'<div style="font-size:10px;color:'+(urgente?'#E24B4A':pronto?'#FFA000':'rgba(255,255,255,0.3)')+';margin-top:3px;">'+(urgente?'\u26A0\uFE0F Vencido \u2014 ':'\uD83D\uDCC5 ')+timeStr+'</div></div>'
+        +'<button onclick="crmCompleteReminder(\''+r.id+'\');setTimeout(_renderCrmRemindersTab,500);" style="background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;border-radius:8px;padding:6px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2713 Hecho</button></div>';
+    });
+    el.innerHTML=html;
+  }).catch(function(){el.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.2);">Error cargando recordatorios</div>';});
+}
+
+// ══════════════════════════════════════════
+//  RANKING TAB
+// ══════════════════════════════════════════
+var _crmRankPeriod = 'weekly';
+function _renderCrmRankingTab() {
+  var el = document.getElementById('crm-ranking-content');
+  if (!el) return;
+  // Period tabs
+  var html = '<div style="display:flex;gap:6px;margin-bottom:14px;">';
+  ['daily','weekly','monthly'].forEach(function(p){
+    var labels={daily:'Hoy',weekly:'Semana',monthly:'Mes'};
+    var active = _crmRankPeriod===p;
+    html+='<button onclick="_crmRankPeriod=\''+p+'\';_renderCrmRankingTab()" style="padding:6px 14px;border-radius:8px;background:'+(active?'rgba(201,168,76,0.15)':'rgba(255,255,255,0.03)')+';border:0.5px solid '+(active?'rgba(201,168,76,0.3)':'rgba(255,255,255,0.06)')+';color:'+(active?'#C9A84C':'rgba(255,255,255,0.4)')+';font-size:11px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">'+labels[p]+'</button>';
+  });
+  html+='</div>';
+  html+='<div id="crm-ranking-list" style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:12px;">Cargando ranking...</div>';
+  el.innerHTML=html;
+  // Fetch ranking from leaderboard API
+  fetch('/api/leaderboard?action='+(_crmRankPeriod==='daily'?'dailyTop':_crmRankPeriod==='weekly'?'weeklyTop':'monthlyTop'))
+  .then(function(r){return r.json()}).then(function(d){
+    var list=document.getElementById('crm-ranking-list');if(!list)return;
+    var ranking=d.ranking||d.data||[];
+    if(!ranking.length){list.innerHTML='<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.2);"><div style="font-size:32px;margin-bottom:8px;">\uD83C\uDFC6</div>Sin datos de ranking a\u00fan</div>';return;}
+    var rhtml='';
+    // Podium top 3
+    if(ranking.length>=3){
+      rhtml+='<div style="display:flex;justify-content:center;align-items:flex-end;gap:8px;margin-bottom:20px;padding:10px 0;">';
+      var podOrder=[1,0,2];var podH=['90px','110px','75px'];var podC=['#C0C0C0','#FFD700','#CD7F32'];var podE=['\uD83E\uDD48','\uD83E\uDD47','\uD83E\uDD49'];
+      podOrder.forEach(function(idx,pi){
+        var m=ranking[idx];if(!m)return;
+        var foto=m.photo||'';
+        rhtml+='<div style="text-align:center;"><div style="font-size:20px;">'+podE[pi]+'</div>';
+        if(foto)rhtml+='<img src="'+foto+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid '+podC[pi]+';margin:4px auto;" />';
+        else rhtml+='<div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid '+podC[pi]+';margin:4px auto;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:'+podC[pi]+';">'+(idx+1)+'</div>';
+        rhtml+='<div style="font-size:11px;font-weight:800;color:#fff;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+'</div>';
+        rhtml+='<div style="font-size:16px;font-weight:900;color:'+podC[pi]+';">'+m.score+'</div>';
+        rhtml+='<div style="font-size:8px;color:rgba(255,255,255,0.3);">pts</div></div>';
+      });
+      rhtml+='</div>';
+    }
+    // Rest of ranking
+    ranking.forEach(function(m,i){
+      if(i<3)return;
+      var isMe=CU&&(m.username===CU.username);
+      rhtml+='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:4px;border-radius:8px;background:'+(isMe?'rgba(201,168,76,0.08)':'rgba(255,255,255,0.02)')+';border:0.5px solid '+(isMe?'rgba(201,168,76,0.2)':'rgba(255,255,255,0.04)')+';font-size:12px;">';
+      rhtml+='<span style="font-weight:900;color:rgba(255,255,255,0.3);min-width:20px;">'+(i+1)+'</span>';
+      rhtml+='<span style="flex:1;font-weight:700;color:'+(isMe?'#C9A84C':'#fff')+';">'+(m.name||m.username||'?')+'</span>';
+      rhtml+='<span style="font-weight:900;color:#C9A84C;">'+m.score+'</span>';
+      rhtml+='<span style="font-size:9px;color:rgba(255,255,255,0.2);">pts</span></div>';
+    });
+    list.innerHTML=rhtml;
+  }).catch(function(){
+    var list=document.getElementById('crm-ranking-list');
+    if(list)list.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.2);">Error cargando ranking</div>';
+  });
+}
 
 /* ========================================
    INJECT EXTRA FIELDS - Instagram & Rating
