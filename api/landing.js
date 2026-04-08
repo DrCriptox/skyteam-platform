@@ -316,12 +316,16 @@ export default async function handler(req, res) {
           const usersData = await usersR.json();
           if (Array.isArray(usersData)) usersData.forEach(function(u) {
             var uRef = (u.ref || u.username || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (uRef && allAsesores[uRef]) {
+            if (uRef) {
+              if (!allAsesores[uRef]) allAsesores[uRef] = {};
               if (u.name && (!allAsesores[uRef].nombre || allAsesores[uRef].nombre === '?' || allAsesores[uRef].nombre === uRef)) {
                 allAsesores[uRef].nombre = u.name;
               }
               if (u.whatsapp && !allAsesores[uRef].whatsapp) {
                 allAsesores[uRef].whatsapp = u.whatsapp;
+              }
+              if (u.photo && !allAsesores[uRef].foto) {
+                allAsesores[uRef].foto = u.photo;
               }
             }
           });
@@ -385,12 +389,12 @@ export default async function handler(req, res) {
             conversiones = s.conversions || 0;
           }
 
-          // Score = visitas(+1) - duplicadas(-2) + conversiones_unicas(+20)
+          // Score = visitas(+1) - duplicadas(-0.5) + conversiones_unicas(+20)
           // Efectividad = conversiones / visitas_unicas * 100
           const effectiveUniqueIps = (uniqueIps === 0 && visitas > 0) ? visitas : uniqueIps;
           const duplicadas = Math.max(0, visitas - effectiveUniqueIps);
           const validConversions = uniqueIps > 0 ? Math.min(conversiones, uniqueIps) : conversiones;
-          const score = Math.max(0, visitas - (duplicadas * 2) + (validConversions * 20));
+          const score = Math.max(0, Math.round(visitas - (duplicadas * 0.5) + (validConversions * 20)));
           const efectividad = effectiveUniqueIps > 0 ? Math.round((validConversions / effectiveUniqueIps) * 100) : 0;
           return {
             ref: ref, nombre: asesor.nombre || ref,
