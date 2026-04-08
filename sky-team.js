@@ -2016,10 +2016,32 @@ function openMemberDetail(username) {
   html += '<div class="st-detail-rank" style="background:' + rk.bg + ';color:' + rk.color + ';border:0.5px solid ' + rk.border + ';">';
   html += rk.icon + ' ' + _safe(rk.name);
   html += '</div>';
-  // BANKCODE badge
-  if (m.bankcode && typeof renderBankcodeBadge === 'function') {
-    html += '<div style="margin-top:4px;">' + renderBankcodeBadge(m.bankcode, 'small') + ' <span style="font-size:9px;color:rgba(255,255,255,0.35);">' + ({B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'}[m.bankcode[0]]||'') + '</span></div>';
+  // BANKCODE badge + inline edit
+  var _curBk = m.bankcode || '';
+  var _bkColMap = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
+  var _bkNameMap = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
+  var _canEditBk = !isSelf && (typeof CU !== 'undefined' && CU && (CU.rank || 0) >= 3);
+  html += '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;" id="st-bankcode-row">';
+  if (_curBk) {
+    // Show colored letters
+    html += '<span id="st-bk-display" style="display:inline-flex;gap:2px;font-size:14px;font-weight:900;">';
+    for (var _bci = 0; _bci < _curBk.length; _bci++) {
+      html += '<span style="color:' + (_bkColMap[_curBk[_bci]]||'#fff') + ';">' + _curBk[_bci] + '</span>';
+    }
+    html += '</span>';
+    html += '<span style="font-size:9px;color:rgba(255,255,255,0.35);">' + (_bkNameMap[_curBk[0]]||'') + '</span>';
+  } else {
+    // Empty — show grey BANK
+    html += '<span id="st-bk-display" style="display:inline-flex;gap:2px;font-size:14px;font-weight:900;opacity:0.2;">';
+    html += '<span>B</span><span>A</span><span>N</span><span>K</span></span>';
+    html += '<span style="font-size:9px;color:rgba(255,255,255,0.2);">Sin definir</span>';
   }
+  if (_canEditBk) {
+    html += '<button onclick="_toggleBankcodeEdit(\'' + _safe(m.username||username) + '\',\'' + _curBk + '\')" id="st-bk-edit-btn" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;padding:2px 4px;">\\u270F\\uFE0F</button>';
+  }
+  html += '</div>';
+  // Hidden inline editor
+  html += '<div id="st-bk-editor" style="display:none;margin-top:4px;"></div>';
   html += '</div>';
   html += '</div>';
 
@@ -2113,26 +2135,7 @@ function openMemberDetail(username) {
     }
   }
 
-  // BANKCODE editor for leaders (rank >= 3 NOVA+)
-  var cuRank = (typeof CU !== 'undefined' && CU) ? (CU.rank || 0) : 0;
-  if (!isSelf && cuRank >= 3) {
-    var _curBank = m.bankcode || '';
-    var _bkCols = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
-    var _bkOpts = [{v:'B',l:'B'},{v:'A',l:'A'},{v:'N',l:'N'},{v:'K',l:'K'}];
-    html += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
-    html += '<span style="font-size:9px;color:rgba(255,255,255,0.3);">BANK:</span>';
-    for (var _bi = 0; _bi < 3; _bi++) {
-      html += '<select id="st-bank-'+_bi+'" style="width:36px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:13px;font-weight:900;padding:4px 2px;text-align:center;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">';
-      html += '<option value="">-</option>';
-      _bkOpts.forEach(function(o) {
-        var sel = (_curBank[_bi] === o.v) ? ' selected' : '';
-        html += '<option value="'+o.v+'"'+sel+' style="color:'+_bkCols[o.v]+';">'+o.l+'</option>';
-      });
-      html += '</select>';
-    }
-    html += '<button onclick="_saveMemberBankcode(\''+_safe(m.username||username)+'\')" style="padding:4px 10px;border-radius:6px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:9px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">OK</button>';
-    html += '</div>';
-  }
+  // (BANKCODE editor moved inline next to badge above)
 
   // WhatsApp button (only if CU is direct sponsor)
   if (isDirect && whatsapp) {
@@ -2155,6 +2158,34 @@ function openMemberDetail(username) {
 
   document.body.appendChild(overlay);
 }
+
+function _toggleBankcodeEdit(username, current) {
+  var editor = document.getElementById('st-bk-editor');
+  var display = document.getElementById('st-bk-display');
+  var editBtn = document.getElementById('st-bk-edit-btn');
+  if (!editor) return;
+  if (editor.style.display !== 'none') {
+    editor.style.display = 'none';
+    return;
+  }
+  var _bkCols = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
+  var html = '<div style="display:flex;align-items:center;gap:4px;">';
+  for (var i = 0; i < 3; i++) {
+    html += '<select id="st-bank-'+i+'" style="width:32px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);border-radius:5px;color:#fff;font-size:12px;font-weight:900;padding:3px 1px;text-align:center;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">';
+    html += '<option value="">-</option>';
+    ['B','A','N','K'].forEach(function(l) {
+      var sel = (current && current[i] === l) ? ' selected' : '';
+      html += '<option value="'+l+'"'+sel+' style="color:'+_bkCols[l]+';">'+l+'</option>';
+    });
+    html += '</select>';
+  }
+  html += '<button onclick="_saveMemberBankcode(\''+username+'\')" style="padding:3px 8px;border-radius:5px;background:rgba(201,168,76,0.15);border:0.5px solid rgba(201,168,76,0.3);color:#C9A84C;font-size:9px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">OK</button>';
+  html += '<button onclick="document.getElementById(\'st-bk-editor\').style.display=\'none\'" style="padding:3px 6px;border-radius:5px;background:none;border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">X</button>';
+  html += '</div>';
+  editor.innerHTML = html;
+  editor.style.display = 'block';
+}
+window._toggleBankcodeEdit = _toggleBankcodeEdit;
 
 function _saveMemberBankcode(username) {
   var code = '';
