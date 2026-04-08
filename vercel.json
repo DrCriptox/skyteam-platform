@@ -17,6 +17,13 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0, must-revalidate" }]
     }
   ],
+  "redirects": [
+    {
+      "source": "/landing",
+      "destination": "http://innovaia.app",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/login",

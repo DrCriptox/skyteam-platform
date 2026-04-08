@@ -128,7 +128,7 @@ export default async function handler(req, res) {
       }
 
       // Return success immediately (Supabase saved, GitHub syncing in background)
-      return res.status(200).json({ ok: true, slug, link: 'https://innovaia.app?ref=' + slug });
+      return res.status(200).json({ ok: true, slug, link: 'https://skyteam.global/landing?ref=' + slug });
     }
 
     // ── GET STATS: read visit stats ──

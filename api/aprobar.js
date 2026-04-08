@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     const rawUser = (sol.innova_user || sol.ref || String(id || Date.now()).slice(-6));
     const username = rawUser.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
     const primerNombre = sol.name ? sol.name.split(' ')[0] : 'Socio';
-    const refLink = 'https://innovaia.app?ref=' + (sol.ref || username);
+    const refLink = 'https://skyteam.global/landing?ref=' + (sol.ref || username);
     const password = hashPassword(sol.password); // Always hash before storing
     const rank = mapInnovaRank(sol.classification || null); // Auto-assign rank from Innova classification
 

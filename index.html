@@ -7640,7 +7640,7 @@ function getPhoneValue(idPrefix) {
 // ── Sky Sales: Landing Editor ──
 function _renderSSLanding() {
   var ref = CU ? (CU.ref||CU.username||'') : '';
-  var link = 'https://innovaia.app?ref=' + ref.toLowerCase();
+  var link = 'https://skyteam.global/landing?ref=' + ref.toLowerCase();
   var h = '';
   h += '<div class="card" style="margin-bottom:16px;">';
   h += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;margin-bottom:10px;">\uD83D\uDD17 Tu landing de ventas</div>';
@@ -7888,7 +7888,7 @@ function _loadSSRanking() {
     // Normalize foto: relative paths like "fotos/x.jpg" come from innovaia.app, need full URL
     var _normFoto = function(f) {
       if (!f) return '';
-      if (f.indexOf('fotos/') === 0) return 'https://innovaia.app/' + f;
+      if (f.indexOf('fotos/') === 0) return 'https://skyteam.global/landing/' + f;
       return f;
     };
     var html = '';
@@ -7965,7 +7965,7 @@ function _loadSSRanking() {
 
 function renderSkySales() {
   if(!CU) return;
-  var landingLink = 'https://innovaia.app?ref=' + CU.ref;
+  var landingLink = 'https://skyteam.global/landing?ref=' + CU.ref;
   // Restore saved ref data
   if(!CU.whatsapp) CU.whatsapp = localStorage.getItem('skyteam_ref_wa') || '';
   if(!CU.ref && localStorage.getItem('skyteam_ref_code')) CU.ref = localStorage.getItem('skyteam_ref_code');
@@ -8149,7 +8149,7 @@ function generarLinkVentas() {
   if(waClean.length < 10) { showToast('Número de WhatsApp inválido ⚠️'); return; }
 
   // Build referral link: innovaia.app?ref=CODIGO&wa=NUMERO
-  var link = 'https://innovaia.app?ref=' + codigo + '&wa=' + waClean;
+  var link = 'https://skyteam.global/landing?ref=' + codigo + '&wa=' + waClean;
 
   // WhatsApp share message
   var msg = '👋 Hola, soy ' + nombre + '! '
@@ -8235,7 +8235,7 @@ function guardarWhatsAppSocio() {
   var codigo = CU.ref || CU.user || '';
   var savedLink = localStorage.getItem('skyteam_ref_link_' + codigo);
   if(savedLink && codigo) {
-    var newLink = 'https://innovaia.app?ref=' + codigo + '&wa=' + waClean;
+    var newLink = 'https://skyteam.global/landing?ref=' + codigo + '&wa=' + waClean;
     localStorage.setItem('skyteam_ref_link_' + codigo, newLink);
   }
 
@@ -8412,7 +8412,7 @@ Sugiere agendar llamada de 20 min o enviar el link del video VSL como siguiente 
 - Si la situación del prospecto no está en el guion, usa los principios de neuroventas: valida, pregunta, reencuadra
 - Si el socio te dice el nombre del prospecto, úsalo en la respuesta para personalizarla
 - En el primer contacto con un prospecto: NO invites al negocio. Solo conecta como persona, genera rapport, muestra interés genuino en su vida. En el segundo contacto: aporta valor, comparte una idea o dato que le sirva. En el tercer contacto: ahora sí, menciona la oportunidad de forma natural.
-- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://innovaia.app?ref=` + (CU ? CU.ref : '') + `
+- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://skyteam.global/landing?ref=` + (CU ? CU.ref : '') + `
 - WhatsApp del líder principal para escalamiento: +573112657801`
   },
   contenido: {
@@ -8525,7 +8525,7 @@ Domingo: Pregunta o encuesta — engagement
 - NUNCA prometas ganancias garantizadas
 - NUNCA ataques a la competencia
 - Adapta el lenguaje al país del prospecto o de la audiencia objetivo
-- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://innovaia.app?ref=` + (CU ? CU.ref : '') + ``
+- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://skyteam.global/landing?ref=` + (CU ? CU.ref : '') + ``
   },
   trafico: {
     name: 'Agente de Tráfico',
@@ -8569,7 +8569,7 @@ PAUTA PAGADA: Meta Ads desde $5/día, audiencias de emprendedores 25-45 años. C
 - NUNCA uses argentinismos para audiencias que no sean de Argentina
 - Adapta el lenguaje al país del prospecto
 - Usa 1-2 emojis máximo
-- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://innovaia.app?ref=` + (CU ? CU.ref : '') + ``
+- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://skyteam.global/landing?ref=` + (CU ? CU.ref : '') + ``
   },
   cierre: {
     name: 'Agente de Cierre',
@@ -8619,7 +8619,7 @@ HORMOZI: Da tanto valor que el prospecto se sienta tonto de no activar su franqu
 - NUNCA menciones servicios específicos — siempre habla de "franquicia digital"
 - NUNCA uses argentinismos para audiencias que no sean de Argentina
 - Usa 1-2 emojis máximo
-- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://innovaia.app?ref=` + (CU ? CU.ref : '') + `
+- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://skyteam.global/landing?ref=` + (CU ? CU.ref : '') + `
 - WhatsApp del líder principal para escalamiento: +573112657801`
   },
   seguimiento: {
@@ -8673,7 +8673,7 @@ H) Prospecto nuevo — aún no se ha hablado de negocio (priorizar conexión)
 - NUNCA menciones servicios específicos — siempre habla de "franquicia digital"
 - NUNCA uses argentinismos para audiencias que no sean de Argentina
 - Usa 1-2 emojis máximo
-- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://innovaia.app?ref=` + (CU ? CU.ref : '') + ``
+- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://skyteam.global/landing?ref=` + (CU ? CU.ref : '') + ``
   },
   copy: {
     name: 'Agente Copywriter',
@@ -8743,7 +8743,7 @@ NUNCA usar para Colombia/Venezuela/Perú: "vos tenés", "che", "boludo"
 - NUNCA menciones servicios específicos — siempre habla de "franquicia digital"
 - NUNCA uses argentinismos para audiencias que no sean de Argentina
 - Usa 1-2 emojis máximo
-- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://innovaia.app?ref=` + (CU ? CU.ref : '') + ``
+- El socio se llama ` + (CU ? CU.name : 'socio') + ` y su link es https://skyteam.global/landing?ref=` + (CU ? CU.ref : '') + ``
   }
 };
 
@@ -8852,7 +8852,7 @@ async function sendAgentMsg() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 900,
-        system: cfg.system + '\n\nEl socio que te consulta se llama ' + (CU ? CU.name : 'socio') + ' y su código de referido es ' + (CU ? CU.ref : '') + '. Su link: https://innovaia.app?ref=' + (CU ? CU.ref : ''),
+        system: cfg.system + '\n\nEl socio que te consulta se llama ' + (CU ? CU.name : 'socio') + ' y su código de referido es ' + (CU ? CU.ref : '') + '. Su link: https://skyteam.global/landing?ref=' + (CU ? CU.ref : ''),
         messages: messages
       })
     });
@@ -9569,7 +9569,7 @@ function renderHome() {
   if(!CU) return;
   var rk = RANKS[CU.rank] || RANKS[0];
   var nextRk = RANKS[Math.min(CU.rank + 1, 7)];
-  var landingLink = 'https://innovaia.app?ref=' + CU.ref;
+  var landingLink = 'https://skyteam.global/landing?ref=' + CU.ref;
   var downline = getDownline(CU.ref, 8);
   var directCount = getDownline(CU.ref, 1).length;
   var greet = _skyGreeting();
@@ -10342,7 +10342,7 @@ function _doAprobar(sol, id) {
   // ── EMAILS AUTOMÁTICOS ─────────────────────────────────────────────────
   if(sol.email) {
     var refCode = sol.ref || username;
-    var refLink = 'https://innovaia.app?ref=' + refCode;
+    var refLink = 'https://skyteam.global/landing?ref=' + refCode;
     var primerNombre = sol.name.split(' ')[0];
 
     // EMAIL 1 — Bienvenida + credenciales + motivación
@@ -11561,7 +11561,7 @@ function sendSolicitud() {
   function _doSubmit() {
     // Use Innova username as ref code (unique, already validated)
     var newRef = innovaUser.toLowerCase().replace(/[^a-z0-9_]/g, '') || generarRef(name);
-    var landingLink = 'https://innovaia.app?ref=' + newRef;
+    var landingLink = 'https://skyteam.global/landing?ref=' + newRef;
     var now = new Date();
     var fecha = now.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})
               + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
@@ -11768,8 +11768,8 @@ function renderPerfil() {
       })()
     + '<div class="perfil-data-row"><span class="perfil-data-label">Sponsor</span><span class="perfil-data-value">'+(CU.sponsor||'—')+'</span></div>'
     + '<div class="perfil-data-row" style="gap:6px;"><span class="perfil-data-label">Mi link</span><span class="perfil-data-value cyan" style="font-size:13px;word-break:break-all;flex:1;">innovaia.app?ref='+(CU.ref||CU.username).toLowerCase()+'</span>'
-    + '<button onclick="copyText(\'https://innovaia.app?ref='+(CU.ref||CU.username).toLowerCase()+'\');showToast(\'\uD83D\uDD17 Link copiado \u2713\')" title="Copiar link" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);font-size:14px;line-height:1;cursor:pointer;flex-shrink:0;">\uD83D\uDD17</button>'
-    + '<button onclick="window.open(\'https://wa.me/?text='+encodeURIComponent('\u00a1Hola! Me encantar\u00eda que pudieras revisar esta informaci\u00f3n de franquicia digital, estoy seguro que te va a encantar.\n\nEste es el enlace: https://innovaia.app?ref='+(CU.ref||CU.username).toLowerCase())+'\',\'_blank\')" title="Enviar por WhatsApp" style="padding:4px 8px;border-radius:6px;background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.30);color:#25D366;font-size:14px;line-height:1;cursor:pointer;flex-shrink:0;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:16px;height:16px;"></button>'
+    + '<button onclick="copyText(\'https://skyteam.global/landing?ref='+(CU.ref||CU.username).toLowerCase()+'\');showToast(\'\uD83D\uDD17 Link copiado \u2713\')" title="Copiar link" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);font-size:14px;line-height:1;cursor:pointer;flex-shrink:0;">\uD83D\uDD17</button>'
+    + '<button onclick="window.open(\'https://wa.me/?text='+encodeURIComponent('\u00a1Hola! Me encantar\u00eda que pudieras revisar esta informaci\u00f3n de franquicia digital, estoy seguro que te va a encantar.\n\nEste es el enlace: https://skyteam.global/landing?ref='+(CU.ref||CU.username).toLowerCase())+'\',\'_blank\')" title="Enviar por WhatsApp" style="padding:4px 8px;border-radius:6px;background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.30);color:#25D366;font-size:14px;line-height:1;cursor:pointer;flex-shrink:0;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:16px;height:16px;"></button>'
     + '</div>'
     + '<div class="perfil-data-row"><span class="perfil-data-label">Rango</span><span class="perfil-data-value gold">'+rk.icon+' '+rk.name+'</span></div>'
     + (function(){
@@ -12010,7 +12010,7 @@ function guardarWaPerfil() {
 }
 
 function copiarLink() {
-  if(CU && CU.ref) copyText('https://innovaia.app?ref=' + CU.ref);
+  if(CU && CU.ref) copyText('https://skyteam.global/landing?ref=' + CU.ref);
   showToast('Link copiado ✓');
 }
 
