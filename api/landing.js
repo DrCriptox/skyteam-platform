@@ -385,14 +385,16 @@ export default async function handler(req, res) {
             conversiones = s.conversions || 0;
           }
 
-          // Score: 1 pt per visit + 20 pts per conversion
-          // Light anti-fraud: cap conversions at unique IPs (can't have more conversions than visitors)
+          // Score = visitas(+1) - duplicadas(-2) + conversiones_unicas(+20)
+          // Efectividad = conversiones / visitas_unicas * 100
           const effectiveUniqueIps = (uniqueIps === 0 && visitas > 0) ? visitas : uniqueIps;
+          const duplicadas = Math.max(0, visitas - effectiveUniqueIps);
           const validConversions = uniqueIps > 0 ? Math.min(conversiones, uniqueIps) : conversiones;
-          const score = Math.max(0, visitas + (validConversions * 20));
+          const score = Math.max(0, visitas - (duplicadas * 2) + (validConversions * 20));
+          const efectividad = effectiveUniqueIps > 0 ? Math.round((validConversions / effectiveUniqueIps) * 100) : 0;
           return {
             ref: ref, nombre: asesor.nombre || ref,
-            visitas: visitas, uniqueVisitas: effectiveUniqueIps, conversiones: validConversions, score: score,
+            visitas: visitas, uniqueVisitas: effectiveUniqueIps, duplicadas: duplicadas, conversiones: validConversions, score: score, efectividad: efectividad,
             whatsapp: asesor.whatsapp || '', foto: asesor.foto || '',
             newLanding: !!skyAsesores[ref]
           };

@@ -7931,7 +7931,7 @@ function _loadSSRanking() {
     ranking.forEach(function(u,i){
       var isMe = u.ref === ref;
       var ini = (u.nombre||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-      var convRate = u.visitas > 0 ? Math.round((u.conversiones / u.visitas) * 100) : 0;
+      var convRate = u.efectividad || (u.uniqueVisitas > 0 ? Math.round((u.conversiones / u.uniqueVisitas) * 100) : 0);
       var flag = _waFlag(u.whatsapp||'');
       var isPodium = i < 3;
       var meColor = isPodium ? '' : 'rgba(127,119,221,';
@@ -7949,7 +7949,7 @@ function _loadSSRanking() {
       // Name + flag + stats
       html += '<div style="flex:1;min-width:0;">';
       html += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.nombre||u.ref)+flag+(isMe?' <span class="ss-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
-      html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+u.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+u.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+convRate+'%</span></div>';
+      html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+u.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis </span>'+(u.duplicadas?'<span style="color:#E24B4A;font-weight:600;">-'+(u.duplicadas||0)+'</span><span style="color:rgba(255,255,255,0.10);"> dup </span>':'')+'<span style="color:#1D9E75;font-weight:600;">'+u.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv </span><span style="color:#7F77DD;font-weight:600;">'+convRate+'%</span></div>';
       html += '</div>';
       // Score
       html += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
@@ -7969,7 +7969,7 @@ function _loadSSRanking() {
       html += '<div class="ss-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(127,119,221,0.5);">'+(_mFotoUrl?'<img src="'+_mFotoUrl+'" style="width:100%;height:100%;object-fit:cover;">':mIni)+'</div>';
       html += '<div style="flex:1;min-width:0;">';
       html += '<div class="ss-rk-name" style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(mu.nombre||mu.ref)+mFlag+' <span class="ss-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
-      html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+mu.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis  </span><span style="color:#1D9E75;font-weight:600;">'+mu.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv  </span><span style="color:#7F77DD;font-weight:600;">'+mConvRate+'%</span></div>';
+      html += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#C9A84C;font-weight:600;">'+mu.visitas+'</span><span style="color:rgba(255,255,255,0.15);"> vis </span>'+(mu.duplicadas?'<span style="color:#E24B4A;font-weight:600;">-'+(mu.duplicadas||0)+'</span><span style="color:rgba(255,255,255,0.10);"> dup </span>':'')+'<span style="color:#1D9E75;font-weight:600;">'+mu.conversiones+'</span><span style="color:rgba(255,255,255,0.15);"> conv </span><span style="color:#7F77DD;font-weight:600;">'+mConvRate+'%</span></div>';
       html += '</div>';
       html += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(mu.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       html += '</div></div>';
