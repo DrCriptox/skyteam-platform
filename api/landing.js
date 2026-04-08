@@ -114,8 +114,9 @@ export default async function handler(req, res) {
     // ── MIGRATE: bulk import historical stats to Supabase ──
     if (action === 'migrateStats') {
       const adminKey = (req.body.adminKey || '').trim();
-      const serverKey = (process.env.ADMIN_PUSH_KEY || '').trim().replace(/\\n/g, '');
-      if (!adminKey || adminKey !== serverKey) return res.status(401).json({ error: 'Unauthorized' });
+      const serverKey = (process.env.ADMIN_PUSH_KEY || '').replace(/\\n/g, '').replace(/\n/g, '').trim();
+      console.log('[MIGRATE] key match:', adminKey === serverKey, 'len:', adminKey.length, serverKey.length);
+      if (!adminKey || adminKey !== serverKey) return res.status(401).json({ error: 'Unauthorized', debug: { kLen: adminKey.length, sLen: serverKey.length } });
       const rows = req.body.rows || [];
       if (!rows.length) return res.status(400).json({ error: 'No rows' });
       const SB_URL_M = process.env.SUPABASE_URL;
