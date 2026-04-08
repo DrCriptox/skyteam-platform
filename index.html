@@ -11419,7 +11419,7 @@ function onSolImgChange(input) {
           // REJECT package names as classification — only valid ranks
           var _rawClassif = d.classification ? d.classification.toUpperCase().trim() : '';
           var _invalidClassif = /PIONEER|EXPLORER|PACKAGE|PAQUETE/i.test(_rawClassif);
-          var _validRanks = ['CLIENTE','INN 200','INN 500','INN','NOVA','NOVA 1500','NOVA 5K','NOVA 10K','NOVA DIAMOND','NOVA DIAMANTE','NOVA 25K','NOVA 50K','NOVA 100K'];
+          var _validRanks = ['CLIENTE','INN 200','INN 500','INN','NOVA','NOVA 1500','NOVA 5K','NOVA 10K','NOVA DIAMOND','NOVA DIAMANTE','NOVA 25K','NOVA 50K','NOVA 100K','NO SE ALCANZO','NO SE ALCANZ'];
           var _isValidRank = _validRanks.some(function(r){ return _rawClassif.indexOf(r) !== -1; });
           if(_rawClassif && !_invalidClassif && _isValidRank && cField) {
             cField.value = _rawClassif;
