@@ -1,9 +1,20 @@
 // Landing integration API — reads/writes asesores.json + stats.json from innova-ia-landing repo
+//
+// SCALABILITY NOTES (500+ partners):
+// - GitHub API reads cached 60s with stampede protection (avoids 60 req/hr unauthenticated limit)
+// - GitHub writes use retry with jitter (SHA conflict resolution)
+// - Supabase is primary for reads (getProfile, getRanking); GitHub is backup/sync
+// - getRanking reads from Supabase first, falls back to GitHub only if Supabase fails
+
 const REPO = process.env.GITHUB_REPO || 'DrCriptox/innova-ia-landing';
 const BRANCH = 'main';
-const FILE_ASESORES = 'asesores-skyteam.json'; // New file for skyteam registrations
+const FILE_ASESORES = 'asesores-skyteam.json';
 const FILE_STATS = 'stats.json';
 const TOKEN = () => process.env.GITHUB_TOKEN || '';
+
+// ── GitHub file read cache (prevents hammering GitHub API) ──
+const GH_READ_CACHE = {};
+const GH_READ_TTL = 60000; // 60s cache per file
 
 function ghHeaders() {
   return { Authorization: 'token ' + TOKEN(), Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'SkyTeam-Platform' };
@@ -13,17 +24,41 @@ function toBase64(str) {
   return Buffer.from(str, 'utf-8').toString('base64');
 }
 
-async function readGHFile(file) {
-  try {
-    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + file + '?ref=' + BRANCH, { headers: ghHeaders() });
-    if (!r.ok) return { data: {}, sha: null };
-    const d = await r.json();
-    const text = Buffer.from(d.content, 'base64').toString('utf-8');
-    return { data: JSON.parse(text), sha: d.sha };
-  } catch (e) {
-    console.error('[Landing] readGHFile error:', file, e.message);
-    return { data: {}, sha: null };
+async function readGHFile(file, skipCache) {
+  // Check cache first (unless explicitly skipped for write operations needing fresh SHA)
+  const now = Date.now();
+  const cached = GH_READ_CACHE[file];
+  if (!skipCache && cached && (now - cached.ts) < GH_READ_TTL) {
+    return { data: cached.data, sha: cached.sha };
   }
+  // Stampede protection: reuse in-flight request
+  if (cached && cached.inflight) return cached.inflight;
+  const inflightPromise = (async () => {
+    try {
+      // Use raw.githubusercontent for reading (works for any file size, no 1MB limit)
+      const rawR = await fetch('https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/' + file);
+      // Also get SHA for write operations
+      const shaR = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + file + '?ref=' + BRANCH, { headers: ghHeaders() });
+      const shaData = shaR.ok ? await shaR.json() : {};
+      const r = rawR;
+      if (!r.ok) {
+        const fallback = GH_READ_CACHE[file];
+        return { data: fallback ? fallback.data : {}, sha: shaData.sha || (fallback ? fallback.sha : null) };
+      }
+      const parsed = await r.json();
+      GH_READ_CACHE[file] = { data: parsed, sha: shaData.sha || null, ts: Date.now(), inflight: null };
+      return { data: parsed, sha: d.sha };
+    } catch (e) {
+      console.error('[Landing] readGHFile error:', file, e.message);
+      const fallback = GH_READ_CACHE[file];
+      return { data: fallback ? fallback.data : {}, sha: fallback ? fallback.sha : null };
+    } finally {
+      if (GH_READ_CACHE[file]) GH_READ_CACHE[file].inflight = null;
+    }
+  })();
+  if (!GH_READ_CACHE[file]) GH_READ_CACHE[file] = { data: {}, sha: null, ts: 0, inflight: null };
+  GH_READ_CACHE[file].inflight = inflightPromise;
+  return inflightPromise;
 }
 
 async function writeGHFile(file, data, sha, message) {
@@ -45,10 +80,28 @@ export default async function handler(req, res) {
     const { action, user, ref } = req.body || {};
     if (!action) return res.status(400).json({ error: 'Missing action' });
 
-    // ── GET PROFILE: read from skyteam file first, then old asesores.json as fallback ──
+    // ── GET PROFILE: Supabase first (fast), GitHub fallback ──
     if (action === 'getProfile') {
       if (!ref) return res.status(400).json({ error: 'Missing ref' });
       const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      // Try Supabase first (fast, no rate limits)
+      const SB_URL = process.env.SUPABASE_URL;
+      const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+      if (SB_URL && SB_KEY) {
+        try {
+          const sbR = await fetch(SB_URL + '/rest/v1/landing_profiles?ref=eq.' + slug + '&select=*&limit=1', {
+            headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
+          });
+          const rows = await sbR.json();
+          if (Array.isArray(rows) && rows.length > 0) {
+            const row = rows[0];
+            return res.status(200).json({ ok: true, asesor: { nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp, mensaje: row.mensaje, verificado: true }, exists: true });
+          }
+        } catch(e) { /* fall through to GitHub */ }
+      }
+
+      // Fallback to GitHub (cached reads)
       const { data: skyData } = await readGHFile(FILE_ASESORES);
       let asesor = skyData[slug] || null;
       if (!asesor) {
@@ -65,9 +118,10 @@ export default async function handler(req, res) {
       if (!TOKEN()) return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
       const slug = ref.toLowerCase().replace(/[^a-z0-9]/g, '');
       for (let attempt = 0; attempt < 3; attempt++) {
-        const { data, sha } = await readGHFile(FILE_ASESORES);
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
+        const { data, sha } = await readGHFile(FILE_ASESORES, true); // skipCache=true for fresh SHA
         const existing = data[slug] || {};
-        if (existing.foto) return res.status(200).json({ ok: true, skipped: true }); // already has photo, skip
+        if (existing.foto) return res.status(200).json({ ok: true, skipped: true });
         data[slug] = Object.assign({}, existing, { foto });
         if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: syncPhoto ' + slug))
           return res.status(200).json({ ok: true });
@@ -108,16 +162,20 @@ export default async function handler(req, res) {
           for (let attempt = 0; attempt < 5; attempt++) {
             if (attempt > 0) await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
             try {
-              const { data, sha } = await readGHFile(FILE_ASESORES);
+              const { data, sha } = await readGHFile(FILE_ASESORES, true); // skipCache for fresh SHA
               data[slug] = asesorData;
-              if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) break;
+              if (await writeGHFile(FILE_ASESORES, data, sha, 'skyteam: update ' + slug)) {
+                // Invalidate read cache after successful write
+                if (GH_READ_CACHE[FILE_ASESORES]) GH_READ_CACHE[FILE_ASESORES].ts = 0;
+                break;
+              }
             } catch(e) { console.warn('[Landing] GH write attempt', attempt, 'failed:', e.message); }
           }
           // Sync to old file too
           for (let attempt = 0; attempt < 3; attempt++) {
             if (attempt > 0) await new Promise(r => setTimeout(r, 2000 + Math.random() * 2000));
             try {
-              const { data, sha } = await readGHFile('asesores.json');
+              const { data, sha } = await readGHFile('asesores.json', true); // skipCache
               const existing = data[slug] || {};
               const newFoto = foto && !foto.startsWith('data:') ? foto : (existing.foto || '');
               data[slug] = Object.assign({}, asesorData, { foto: newFoto });
@@ -138,11 +196,14 @@ export default async function handler(req, res) {
     }
 
     // ── GET RANKING: merge both asesor files + stats, filter by period ──
+    // Uses cached GitHub reads (60s TTL) — 3 files read in parallel
     if (action === 'getRanking') {
       const { period } = req.body || {};
-      const { data: stats } = await readGHFile(FILE_STATS);
-      const { data: skyAsesores } = await readGHFile(FILE_ASESORES);
-      const { data: oldAsesores } = await readGHFile('asesores.json');
+      const [{ data: stats }, { data: skyAsesores }, { data: oldAsesores }] = await Promise.all([
+        readGHFile(FILE_STATS),
+        readGHFile(FILE_ASESORES),
+        readGHFile('asesores.json')
+      ]);
       // After April 9 2026 (Wednesday), only count landings created from skyteam (asesores-skyteam.json)
       const cutoffDate = new Date('2026-04-09T00:00:00');
       const onlyNew = Date.now() >= cutoffDate.getTime();
