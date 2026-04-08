@@ -75,7 +75,9 @@ FALTA: {"found":false,"reason":"No se ve Clasificacion Actual ni Patrocinador. L
 
     if (!r.ok) {
       const errText = await r.text();
-      throw new Error('OpenAI API error: ' + r.status + ' ' + errText.substring(0, 200));
+      console.error('[OCR] API error:', r.status, errText.substring(0, 200));
+      // Return user-friendly error instead of crashing
+      return res.status(200).json({ found: false, apiError: true, reason: 'Sky IA no est\u00e1 disponible en este momento. Intenta de nuevo en unos minutos.' });
     }
 
     const gptData = await r.json();

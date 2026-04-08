@@ -11465,20 +11465,25 @@ function onSolImgChange(input) {
           input._expiryData = null;
           document.getElementById('sol-autofill-section').style.display = 'none';
           var _errMsg = '';
+          // API error (quota, timeout) vs OCR detection failure
+          if (d.apiError) {
+            _errMsg = '\u26A0\uFE0F <strong>Sky IA no est\u00e1 disponible en este momento.</strong><br><br>Intenta subir la imagen de nuevo en unos minutos. Si el problema persiste, contacta a tu sponsor.';
+          } else {
           // Show which fields were visible and which are missing
           var _vis = d.visible || {};
           var _checks = [
-            {key:'days_remaining', label:'Días restantes', ok: _vis.days_remaining || (d.days_remaining || d.days_remaining === 0)},
+            {key:'days_remaining', label:'D\u00edas restantes', ok: _vis.days_remaining || (d.days_remaining || d.days_remaining === 0)},
             {key:'username', label:'Usuario de Innova', ok: _vis.username || d.username},
-            {key:'classification', label:'Clasificación/Rango', ok: _vis.classification || d.classification},
+            {key:'classification', label:'Clasificaci\u00f3n/Rango', ok: _vis.classification || d.classification},
             {key:'sponsor', label:'Patrocinador', ok: _vis.sponsor || d.sponsor}
           ];
           var _visLines = _checks.map(function(c) {
-            return c.ok ? '<span style="color:#4ade80;">✅ ' + c.label + (typeof c.ok === 'string' ? ': ' + c.ok : '') + '</span>' : '<span style="color:#E24B4A;font-weight:800;">❌ ' + c.label + ' — NO DETECTADO</span>';
+            return c.ok ? '<span style="color:#4ade80;">\u2705 ' + c.label + (typeof c.ok === 'string' ? ': ' + c.ok : '') + '</span>' : '<span style="color:#E24B4A;font-weight:800;">\u274C ' + c.label + ' \u2014 NO DETECTADO</span>';
           });
-          _errMsg = (d.reason ? '⚠️ ' + d.reason + '<br><br>' : '❌ Captura incompleta.<br><br>');
-          _errMsg += '<strong>Resultado del análisis:</strong><br>' + _visLines.join('<br>');
+          _errMsg = (d.reason ? '\u26A0\uFE0F ' + d.reason + '<br><br>' : '\u274C Captura incompleta.<br><br>');
+          _errMsg += '<strong>Resultado del an\u00e1lisis:</strong><br>' + _visLines.join('<br>');
           _errMsg += '<br><br><span style="color:#FFD700;font-weight:700;">Sube una captura donde se vean los 4 datos completos del perfil de Innova.</span>';
+          } // end else (not apiError)
           preview.innerHTML = _errMsg;
           preview.style.color = '#f87171';
           preview.style.borderColor = 'rgba(248,113,113,0.3)';
