@@ -4,7 +4,7 @@
 const REPO = 'DrCriptox/innova-ia-landing';
 const BRANCH = 'main';
 const TEMPLATE_CACHE = { html: null, ts: 0 };
-const CACHE_TTL = 300000; // 5 min cache
+const CACHE_TTL = 30000; // 30 sec cache
 
 async function getTemplate() {
   const now = Date.now();
@@ -37,19 +37,39 @@ export default async function handler(req, res) {
   html = html.replace(/src="(?!http|data:|\/\/|#)([^"]+)"/g, 'src="' + baseUrl + '$1"');
   html = html.replace(/href="(?!http|data:|\/\/|#|javascript:|mailto:)([^"]+\.css[^"]*)"/g, 'href="' + baseUrl + '$1"');
 
-  // CRITICAL: Replace /api/asesores with direct GitHub JSON fetch
-  // The landing JS does: fetch('/api/asesores') which returns the asesores JSON
-  // We inject a script that overrides this fetch to load from GitHub raw
+  // Build merged asesores: Supabase profiles override GitHub data
+  let mergedAsesores = '{}';
+  try {
+    const SB_URL = process.env.SUPABASE_URL;
+    const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+    // Read from GitHub first
+    const ghR = await fetch(baseUrl + 'asesores-skyteam.json');
+    let ghData = ghR.ok ? await ghR.json() : {};
+    // Overlay Supabase landing_profiles (fresher data)
+    if (SB_URL && SB_KEY) {
+      try {
+        const sbR = await fetch(SB_URL + '/rest/v1/landing_profiles?select=*', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+        const sbRows = await sbR.json();
+        if (Array.isArray(sbRows)) {
+          sbRows.forEach(function(row) {
+            if (row.ref) {
+              ghData[row.ref] = Object.assign(ghData[row.ref] || {}, { nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp, mensaje: row.mensaje, verificado: true });
+            }
+          });
+        }
+      } catch(e) {}
+    }
+    mergedAsesores = JSON.stringify(ghData);
+  } catch(e) { mergedAsesores = '{}'; }
+
   const injectScript = `<script>
 (function(){
+  var _mergedData = ${mergedAsesores};
   var _origFetch = window.fetch;
   window.fetch = function(url, opts) {
     if (typeof url === 'string') {
       if (url === '/api/asesores' || url.indexOf('/api/asesores') === 0) {
-        return _origFetch('${baseUrl}asesores-skyteam.json', opts).then(function(r) {
-          if (!r.ok) return _origFetch('${baseUrl}asesores.json', opts);
-          return r;
-        });
+        return Promise.resolve(new Response(JSON.stringify(_mergedData), {status:200, headers:{'Content-Type':'application/json'}}));
       }
       if (url === '/api/track' || url.indexOf('/api/track') === 0) {
         return _origFetch('https://skyteam.global/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'track'})});
@@ -121,6 +141,6 @@ Quiero saber m\u00e1s</a>
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min CDN cache
+  res.setHeader('Cache-Control', 'no-cache, no-store');
   return res.status(200).send(html);
 }
