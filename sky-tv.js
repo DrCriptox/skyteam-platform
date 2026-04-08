@@ -716,6 +716,77 @@ function openAdminEventForm(existingEvent) {
     }
   };
   form.appendChild(saveBtn);
+
+  // ── Duplicate to other days button ──
+  var dupeBtn = document.createElement('button');
+  dupeBtn.className = 'skytv-btn';
+  dupeBtn.style.cssText = 'width:100%;padding:12px;font-size:13px;margin-top:8px;background:rgba(167,139,250,0.10);border:0.5px solid rgba(167,139,250,0.25);color:#A78BFA;font-weight:700;cursor:pointer;border-radius:10px;font-family:Outfit,Nunito,sans-serif;';
+  dupeBtn.textContent = '\uD83D\uDD01 Duplicar para otros d\u00edas';
+  dupeBtn.onclick = function() {
+    // Collect current form data
+    var data = {};
+    var inputs = form.querySelectorAll('input,textarea,select');
+    for (var i = 0; i < inputs.length; i++) { if(inputs[i].name) data[inputs[i].name] = inputs[i].value; }
+    var flyerDiv = form.querySelector('[name="flyer_url"]');
+    if(flyerDiv && flyerDiv._flyerData) data.flyer_url = flyerDiv._flyerData;
+    if (!data.titulo || !data.hora_inicio) { if(typeof crmToast==='function') crmToast('Completa t\u00edtulo y hora primero','error'); return; }
+    // Show day picker
+    var picker = document.createElement('div');
+    picker.style.cssText = 'margin-top:12px;padding:14px;border-radius:12px;background:rgba(167,139,250,0.06);border:0.5px solid rgba(167,139,250,0.15);';
+    picker.innerHTML = '<div style="font-size:12px;font-weight:800;color:#A78BFA;margin-bottom:10px;">Selecciona los d\u00edas para duplicar:</div>';
+    var dias = ['Lun','Mar','Mi\u00e9','Jue','Vie','S\u00e1b','Dom'];
+    var checksHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
+    for (var d = 0; d < 7; d++) {
+      checksHtml += '<label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);cursor:pointer;font-size:12px;color:#F0EDE6;font-weight:600;">';
+      checksHtml += '<input type="checkbox" class="_dupeDay" value="'+d+'" style="accent-color:#A78BFA;"> '+dias[d]+'</label>';
+    }
+    checksHtml += '</div>';
+    var weeksHtml = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">';
+    weeksHtml += '<span style="font-size:11px;color:rgba(255,255,255,0.4);">Semanas:</span>';
+    weeksHtml += '<select id="_dupeWeeks" style="padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#F0EDE6;font-size:12px;">';
+    weeksHtml += '<option value="1">Esta semana</option><option value="2" selected>2 semanas</option><option value="4">4 semanas</option></select></div>';
+    picker.innerHTML += checksHtml + weeksHtml;
+    var goBtn = document.createElement('button');
+    goBtn.style.cssText = 'width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#A78BFA,#7C3AED);border:none;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;';
+    goBtn.textContent = 'Crear duplicados';
+    goBtn.onclick = function() {
+      var checks = picker.querySelectorAll('._dupeDay:checked');
+      if(!checks.length) { if(typeof crmToast==='function') crmToast('Selecciona al menos un d\u00eda','error'); return; }
+      var weeks = parseInt(document.getElementById('_dupeWeeks').value) || 2;
+      var selectedDays = [];
+      checks.forEach(function(c){ selectedDays.push(parseInt(c.value)); });
+      // Generate dates: for each selected day, create events for N weeks
+      var baseFecha = data.fecha ? new Date(data.fecha + 'T12:00:00') : new Date();
+      var created = 0; var total = 0;
+      var today = new Date(); today.setHours(0,0,0,0);
+      for (var w = 0; w < weeks; w++) {
+        for (var di = 0; di < selectedDays.length; di++) {
+          var targetDay = selectedDays[di]; // 0=Mon...6=Sun
+          var d2 = new Date(today);
+          // Set to Monday of current week + w weeks
+          var currentDay = d2.getDay(); var diff = currentDay === 0 ? 6 : currentDay - 1;
+          d2.setDate(d2.getDate() - diff + (w * 7) + targetDay);
+          if (d2 < today) continue; // skip past dates
+          var fechaStr = d2.getFullYear() + '-' + String(d2.getMonth()+1).padStart(2,'0') + '-' + String(d2.getDate()).padStart(2,'0');
+          var dupData = JSON.parse(JSON.stringify(data));
+          dupData.fecha = fechaStr;
+          delete dupData.id; // new event
+          if (typeof CU !== 'undefined' && CU && CU.username) dupData.created_by = CU.username;
+          total++;
+          (function(dd){ saveEvento(dd, 'create', function(){ created++; if(created===total){ if(typeof crmToast==='function') crmToast('\u2705 '+created+' eventos creados','success'); overlay.remove(); loadEventos(); } }); })(dupData);
+        }
+      }
+      if(total === 0) { if(typeof crmToast==='function') crmToast('No hay fechas futuras para duplicar','error'); }
+      else { goBtn.textContent = 'Creando ' + total + ' eventos...'; goBtn.disabled = true; }
+    };
+    picker.appendChild(goBtn);
+    // Replace dupeBtn with picker
+    if(dupeBtn.nextSibling) form.insertBefore(picker, dupeBtn.nextSibling);
+    else form.appendChild(picker);
+    dupeBtn.style.display = 'none';
+  };
+  form.appendChild(dupeBtn);
+
   modal.appendChild(form);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
