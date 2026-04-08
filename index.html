@@ -11409,8 +11409,12 @@ function onSolImgChange(input) {
           if(d.username)       lines.push('👤 Usuario: <strong style="color:#C9A84C;">' + d.username + '</strong>');
           else                 lines.push('⚠️ <span style="color:#FFD700;">Usuario no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
           if(d.classification) lines.push('🏆 Clasificación: <strong style="color:#85B7EB;">' + d.classification + '</strong>');
+          else                 lines.push('❌ <span style="color:#E24B4A;font-weight:800;">Clasificación/Rango NO detectado — <strong>sube una foto donde se vea tu rango</strong></span>');
           if(d.sponsor)        lines.push('🤝 Patrocinador: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
           else                 lines.push('⚠️ <span style="color:#FFD700;">Patrocinador no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
+          // Show checklist summary
+          var _ok = (d.days_remaining || d.days_remaining === 0) && d.username && d.classification && d.sponsor;
+          if(!_ok) lines.push('<br><span style="color:#E24B4A;font-size:11px;font-weight:700;">⚠️ Faltan datos. Tu foto debe mostrar: días restantes, rango, usuario y patrocinador.</span>');
           preview.innerHTML = lines.join('<br>');
 
         } else {
@@ -11491,6 +11495,16 @@ function sendSolicitud() {
   if(!waNum) { showToast('Ingresa tu número de WhatsApp ⚠️'); return; }
   if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
   if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
+
+  // OBLIGATORIO: los 4 datos deben estar detectados
+  if(!classification) {
+    showToast('⚠️ Clasificación/Rango no detectado. Tu captura debe mostrar los 4 datos:\n1️⃣ Días restantes\n2️⃣ Clasificación (Rango)\n3️⃣ Usuario\n4️⃣ Patrocinador\n\nRevisa tu foto y vuelve a subirla.', 'error');
+    return;
+  }
+  if(!sponsor) {
+    showToast('⚠️ Patrocinador no detectado. Escríbelo en el campo amarillo o sube una foto donde se vea.', 'error');
+    return;
+  }
 
   var urlRef = new URLSearchParams(window.location.search).get('ref') || '';
   if(urlRef && !sponsor) sponsor = urlRef;
