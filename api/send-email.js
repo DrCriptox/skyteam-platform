@@ -71,7 +71,7 @@ async function handleTriggers(req, res) {
 
   const now = new Date();
   const cHour = (now.getUTCHours() - 5 + 24) % 24;
-  const todayKey = todayKey;
+  const todayKey = now.toISOString().slice(0, 10);
   const results = { triggers: [], sent: 0, errors: [] };
 
   try {
