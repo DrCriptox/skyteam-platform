@@ -13,49 +13,38 @@ export default async function handler(req, res) {
     const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
     if (!OPENAI_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
-    const prompt = `Analiza esta captura de pantalla del perfil de 8innova.biz/profile.
-La imagen puede venir en 2 formatos. Ambos tienen los MISMOS 4 datos obligatorios.
+    const prompt = `Analiza esta captura de 8innova.biz/profile. Hay 3 formatos posibles.
 
-=== FORMATO 1: VERTICAL (captura de celular) ===
-De arriba a abajo en la pantalla:
-- Logo "innova" en la barra superior
-- Foto circular del usuario con BADGE de color: "67 dias restantes" ← DATO 1
-- NOMBRE COMPLETO grande: "Genesis Zaymara Rivera Ayala"
-- Texto pequeno gris debajo del nombre: "angel2026" ← DATO 2 (USUARIO)
-- "KYC Verificado"
-- Boton "Mas Informacion"
-- Correo electronico, Restablecer Contrasena (IGNORAR estos campos)
-- "Clasificacion Actual" seguido de "NOVA DIAMOND" ← DATO 3 (RANGO)
-- "Patrocinador" seguido de "LEGEND" ← DATO 4 (SPONSOR)
-- "Colocacion" (IGNORAR SIEMPRE, NO es el sponsor)
+FORMATO 1 (celular, perfil completo vertical):
+- Badge "67 dias restantes" junto a la foto → DATO 1
+- Debajo del nombre grande, texto pequeno "angel2026" → DATO 2 (USUARIO)
+- "Clasificacion Actual: NOVA DIAMOND" → DATO 3 (RANGO)
+- "Patrocinador: LEGEND" → DATO 4 (SPONSOR)
 
-=== FORMATO 2: HORIZONTAL (captura de computadora, puede estar rotada) ===
-La pagina se ve en pantalla ancha con tabs arriba (Detalles Personales, Detalles de Contacto, etc):
-- Foto circular con BADGE: "20 dias restantes" ← DATO 1
-- Nombre: "francis guerrero"
-- Texto pequeno debajo: "francis17" ← DATO 2 (USUARIO)
-- "KYC No Verificado"
-- "Patrocinador" seguido de "LEGEND" ← DATO 4 (SPONSOR)
-- "Colocacion" seguido de "CARMENZA26" ← IGNORAR (NO es el sponsor)
-- "Paquete" seguido de "SPECIAL INNPULSE" ← IGNORAR (NO es el rango)
-- "Clasificacion Actual" seguido de "No se Alcanzo Rango" ← DATO 3 (RANGO)
-- "Vencimiento" seguido de "27 abr 2026, 22:58:22" (fecha alternativa si no hay badge)
+FORMATO 2 (PC, horizontal con tabs):
+- Badge "20 dias restantes" junto a la foto → DATO 1
+- Debajo del nombre, texto pequeno "francis17" → DATO 2
+- "Clasificacion Actual: No se Alcanzo Rango" → DATO 3
+- "Patrocinador: LEGEND" → DATO 4
 
-=== LOS 4 DATOS A EXTRAER ===
-1. DIAS RESTANTES: numero en el badge de color pegado a la foto (ej: "67 dias restantes" → 67). Si no hay badge, usar "Vencimiento:" y calcular dias desde hoy.
-2. USUARIO: palabra corta SIN ESPACIOS debajo del nombre completo. NUNCA confundir con el nombre (tiene espacios), ni con Patrocinador, ni con Colocacion. Ej: "angel2026", "francis17".
-3. RANGO (Clasificacion Actual): SOLO el texto despues de "Clasificacion Actual:". Valores validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K, No se Alcanzo Rango (equivale a Cliente, rank 0). IGNORAR "Paquete:" (SPECIAL INNPULSE, PIONEER, EXPLORER NO son rangos).
-4. SPONSOR (Patrocinador): SOLO el texto despues de "Patrocinador:". IGNORAR "Colocacion:" SIEMPRE (es otro campo completamente diferente).
+FORMATO 3 (celular, menu desplegable abierto arriba-derecha):
+- Arriba a la derecha hay un menu desplegable con el USUARIO en negrita (ej: "BILLONARIO7") → DATO 2
+- NO hay badge de dias, pero si "Vencimiento: 9 jun 2026, 18:17:43" → calcular dias desde hoy para DATO 1
+- "Clasificacion Actual: INN 500" → DATO 3
+- "Patrocinador: BILLONARIA76" → DATO 4
+- IGNORAR: "Colocacion" y "Paquete" (NO son datos relevantes)
 
-=== RECHAZAR (found=false) SI ===
-- No es 8innova.biz
-- Imagen borrosa o cortada
-- Falta CUALQUIERA de los 4 datos
-- Solo se ve la foto y nombre pero NO la clasificacion ni patrocinador (foto incompleta)
+REGLAS:
+- USUARIO: palabra corta SIN ESPACIOS. Puede estar debajo del nombre O en el menu desplegable arriba-derecha. NUNCA es el nombre completo, ni Patrocinador, ni Colocacion.
+- RANGO: SOLO de "Clasificacion Actual:". Validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K, No se Alcanzo Rango. IGNORAR "Paquete:" (INNPULSE, PIONEER, EXPLORER NO son rangos).
+- SPONSOR: SOLO de "Patrocinador:". IGNORAR "Colocacion:" siempre.
+- DIAS: del badge O calcular desde "Vencimiento:" hasta hoy ${new Date().toISOString().slice(0,10)}.
 
-Responde SOLO JSON:
-OK: {"found":true,"days_remaining":67,"expiry_date":"2026-06-14","username":"angel2026","classification":"NOVA DIAMOND","sponsor":"LEGEND"}
-FALTA: {"found":false,"reason":"No se ve Clasificacion Actual ni Patrocinador. La captura solo muestra la parte superior del perfil.","visible":{"days_remaining":67,"username":"angel2026","classification":false,"sponsor":false}}`;
+RECHAZAR (found=false) si falta cualquiera de los 4 datos o no es 8innova.biz.
+
+JSON:
+OK: {"found":true,"days_remaining":62,"expiry_date":"2026-06-09","username":"Billonario7","classification":"INN 500","sponsor":"BILLONARIA76"}
+FALTA: {"found":false,"reason":"No se ve X","visible":{"days_remaining":false,"username":"Billonario7","classification":false,"sponsor":false}}`;
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
