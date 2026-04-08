@@ -197,10 +197,15 @@ Quiero saber m\u00e1s</a>
   if(!_ref) return;
   var slug = _ref.toLowerCase().replace(/[^a-z0-9]/g,'');
 
+  // Device fingerprint (screen+tz+lang+platform → short hash, no cookies needed)
+  var _fp = (function(){
+    var s = screen.width+'x'+screen.height+'|'+screen.colorDepth+'|'+(Intl.DateTimeFormat().resolvedOptions().timeZone||'')+'|'+navigator.language+'|'+navigator.platform+'|'+navigator.hardwareConcurrency;
+    var h=0; for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return 'fp_'+Math.abs(h).toString(36);
+  })();
   // Track page visit ALWAYS (even if asesor has no WA data)
   fetch('https://skyteam.global/api/landing', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'track', ref: slug, type: 'visit' }), keepalive: true
+    body: JSON.stringify({ action: 'track', ref: slug, type: 'visit', fp: _fp }), keepalive: true
   }).catch(function(){});
 
   var a = _mergedData[slug] || _mergedData[_ref] || null;
@@ -274,7 +279,7 @@ Quiero saber m\u00e1s</a>
     window._convTracked = true;
     fetch('https://skyteam.global/api/landing', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'track', ref: slug, type: 'conversion' }), keepalive: true
+      body: JSON.stringify({ action: 'track', ref: slug, type: 'conversion', fp: _fp }), keepalive: true
     }).catch(function(){});
   }
   function _fireFBEvent(name) {

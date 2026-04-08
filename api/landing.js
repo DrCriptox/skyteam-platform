@@ -132,17 +132,19 @@ export default async function handler(req, res) {
       const trackRef = (req.body.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const trackType = req.body.type || 'visit';
       const clientIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+      const deviceFP = req.body.fp || '';
+      // Device ID: fingerprint (preferred) or IP fallback
+      const deviceId = deviceFP || clientIP;
       if (!trackRef) return res.status(200).json({ ok: true });
       const SB_URL_T = process.env.SUPABASE_URL;
       const SB_KEY_T = process.env.SUPABASE_SERVICE_KEY;
       const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10); // Colombia time
       if (SB_URL_T && SB_KEY_T) {
-        // Fire and forget — Supabase UPSERT is atomic, no SHA conflicts
         const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' };
         fetch(SB_URL_T + '/rest/v1/landing_visits', {
           method: 'POST', headers: sbH,
-          body: JSON.stringify({ ref: trackRef, ip: clientIP, type: trackType, day: today, created_at: new Date().toISOString() })
-        }).then(function(){ console.log('[Track] +1', trackType, trackRef, clientIP.slice(0,8)); }).catch(function(e){ console.warn('[Track] SB error:', e.message); });
+          body: JSON.stringify({ ref: trackRef, ip: deviceId, type: trackType, day: today, created_at: new Date().toISOString() })
+        }).then(function(){ console.log('[Track] +1', trackType, trackRef, deviceId.slice(0,10)); }).catch(function(e){ console.warn('[Track] SB error:', e.message); });
       }
       // Also write to GitHub in background (legacy, best-effort)
       if (TOKEN()) {
@@ -373,10 +375,9 @@ export default async function handler(req, res) {
         } catch(e) {}
       }
 
-      // Include ALL refs that have stats OR are in asesores (union of both)
+      // Only include refs registered in skyteam (asesores + users table)
       const allRefs = {};
       Object.keys(allAsesores).forEach(function(r){ if(r!=='default') allRefs[r]=true; });
-      Object.keys(stats).forEach(function(r){ allRefs[r]=true; });
 
       const ranking = Object.keys(allRefs)
         .map(function(ref) {
