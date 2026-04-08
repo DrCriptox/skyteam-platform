@@ -11465,18 +11465,20 @@ function onSolImgChange(input) {
           input._expiryData = null;
           document.getElementById('sol-autofill-section').style.display = 'none';
           var _errMsg = '';
-          if (d.missingList) {
-            _errMsg = '❌ ' + d.missingList + '.<br><br>Tu captura debe mostrar estos 4 datos:<br>1️⃣ Días restantes<br>2️⃣ Clasificación/Rango<br>3️⃣ Usuario de Innova<br>4️⃣ Patrocinador<br><br>Sube una captura completa del perfil de Innova.';
-          } else {
-            var _missing = [];
-            if(!d.expiry_ts && !d.days_remaining) _missing.push('los días activos');
-            if(!d.username) _missing.push('el usuario de Innova');
-            if(!d.classification) _missing.push('la clasificación/rango');
-            if(!d.sponsor) _missing.push('el patrocinador');
-            _errMsg = _missing.length
-              ? '❌ No se detectó: ' + _missing.join(', ') + '.<br><br>Tu captura debe mostrar:<br>1️⃣ Días restantes<br>2️⃣ Clasificación/Rango<br>3️⃣ Usuario de Innova<br>4️⃣ Patrocinador'
-              : '❌ No se pudo procesar la imagen. Intenta con una captura más clara.';
-          }
+          // Show which fields were visible and which are missing
+          var _vis = d.visible || {};
+          var _checks = [
+            {key:'days_remaining', label:'Días restantes', ok: _vis.days_remaining || (d.days_remaining || d.days_remaining === 0)},
+            {key:'username', label:'Usuario de Innova', ok: _vis.username || d.username},
+            {key:'classification', label:'Clasificación/Rango', ok: _vis.classification || d.classification},
+            {key:'sponsor', label:'Patrocinador', ok: _vis.sponsor || d.sponsor}
+          ];
+          var _visLines = _checks.map(function(c) {
+            return c.ok ? '<span style="color:#4ade80;">✅ ' + c.label + (typeof c.ok === 'string' ? ': ' + c.ok : '') + '</span>' : '<span style="color:#E24B4A;font-weight:800;">❌ ' + c.label + ' — NO DETECTADO</span>';
+          });
+          _errMsg = (d.reason ? '⚠️ ' + d.reason + '<br><br>' : '❌ Captura incompleta.<br><br>');
+          _errMsg += '<strong>Resultado del análisis:</strong><br>' + _visLines.join('<br>');
+          _errMsg += '<br><br><span style="color:#FFD700;font-weight:700;">Sube una captura donde se vean los 4 datos completos del perfil de Innova.</span>';
           preview.innerHTML = _errMsg;
           preview.style.color = '#f87171';
           preview.style.borderColor = 'rgba(248,113,113,0.3)';
