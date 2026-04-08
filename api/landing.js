@@ -286,6 +286,7 @@ export default async function handler(req, res) {
               headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2, 'Range': from + '-' + to, 'Prefer': 'count=exact' }
             });
             var rows = await r.json();
+            console.log('[Ranking] Page', page, 'status:', r.status, 'rows:', Array.isArray(rows) ? rows.length : 'NOT_ARRAY', typeof rows === 'object' && !Array.isArray(rows) ? JSON.stringify(rows).substring(0,200) : '');
             if (Array.isArray(rows) && rows.length > 0) {
               allVisits = allVisits.concat(rows);
               hasMore = rows.length === pageSize;
