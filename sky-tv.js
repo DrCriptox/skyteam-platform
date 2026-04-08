@@ -167,6 +167,7 @@ function renderCountdown(container) {
     return;
   }
 
+  var allUpcoming = getUpcomingEvents();
   var next = getNextEvent();
   if (!next) {
     container.innerHTML = '';
