@@ -7653,9 +7653,9 @@ function _renderSSLanding() {
   }
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label>';
   if(_waLocked) {
-    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;padding:9px 12px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;">';
-    h += '<span style="font-size:13px;color:#F0EDE6;">'+_safe(_curWa)+'</span>';
-    h += '<span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:auto;">\uD83D\uDD12 '+_waDaysLeft+'d</span>';
+    h += '<div id="ss-l-wa-locked" style="display:flex;align-items:center;gap:8px;margin-top:4px;padding:9px 12px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;">';
+    h += '<span id="ss-l-wa-locked-num" style="font-size:13px;color:rgba(255,255,255,0.4);">'+_safe(_curWa || 'Cargando...')+'</span>';
+    h += '<span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:auto;">\uD83D\uDD12 Cambio en '+_waDaysLeft+' d\u00edas</span>';
     h += '</div>';
   } else {
     h += phoneCountrySelectHTML('ss-l-wa-phone', _curWa);
@@ -7734,6 +7734,12 @@ function _loadSSLandingProfile() {
     var ri = document.getElementById('ss-l-rol'); if(ri) ri.value = a.rol || 'Asesor InnovaIA';
     var rawWa = a.whatsapp || (CU && (CU.whatsapp || CU.phone)) || '';
     if(rawWa) {
+      // Update locked display if visible
+      var _lockedNum = document.getElementById('ss-l-wa-locked-num');
+      if(_lockedNum) {
+        var _dispWa = rawWa.startsWith('+') ? rawWa : '+' + rawWa;
+        _lockedNum.textContent = _dispWa;
+      }
       var _sorted = _phoneCountries.slice().sort(function(a,b){return b.code.length-a.code.length;});
       var _code='57',_num=rawWa,_iso='co';
       var _bare = rawWa.startsWith('+') ? rawWa.slice(1) : rawWa;
