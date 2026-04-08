@@ -2113,6 +2113,28 @@ function openMemberDetail(username) {
     }
   }
 
+  // BANKCODE editor for leaders (rank >= 3 NOVA+)
+  var cuRank = (typeof CU !== 'undefined' && CU) ? (CU.rank || 0) : 0;
+  if (!isSelf && cuRank >= 3) {
+    var _curBank = m.bankcode || '';
+    html += '<div style="background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;margin-top:8px;">';
+    html += '<div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Editar c\u00f3digo BANK</div>';
+    html += '<div style="display:flex;gap:4px;align-items:center;">';
+    var _bkLetters = ['B','A','N','K'];
+    var _bkCols = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
+    var _bkLabels = {B:'Blueprint',A:'Action',N:'Nurturing',K:'Knowledge'};
+    _bkLetters.forEach(function(letter, idx) {
+      html += '<select id="st-bank-'+idx+'" style="flex:1;background:rgba(255,255,255,0.04);border:0.5px solid '+_bkCols[letter]+'40;border-radius:6px;color:'+_bkCols[letter]+';font-size:14px;font-weight:900;padding:6px;text-align:center;outline:none;font-family:Outfit,Nunito,sans-serif;cursor:pointer;">';
+      _bkLetters.forEach(function(opt) {
+        var sel = (_curBank[idx] === opt) ? ' selected' : '';
+        html += '<option value="'+opt+'" style="color:'+_bkCols[opt]+';font-weight:900;"'+sel+'>'+opt+' ('+_bkLabels[opt]+')</option>';
+      });
+      html += '</select>';
+    });
+    html += '<button onclick="_saveMemberBankcode(\''+_safe(m.username||username)+'\')" style="padding:6px 12px;border-radius:6px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">Guardar</button>';
+    html += '</div></div>';
+  }
+
   // WhatsApp button (only if CU is direct sponsor)
   if (isDirect && whatsapp) {
     var waNum = whatsapp.replace(/[^0-9]/g, '');
@@ -2134,6 +2156,41 @@ function openMemberDetail(username) {
 
   document.body.appendChild(overlay);
 }
+
+function _saveMemberBankcode(username) {
+  var code = '';
+  for (var i = 0; i < 4; i++) {
+    var sel = document.getElementById('st-bank-' + i);
+    if (sel) code += sel.value;
+  }
+  if (code.length !== 4) return;
+  // Check no duplicates
+  var unique = new Set(code.split(''));
+  if (unique.size !== 4) {
+    if (typeof showToast === 'function') showToast('Cada letra debe ser diferente (B, A, N, K)');
+    return;
+  }
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ username: username, updates: { bankcode: code }, requestedBy: cuUser })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      if (typeof showToast === 'function') showToast('\u2705 BANKCODE de @' + username + ' actualizado a ' + code);
+      // Update local cache
+      if (stState.data && stState.data.members) {
+        stState.data.members.forEach(function(m) { if (m.username === username) m.bankcode = code; });
+      }
+      _closeMemberDetail();
+    } else {
+      if (typeof showToast === 'function') showToast('\u274C Error: ' + (d.error || ''));
+    }
+  }).catch(function(e) {
+    if (typeof showToast === 'function') showToast('\u274C Error de conexi\u00f3n');
+  });
+}
+window._saveMemberBankcode = _saveMemberBankcode;
 
 function _closeMemberDetail() {
   var overlay = document.getElementById('st-detail-overlay');

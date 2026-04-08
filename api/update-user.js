@@ -5,17 +5,22 @@ const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Auth
 
 // Fields that ONLY admins can change
 const ADMIN_ONLY_FIELDS = ['rank', 'is_admin', 'expiry', 'ventas', 'equipo', 'sponsor', 'original_sponsor', 'ref'];
+// Fields that leaders (NOVA+ rank>=3) can change on team members
+const LEADER_FIELDS = ['bankcode'];
 // Fields that the user can change on their own profile
 const SELF_FIELDS = ['name', 'email', 'whatsapp', 'photo', 'birthday', 'valor_inscripcion', 'bankcode', 'profession', 'income_goal', 'comm_style'];
 
-async function isAdmin(username) {
-  if (!username) return false;
+async function getUserRole(username) {
+  if (!username) return { isAdmin: false, isLeader: false, rank: 0 };
   try {
     const r = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&select=is_admin,rank', { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' } });
     const rows = await r.json();
-    return rows && rows[0] && (rows[0].is_admin === true || rows[0].rank >= 7);
-  } catch(e) { return false; }
+    if (!rows || !rows[0]) return { isAdmin: false, isLeader: false, rank: 0 };
+    const rank = rows[0].rank || 0;
+    return { isAdmin: rows[0].is_admin === true || rank >= 7, isLeader: rank >= 3, rank };
+  } catch(e) { return { isAdmin: false, isLeader: false, rank: 0 }; }
 }
+async function isAdmin(username) { return (await getUserRole(username)).isAdmin; }
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,7 +36,9 @@ export default async function handler(req, res) {
     // Determine who is making the request
     const caller = (requestedBy || username).toLowerCase().trim();
     const target = username.toLowerCase().trim();
-    const callerIsAdmin = await isAdmin(caller);
+    const callerRole = await getUserRole(caller);
+    const callerIsAdmin = callerRole.isAdmin;
+    const callerIsLeader = callerRole.isLeader;
     const isSelfUpdate = caller === target;
 
     // Special: rename username (admin only)
@@ -53,7 +60,17 @@ export default async function handler(req, res) {
     }
 
     // Filter allowed fields based on role
-    const allowedFields = callerIsAdmin ? [...ADMIN_ONLY_FIELDS, ...SELF_FIELDS] : (isSelfUpdate ? SELF_FIELDS : []);
+    // Admin: can change everything. Leader (NOVA+): can change LEADER_FIELDS on others. Self: SELF_FIELDS only.
+    let allowedFields;
+    if (callerIsAdmin) {
+      allowedFields = [...ADMIN_ONLY_FIELDS, ...LEADER_FIELDS, ...SELF_FIELDS];
+    } else if (callerIsLeader && !isSelfUpdate) {
+      allowedFields = [...LEADER_FIELDS];
+    } else if (isSelfUpdate) {
+      allowedFields = [...SELF_FIELDS];
+    } else {
+      allowedFields = [];
+    }
     if (allowedFields.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este usuario' });
 
     const safe = {};
