@@ -90,7 +90,7 @@ async function getMergedAsesores() {
           whatsapp: entry.whatsapp || '',
           mensaje: entry.mensaje || '',
           verificado: !!entry.verificado,
-          foto: (entry.foto && !entry.foto.startsWith('data:')) ? entry.foto : ''
+          foto: entry.foto || ''
         };
       });
 
