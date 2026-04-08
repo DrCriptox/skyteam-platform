@@ -578,27 +578,29 @@ export default async function handler(req, res) {
     const fromLabel = senderLabels[fromEmail] || 'SKYTEAM';
     const fromField = fromLabel + ' <' + fromEmail + '>';
 
-    const htmlBody = customHtml || `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">
-        <div style="text-align:center;margin-bottom:24px;">
-          <h1 style="color:#C9A84C;font-size:28px;margin:0;">SKY<span style="color:#fff"> SYSTEM</span></h1>
-          <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:4px;">Plataforma del Equipo SKYTEAM</p>
-        </div>
-        <h2 style="color:#C9A84C;font-size:20px;">ð Â¡Bienvenido al equipo, ${nombre}!</h2>
-        <p style="color:rgba(255,255,255,0.8);line-height:1.7;">Tu acceso a la plataforma ha sido <strong style="color:#C9A84C;">activado</strong>. Ya puedes entrar con tus datos:</p>
-        <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:20px 0;">
-          <p style="margin:6px 0;font-size:14px;">ð <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>
-          <p style="margin:6px 0;font-size:14px;">ð¤ <strong>Usuario:</strong> ${usuario}</p>
-          <p style="margin:6px 0;font-size:14px;">ð <strong>ContraseÃ±a:</strong> ${password}</p>
-          ${sponsor ? '<p style="margin:6px 0;font-size:14px;">ð¤ <strong>Sponsor:</strong> ' + sponsor + '</p>' : ''}
-          ${membresia ? '<p style="margin:6px 0;font-size:14px;">ð <strong>MembresÃ­a:</strong> ' + membresia + '</p>' : ''}
-        </div>
-        ${linkRef ? '<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:16px;margin:16px 0;"><p style="margin:0 0 8px;font-size:13px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;">Tu link de referidos</p><p style="margin:0;font-family:monospace;color:#FFD700;font-size:13px;word-break:break-all;">' + linkRef + '</p></div>' : ''}
-        <p style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:24px;text-align:center;">Enviado por ${fromLabel} Â· <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>
-      </div>
-    `;
+    const htmlBody = customHtml || '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
+      + '<div style="text-align:center;margin-bottom:24px;"><img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:50px;" /></div>'
+      + '<h2 style="color:#C9A84C;font-size:22px;text-align:center;margin-bottom:4px;">¡Bienvenido al equipo, ' + nombre + '!</h2>'
+      + '<p style="color:rgba(255,255,255,0.6);font-size:13px;text-align:center;margin-bottom:20px;">Tu acceso a la plataforma ha sido <strong style="color:#C9A84C;">activado</strong></p>'
+      + '<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:0 0 20px;">'
+      + '<p style="margin:6px 0;font-size:14px;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>'
+      + '<p style="margin:6px 0;font-size:14px;">👤 <strong>Usuario:</strong> ' + usuario + '</p>'
+      + '<p style="margin:6px 0;font-size:14px;">🔑 <strong>Contraseña:</strong> ' + password + '</p>'
+      + (sponsor ? '<p style="margin:6px 0;font-size:14px;">🤝 <strong>Sponsor:</strong> ' + sponsor + '</p>' : '')
+      + '</div>'
+      + '<div style="text-align:center;margin-bottom:20px;"><a href="https://skyteam.global" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;border-radius:12px;font-size:16px;font-weight:900;text-decoration:none;">Ingresar a SKYTEAM →</a></div>'
+      + '<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">'
+      + '<p style="color:#C9A84C;font-size:14px;font-weight:800;margin-bottom:12px;">Empieza hoy:</p>'
+      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #C9A84C;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>🚀 Sky Sales IA</strong> — Tu landing page propia + 6 agentes IA entrenados</p></div>'
+      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #2196F3;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>📋 Sky Prospects</strong> — Organiza tus prospectos y logra resultados</p></div>'
+      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #1D9E75;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>📅 Sky Journal</strong> — Tu agenda inteligente y productiva</p></div>'
+      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #E24B4A;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>🎓 Academia</strong> — De cero a resultados con capacitación paso a paso</p></div>'
+      + '</div>'
+      + '<p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:24px;text-align:center;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>'
+      + '</div>';
 
-    const emailSubject = subject || ('ð Â¡Tu acceso a SKY SYSTEM estÃ¡ activo, ' + nombre + '!');
+    const emailSubject = subject || ('¡Tu acceso a SKYTEAM está activo, ' + nombre + '!');
+
 
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
