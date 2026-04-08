@@ -11496,13 +11496,25 @@ function sendSolicitud() {
   if(!pass || pass.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres 🔑'); return; }
   if(pass !== pass2) { showToast('Las contraseñas no coinciden ❌'); return; }
 
-  // OBLIGATORIO: los 4 datos deben estar detectados
-  if(!classification) {
-    showToast('⚠️ Clasificación/Rango no detectado. Tu captura debe mostrar los 4 datos:\n1️⃣ Días restantes\n2️⃣ Clasificación (Rango)\n3️⃣ Usuario\n4️⃣ Patrocinador\n\nRevisa tu foto y vuelve a subirla.', 'error');
-    return;
-  }
-  if(!sponsor) {
-    showToast('⚠️ Patrocinador no detectado. Escríbelo en el campo amarillo o sube una foto donde se vea.', 'error');
+  // OBLIGATORIO: los 4 datos de la foto deben estar detectados
+  var _faltantes = [];
+  if(!expiryData || (!expiryData.days_remaining && expiryData.days_remaining !== 0)) _faltantes.push('D\u00edas activos');
+  if(!innovaUser) _faltantes.push('Usuario de Innova');
+  if(!classification) _faltantes.push('Clasificaci\u00f3n / Rango');
+  if(!sponsor) _faltantes.push('Patrocinador / Sponsor');
+  if(_faltantes.length > 0) {
+    var _msg = '\u26D4 No se detectaron todos los datos de tu captura.\n\n';
+    _msg += 'Falta: ' + _faltantes.join(', ') + '\n\n';
+    _msg += 'Tu foto debe mostrar claramente:\n';
+    _msg += '\u2705 D\u00edas restantes\n';
+    _msg += '\u2705 Clasificaci\u00f3n (Rango)\n';
+    _msg += '\u2705 Usuario de Innova\n';
+    _msg += '\u2705 Patrocinador\n\n';
+    _msg += 'Sube una captura completa del perfil de Innova.';
+    showToast(_msg, 'error');
+    // Scroll to image upload
+    var _imgArea = document.getElementById('sol-img-name');
+    if(_imgArea) _imgArea.scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
 
