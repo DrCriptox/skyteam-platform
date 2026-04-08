@@ -13245,10 +13245,12 @@ function _renderCrmRankingTab() {
       // Name + stats
       rhtml += '<div style="flex:1;min-width:0;">';
       rhtml += '<div style="font-size:14px;font-weight:800;color:'+(isMe?'#C9A84C':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+'</div>';
-      rhtml += '<div style="display:flex;gap:8px;margin-top:2px;font-size:10px;color:rgba(255,255,255,0.35);">';
-      rhtml += '<span>\uD83D\uDCCB '+(m.prospectos||m.prospects||0)+' contactos</span>';
-      rhtml += '<span>\uD83E\uDD1D '+(m.presentaciones||m.citas||0)+' presentaciones</span>';
-      rhtml += '<span>\u2705 '+(m.cierres||m.cerrados||0)+' cierres</span>';
+      rhtml += '<div style="display:flex;gap:6px;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.35);flex-wrap:wrap;">';
+      rhtml += '<span>\uD83D\uDCCB '+(m.prospectos||0)+'</span>';
+      rhtml += '<span>\uD83D\uDD04 '+(m.actualizaciones||0)+' act</span>';
+      rhtml += '<span>\uD83D\uDCAC '+(m.mensajes||0)+' msg</span>';
+      rhtml += '<span>\uD83E\uDD1D '+(m.presentaciones||0)+' pres</span>';
+      rhtml += '<span>\u2705 '+(m.cierres||0)+'</span>';
       rhtml += '</div></div>';
       // Score
       rhtml += '<div style="text-align:right;flex-shrink:0;">';
