@@ -322,7 +322,10 @@ export default async function handler(req, res) {
         let curSponsor = finalSponsor.toLowerCase();
         for (let lvl = 0; lvl < 3 && curSponsor; lvl++) {
           // Get push subscriptions for this sponsor
-          const subsR = await sbFetch(SUPABASE_URL + '/rest/v1/push_subscriptions?username=ilike.' + encodeURIComponent(curSponsor), { headers: SB_H2 });
+          // Find subscriptions for this sponsor AND their "2" account (same team)
+          var _spUser = curSponsor.replace(/2$/, ''); // base username
+          var _sp2User = _spUser + '2'; // second account
+          const subsR = await sbFetch(SUPABASE_URL + '/rest/v1/push_subscriptions?or=(username.ilike.' + encodeURIComponent(_spUser) + ',username.ilike.' + encodeURIComponent(_sp2User) + ')', { headers: SB_H2 });
           const subs = await subsR.json();
           if (Array.isArray(subs) && subs.length > 0) {
             const payload = JSON.stringify({
