@@ -5996,12 +5996,7 @@ function _updatePushButton() {
   var btn = document.getElementById('push-activate-btn');
   if(!btn) return;
   if(!('Notification' in window) || !('PushManager' in window) || localStorage.getItem('skyteam_push_unsupported')) {
-    btn.textContent = '🔕 Push no disponible';
-    btn.style.display = 'block';
-    btn.style.background = 'rgba(255,255,255,0.04)';
-    btn.style.color = 'rgba(255,255,255,0.3)';
-    btn.style.border = '1px solid rgba(255,255,255,0.06)';
-    btn.onclick = function(){ showToast('Tu dispositivo no soporta push. Usa Chrome en computador.'); };
+    btn.style.display = 'none';
     return;
   }
   if(Notification.permission === 'granted' && localStorage.getItem('skyteam_push_subscribed')) {
