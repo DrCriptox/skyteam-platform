@@ -578,27 +578,61 @@ export default async function handler(req, res) {
     const fromLabel = senderLabels[fromEmail] || 'SKYTEAM';
     const fromField = fromLabel + ' <' + fromEmail + '>';
 
-    const htmlBody = customHtml || '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
-      + '<div style="text-align:center;margin-bottom:24px;"><img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:50px;" /></div>'
-      + '<h2 style="color:#C9A84C;font-size:22px;text-align:center;margin-bottom:4px;">¡Bienvenido al equipo, ' + nombre + '!</h2>'
-      + '<p style="color:rgba(255,255,255,0.6);font-size:13px;text-align:center;margin-bottom:20px;">Tu acceso a la plataforma ha sido <strong style="color:#C9A84C;">activado</strong></p>'
-      + '<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:0 0 20px;">'
-      + '<p style="margin:6px 0;font-size:14px;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>'
-      + '<p style="margin:6px 0;font-size:14px;">👤 <strong>Usuario:</strong> ' + usuario + '</p>'
-      + '<p style="margin:6px 0;font-size:14px;">🔑 <strong>Contraseña:</strong> ' + password + '</p>'
-      + (sponsor ? '<p style="margin:6px 0;font-size:14px;">🤝 <strong>Sponsor:</strong> ' + sponsor + '</p>' : '')
+    const htmlBody = customHtml || ''
+      + '<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;border-radius:16px;overflow:hidden;">'
+      // Header with gradient
+      + '<div style="background:linear-gradient(135deg,#0a0a12 0%,#1a1520 50%,#0a0a12 100%);padding:40px 32px 30px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);">'
+      + '<img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:55px;margin-bottom:16px;" />'
+      + '<h1 style="color:#C9A84C;font-size:24px;font-weight:900;margin:0 0 6px;letter-spacing:1px;">¡Bienvenido, ' + nombre + '!</h1>'
+      + '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">Tu acceso a la plataforma ha sido activado</p>'
       + '</div>'
-      + '<div style="text-align:center;margin-bottom:20px;"><a href="https://skyteam.global" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;border-radius:12px;font-size:16px;font-weight:900;text-decoration:none;">Ingresar a SKYTEAM →</a></div>'
-      + '<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">'
-      + '<p style="color:#C9A84C;font-size:14px;font-weight:800;margin-bottom:12px;">Empieza hoy:</p>'
-      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #C9A84C;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>🚀 Sky Sales IA</strong> — Tu landing page propia + 6 agentes IA entrenados</p></div>'
-      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #2196F3;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>📋 Sky Prospects</strong> — Organiza tus prospectos y logra resultados</p></div>'
-      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #1D9E75;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>📅 Sky Journal</strong> — Tu agenda inteligente y productiva</p></div>'
-      + '<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #E24B4A;"><p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>🎓 Academia</strong> — De cero a resultados con capacitación paso a paso</p></div>'
+      // Access data card
+      + '<div style="padding:24px 32px;">'
+      + '<div style="background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.03));border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:20px;margin-bottom:20px;">'
+      + '<p style="margin:0 0 12px;font-size:11px;color:rgba(201,168,76,0.6);text-transform:uppercase;letter-spacing:2px;font-weight:800;">Tus datos de acceso</p>'
+      + '<table style="width:100%;border-collapse:collapse;">'
+      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);width:110px;">🌐 Plataforma</td><td style="padding:5px 0;font-size:14px;"><a href="https://skyteam.global" style="color:#C9A84C;font-weight:700;text-decoration:none;">skyteam.global</a></td></tr>'
+      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">👤 Usuario</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + usuario + '</td></tr>'
+      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🔑 Contraseña</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + password + '</td></tr>'
+      + (sponsor ? '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🤝 Sponsor</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + sponsor + '</td></tr>' : '')
+      + '</table>'
       + '</div>'
-      + '<p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:24px;text-align:center;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p>'
+      // CTA button
+      + '<div style="text-align:center;margin-bottom:28px;">'
+      + '<a href="https://skyteam.global" style="display:inline-block;padding:16px 40px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;border-radius:14px;font-size:17px;font-weight:900;text-decoration:none;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(201,168,76,0.3);">Ingresar a SKYTEAM →</a>'
+      + '</div>'
+      // Features section
+      + '<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:24px;">'
+      + '<p style="color:#C9A84C;font-size:16px;font-weight:900;margin:0 0 16px;text-align:center;letter-spacing:1px;">EMPIEZA HOY</p>'
+      // Sky Sales IA
+      + '<div style="display:flex;margin-bottom:12px;background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(201,168,76,0.02));border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:14px 16px;align-items:center;">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(201,168,76,0.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;margin-right:14px;">🚀</div>'
+      + '<div><p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#C9A84C;">Sky Sales IA</p><p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;">Tu página web personalizada + 6 agentes IA entrenados</p></div>'
+      + '</div>'
+      // Sky Prospects
+      + '<div style="display:flex;margin-bottom:12px;background:linear-gradient(135deg,rgba(33,150,243,0.06),rgba(33,150,243,0.02));border:1px solid rgba(33,150,243,0.12);border-radius:12px;padding:14px 16px;align-items:center;">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(33,150,243,0.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;margin-right:14px;">📋</div>'
+      + '<div><p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#2196F3;">Sky Prospects</p><p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;">CRM inteligente para darle el mejor proceso a tus contactos</p></div>'
+      + '</div>'
+      // Sky Journal
+      + '<div style="display:flex;margin-bottom:12px;background:linear-gradient(135deg,rgba(29,158,117,0.06),rgba(29,158,117,0.02));border:1px solid rgba(29,158,117,0.12);border-radius:12px;padding:14px 16px;align-items:center;">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(29,158,117,0.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;margin-right:14px;">📅</div>'
+      + '<div><p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#1D9E75;">Sky Journal</p><p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;">Agenda inteligente que te ayuda a cerrar grandes negocios</p></div>'
+      + '</div>'
+      // Academia
+      + '<div style="display:flex;margin-bottom:12px;background:linear-gradient(135deg,rgba(226,75,74,0.06),rgba(226,75,74,0.02));border:1px solid rgba(226,75,74,0.12);border-radius:12px;padding:14px 16px;align-items:center;">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(226,75,74,0.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;margin-right:14px;">🎓</div>'
+      + '<div><p style="margin:0 0 2px;font-size:14px;font-weight:800;color:#E24B4A;">Academia</p><p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;">Desde cero a resultados con capacitación paso a paso</p></div>'
+      + '</div>'
+      + '</div>'
+      // Footer
+      + '</div>'
+      + '<div style="background:rgba(255,255,255,0.02);padding:16px 32px;text-align:center;border-top:1px solid rgba(255,255,255,0.04);">'
+      + '<p style="color:rgba(255,255,255,0.25);font-size:11px;margin:0;">SKYTEAM · Franquicia Digital · <a href="https://skyteam.global" style="color:#C9A84C;text-decoration:none;">skyteam.global</a></p>'
+      + '</div>'
       + '</div>';
 
+    
     const emailSubject = subject || ('¡Tu acceso a SKYTEAM está activo, ' + nombre + '!');
 
 
