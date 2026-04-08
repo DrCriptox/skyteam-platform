@@ -3653,8 +3653,24 @@ function _showBankcodeSurvey() {
       var updates = {bankcode: code, profession: answers.profession, income_goal: answers.income_goal, comm_style: answers.comm_style};
       CU.bankcode = code; CU.profession = answers.profession; CU.income_goal = answers.income_goal; CU.comm_style = answers.comm_style;
       localStorage.setItem('skyteam_u', JSON.stringify(CU));
-      fetch('/api/update-user', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:CU.username, updates:updates, requestedBy:CU.username})}).catch(function(){});
-      if(typeof showToast === 'function') showToast('✅ Perfil BANKCODE guardado: ' + code);
+      // Save to server — retry if fails
+      function _saveBankcode(attempt) {
+        fetch('/api/update-user', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:CU.username, updates:updates, requestedBy:CU.username})})
+        .then(function(r){return r.json()}).then(function(d){
+          if(d.ok) {
+            console.log('[BANKCODE] Saved successfully:', code);
+            if(typeof showToast === 'function') showToast('\u2705 Perfil BANKCODE guardado: ' + code);
+          } else {
+            console.warn('[BANKCODE] Save failed:', d.error, '— retrying...');
+            if(attempt < 3) setTimeout(function(){ _saveBankcode(attempt+1); }, 2000);
+            else if(typeof showToast === 'function') showToast('\u26A0\uFE0F BANKCODE no se guard\u00f3 en servidor. Contacta a tu sponsor.');
+          }
+        }).catch(function(e){
+          console.warn('[BANKCODE] Network error:', e.message);
+          if(attempt < 3) setTimeout(function(){ _saveBankcode(attempt+1); }, 2000);
+        });
+      }
+      _saveBankcode(0);
     };
   }
   document.body.appendChild(overlay);
@@ -3924,9 +3940,13 @@ function showApp() {
     }, 1500);
   }
 
-  // BANKCODE survey — show on first login if user hasn't completed it
+  // BANKCODE: sync localStorage → server if server is empty but local has it
   setTimeout(function() {
-    if (CU && !CU.bankcode && typeof _showBankcodeSurvey === 'function') {
+    if (CU && CU.bankcode) {
+      // Has bankcode locally — make sure server has it too (silent sync)
+      fetch('/api/update-user', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:CU.username, updates:{bankcode:CU.bankcode, profession:CU.profession||null, income_goal:CU.income_goal||null, comm_style:CU.comm_style||null}, requestedBy:CU.username})}).catch(function(){});
+    } else if (CU && !CU.bankcode && typeof _showBankcodeSurvey === 'function') {
+      // No bankcode anywhere — show survey
       _showBankcodeSurvey();
     }
   }, 2000);
