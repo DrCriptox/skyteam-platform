@@ -308,8 +308,25 @@ export default async function handler(req, res) {
         } catch(e) {}
       }
       // Only count landings created from skyteam.global (asesores-skyteam.json)
-      // No legacy innovaia.app data
       const allAsesores = skyAsesores;
+      // Overlay registered user names (users table) so ranking always shows real names
+      if (SB_URL2 && SB_KEY2) {
+        try {
+          const usersR = await fetch(SB_URL2 + '/rest/v1/users?select=username,name,ref,whatsapp&limit=5000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
+          const usersData = await usersR.json();
+          if (Array.isArray(usersData)) usersData.forEach(function(u) {
+            var uRef = (u.ref || u.username || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (uRef && allAsesores[uRef]) {
+              if (u.name && (!allAsesores[uRef].nombre || allAsesores[uRef].nombre === '?' || allAsesores[uRef].nombre === uRef)) {
+                allAsesores[uRef].nombre = u.name;
+              }
+              if (u.whatsapp && !allAsesores[uRef].whatsapp) {
+                allAsesores[uRef].whatsapp = u.whatsapp;
+              }
+            }
+          });
+        } catch(e) {}
+      }
 
       // Colombia time (UTC-5) for period calculations
       const nowCol = new Date(Date.now() - 18000000);
