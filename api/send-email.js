@@ -245,8 +245,9 @@ async function handleTriggers(req, res) {
             const sponsorData = userMap[currentSponsor];
             if (!sponsorData) break;
 
-            const title = '🎉 ¡Nuevo cliente!';
-            const body = fullName + ' se registró en tu ' + levels[level] + (valor ? ' con membresía de ' + valor : '') + '. ¡Tu equipo crece! 🚀';
+            var _cHora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
+            const title = valor ? '\uD83D\uDCB0 \u00a1VENTA ' + valor + '!' : '\uD83C\uDF89 \u00a1Nueva venta!';
+            const body = fullName + ' \u2014 ' + levels[level] + (valor ? '\n\uD83D\uDCB0 Membres\u00eda: ' + valor : '') + '\n\u23F0 ' + _cHora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
 
             const r = await pushToUser(currentSponsor, title, body, '/?nav=home', tag + '-L' + (level+1));
             results.triggers.push({ type: 'new_client_L' + (level+1), sponsor: currentSponsor, newUser: newUser.username, valor: newUser.valor_inscripcion, sent: r.sent });
@@ -290,8 +291,9 @@ async function handleTriggers(req, res) {
             const sponsorData = userMap2[currentSponsor];
             if (!sponsorData) break;
 
-            const title = '🏆 ¡Nuevo rango en tu equipo!';
-            const body = fullName + ' subió a ' + rName + ', ganando +$' + income.toLocaleString() + ' USD/mes. ¡Felicidades! 🔥';
+            var _rHora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
+            const title = '\uD83C\uDFC6 \u00a1' + rName + ' en tu equipo!';
+            const body = fullName + ' acaba de lograr ' + rName + '\n\uD83D\uDCB0 Generando +$' + income.toLocaleString() + ' USD/mes\n\u23F0 ' + _rHora + '\n\uD83D\uDD25 \u00a1Felicidades! Tu equipo sigue creciendo.';
 
             const r = await pushToUser(currentSponsor, title, body, '/?nav=home', tag + '-L' + (level+1));
             results.triggers.push({ type: 'rank_promo_L' + (level+1), sponsor: currentSponsor, user: user.username, rank: rName, sent: r.sent });

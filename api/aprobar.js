@@ -366,10 +366,13 @@ export default async function handler(req, res) {
           const subsR = await sbFetch(SUPABASE_URL + '/rest/v1/push_subscriptions?or=(username.ilike.' + encodeURIComponent(_spUser) + ',username.ilike.' + encodeURIComponent(_sp2User) + ')', { headers: SB_H2 });
           const subs = await subsR.json();
           if (Array.isArray(subs) && subs.length > 0) {
+            var _hora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
+            var _titulo = valor ? '\uD83D\uDCB0 \u00a1VENTA ' + valor + '!' : '\uD83C\uDF89 \u00a1Nueva venta!';
+            var _cuerpo = fullName + ' \u2014 ' + levels[lvl] + (valor ? '\n\uD83D\uDCB0 Membresia: ' + valor : '') + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
             const payload = JSON.stringify({
-              title: '\uD83C\uDF89 \u00a1Nuevo cliente!',
-              body: fullName + ' se registro en tu ' + levels[lvl] + (valor ? ' con membresia de ' + valor : '') + '. \u00a1Tu equipo crece! \uD83D\uDE80',
-              url: '/?nav=home', tag: 'skyteam-newclient-' + finalUsername
+              title: _titulo,
+              body: _cuerpo,
+              url: '/?nav=home', tag: 'skyteam-newclient-' + finalUsername + '-' + Date.now()
             });
             for (const sub of subs) {
               try { await webpush.sendNotification(sub.subscription, payload); } catch(e) {
