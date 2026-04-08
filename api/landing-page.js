@@ -196,6 +196,13 @@ Quiero saber m\u00e1s</a>
   var _ref = new URLSearchParams(window.location.search).get('ref')||'';
   if(!_ref) return;
   var slug = _ref.toLowerCase().replace(/[^a-z0-9]/g,'');
+
+  // Track page visit ALWAYS (even if asesor has no WA data)
+  fetch('https://skyteam.global/api/landing', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'track', ref: slug, type: 'visit' }), keepalive: true
+  }).catch(function(){});
+
   var a = _mergedData[slug] || _mergedData[_ref] || null;
   if(!a) return;
   var wa = (a.whatsapp||'').replace(/[^0-9]/g,'');
@@ -289,11 +296,7 @@ Quiero saber m\u00e1s</a>
   var origSubmit = document.querySelector('.submit-btn');
   if (origSubmit) origSubmit.addEventListener('click', function() { _trackConv(); _fireFBEvent('WA_FormSubmit'); });
 
-  // Track page visit
-  fetch('https://skyteam.global/api/landing', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'track', ref: slug, type: 'visit' }), keepalive: true
-  }).catch(function(){});
+  // (visit tracking moved to top — fires regardless of WA data)
 })();
 </script>`;
 
