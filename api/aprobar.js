@@ -281,7 +281,45 @@ export default async function handler(req, res) {
 
       const html1 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;"><div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);"><img src="' + logoUrl + '" alt="SKYTEAM" style="height:44px;max-width:240px;" /></div><div style="padding:32px;"><div style="text-align:center;margin-bottom:24px;"><div style="font-size:48px;">🚀</div><h2 style="color:#fff;font-size:22px;margin:8px 0;">¡Bienvenido al equipo, ' + primerNombre + '!</h2><p style="color:#C9A84C;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:0;">Tu acceso ha sido aprobado</p></div><div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin:20px 0;"><p style="margin:8px 0;font-size:14px;">🌐 <strong>Plataforma:</strong> <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p><p style="margin:8px 0;font-size:14px;">👤 <strong>Usuario:</strong> <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;">' + finalUsername + '</span></p><p style="margin:8px 0;font-size:14px;">🔑 <strong>Contraseña:</strong> <span style="font-family:monospace;background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;">' + sol.password + '</span></p>' + expiryHtml + (sol.sponsor && sol.sponsor !== 'Sin especificar' ? '<p style="margin:8px 0;font-size:14px;">🤝 <strong>Sponsor:</strong> ' + sol.sponsor + '</p>' : '') + '</div><div style="text-align:center;margin:24px 0;"><a href="https://skyteam.global" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Entrar a SKY SYSTEM →</a></div><div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;"><p style="color:#FFD700;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;">⚡ Empieza hoy</p><p style="color:rgba(255,255,255,0.8);font-size:13px;line-height:1.9;margin:0;">🤖 <strong style="color:#C9A84C;">Activa Sky Sales IA</strong> — 6 agentes entrenados.<br>🎓 <strong style="color:#C9A84C;">Entra a la Academia</strong> — de cero a resultados.<br>🔗 <strong style="color:#FFD700;">Tu link personalizado</strong> llega en el próximo email.</p></div></div><div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p></div></div>';
 
-      const html2 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;"><div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);"><img src="' + logoUrl + '" alt="SKYTEAM" style="height:44px;max-width:240px;" /></div><div style="padding:32px;"><h2 style="color:#FFD700;font-size:22px;text-align:center;margin:0 0 20px;">🚀 Tu link de duplicación está listo</h2><p style="color:rgba(255,255,255,0.8);line-height:1.7;">Hola <strong>' + primerNombre + '</strong>, este es tu link personalizado:</p><div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:20px;text-align:center;margin:20px 0;"><p style="font-family:monospace;color:#FFD700;font-size:15px;word-break:break-all;margin:0;">' + refLink + '</p></div><ol style="color:rgba(255,255,255,0.7);font-size:13px;line-height:2.2;padding-left:18px;"><li>Comparte este link con personas que quieran ingresos extra</li><li>Quien se registre quedará en tu red automáticamente</li><li>Usa los Agentes IA para responder objeciones</li><li>Revisa la Academia para capacitarte</li></ol><div style="text-align:center;margin:24px 0;"><a href="' + refLink + '" style="background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Ver mi landing →</a></div></div><div style="background:rgba(0,0,0,0.3);padding:16px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);"><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0;">SKYTEAM · <a href="https://skyteam.global" style="color:#C9A84C;">skyteam.global</a></p></div></div>';
+      const html2 = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;border-radius:16px;overflow:hidden;">'
+      // Header - contrasting teal/gold
+      + '<div style="background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 50%,#0a1628 100%);padding:36px 32px;text-align:center;border-bottom:2px solid rgba(201,168,76,0.25);">'
+      + '<img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:50px;margin-bottom:14px;" />'
+      + '<h1 style="color:#FFD700;font-size:22px;font-weight:900;margin:0;letter-spacing:1px;">¡Tu Landing Page está lista!</h1>'
+      + '<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:6px 0 0;">Tu sistema de captación está activo 24/7</p>'
+      + '</div>'
+      // Link section
+      + '<div style="padding:28px 32px;">'
+      + '<p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6;margin:0 0 16px;">Hola <strong style="color:#C9A84C;">' + primerNombre + '</strong>, tu landing page personalizada está publicada:</p>'
+      + '<div style="background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,140,0,0.05));border:1.5px solid rgba(255,215,0,0.25);border-radius:14px;padding:20px;text-align:center;margin:0 0 20px;">'
+      + '<p style="font-size:10px;color:rgba(255,215,0,0.6);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin:0 0 8px;">Tu link personal</p>'
+      + '<p style="font-family:monospace;color:#FFD700;font-size:16px;word-break:break-all;margin:0;font-weight:700;">' + refLink + '</p>'
+      + '</div>'
+      + '<div style="text-align:center;margin-bottom:24px;">'
+      + '<a href="' + refLink + '" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#0a0a12;border-radius:14px;font-size:16px;font-weight:900;text-decoration:none;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(255,215,0,0.3);">Ver mi Landing →</a>'
+      + '</div>'
+      // Why share section
+      + '<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">'
+      + '<p style="color:#C9A84C;font-size:15px;font-weight:900;margin:0 0 14px;text-align:center;">¿Por qué compartir tu link?</p>'
+      + '<div style="margin-bottom:10px;padding:12px 14px;background:rgba(255,215,0,0.04);border-radius:10px;border-left:3px solid #FFD700;">'
+      + '<p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>🌐 Visible 24/7</strong> — Tu página trabaja por ti mientras duermes</p></div>'
+      + '<div style="margin-bottom:10px;padding:12px 14px;background:rgba(29,158,117,0.04);border-radius:10px;border-left:3px solid #1D9E75;">'
+      + '<p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>📱 Te escriben a WhatsApp</strong> — Los interesados te contactan directo</p></div>'
+      + '<div style="margin-bottom:10px;padding:12px 14px;background:rgba(33,150,243,0.04);border-radius:10px;border-left:3px solid #2196F3;">'
+      + '<p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>📊 Tu red crece</strong> — Cada registro queda en tu equipo automáticamente</p></div>'
+      + '<div style="margin-bottom:10px;padding:12px 14px;background:rgba(226,75,74,0.04);border-radius:10px;border-left:3px solid #E24B4A;">'
+      + '<p style="margin:0;font-size:13px;color:#F0EDE6;"><strong>🤖 IA responde por ti</strong> — 6 agentes entrenados atienden a tus prospectos</p></div>'
+      + '</div>'
+      // Tips
+      + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:16px;margin-top:16px;">'
+      + '<p style="color:#C9A84C;font-size:12px;font-weight:800;margin:0 0 8px;">💡 Comparte en:</p>'
+      + '<p style="color:rgba(255,255,255,0.6);font-size:12px;line-height:1.8;margin:0;">Estados de WhatsApp · Historias de Instagram · Facebook · TikTok · Grupos de Telegram · Bio de redes sociales</p>'
+      + '</div>'
+      + '</div>'
+      // Footer
+      + '<div style="background:rgba(0,0,0,0.3);padding:14px 32px;text-align:center;border-top:1px solid rgba(255,255,255,0.04);">'
+      + '<p style="color:rgba(255,255,255,0.25);font-size:11px;margin:0;">SKYTEAM · Franquicia Digital · <a href=\"https://skyteam.global\" style=\"color:#C9A84C;text-decoration:none;\">skyteam.global</a></p>'
+      + '</div></div>';
 
       try {
         console.log('[APROBAR] Sending welcome email to:', sol.email);
