@@ -11392,12 +11392,18 @@ function onSolImgChange(input) {
           }
 
           var cField = document.getElementById('sol-classification');
-          if(d.classification && cField) {
-            cField.value = d.classification.toUpperCase();
+          // REJECT package names as classification — only valid ranks
+          var _rawClassif = d.classification ? d.classification.toUpperCase().trim() : '';
+          var _invalidClassif = /PIONEER|EXPLORER|PACKAGE|PAQUETE/i.test(_rawClassif);
+          var _validRanks = ['CLIENTE','INN 200','INN 500','INN','NOVA','NOVA 1500','NOVA 5K','NOVA 10K','NOVA DIAMOND','NOVA DIAMANTE','NOVA 25K','NOVA 50K','NOVA 100K'];
+          var _isValidRank = _validRanks.some(function(r){ return _rawClassif.indexOf(r) !== -1; });
+          if(_rawClassif && !_invalidClassif && _isValidRank && cField) {
+            cField.value = _rawClassif;
             _solFieldEditable('sol-classification', false);
           } else if(cField) {
             cField.value = '';
             _solFieldEditable('sol-classification', true);
+            if(_invalidClassif) d.classification = null; // force as missing
           }
 
           // Show auto-fill section
