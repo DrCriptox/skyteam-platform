@@ -47,7 +47,7 @@ async function readGHFile(file, skipCache) {
       }
       const parsed = await r.json();
       GH_READ_CACHE[file] = { data: parsed, sha: shaData.sha || null, ts: Date.now(), inflight: null };
-      return { data: parsed, sha: d.sha };
+      return { data: parsed, sha: shaData.sha || null };
     } catch (e) {
       console.error('[Landing] readGHFile error:', file, e.message);
       const fallback = GH_READ_CACHE[file];
