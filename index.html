@@ -7661,26 +7661,8 @@ function _renderSSLanding() {
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Nombre</label><input type="text" id="ss-l-nombre" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Rol / T\u00edtulo</label><input type="text" id="ss-l-rol" placeholder="Ej: Asesor InnovaIA" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;"></div>';
   var _curWa = CU ? (CU.whatsapp || CU.phone || '') : '';
-  var _waLockKey = 'skyteam_ss_wa_lock_' + (CU ? CU.username : '');
-  var _waLastSave = localStorage.getItem(_waLockKey);
-  var _waLocked = false;
-  var _waDaysLeft = 0;
-  // Only lock AFTER first successful save (not on first use)
-  var _hasLanding = localStorage.getItem('skyteam_ss_landing_saved_' + (CU ? CU.username : ''));
-  if(_waLastSave && _hasLanding) {
-    var _waElapsed = Date.now() - parseInt(_waLastSave);
-    var _wa15d = 15 * 86400000;
-    if(_waElapsed < _wa15d) { _waLocked = true; _waDaysLeft = Math.ceil((_wa15d - _waElapsed) / 86400000); }
-  }
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">WhatsApp</label>';
-  if(_waLocked) {
-    h += '<div id="ss-l-wa-locked" style="display:flex;align-items:center;gap:8px;margin-top:4px;padding:9px 12px;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;">';
-    h += '<span id="ss-l-wa-locked-num" style="font-size:13px;color:rgba(255,255,255,0.4);">'+_safe(_curWa || 'Cargando...')+'</span>';
-    h += '<span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:auto;">\uD83D\uDD12 Cambio en '+_waDaysLeft+' d\u00edas</span>';
-    h += '</div>';
-  } else {
-    h += phoneCountrySelectHTML('ss-l-wa-phone', _curWa);
-  }
+  h += phoneCountrySelectHTML('ss-l-wa-phone', _curWa);
   h += '</div>';
   h += '<div style="margin-bottom:10px;"><label style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;text-transform:uppercase;">Texto de tu landing</label><textarea id="ss-l-msg" rows="3" placeholder="Ej: Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80" style="width:100%;background:rgba(0,0,0,0.25);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:9px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;margin-top:4px;resize:vertical;"></textarea><p style="font-size:9px;color:rgba(255,255,255,0.2);margin:4px 0 0;">Este texto aparece en tu landing visible al p\u00fablico</p></div>';
   var _initFoto = (CU && CU.photo) || localStorage.getItem('skyteam_photo_' + (CU ? CU.username : '')) || '';
@@ -7755,12 +7737,7 @@ function _loadSSLandingProfile() {
     var ri = document.getElementById('ss-l-rol'); if(ri) ri.value = a.rol || 'Asesor InnovaIA';
     var rawWa = a.whatsapp || (CU && (CU.whatsapp || CU.phone)) || '';
     if(rawWa) {
-      // Update locked display if visible
-      var _lockedNum = document.getElementById('ss-l-wa-locked-num');
-      if(_lockedNum) {
-        var _dispWa = rawWa.startsWith('+') ? rawWa : '+' + rawWa;
-        _lockedNum.textContent = _dispWa;
-      }
+      // WhatsApp always editable now (no lock)
       var _sorted = _phoneCountries.slice().sort(function(a,b){return b.code.length-a.code.length;});
       var _code='57',_num=rawWa,_iso='co';
       var _bare = rawWa.startsWith('+') ? rawWa.slice(1) : rawWa;
@@ -7819,12 +7796,6 @@ function _ssLandingSave() {
   var msg = document.getElementById('ss-l-msg');
   if(!nombre||!nombre.value.trim()){showToast('Ingresa tu nombre','error');return;}
   var fullWa = getPhoneValue('ss-l-wa-phone');
-  // If WhatsApp is locked, read from the locked display
-  if(!fullWa) {
-    var _lockedEl = document.getElementById('ss-l-wa-locked-num');
-    if(_lockedEl) fullWa = _lockedEl.textContent.replace(/[^0-9+]/g,'');
-  }
-  // Fallback: use CU.whatsapp
   if(!fullWa && CU) fullWa = CU.whatsapp || CU.phone || '';
   if(!fullWa){showToast('Ingresa tu WhatsApp','error');return;}
   var defaultMsg = 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80';
