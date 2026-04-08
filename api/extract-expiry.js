@@ -14,37 +14,34 @@ export default async function handler(req, res) {
     if (!OPENAI_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
     const prompt = `Analiza esta captura de pantalla del perfil de 8innova.biz/profile.
+La imagen puede ser VERTICAL (celular) u HORIZONTAL (computadora). Ambas muestran los mismos 4 datos.
 
-=== ESTRUCTURA DE LA PAGINA (de arriba a abajo) ===
-ZONA IZQUIERDA (tarjeta del socio):
-  1. Foto circular del usuario
-  2. Badge con DIAS RESTANTES (numero en un circulo/badge)
-  3. NOMBRE COMPLETO en letras grandes
-  4. USUARIO: palabra corta SIN ESPACIOS justo debajo del nombre, arriba de "KYC"
-  5. Estado KYC
+=== FORMATO VERTICAL (celular) ===
+La tarjeta del socio esta ARRIBA y los datos del perfil ABAJO (scroll).
+- ARRIBA: Foto circular → Badge DIAS RESTANTES → NOMBRE GRANDE → USUARIO (palabra corta debajo del nombre, arriba de KYC)
+- ABAJO: Patrocinador: USERNAME → Colocacion: USERNAME (IGNORAR) → Clasificacion Actual: RANGO → Vencimiento: FECHA
 
-ZONA CENTRAL/DERECHA (datos del perfil):
-  - "Patrocinador:" seguido de un username → esto es el SPONSOR
-  - "Colocacion:" seguido de un username → IGNORAR completamente
-  - "Clasificacion Actual:" seguido del rango → esto es la CLASSIFICATION
-  - "Fecha de vencimiento:" → fecha de expiry
+=== FORMATO HORIZONTAL (computadora) ===
+La tarjeta del socio esta a la IZQUIERDA y los datos del perfil a la DERECHA.
+- IZQUIERDA: Foto circular → Badge DIAS RESTANTES → NOMBRE GRANDE → USUARIO (palabra corta debajo del nombre, arriba de KYC)
+- DERECHA: Patrocinador: USERNAME → Colocacion: USERNAME (IGNORAR) → Clasificacion Actual: RANGO → Vencimiento: FECHA
 
-=== REGLAS CRITICAS ===
-1. USUARIO: es la palabra corta debajo del nombre grande. UNA sola palabra, sin espacios. NUNCA es el nombre completo. NUNCA es el Patrocinador. NUNCA es la Colocacion.
-2. SPONSOR: SOLO lo que dice en "Patrocinador:". La "Colocacion:" es OTRO campo, IGNORARLO siempre.
-3. CLASIFICACION: SOLO lo que dice en "Clasificacion Actual:". PIONEER/EXPLORER Package NO son rangos.
-4. Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K.
+=== LOS 4 DATOS A EXTRAER ===
+1. DIAS RESTANTES: numero en el badge circular cerca de la foto. Si no hay badge, usar la fecha de vencimiento.
+2. USUARIO: palabra corta SIN ESPACIOS justo debajo del NOMBRE GRANDE. UNA sola palabra. NUNCA es el nombre completo. NUNCA es el Patrocinador. NUNCA es la Colocacion.
+3. SPONSOR: SOLO el texto despues de "Patrocinador:". IGNORAR "Colocacion:" siempre (es otro campo diferente).
+4. CLASIFICACION: SOLO el texto despues de "Clasificacion Actual:". Rangos validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K. PIONEER/EXPLORER/Package NO son rangos validos.
 
 === RECHAZAR (found=false) SI ===
-- No es una captura de 8innova.biz/profile
-- Imagen borrosa o no se leen los textos
-- NO se ve "Clasificacion Actual:" con un rango valido
-- NO se ve "Patrocinador:"
-- NO se ve el badge de dias restantes
-- Solo se ve parte del perfil (debe verse la tarjeta izquierda Y los datos centrales)
+- No es 8innova.biz/profile
+- Imagen borrosa
+- Falta CUALQUIERA de los 4 datos (todos son obligatorios)
+- Solo se ve parte del perfil (ej: solo la foto y el nombre, sin los datos de la derecha/abajo)
+- Classification es PIONEER, EXPLORER o Package
 
-Responde SOLO JSON: { "found": true, "days_remaining": 120, "expiry_date": "2026-08-15", "username": "juandavid", "classification": "NOVA", "sponsor": "ANGEL2026" }
-Si algun dato NO es visible en la imagen: found=false, reason="No se ve X en la imagen"`;
+Responde SOLO JSON:
+{"found":true,"days_remaining":120,"expiry_date":"2026-08-15","username":"juandavid","classification":"NOVA","sponsor":"ANGEL2026"}
+Si falta algun dato: {"found":false,"reason":"No se ve [dato] en la imagen"}`;
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
