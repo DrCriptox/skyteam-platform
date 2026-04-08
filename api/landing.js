@@ -381,12 +381,11 @@ export default async function handler(req, res) {
             conversiones = s.conversions || 0;
           }
 
-          // If IP tracking data is missing/incomplete for period, assume all visits are unique
+          // Score: 1 pt per visit + 20 pts per conversion
+          // Light anti-fraud: cap conversions at unique IPs (can't have more conversions than visitors)
           const effectiveUniqueIps = (uniqueIps === 0 && visitas > 0) ? visitas : uniqueIps;
-          const ipDupes = Math.max(0, visitas - effectiveUniqueIps);
-          const cap = effectiveUniqueIps > 0 ? effectiveUniqueIps : visitas;
-          const validConversions = Math.min(conversiones, cap);
-          const score = Math.max(0, Math.round(visitas - (ipDupes * 1.5) + (validConversions * 20)));
+          const validConversions = uniqueIps > 0 ? Math.min(conversiones, uniqueIps) : conversiones;
+          const score = Math.max(0, visitas + (validConversions * 20));
           return {
             ref: ref, nombre: asesor.nombre || ref,
             visitas: visitas, uniqueVisitas: effectiveUniqueIps, conversiones: validConversions, score: score,
@@ -394,7 +393,7 @@ export default async function handler(req, res) {
             newLanding: !!skyAsesores[ref]
           };
         })
-        .filter(function(r) { return dateFrom ? (r.visitas > 0 || r.score > 0) : true; })
+        .filter(function(r) { return r.visitas > 0 || r.score > 0; })
         .sort(function(a, b) { return b.score - a.score; });
 
       // Count ALL asesores (not just filtered) for position display
