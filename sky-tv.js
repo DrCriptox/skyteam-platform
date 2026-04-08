@@ -182,25 +182,79 @@ function renderCountdown(container) {
 
   container.innerHTML = '';
 
-  // Flyer hero — full poster for next event (no crop)
-  if (next.flyer_url) {
-    var flyerHero = document.createElement('div');
-    flyerHero.style.cssText = 'position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px;cursor:pointer;background:#0a0a12;';
-    flyerHero.onclick = function() { openEventDetail(next); };
-    var heroImg = document.createElement('img');
-    heroImg.src = next.flyer_url;
-    heroImg.alt = next.titulo;
-    heroImg.style.cssText = 'width:100%;display:block;border-radius:16px;';
-    var heroGrad = document.createElement('div');
-    heroGrad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
-    var heroInfo = document.createElement('div');
-    heroInfo.style.cssText = 'position:absolute;bottom:12px;left:16px;right:16px;';
-    heroInfo.innerHTML = '<div style="font-size:18px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);">' + (next.titulo||'') + '</div>'
-      + '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">' + (next.fecha||'') + ' \u2022 ' + formatTime(next.hora_inicio) + '</div>';
-    flyerHero.appendChild(heroImg);
-    flyerHero.appendChild(heroGrad);
-    flyerHero.appendChild(heroInfo);
-    container.appendChild(flyerHero);
+  // ── Hero carousel: top 3 upcoming events, swipeable + auto-rotate ──
+  var heroEvents = allUpcoming.slice(0, 3).filter(function(e){ return e.flyer_url; });
+  if (heroEvents.length === 0 && next && next.flyer_url) heroEvents = [next];
+  if (heroEvents.length > 0) {
+    var carouselWrap = document.createElement('div');
+    carouselWrap.style.cssText = 'position:relative;margin-bottom:12px;overflow:hidden;border-radius:16px;';
+    var track = document.createElement('div');
+    track.id = 'skytv-hero-track';
+    track.style.cssText = 'display:flex;transition:transform 0.4s ease;will-change:transform;';
+    for (var hi = 0; hi < heroEvents.length; hi++) {
+      var he = heroEvents[hi];
+      var slide = document.createElement('div');
+      slide.style.cssText = 'min-width:100%;position:relative;cursor:pointer;background:#0a0a12;flex-shrink:0;';
+      slide.setAttribute('data-idx', hi);
+      (function(evt){ slide.onclick = function(){ openEventDetail(evt); }; })(he);
+      var img = document.createElement('img');
+      img.src = he.flyer_url; img.alt = he.titulo || '';
+      img.style.cssText = 'width:100%;display:block;border-radius:16px;';
+      var grad = document.createElement('div');
+      grad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
+      var info = document.createElement('div');
+      info.style.cssText = 'position:absolute;bottom:12px;left:16px;right:16px;';
+      var heDt = new Date(he.fecha + 'T' + (he.hora_inicio||'00:00'));
+      var heNow = new Date();
+      var heDiff = Math.max(0, Math.floor((heDt - heNow)/60000));
+      var heTimeLabel = heDiff <= 5 ? '\uD83D\uDD34 EN VIVO' : heDiff <= 60 ? '\u23F0 En ' + heDiff + ' min' : heDiff <= 240 ? '\uD83D\uDD14 En ' + Math.floor(heDiff/60) + 'h' : formatTime(he.hora_inicio);
+      info.innerHTML = '<div style="font-size:16px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);">' + (he.titulo||'') + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
+        + '<span style="font-size:11px;color:rgba(255,255,255,0.7);">' + (he.fecha||'') + ' \u2022 ' + formatTime(he.hora_inicio) + '</span>'
+        + '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.5);color:' + (heDiff<=5?'#E24B4A':heDiff<=60?'#FFD700':'#C9A84C') + ';font-weight:800;">' + heTimeLabel + '</span></div>';
+      slide.appendChild(img); slide.appendChild(grad); slide.appendChild(info);
+      track.appendChild(slide);
+    }
+    carouselWrap.appendChild(track);
+    // Dots
+    if (heroEvents.length > 1) {
+      var dotsDiv = document.createElement('div');
+      dotsDiv.id = 'skytv-hero-dots';
+      dotsDiv.style.cssText = 'display:flex;justify-content:center;gap:6px;margin-top:8px;';
+      for (var di = 0; di < heroEvents.length; di++) {
+        var dot = document.createElement('div');
+        dot.style.cssText = 'width:' + (di===0?'20px':'8px') + ';height:8px;border-radius:4px;background:' + (di===0?'#C9A84C':'rgba(255,255,255,0.15)') + ';transition:all 0.3s;';
+        dotsDiv.appendChild(dot);
+      }
+      carouselWrap.appendChild(dotsDiv);
+    }
+    container.appendChild(carouselWrap);
+    // Swipe + auto-rotate
+    if (heroEvents.length > 1) {
+      var _heroIdx = 0;
+      var _heroTotal = heroEvents.length;
+      function _heroGo(idx) {
+        _heroIdx = ((idx % _heroTotal) + _heroTotal) % _heroTotal;
+        var t = document.getElementById('skytv-hero-track');
+        if(t) t.style.transform = 'translateX(-' + (_heroIdx * 100) + '%)';
+        var dots = document.getElementById('skytv-hero-dots');
+        if(dots) { var ch = dots.children; for(var x=0;x<ch.length;x++){ ch[x].style.width = x===_heroIdx?'20px':'8px'; ch[x].style.background = x===_heroIdx?'#C9A84C':'rgba(255,255,255,0.15)'; } }
+        // Also update countdown to match
+        skyTvState.countdownIdx = _heroIdx;
+      }
+      // Touch swipe
+      var _sx = 0;
+      track.addEventListener('touchstart', function(e){ _sx = e.touches[0].clientX; }, {passive:true});
+      track.addEventListener('touchend', function(e){
+        var dx = e.changedTouches[0].clientX - _sx;
+        if(Math.abs(dx) > 40) { _heroGo(_heroIdx + (dx < 0 ? 1 : -1)); _resetAutoRotate(); }
+      }, {passive:true});
+      // Auto-rotate every 10s
+      var _heroTimer = null;
+      function _startAutoRotate() { _heroTimer = setInterval(function(){ _heroGo(_heroIdx + 1); }, 10000); }
+      function _resetAutoRotate() { if(_heroTimer) clearInterval(_heroTimer); _startAutoRotate(); }
+      _startAutoRotate();
+    }
   }
 
   var cd = document.createElement('div');
