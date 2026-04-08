@@ -44,7 +44,7 @@ La pagina se ve en pantalla ancha con tabs arriba (Detalles Personales, Detalles
 === LOS 4 DATOS A EXTRAER ===
 1. DIAS RESTANTES: numero en el badge de color pegado a la foto (ej: "67 dias restantes" → 67). Si no hay badge, usar "Vencimiento:" y calcular dias desde hoy.
 2. USUARIO: palabra corta SIN ESPACIOS debajo del nombre completo. NUNCA confundir con el nombre (tiene espacios), ni con Patrocinador, ni con Colocacion. Ej: "angel2026", "francis17".
-3. RANGO (Clasificacion Actual): SOLO el texto despues de "Clasificacion Actual:". Valores validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K, No se Alcanzo Rango. IGNORAR "Paquete:" (SPECIAL INNPULSE, PIONEER, EXPLORER NO son rangos).
+3. RANGO (Clasificacion Actual): SOLO el texto despues de "Clasificacion Actual:". Valores validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K, No se Alcanzo Rango (equivale a Cliente, rank 0). IGNORAR "Paquete:" (SPECIAL INNPULSE, PIONEER, EXPLORER NO son rangos).
 4. SPONSOR (Patrocinador): SOLO el texto despues de "Patrocinador:". IGNORAR "Colocacion:" SIEMPRE (es otro campo completamente diferente).
 
 === RECHAZAR (found=false) SI ===
