@@ -398,6 +398,47 @@ export default async function handler(req, res) {
       }
     } catch(e) { console.warn('[APROBAR] Push notification error:', e.message); }
 
+    // ── Auto-create landing profile with registration data (fire-and-forget) ──
+    try {
+      const landingRef = (finalRef || finalUsername).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const landingWA = sol.whatsapp || sol.wa || '';
+      if (landingRef && landingWA) {
+        // Save to Supabase landing_profiles
+        const SB_URL3 = process.env.SUPABASE_URL;
+        const SB_KEY3 = process.env.SUPABASE_SERVICE_KEY;
+        if (SB_URL3 && SB_KEY3) {
+          fetch(SB_URL3 + '/rest/v1/landing_profiles', {
+            method: 'POST', headers: { apikey: SB_KEY3, Authorization: 'Bearer ' + SB_KEY3, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+            body: JSON.stringify({ ref: landingRef, nombre: sol.name || '', whatsapp: landingWA, rol: 'Asesor InnovaIA', mensaje: 'Te ayudo a activar tu franquicia digital y generar ingresos reales desde el primer mes \uD83D\uDE80', updated_at: new Date().toISOString() })
+          }).then(function(){
+            console.log('[APROBAR] Auto-created landing profile for', landingRef, 'WA:', landingWA);
+          }).catch(function(e){ console.warn('[APROBAR] Landing auto-create failed:', e.message); });
+        }
+        // Also save to GitHub asesores-skyteam.json (background)
+        const GH_TOKEN2 = process.env.GITHUB_TOKEN;
+        if (GH_TOKEN2) {
+          (async function() {
+            try {
+              const ghH = { Authorization: 'token ' + GH_TOKEN2, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'SkyTeam-Platform' };
+              const rawR = await fetch('https://raw.githubusercontent.com/DrCriptox/innova-ia-landing/main/asesores-skyteam.json');
+              const data = rawR.ok ? await rawR.json() : {};
+              if (!data[landingRef]) {
+                data[landingRef] = { nombre: sol.name || '', whatsapp: landingWA, rol: 'Asesor InnovaIA', mensaje: '' };
+                const shaR = await fetch('https://api.github.com/repos/DrCriptox/innova-ia-landing/contents/asesores-skyteam.json?ref=main', { headers: ghH });
+                const shaData = shaR.ok ? await shaR.json() : {};
+                if (shaData.sha) {
+                  await fetch('https://api.github.com/repos/DrCriptox/innova-ia-landing/contents/asesores-skyteam.json', {
+                    method: 'PUT', headers: ghH,
+                    body: JSON.stringify({ message: 'auto: landing ' + landingRef, content: Buffer.from(JSON.stringify(data, null, 2)).toString('base64'), sha: shaData.sha, branch: 'main' })
+                  });
+                }
+              }
+            } catch(e) { console.warn('[APROBAR] GH landing sync failed:', e.message); }
+          })();
+        }
+      }
+    } catch(e) { console.warn('[APROBAR] Landing auto-create error:', e.message); }
+
     return res.status(200).json({ ok: true, username: finalUsername, nombre: sol.name, emailSent, refLink });
 
   } catch (error) {
