@@ -516,7 +516,7 @@ module.exports = async (req, res) => {
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 5) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 8) + (s.temp75 * 12) + (s.etapaAvance * 3) + (s.cerrados * 10) + (s.recordatorios * 2) + (s.recCompletados * 3);
+        s.score = (s.contactos * 5) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 4) + (s.temp75 * 6) + (s.etapaAvance * 3) + (s.cerrados * 7) + (s.recordatorios * 2) + (s.recCompletados * 3);
         var usr = userMap2[u] || {};
         return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, prospectos: s.contactos, actualizaciones: s.actualizaciones, mensajes: s.mensajes, presentaciones: s.etapaAvance, cierres: s.cerrados };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
