@@ -2640,9 +2640,9 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="crm-control-bar">
       <div class="crm-view-toggles">
         <button class="crm-view-btn crm-view-btn-active" data-view="kanban">📊 Kanban</button>
-        <button class="crm-view-btn" data-view="list">📋 Lista</button>
+        <button class="crm-view-btn" data-view="lista">📋 Lista</button>
         <button class="crm-view-btn" data-view="reminders">⏰ Recordatorios</button>
-        <button class="crm-view-btn" data-view="metrics">📈 Métricas</button>
+        <button class="crm-view-btn" data-view="metricas">📈 Métricas</button>
         <button class="crm-view-btn" data-view="ranking">🏆 Ranking</button>
       </div>
       <input type="text" id="crm-search-input" class="crm-search-input" placeholder="🔍 Buscar prospectos..." />
@@ -13153,6 +13153,11 @@ crmSwitchView = function(view) {
     ranking: document.getElementById('crm-ranking-view')
   };
   Object.keys(views).forEach(function(k){ if(views[k]) views[k].style.display = (k === view) ? '' : 'none'; });
+  // Hide reminders bar and metrics bar when not on kanban
+  var remBar = document.getElementById('crm-reminders-bar');
+  var metBar = document.getElementById('crm-metrics-bar');
+  if(remBar) remBar.style.display = (view === 'kanban') ? '' : 'none';
+  if(metBar) metBar.style.display = (view === 'kanban' || view === 'metricas') ? '' : 'none';
   document.querySelectorAll('.crm-view-btn').forEach(function(b) {
     b.classList.remove('active','crm-view-btn-active');
     var dv = b.getAttribute('data-view');
