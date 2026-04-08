@@ -100,7 +100,7 @@ async function handleDashboard(req, res, user, ref) {
   if (!ref) return res.status(400).json({ error: 'Missing ref' });
 
   // 1. Fetch ALL users (include whatsapp for contact)
-  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,innova_user,whatsapp,photo,bankcode,profession,income_goal,comm_style&limit=5000');
+  var allUsers = await sb('users?select=*&limit=5000');
 
   console.log('[Team API] User:', user, 'Ref:', ref, 'Total users:', allUsers.length);
   // Debug: show sponsor relationships for this user
