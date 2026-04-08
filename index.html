@@ -4504,17 +4504,17 @@ function renderAgendaCitasUI() {
     html += '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;">';
     html += '<p style="margin:0;font-size:14px;font-weight:700;color:#C9A84C;">📅 ' + fechaLabel + '</p>';
     html += '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
     if(!isPast) {
       var m2h = encodeURIComponent('Hola ' + cita.nombre + '! ⏰ Recordatorio: en 2 horas tenemos nuestra reunión.  ' + (linkR?'Link: '+linkR:''));
       var m30 = encodeURIComponent('Hola ' + cita.nombre + '! ⏰ Quedan 30 minutos para nuestra reunión. ¡Nos vemos pronto!');
       var mOpen = linkR ? encodeURIComponent('Hola ' + cita.nombre + '! 🚀 ¡La sala está abierta! Únete: ' + linkR) : '';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-      html += '<a href="https://wa.me/'+waNum+'?text='+m2h+'" target="_blank" class="reminder-btn">⏰ 2h antes</a>';
-      html += '<a href="https://wa.me/'+waNum+'?text='+m30+'" target="_blank" class="reminder-btn">⏰ 30 min</a>';
-      if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">🚀 Sala abierta</a>';
-      html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;">✕ Cancelar</button>';
-      html += '</div>';
+      html += '<a href="https://wa.me/'+waNum+'?text='+m2h+'" target="_blank" class="reminder-btn">\u23F0 2h antes</a>';
+      html += '<a href="https://wa.me/'+waNum+'?text='+m30+'" target="_blank" class="reminder-btn">\u23F0 30 min</a>';
+      if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">\uD83D\uDE80 Sala abierta</a>';
     }
+    html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;">\u2715 Cancelar</button>';
+    html += '</div>';
     // Photo proof button
     var hasProof = cita.proof_url || cita.proof;
     html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.04);">';
