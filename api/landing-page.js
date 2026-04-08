@@ -114,8 +114,7 @@ Quiero saber m\\u00e1s</a>
 
   html = html.replace('</body>', waButtons + '</body>');
 
-  // Update OG meta tags
-  const ref = req.query?.ref || '';
+  // Update OG meta tags (ref already declared above)
   if (ref) {
     html = html.replace(/<meta property="og:url"[^>]*>/, '<meta property="og:url" content="https://skyteam.global/landing?ref=' + ref + '">');
     html = html.replace(/<link rel="canonical"[^>]*>/, '<link rel="canonical" href="https://skyteam.global/landing?ref=' + ref + '">');
