@@ -479,7 +479,7 @@ module.exports = async (req, res) => {
       // Interaccion/historial: +1 (max 1/prospecto/dia)
       // Recordatorio: +1 (max 1/prospecto/dia)
       // Img abono: +20 | Img pago completo: +60
-      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgAbono:0,imgPago:0,score:0}; };
+      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgPresentacion:0,imgAbono:0,imgPago:0,score:0}; };
       var stats2 = {};
       // Count new prospects in period
       allProspectos.forEach(function(p) {
@@ -501,6 +501,10 @@ module.exports = async (req, res) => {
         // Cambio de etapa: +2
         if (tipo === 'cambio_etapa' && contenido.indexOf('movido de') > -1) {
           s.avances++;
+        }
+        // Evidencia de presentacion: +10
+        if (tipo === 'presentacion' && contenido.indexOf('evidencia de presentacion') > -1) {
+          s.imgPresentacion++;
         }
         // Abono con imagen: +20
         if (contenido.indexOf('comprobante de abono') > -1) {
@@ -533,7 +537,7 @@ module.exports = async (req, res) => {
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgAbono * 20) + (s.imgPago * 60);
+        s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgPresentacion * 10) + (s.imgAbono * 20) + (s.imgPago * 60);
         var usr = userMap2[u] || {};
         return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, contactos: s.contactos, avances: s.avances, msgIA: s.msgIA, actualizaciones: s.actualizaciones, abonos: s.imgAbono, pagos: s.imgPago };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
