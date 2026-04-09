@@ -12918,13 +12918,25 @@ function crmMoveStage(id,etapa){
     if (!nota) { ta.style.borderColor='rgba(226,75,74,0.5)'; crmToast('Escribe o dicta una nota','error'); return; }
     confirmBtn.textContent = 'Guardando...'; confirmBtn.style.opacity = '0.6'; confirmBtn.style.pointerEvents = 'none';
     var texto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
+    // Auto-temperature based on stage
+    var tempMap = {contactado:16,interesado:24,presentacion:32,confirmado_cierre:50,seguimiento:40,pendiente_pago:70,abonado:100,cerrado_ganado:100};
+    var newTemp = tempMap[etapa] || null;
+    var curTemp = p.temperatura || 0;
+    // Only increase, never decrease
+    if (newTemp && newTemp > curTemp) newTemp = newTemp; else newTemp = null;
+    // Step 1: save interaction
     fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}) })
     .then(function(r){ return r.json(); })
+    // Step 2: move stage
     .then(function(){ return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa})}); })
     .then(function(r){ return r.json(); })
+    // Step 3: update temperature if higher
     .then(function(){
-      ov.remove(); p.etapa=etapa;
-      crmToast('\u2705 Movido a '+newLabel,'success');
+      if(newTemp) return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.username,id:id,temperatura:newTemp})}).then(function(r){return r.json();});
+    })
+    .then(function(){
+      ov.remove(); p.etapa=etapa; if(newTemp) p.temperatura=newTemp;
+      crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success');
       crmLoadData();
     })
     .catch(function(e){
