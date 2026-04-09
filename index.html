@@ -12965,8 +12965,15 @@ function crmMoveStage(id,etapa){
     var newTemp = tempMap[etapa] || null;
     if (newTemp && newTemp <= (p.temperatura||0)) newTemp = null;
     // Send ALL requests in parallel (don't wait for IA suggestion to move stage)
+    // Move card IMMEDIATELY (don't wait for server)
+    p.etapa = etapa;
+    if(newTemp) p.temperatura = newTemp;
+    ov.remove();
+    crmRenderKanban();
+    crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success');
+    // Then send to server in background
     var done = 0, total = newTemp ? 3 : 2;
-    function _checkDone() { done++; if(done>=total) { ov.remove(); p.etapa=etapa; if(newTemp) p.temperatura=newTemp; crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success'); crmLoadData(); } }
+    function _checkDone() { done++; if(done>=total) { crmLoadData(); } }
     // 1) Save interaction (can be slow due to IA)
     var xhr1 = new XMLHttpRequest();
     xhr1.open('POST', '/api/prospectos', true);
