@@ -148,10 +148,10 @@ export default async function handler(req, res) {
         return Promise.resolve(new Response(JSON.stringify(_mergedData), {status:200, headers:{'Content-Type':'application/json'}}));
       }
       if (url === '/api/track' || url.indexOf('/api/track') === 0) {
-        return _origFetch('https://skyteam.global/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'track'})});
+        return _origFetch('/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'track'})});
       }
       if (url === '/api/capi' || url.indexOf('/api/capi') === 0) {
-        return _origFetch('https://skyteam.global/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'capi'})});
+        return _origFetch('/api/landing', {method:'POST',headers:{'Content-Type':'application/json'},body:opts&&opts.body?opts.body:JSON.stringify({action:'capi'})});
       }
     }
     return _origFetch.apply(this, arguments);
@@ -204,7 +204,7 @@ Quiero saber m\u00e1s</a>
     var h=0; for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return 'fp_'+Math.abs(h).toString(36);
   })();
   // Track page visit ALWAYS (even if asesor has no WA data)
-  fetch('https://skyteam.global/api/landing', {
+  fetch('/api/landing', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'track', ref: slug, type: 'visit', fp: _fp }), keepalive: true
   }).catch(function(){});
@@ -278,7 +278,7 @@ Quiero saber m\u00e1s</a>
   function _trackConv() {
     if (window._convTracked) return;
     window._convTracked = true;
-    fetch('https://skyteam.global/api/landing', {
+    fetch('/api/landing', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'track', ref: slug, type: 'conversion', fp: _fp }), keepalive: true
     }).catch(function(){});
