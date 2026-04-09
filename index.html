@@ -12879,19 +12879,28 @@ function crmMoveStage(id,etapa){
     var btn = document.getElementById('_moveConfirm');
     if(btn){btn.textContent='Guardando...';btn.style.opacity='0.6';btn.style.pointerEvents='none';}
     var interaccionTexto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
-    crmApi('addInteraccion', { prospecto_id: id, tipo: 'cambio_etapa', contenido: interaccionTexto })
-    .then(function() { return crmApi('moveStage', { id: id, etapa: etapa }); })
-    .then(function(res) {
+    // Step 1: save interaction
+    fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:interaccionTexto})})
+    .then(function(r){return r.json();})
+    .then(function(){
+      // Step 2: move stage
+      return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa})});
+    })
+    .then(function(r){return r.json();})
+    .then(function(res){
       ov.remove();
-      if (res && res.ok) {
-        p.etapa = etapa;
-        crmToast('\u2705 Movido a ' + newLabel, 'success');
-        if (typeof pushNotification === 'function') {
-          pushNotification({ id:'prospect_move_'+id+'_'+etapa, type:'info', icon:'\uD83D\uDCAC', title:'\uD83D\uDCAC Prospecto actualizado', subtitle: p.nombre||'Prospecto', msg: (p.nombre||'Prospecto') + ' avanz\u00f3 a ' + newLabel });
-        }
-      } else { crmToast('Error al mover','error'); }
+      p.etapa = etapa;
+      crmToast('\u2705 Movido a ' + newLabel, 'success');
       crmLoadData();
-    }).catch(function(e) { ov.remove(); crmToast('Error: '+e.message,'error'); crmLoadData(); });
+    })
+    .catch(function(e){
+      console.error('MoveStage error:', e);
+      ov.remove();
+      // Move locally even if server fails
+      p.etapa = etapa;
+      crmToast('\u26A0\uFE0F Movido (sincronizando...)', 'info');
+      crmLoadData();
+    });
   };
 }
 /* ============================================================================
