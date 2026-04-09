@@ -13598,12 +13598,12 @@ function _renderCrmRankingTab() {
       } else {
         rhtml += '<div style="width:22px;font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(i+1)+'</div>';
       }
-      // Avatar — 20% bigger (34→41px)
-      rhtml += '<div style="width:41px;height:41px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      // Avatar (49px)
+      rhtml += '<div style="width:49px;height:49px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats — centered
       rhtml += '<div style="flex:1;min-width:0;text-align:center;">';
-      rhtml += '<div style="font-size:17px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
-      rhtml += '<div style="font-size:8px;margin-top:3px;letter-spacing:0.3px;">';
+      rhtml += '<div style="font-size:20px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:9px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      rhtml += '<div style="font-size:9px;margin-top:3px;letter-spacing:0.3px;">';
       rhtml += '<span style="color:#C9A84C;">\uD83D\uDCCB'+(m.contactos||0)+'</span> ';
       rhtml += '<span style="color:#7F77DD;">\u27A1\uFE0F'+(m.avances||0)+'</span> ';
       rhtml += '<span style="color:#1D9E75;">\uD83E\uDD16'+(m.msgIA||0)+'</span> ';
@@ -13612,7 +13612,7 @@ function _renderCrmRankingTab() {
       rhtml += '<span style="color:#25D366;">\u2705'+(m.pagos||0)+'</span>';
       rhtml += '</div></div>';
       // Score
-      rhtml += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(m.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
+      rhtml += '<div style="flex-shrink:0;text-align:right;"><span style="font-size:19px;font-weight:900;color:#C9A84C;">'+(m.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       rhtml += '</div>';
     });
     // If user NOT in top 20
