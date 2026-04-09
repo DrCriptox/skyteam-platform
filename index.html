@@ -4919,7 +4919,10 @@ function renderPlanDiarioCalendar() {
 
       var blockClick;
       if(isBooking) {
-        blockClick = 'event.stopPropagation();if(confirm(\'\\u00bfCancelar esta cita de cierre?\'))cancelarCitaPlanDiario(\''+((b._bookingId||''))+'\')';
+        var _bkId = String(b._bookingId||b.id||'');
+        blockClick = _bkId
+          ? 'event.stopPropagation();if(confirm(\'\\u00bfCancelar esta cita de cierre?\\n\\nSe eliminar\\u00e1 de citas y del calendario.\'))cancelarCitaPlanDiario(\''+_bkId+'\')'
+          : 'event.stopPropagation();showToast(\'Error: ID de cita no encontrado\',\'error\')';
       } else if(b._isConfig) {
         blockClick = 'event.stopPropagation();if(confirm(\'\\u00bfEliminar este bloque?\\n'+b.hora_inicio.substring(0,5)+' - '+b.hora_fin.substring(0,5)+': '+(b.titulo||'').replace(/'/g,'')+'\'))_deleteConfigBlock(\''+b.fecha+'\',\''+b.hora_inicio.substring(0,5)+'\')';
       } else if(b.id) {
@@ -5610,24 +5613,35 @@ function guardarForzado() {
 }
 
 function cancelarCitaAgenda(id) {
-  if(!confirm('¿Cancelar esta cita?')) return;
-  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancelBooking',user:CU.ref||CU.user||'',id:id})})
+  if(!confirm('\u00bfCancelar esta cita?\n\nSe eliminar\u00e1 de citas y del calendario.\nEl horario quedar\u00e1 disponible para otros prospectos.')) return;
+  var numId = isNaN(Number(id)) ? id : Number(id);
+  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancelBooking',user:CU.ref||CU.username||'',id:numId})})
     .then(function(r){return r.json();})
-    .then(function(d){if(d.ok){showToast('Cita cancelada');agendaBookings=agendaBookings.filter(function(b){return b.id!==id;});renderAgendaUI(document.getElementById('agenda-content'));}});
+    .then(function(d){if(d.ok){
+      showToast('\u2705 Cita cancelada \u2014 horario liberado');
+      agendaBookings=agendaBookings.filter(function(b){return String(b.id)!==String(id);});
+      planDiarioBlocks=planDiarioBlocks.filter(function(b){return String(b._bookingId)!==String(id);});
+      renderAgendaUI(document.getElementById('agenda-content'));
+      renderPlanDiarioCalendar();
+    } else { showToast('Error: '+(d.error||''),'error'); }});
 }
 
 function cancelarCitaPlanDiario(bookingId) {
   if(!bookingId) { showToast('No se puede cancelar esta cita','error'); return; }
-  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancelBooking',user:CU.ref||CU.user||'',id:bookingId})})
+  // Convert to number if needed for Supabase ID matching
+  var numId = isNaN(Number(bookingId)) ? bookingId : Number(bookingId);
+  fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancelBooking',user:CU.ref||CU.username||'',id:numId})})
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.ok){
-        showToast('✅ Cita cancelada — horario liberado');
-        // Remove from local arrays
-        agendaBookings=agendaBookings.filter(function(b){return b.id!==bookingId;});
-        planDiarioBlocks=planDiarioBlocks.filter(function(b){return b._bookingId!==bookingId;});
+        showToast('\u2705 Cita cancelada \u2014 horario liberado');
+        // Remove from BOTH local arrays (calendar + citas list)
+        agendaBookings=agendaBookings.filter(function(b){return String(b.id)!==String(bookingId);});
+        planDiarioBlocks=planDiarioBlocks.filter(function(b){return String(b._bookingId)!==String(bookingId);});
         renderPlanDiarioCalendar();
-      } else { showToast('Error al cancelar','error'); }
+        // Also refresh the citas tab
+        renderAgendaUI(document.getElementById('agenda-content'));
+      } else { showToast('Error al cancelar: '+(d.error||''),'error'); }
     })
     .catch(function(){ showToast('Error de conexión','error'); });
 }
