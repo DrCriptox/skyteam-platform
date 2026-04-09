@@ -13601,15 +13601,15 @@ function _renderCrmRankingTab() {
       // Avatar
       rhtml += '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats
-      rhtml += '<div style="flex:1;min-width:0;">';
-      rhtml += '<div class="ss-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
-      rhtml += '<div class="ss-rk-stats" style="font-size:9px;margin-top:2px;">';
-      rhtml += '<span style="color:#C9A84C;font-weight:600;">\uD83D\uDCCB'+(m.contactos||0)+'</span><span style="color:rgba(255,255,255,0.15);"> </span>';
-      rhtml += '<span style="color:#7F77DD;font-weight:600;">\u27A1\uFE0F'+(m.avances||0)+'</span><span style="color:rgba(255,255,255,0.15);"> </span>';
-      rhtml += '<span style="color:#1D9E75;font-weight:600;">\uD83E\uDD16'+(m.msgIA||0)+'</span><span style="color:rgba(255,255,255,0.15);"> </span>';
-      rhtml += '<span style="color:#FFA500;font-weight:600;">\uD83D\uDD04'+(m.actualizaciones||0)+'</span><span style="color:rgba(255,255,255,0.15);"> </span>';
-      rhtml += '<span style="color:#00D4AA;font-weight:600;">\uD83D\uDCB0'+(m.abonos||0)+'</span><span style="color:rgba(255,255,255,0.15);"> </span>';
-      rhtml += '<span style="color:#25D366;font-weight:600;">\u2705'+(m.pagos||0)+'</span>';
+      rhtml += '<div style="flex:1;min-width:0;text-align:center;">';
+      rhtml += '<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:7px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      rhtml += '<div style="font-size:7px;margin-top:3px;letter-spacing:0.3px;">';
+      rhtml += '<span style="color:#C9A84C;">\uD83D\uDCCB'+(m.contactos||0)+'</span> ';
+      rhtml += '<span style="color:#7F77DD;">\u27A1\uFE0F'+(m.avances||0)+'</span> ';
+      rhtml += '<span style="color:#1D9E75;">\uD83E\uDD16'+(m.msgIA||0)+'</span> ';
+      rhtml += '<span style="color:#FFA500;">\uD83D\uDD04'+(m.actualizaciones||0)+'</span> ';
+      rhtml += '<span style="color:#00D4AA;">\uD83D\uDCB0'+(m.abonos||0)+'</span> ';
+      rhtml += '<span style="color:#25D366;">\u2705'+(m.pagos||0)+'</span>';
       rhtml += '</div></div>';
       // Score
       rhtml += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(m.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
