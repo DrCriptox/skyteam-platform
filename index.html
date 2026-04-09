@@ -13581,8 +13581,13 @@ function _renderCrmRankingTab() {
       var bgRow = isMe ? 'rgba(201,168,76,0.08)' : (pos<=3 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)');
       var borderRow = isMe ? 'rgba(201,168,76,0.2)' : (pos<=3 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)');
       rhtml += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border-radius:10px;background:'+bgRow+';border:0.5px solid '+borderRow+';">';
-      // Position
-      rhtml += '<div style="min-width:24px;font-size:14px;font-weight:900;color:'+posColor+';text-align:center;">'+pos+'</div>';
+      // Position — podium bubbles for 1-3
+      if(pos<=3) {
+        var podiumBg = pos===1?'linear-gradient(135deg,#FFD700,#FFA500)':pos===2?'linear-gradient(135deg,#C0C0C0,#9A9A9A)':'linear-gradient(135deg,#CD7F32,#A0522D)';
+        rhtml += '<div style="min-width:28px;height:28px;border-radius:50%;background:'+podiumBg+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3);box-shadow:0 2px 8px '+(pos===1?'rgba(255,215,0,0.4)':pos===2?'rgba(192,192,192,0.3)':'rgba(205,127,50,0.3)')+';flex-shrink:0;">'+pos+'</div>';
+      } else {
+        rhtml += '<div style="min-width:28px;font-size:13px;font-weight:900;color:'+posColor+';text-align:center;">'+pos+'</div>';
+      }
       // Photo
       if (foto) {
         rhtml += '<img src="'+foto+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid '+(pos<=3?posColor:'rgba(255,255,255,0.1)')+';flex-shrink:0;" />';
@@ -13592,7 +13597,7 @@ function _renderCrmRankingTab() {
       }
       // Name + stats
       rhtml += '<div style="flex:1;min-width:0;">';
-      rhtml += '<div style="font-size:14px;font-weight:800;color:'+(isMe?'#C9A84C':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+'</div>';
+      rhtml += '<div style="font-size:17px;font-weight:800;color:'+(isMe?'#C9A84C':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+'</div>';
       rhtml += '<div style="display:flex;gap:6px;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.35);flex-wrap:wrap;">';
       rhtml += '<span>\uD83D\uDCCB '+(m.contactos||0)+'</span>';
       rhtml += '<span>\u27A1\uFE0F '+(m.avances||0)+'</span>';
