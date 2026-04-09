@@ -473,69 +473,50 @@ module.exports = async (req, res) => {
       var allUsers = results2[3] || [];
       var userMap2 = {}; allUsers.forEach(function(u){ userMap2[u.username] = u; });
 
-      var _defStats = function(){ return {contactos:0,conWhatsapp:0,conInstagram:0,actualizaciones:0,mensajes:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0}; };
+      // ── SCORING FORMULA ──
+      // Nuevo contacto: +3 | Con WA: +2 | Con IG: +2 | Calificado: +2
+      // Avance de etapa (solo adelante): +2 cada vez
+      // Imagen abono: +20 | Imagen pago completo (cerrado): +60
+      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,imgAbono:0,imgPago:0,score:0}; };
       var stats2 = {};
-      // Count prospects per user — EVERYTHING filtered by period
+      // Count new prospects in period
       allProspectos.forEach(function(p) {
         if (!stats2[p.username]) stats2[p.username] = _defStats();
         var s = stats2[p.username];
-        // New contacts: created in this period
         if (p.created_at >= fromISO2) {
           s.contactos++;
-          // Bonus: contact has WhatsApp and/or Instagram filled
-          if (p.telefono && p.telefono.length >= 8) s.conWhatsapp++;
-          if (p.instagram && p.instagram.length >= 2) s.conInstagram++;
+          if (p.telefono && p.telefono.length >= 8) s.conWa++;
+          if (p.instagram && p.instagram.length >= 2) s.conIg++;
           if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
-          if ((p.temperatura||0) >= 50) s.temp50++;
-          if ((p.temperatura||0) >= 75) s.temp75++;
-          var stageW = {nuevo:0,contactado:1,interesado:2,presentacion:3,confirmado_cierre:4,seguimiento:4,pendiente_pago:4,abonado:5,cerrado_ganado:6,cerrado_perdido:0};
-          if (stageW[p.etapa] >= 3) s.etapaAvance++;
-          if (p.etapa === 'cerrado_ganado') s.cerrados++;
-        }
-        // Actualizaciones: updated in period (regardless of when created)
-        if (p.updated_at && p.updated_at >= fromISO2 && p.updated_at !== p.created_at) {
-          var dayKey = p.username + '_' + (p.id||'') + '_' + (p.updated_at||'').slice(0,10);
-          if (!stats2[p.username]._actDays) stats2[p.username]._actDays = {};
-          if (!stats2[p.username]._actDays[dayKey]) {
-            stats2[p.username]._actDays[dayKey] = true;
-            s.actualizaciones++;
-          }
         }
       });
-      // Count interactions — separate messages, invoices from others
+      // Count stage advances + images from interactions in period
       allInteracciones.forEach(function(i) {
         if (!stats2[i.username]) stats2[i.username] = _defStats();
+        var s = stats2[i.username];
         var tipo = (i.tipo||'').toLowerCase();
         var contenido = (i.contenido||'').toLowerCase();
-        if (tipo === 'whatsapp' || tipo === 'mensaje') {
-          stats2[i.username].mensajes++;
+        // Each cambio_etapa = +2 (only forward moves counted — "Movido de X a Y")
+        if (tipo === 'cambio_etapa' && contenido.indexOf('movido de') > -1) {
+          s.avances++;
         }
-        // Invoice/factura = 50 pts bonus
-        if (tipo === 'cierre' && contenido.indexOf('factura') !== -1) {
-          if (!stats2[i.username].facturas) stats2[i.username].facturas = 0;
-          stats2[i.username].facturas++;
+        // Image of abono (in abonado stage interaction)
+        if (tipo === 'cambio_etapa' && contenido.indexOf('abonado') > -1) {
+          // Check if there's a proof/image attached (future: verify with AI)
+          s.imgAbono++;
         }
-        // All interactions count as actualizaciones (1 per prospect per day)
-        var dayKey2 = i.username + '_' + (i.prospecto_id||'') + '_' + (i.created_at||'').slice(0,10);
-        if (!stats2[i.username]._actDays) stats2[i.username]._actDays = {};
-        if (!stats2[i.username]._actDays[dayKey2]) {
-          stats2[i.username]._actDays[dayKey2] = true;
-          stats2[i.username].actualizaciones++;
+        // Image of full payment (cierre type with proof)
+        if (tipo === 'cierre') {
+          s.imgPago++;
         }
-      });
-      // Count reminders
-      allRecordatorios.forEach(function(r) {
-        if (!stats2[r.username]) stats2[r.username] = _defStats();
-        stats2[r.username].recordatorios++;
-        if (r.completado) stats2[r.username].recCompletados++;
       });
 
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 5) + (s.conWhatsapp * 2) + (s.conInstagram * 2) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 4) + (s.temp75 * 6) + (s.etapaAvance * 3) + (s.cerrados * 7) + ((s.facturas||0) * 50) + (s.recordatorios * 2) + (s.recCompletados * 3);
+        s.score = (s.contactos * 3) + (s.conWa * 2) + (s.conIg * 2) + (s.calificados * 2) + (s.avances * 2) + (s.imgAbono * 20) + (s.imgPago * 60);
         var usr = userMap2[u] || {};
-        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, prospectos: s.contactos, conWhatsapp: s.conWhatsapp, conInstagram: s.conInstagram, actualizaciones: s.actualizaciones, mensajes: s.mensajes, presentaciones: s.etapaAvance, cierres: s.cerrados };
+        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, contactos: s.contactos, conWa: s.conWa, conIg: s.conIg, calificados: s.calificados, avances: s.avances, abonos: s.imgAbono, pagos: s.imgPago };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
 
       return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), period: period });
