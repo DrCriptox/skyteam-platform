@@ -4509,12 +4509,12 @@ function renderAgendaCitasUI() {
     var fechaLabel = (isHoy ? 'Hoy' : DIAS_FULL[d.getDay()].charAt(0).toUpperCase()+DIAS_FULL[d.getDay()].slice(1)) + ' ' + d.getDate() + ' de ' + MESES_FULL[d.getMonth()] + ' · ' + hStr;
     var waNum = cita.whatsapp.replace(/[^0-9]/g,'');
     var linkR = agendaConfig&&agendaConfig.linkReunion||'';
-    html += '<div class="card" style="margin-bottom:10px;">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">';
-    html += '<div><p style="margin:0;font-size:15px;font-weight:800;color:#F0EDE6;">' + cita.nombre + '</p><p style="margin:3px 0 0;font-size:12px;color:rgba(255,255,255,0.35);">📱 ' + cita.whatsapp + '</p></div>' + badge + '</div>';
-    html += '<div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;">';
-    html += '<p style="margin:0;font-size:14px;font-weight:700;color:#C9A84C;">📅 ' + fechaLabel + '</p>';
-    html += '</div>';
+    html += '<div class="card" style="margin-bottom:10px;padding:14px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+    html += '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:15px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cita.nombre + ' <span style="font-size:11px;color:rgba(255,255,255,0.3);font-weight:500;">\uD83D\uDCF1 ' + cita.whatsapp + '</span></p></div>';
+    html += '<div style="flex-shrink:0;text-align:right;margin-left:10px;">';
+    html += '<span style="font-size:12px;font-weight:700;color:#C9A84C;">\uD83D\uDCC5 ' + fechaLabel + '</span> ' + badge;
+    html += '</div></div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
     if(!isPast) {
       var m2h = encodeURIComponent('Hola ' + cita.nombre + '! ⏰ Recordatorio: en 2 horas tenemos nuestra reunión.  ' + (linkR?'Link: '+linkR:''));
