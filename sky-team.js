@@ -2243,12 +2243,17 @@ function openMemberDetail(username) {
 
   overlay.innerHTML = html;
 
-  // Click overlay to close
+  // Click overlay background to close
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) {
       _closeMemberDetail();
     }
   });
+  // Escape key to close
+  var _escHandler = function(e) { if(e.key === 'Escape') { _closeMemberDetail(); document.removeEventListener('keydown', _escHandler); } };
+  document.addEventListener('keydown', _escHandler);
+  // Force z-index above everything
+  overlay.style.zIndex = '200000';
 
   document.body.appendChild(overlay);
 }
