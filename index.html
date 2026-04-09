@@ -2664,7 +2664,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="crm-column" data-etapa="nuevo"><div class="crm-column-header"><span class="crm-column-emoji">🆕</span><span class="crm-column-name">Nuevo</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="contactado"><div class="crm-column-header"><span class="crm-column-emoji">📞</span><span class="crm-column-name">Contactado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="interesado"><div class="crm-column-header"><span class="crm-column-emoji">🔥</span><span class="crm-column-name">Interesado</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
-      <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentaci\u00f3n</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
+      <div class="crm-column" data-etapa="presentacion"><div class="crm-column-header"><span class="crm-column-emoji">🎯</span><span class="crm-column-name">Presentación</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="confirmado_cierre"><div class="crm-column-header"><span class="crm-column-emoji">📅</span><span class="crm-column-name">Conf. Cierre</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="seguimiento"><div class="crm-column-header"><span class="crm-column-emoji">🔔</span><span class="crm-column-name">Seguimiento</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
       <div class="crm-column" data-etapa="pendiente_pago"><div class="crm-column-header"><span class="crm-column-emoji">💳</span><span class="crm-column-name">Pend. Pago</span><span class="crm-column-count">0</span></div><div class="crm-column-cards"></div></div>
@@ -13881,7 +13881,7 @@ function openCrmDetail(id) {
         crmApi('update', {id: prospect.id, updates: {temperatura: newTemp}}).then(function(){
           prospect.temperatura = newTemp;
           curTemp = newTemp;
-          crmLoadData();
+          // Don't reload all data — just update locally for speed
         });
       }, 300);
     };
