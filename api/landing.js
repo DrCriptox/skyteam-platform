@@ -138,44 +138,19 @@ export default async function handler(req, res) {
       if (!trackRef) return res.status(200).json({ ok: true });
       const SB_URL_T = process.env.SUPABASE_URL;
       const SB_KEY_T = process.env.SUPABASE_SERVICE_KEY;
-      const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10); // Colombia time
+      const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10);
       if (SB_URL_T && SB_KEY_T) {
-        const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
-        fetch(SB_URL_T + '/rest/v1/landing_visits', {
-          method: 'POST', headers: sbH,
-          body: JSON.stringify({ ref: trackRef, ip: deviceId, type: trackType, day: today, created_at: new Date().toISOString() })
-        }).then(function(){ console.log('[Track] +1', trackType, trackRef, deviceId.slice(0,10)); }).catch(function(e){ console.warn('[Track] SB error:', e.message); });
-      }
-      // Also write to GitHub in background (legacy, best-effort)
-      if (TOKEN()) {
-        (async function() {
-          for (let attempt = 0; attempt < 3; attempt++) {
-            if (attempt > 0) await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
-            try {
-              const { data, sha } = await readGHFile(FILE_STATS, true);
-              if (!data[trackRef]) data[trackRef] = { total: 0, ips: {}, conversions: 0, days: {}, days_ips: {}, days_conversions: {}, days_conversions_ips: {}, conversions_ips: {} };
-              const s = data[trackRef];
-              if (trackType === 'conversion') {
-                if (!s.conversions_ips) s.conversions_ips = {};
-                if (!s.conversions_ips[clientIP]) {
-                  s.conversions_ips[clientIP] = true;
-                  s.conversions = (s.conversions || 0) + 1;
-                  if (!s.days_conversions) s.days_conversions = {};
-                  s.days_conversions[today] = (s.days_conversions[today] || 0) + 1;
-                }
-              } else {
-                s.total = (s.total || 0) + 1;
-                if (!s.ips) s.ips = {};
-                s.ips[clientIP] = (s.ips[clientIP] || 0) + 1;
-                if (!s.days) s.days = {};
-                s.days[today] = (s.days[today] || 0) + 1;
-              }
-              if (await writeGHFile(FILE_STATS, data, sha, 'track: +1 ' + trackType + ' ' + trackRef)) break;
-            } catch(e) {}
-          }
-        })().catch(function(){});
-      }
-      return res.status(200).json({ ok: true });
+        try {
+          const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json' };
+          const sbR = await fetch(SB_URL_T + '/rest/v1/landing_visits', {
+            method: 'POST', headers: sbH,
+            body: JSON.stringify({ ref: trackRef, ip: deviceId, type: trackType, day: today, created_at: new Date().toISOString() })
+          });
+          if (!sbR.ok) { const errT = await sbR.text(); console.error('[Track] SB INSERT FAILED:', sbR.status, errT.substring(0, 200)); }
+          else { console.log('[Track] +1', trackType, trackRef, deviceId.slice(0, 10)); }
+        } catch(e) { console.error('[Track] SB error:', e.message); }
+      } else { console.warn('[Track] NO SB KEYS - URL:', !!SB_URL_T, 'KEY:', !!SB_KEY_T); }
+      return res.status(200).json({ ok: true, tracked: true });
     }
 
     // ── SYNC PHOTO: silently update foto only if currently empty (never overwrites custom photos) ──
