@@ -149,11 +149,19 @@ export default async function handler(req, res) {
         }
       }
 
-      await sb('interacciones', {
+      const insertUrl = SUPABASE_URL + '/rest/v1/interacciones';
+      const insertBody = { prospecto_id, username: user, tipo: tipo || 'nota', contenido: contenido || '', ia_sugerencia };
+      const insertR = await fetch(insertUrl, {
         method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ prospecto_id, username: user, tipo: tipo || 'nota', contenido: contenido || '', ia_sugerencia })
+        headers: { ...HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify(insertBody)
       });
+      if (!insertR.ok) {
+        const errText = await insertR.text();
+        console.error('[INTERACCION] INSERT FAILED:', insertR.status, errText.substring(0, 200));
+        return res.status(500).json({ ok: false, error: 'No se pudo guardar la interaccion: ' + errText.substring(0, 100) });
+      }
+      console.log('[INTERACCION] Saved:', tipo, prospecto_id);
       await sb('prospectos?id=eq.' + encodeURIComponent(prospecto_id), {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
