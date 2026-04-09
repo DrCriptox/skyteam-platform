@@ -82,7 +82,7 @@ function injectSkyTeamCSS() {
     // ── Tab Bar ──
     '.st-tab-bar{display:flex;gap:6px;padding:12px 0 16px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}',
     '.st-tab-bar::-webkit-scrollbar{display:none;}',
-    '.st-tab-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.025);color:rgba(240,237,230,0.55);cursor:pointer;font-size:13px;font-weight:600;font-family:"Outfit","Nunito",sans-serif;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
+    '.st-tab-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.025);color:rgba(240,237,230,0.55);cursor:pointer;font-size:13px;font-weight:600;font-family:"Outfit","Nunito",sans-serif;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;-webkit-}',
     '.st-tab-btn:hover{background:rgba(255,255,255,0.05);color:rgba(240,237,230,0.8);transform:translateY(-1px);}',
     '.st-tab-on{background:rgba(201,168,76,0.12)!important;border-color:rgba(201,168,76,0.25)!important;color:#E8D48B!important;box-shadow:0 2px 12px rgba(201,168,76,0.1);}',
     '.st-tab-off{background:rgba(255,255,255,0.025);border-color:rgba(255,255,255,0.06);color:rgba(240,237,230,0.55);}',
@@ -93,13 +93,13 @@ function injectSkyTeamCSS() {
     '.st-section-sub{font-size:12px;color:rgba(240,237,230,0.4);margin:-8px 0 14px;}',
 
     // ── Card base ──
-    '.st-card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:16px;padding:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}',
+    '.st-card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:16px;padding:16px;-webkit-transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}',
     '.st-card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);}',
     '.st-card:hover{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.2);}',
 
     // ── Stat card (hero stats) ──
     '.st-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}',
-    '.st-stat-card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;text-align:center;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}',
+    '.st-stat-card{background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;text-align:center;-webkit-transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}',
     '.st-stat-card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent);}',
     '.st-stat-card:hover{transform:translateY(-2px);border-color:rgba(201,168,76,0.15);}',
     '.st-stat-icon{font-size:22px;margin-bottom:4px;}',
@@ -108,7 +108,7 @@ function injectSkyTeamCSS() {
 
     // ── Top directs cards ──
     '.st-top-directs{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}',
-    '.st-direct-card{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px 14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;}',
+    '.st-direct-card{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px 14px;-webkit-transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;}',
     '.st-direct-card:hover{background:rgba(255,255,255,0.05);border-color:rgba(201,168,76,0.2);transform:translateX(4px);}',
     '.st-direct-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}',
     '.st-direct-info{flex:1;min-width:0;}',
@@ -133,7 +133,7 @@ function injectSkyTeamCSS() {
     '.st-attention-btn:hover{background:rgba(255,255,255,0.1);transform:scale(1.03);}',
 
     // ── Growth sparkline ──
-    '.st-sparkline{display:flex;align-items:flex-end;gap:6px;height:100px;padding:16px 16px 8px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:18px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}',
+    '.st-sparkline{display:flex;align-items:flex-end;gap:6px;height:100px;padding:16px 16px 8px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;margin-bottom:18px;-webkit-}',
     '.st-spark-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;}',
     '.st-spark-bar{width:100%;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#C9A84C,rgba(201,168,76,0.4));transition:height 0.6s cubic-bezier(0.34,1.56,0.64,1);min-height:4px;position:relative;cursor:pointer;}',
     '.st-spark-bar:hover{filter:brightness(1.3);transform:scaleY(1.05);transform-origin:bottom;}',
@@ -142,13 +142,13 @@ function injectSkyTeamCSS() {
 
     // ── Quick actions ──
     '.st-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}',
-    '.st-quick-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#F0EDE6;cursor:pointer;font-size:13px;font-weight:600;font-family:"Outfit","Nunito",sans-serif;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
+    '.st-quick-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#F0EDE6;cursor:pointer;font-size:13px;font-weight:600;font-family:"Outfit","Nunito",sans-serif;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);-webkit-}',
     '.st-quick-btn:hover{background:rgba(255,255,255,0.08);border-color:rgba(201,168,76,0.2);transform:translateY(-2px);}',
     '.st-quick-btn-gold{background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06));border-color:rgba(201,168,76,0.2);color:#E8D48B;}',
     '.st-quick-btn-gold:hover{background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.1));box-shadow:0 4px 16px rgba(201,168,76,0.12);}',
 
     // ── Tree (Arbol) ──
-    '.st-tree-search{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#F0EDE6;font-size:14px;font-family:"Outfit","Nunito",sans-serif;outline:none;margin-bottom:14px;transition:border-color 0.3s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-sizing:border-box;}',
+    '.st-tree-search{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#F0EDE6;font-size:14px;font-family:"Outfit","Nunito",sans-serif;outline:none;margin-bottom:14px;transition:border-color 0.3s ease;-webkit-box-sizing:border-box;}',
     '.st-tree-search::placeholder{color:rgba(240,237,230,0.3);}',
     '.st-tree-search:focus{border-color:rgba(201,168,76,0.3);box-shadow:0 0 0 3px rgba(201,168,76,0.08);}',
     '.st-tree-list{display:flex;flex-direction:column;gap:4px;}',
@@ -216,14 +216,14 @@ function injectSkyTeamCSS() {
     // ── Coach IA ──
     '.st-coach-section{margin-bottom:20px;}',
     '.st-daily3{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}',
-    '.st-daily3-card{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;}',
+    '.st-daily3-card{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.025);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;-webkit-transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;}',
     '.st-daily3-card:hover{background:rgba(255,255,255,0.05);transform:translateX(4px);border-color:rgba(201,168,76,0.15);}',
     '.st-daily3-num{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(127,119,221,0.1));border:1px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#E8D48B;flex-shrink:0;}',
     '.st-daily3-text{flex:1;font-size:13px;color:rgba(240,237,230,0.8);line-height:1.4;}',
     '.st-daily3-text strong{color:#F0EDE6;}',
     '.st-daily3-action{font-size:11px;color:#E8D48B;font-weight:600;}',
 
-    '.st-coach-load-btn{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(127,119,221,0.2);background:linear-gradient(135deg,rgba(127,119,221,0.08),rgba(201,168,76,0.05));color:#E8D48B;cursor:pointer;font-size:14px;font-weight:700;font-family:"Outfit","Nunito",sans-serif;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
+    '.st-coach-load-btn{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(127,119,221,0.2);background:linear-gradient(135deg,rgba(127,119,221,0.08),rgba(201,168,76,0.05));color:#E8D48B;cursor:pointer;font-size:14px;font-weight:700;font-family:"Outfit","Nunito",sans-serif;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);-webkit-}',
     '.st-coach-load-btn:hover{background:linear-gradient(135deg,rgba(127,119,221,0.15),rgba(201,168,76,0.1));transform:translateY(-2px);box-shadow:0 6px 24px rgba(127,119,221,0.12);}',
 
     '.st-coach-rec-card{padding:14px 16px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.05);border-radius:12px;margin-bottom:8px;position:relative;padding-left:20px;transition:all 0.3s ease;}',
@@ -243,8 +243,8 @@ function injectSkyTeamCSS() {
     '@keyframes stBounce{0%,80%,100%{transform:scale(0);opacity:0.4;}40%{transform:scale(1);opacity:1;}}',
 
     // ── Member Detail Overlay ──
-    '.st-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0;}',
-    '.st-detail-sheet{width:100%;max-width:480px;max-height:85vh;overflow-y:auto;overscroll-behavior:contain;background:rgba(10,10,18,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 32px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 -16px 64px rgba(0,0,0,0.5);animation:stSheetIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;font-family:"Outfit","Nunito",sans-serif;color:#F0EDE6;}',
+    '.st-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);-webkit-z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0;}',
+    '.st-detail-sheet{width:100%;max-width:480px;max-height:85vh;overflow-y:auto;overscroll-behavior:contain;background:rgba(10,10,18,0.97);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 32px;-webkit-box-shadow:0 -16px 64px rgba(0,0,0,0.5);animation:stSheetIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;font-family:"Outfit","Nunito",sans-serif;color:#F0EDE6;}',
     '@keyframes stSheetIn{from{opacity:0;transform:translateY(60px);}to{opacity:1;transform:translateY(0);}}',
     '.st-detail-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);margin:0 auto 20px;}',
     '.st-detail-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;}',
