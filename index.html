@@ -12880,8 +12880,17 @@ function crmMoveStage(id,etapa){
   if(!p) return;
   var oldEtapa = p.etapa || '';
   if(oldEtapa === etapa) return;
+  // Max 1 move per prospect per day
+  var moveKey = 'skyteam_move_' + id + '_' + new Date().toISOString().slice(0,10);
+  if(localStorage.getItem(moveKey)) {
+    crmToast('\u26A0\uFE0F Ya moviste esta tarjeta hoy. Puedes hacerlo ma\u00f1ana.', 'error');
+    crmRenderKanban();
+    return;
+  }
   var oldLabel = CRM_ETAPAS[oldEtapa] ? CRM_ETAPAS[oldEtapa].label : oldEtapa;
   var newLabel = CRM_ETAPAS[etapa] ? CRM_ETAPAS[etapa].label : etapa;
+  // Abonado and Cerrado Pagado require photo proof
+  var requiresPhoto = (etapa === 'abonado' || etapa === 'cerrado_ganado');
   // Remove any existing overlay
   var oldOv = document.getElementById('_moveOverlay');
   if(oldOv) oldOv.remove();
@@ -12913,6 +12922,39 @@ function crmMoveStage(id,etapa){
   micBtn.style.cssText = 'flex-shrink:0;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:flex-start;';
   row.appendChild(ta);
   row.appendChild(micBtn);
+  // Photo upload for abonado/cerrado_ganado
+  var _movePhotoData = null;
+  if(requiresPhoto) {
+    var photoRow = document.createElement('div');
+    photoRow.style.cssText = 'margin-bottom:12px;padding:12px;border-radius:10px;background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.2);';
+    var photoLabel = document.createElement('div');
+    photoLabel.style.cssText = 'font-size:11px;font-weight:700;color:#C9A84C;margin-bottom:8px;';
+    photoLabel.textContent = etapa==='abonado' ? '\uD83D\uDCF7 Sube la foto del comprobante de abono (obligatorio)' : '\uD83D\uDCF7 Sube la foto de la factura de venta (obligatorio)';
+    var photoInput = document.createElement('input');
+    photoInput.type = 'file'; photoInput.accept = 'image/*';
+    photoInput.style.cssText = 'width:100%;font-size:12px;color:rgba(255,255,255,0.6);';
+    photoInput.onchange = function(e) {
+      var file = e.target.files[0]; if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+          var MAX=800; var w=img.naturalWidth,h=img.naturalHeight;
+          if(w>MAX||h>MAX){var r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+          var c=document.createElement('canvas');c.width=w;c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          _movePhotoData = c.toDataURL('image/jpeg',0.7);
+          photoLabel.textContent = '\u2705 Foto cargada';
+          photoLabel.style.color = '#4ade80';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    photoRow.appendChild(photoLabel);
+    photoRow.appendChild(photoInput);
+    box.appendChild(photoRow);
+  }
   // Buttons row
   var btnRow = document.createElement('div');
   btnRow.style.cssText = 'display:flex;gap:8px;';
@@ -12954,33 +12996,48 @@ function crmMoveStage(id,etapa){
     if(_moveMicRecog) try{_moveMicRecog.stop();}catch(e){}
     ov.remove(); crmRenderKanban();
   });
-  // Confirm — uses XMLHttpRequest (synchronous-reliable, no promise chain issues)
+  // Confirm
   confirmBtn.addEventListener('click', function() {
     if(_moveMicActive && _moveMicRecog) try{_moveMicRecog.stop();}catch(e){} _moveMicActive=false;
     var nota = (ta.value || '').trim();
     if (!nota) { ta.style.borderColor='rgba(226,75,74,0.5)'; crmToast('Escribe o dicta una nota','error'); return; }
+    // Require photo for abonado/cerrado
+    if(requiresPhoto && !_movePhotoData) { crmToast('\uD83D\uDCF7 Sube la foto del comprobante para continuar','error'); return; }
+    // Save move cooldown (1 per day per prospect)
+    localStorage.setItem(moveKey, '1');
     confirmBtn.textContent = 'Guardando...'; confirmBtn.style.opacity = '0.6'; confirmBtn.style.pointerEvents = 'none';
     var texto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
     var tempMap = {contactado:16,interesado:24,presentacion:32,confirmado_cierre:50,seguimiento:40,pendiente_pago:70,abonado:100,cerrado_ganado:100};
     var newTemp = tempMap[etapa] || null;
     if (newTemp && newTemp <= (p.temperatura||0)) newTemp = null;
-    // Send ALL requests in parallel (don't wait for IA suggestion to move stage)
     // Move card IMMEDIATELY (don't wait for server)
     p.etapa = etapa;
     if(newTemp) p.temperatura = newTemp;
     ov.remove();
     crmRenderKanban();
     crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success');
-    // Then send to server in background
-    var done = 0, total = newTemp ? 3 : 2;
-    function _checkDone() { done++; if(done>=total) { crmLoadData(); } }
-    // 1) Save interaction (can be slow due to IA)
+    // Send to server in background
+    var reqs = requiresPhoto ? 4 : (newTemp ? 3 : 2);
+    var done = 0;
+    function _checkDone() { done++; if(done>=reqs) crmLoadData(); }
+    // 1) Save interaction
     var xhr1 = new XMLHttpRequest();
     xhr1.open('POST', '/api/prospectos', true);
     xhr1.setRequestHeader('Content-Type', 'application/json');
-    xhr1.onload = function() { console.log('[MOVE] Interaccion:', xhr1.status); _checkDone(); };
-    xhr1.onerror = function() { console.error('[MOVE] Interaccion failed'); _checkDone(); };
+    xhr1.onload = function() { _checkDone(); };
+    xhr1.onerror = function() { _checkDone(); };
     xhr1.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}));
+    // 1b) If photo proof, save as cierre interaction (for ranking points)
+    if(requiresPhoto && _movePhotoData) {
+      var xhrP = new XMLHttpRequest();
+      xhrP.open('POST', '/api/prospectos', true);
+      xhrP.setRequestHeader('Content-Type', 'application/json');
+      xhrP.onload = function() { _checkDone(); };
+      xhrP.onerror = function() { _checkDone(); };
+      var proofTipo = etapa==='cerrado_ganado' ? 'cierre' : 'nota';
+      var proofText = etapa==='cerrado_ganado' ? 'Factura de venta - cierre pagado' : 'Comprobante de abono cargado';
+      xhrP.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:proofTipo,contenido:proofText}));
+    }
     // 2) Move stage (fast, no IA)
     var xhr2 = new XMLHttpRequest();
     xhr2.open('POST', '/api/prospectos', true);
@@ -13535,11 +13592,11 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="flex:1;min-width:0;">';
       rhtml += '<div style="font-size:14px;font-weight:800;color:'+(isMe?'#C9A84C':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+'</div>';
       rhtml += '<div style="display:flex;gap:6px;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.35);flex-wrap:wrap;">';
-      rhtml += '<span>\uD83D\uDCCB '+(m.prospectos||0)+'</span>';
-      rhtml += '<span>\uD83D\uDD04 '+(m.actualizaciones||0)+' act</span>';
-      rhtml += '<span>\uD83D\uDCAC '+(m.mensajes||0)+' msg</span>';
-      rhtml += '<span>\uD83E\uDD1D '+(m.presentaciones||0)+' pres</span>';
-      rhtml += '<span>\u2705 '+(m.cierres||0)+'</span>';
+      rhtml += '<span>\uD83D\uDCCB '+(m.contactos||0)+'</span>';
+      rhtml += '<span>\uD83D\uDD04 '+(m.avances||0)+' mov</span>';
+      rhtml += '<span>\uD83E\uDD16 '+(m.msgIA||0)+' msg</span>';
+      rhtml += '<span>\uD83D\uDCB0 '+(m.abonos||0)+' abn</span>';
+      rhtml += '<span>\u2705 '+(m.pagos||0)+' cerr</span>';
       rhtml += '</div></div>';
       // Score
       rhtml += '<div style="text-align:right;flex-shrink:0;">';
