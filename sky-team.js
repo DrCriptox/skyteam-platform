@@ -629,6 +629,7 @@ function renderSkyTeam() {
         if (listEl) listEl.innerHTML = _buildSociosList();
       });
     }
+    if (typeof _bindSociosFilters === 'function') _bindSociosFilters();
   }
 }
 
@@ -1224,18 +1225,34 @@ function renderSTSocios() {
   if (!d || !d.members) return _spinnerHTML();
   if (!stState.sociosPage) stState.sociosPage = 1;
   if (!stState.sociosFilterLevel) stState.sociosFilterLevel = 'all';
+  if (!stState.sociosFilterRank) stState.sociosFilterRank = 'all';
+  var selStyle = 'padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:11px;font-family:Outfit,Nunito,sans-serif;outline:none;';
   var html = '';
-  // Search + Level filter row
-  html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">';
-  html += '<input id="st-socios-search" type="text" placeholder="Buscar socio..." style="flex:1;min-width:150px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:13px;font-family:Outfit,Nunito,sans-serif;outline:none;box-sizing:border-box;" />';
-  html += '<select id="st-socios-level" onchange="stState.sociosFilterLevel=this.value;stState.sociosPage=1;var el=document.getElementById(\'st-socios-list\');if(el)el.innerHTML=_buildSociosList();" style="padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:12px;font-family:Outfit,Nunito,sans-serif;outline:none;">';
-  html += '<option value="all"' + (stState.sociosFilterLevel==='all'?' selected':'') + '>Todos los niveles</option>';
-  for (var lv = 1; lv <= 10; lv++) html += '<option value="'+lv+'"' + (stState.sociosFilterLevel==String(lv)?' selected':'') + '>Nivel '+lv+'</option>';
+  // Search + filters row
+  html += '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">';
+  html += '<input id="st-socios-search" type="text" placeholder="Buscar socio..." style="flex:1;min-width:120px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:12px;font-family:Outfit,Nunito,sans-serif;outline:none;box-sizing:border-box;" />';
+  // Level filter
+  html += '<select id="st-socios-level" style="'+selStyle+'">';
+  html += '<option value="all">Nivel</option>';
+  for (var lv = 1; lv <= 10; lv++) html += '<option value="'+lv+'"' + (stState.sociosFilterLevel==String(lv)?' selected':'') + '>N'+lv+'</option>';
+  html += '</select>';
+  // Rank filter
+  html += '<select id="st-socios-rank" style="'+selStyle+'">';
+  html += '<option value="all">Rango</option>';
+  var rankNames = ['Cliente','INN 200','INN 500','NOVA','NOVA 5K','NOVA 10K','NOVA DIAMOND','NOVA 50K','NOVA 100K'];
+  for (var ri = 0; ri < rankNames.length; ri++) html += '<option value="'+ri+'"' + (stState.sociosFilterRank==String(ri)?' selected':'') + '>'+rankNames[ri]+'</option>';
   html += '</select>';
   html += '</div>';
   html += '<div id="st-socios-list">' + _buildSociosList() + '</div>';
   return html;
 }
+// Bind socios filter changes (called from renderSkyTeam after DOM ready)
+window._bindSociosFilters = function() {
+  var lSel = document.getElementById('st-socios-level');
+  if(lSel) lSel.addEventListener('change', function(){ stState.sociosFilterLevel=this.value; stState.sociosPage=1; var el=document.getElementById('st-socios-list'); if(el) el.innerHTML=_buildSociosList(); });
+  var rSel = document.getElementById('st-socios-rank');
+  if(rSel) rSel.addEventListener('change', function(){ stState.sociosFilterRank=this.value; stState.sociosPage=1; var el=document.getElementById('st-socios-list'); if(el) el.innerHTML=_buildSociosList(); });
+};
 
 function _buildSociosList() {
   var d = stState.data;
@@ -1243,74 +1260,61 @@ function _buildSociosList() {
   var members = d.members.slice();
   var search = (stState.sociosSearch || '').toLowerCase();
   var levelFilter = stState.sociosFilterLevel || 'all';
-  // Filters
-  if (search) {
-    members = members.filter(function(m) {
-      return (m.name||'').toLowerCase().indexOf(search) !== -1 || (m.username||'').toLowerCase().indexOf(search) !== -1;
-    });
-  }
-  if (levelFilter !== 'all') {
-    members = members.filter(function(m) { return String(m.level||0) === levelFilter; });
-  }
-  if (members.length === 0) return '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">Sin resultados</div>';
-  // Pagination
-  var pageSize = 20;
-  var page = stState.sociosPage || 1;
+  var rankFilter = stState.sociosFilterRank || 'all';
+  if (search) members = members.filter(function(m) { return (m.name||'').toLowerCase().indexOf(search)!==-1||(m.username||'').toLowerCase().indexOf(search)!==-1; });
+  if (levelFilter !== 'all') members = members.filter(function(m) { return String(m.level||0) === levelFilter; });
+  if (rankFilter !== 'all') members = members.filter(function(m) { return String(m.rank||0) === rankFilter; });
+  if (!members.length) return '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">Sin resultados</div>';
+  var pageSize = 20, page = stState.sociosPage || 1;
   var totalPages = Math.ceil(members.length / pageSize);
-  var start = (page - 1) * pageSize;
-  var pageMembers = members.slice(start, start + pageSize);
-  var html = '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:8px;">' + members.length + ' socios' + (levelFilter!=='all'?' (Nivel '+levelFilter+')':'') + '</div>';
-  // BANKCODE color map
+  if (page > totalPages) page = totalPages;
+  var start = (page-1)*pageSize;
+  var pageMembers = members.slice(start, start+pageSize);
   var _bkCol = {B:'#2196F3',A:'#E24B4A',N:'#FFD700',K:'#1D9E75'};
+  var html = '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:8px;">' + members.length + ' socios</div>';
   for (var i = 0; i < pageMembers.length; i++) {
     var m = pageMembers[i];
     var rk = _getRank(m.rank);
     var days = m.days_remaining != null ? m.days_remaining : null;
-    var daysColor = days === null ? 'rgba(255,255,255,0.2)' : days <= 7 ? '#E24B4A' : days <= 30 ? '#FFA500' : days <= 90 ? '#4ade80' : '#FFD700';
-    var wa = (m.whatsapp || '').replace(/[^0-9]/g, '');
-    var ig = m.instagram || '';
-    var photo = m.photo || '';
-    var ini = (m.name || m.username || '?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-    var skyScore = m.sky_score || _scoreParts(m).total || 0;
-    var bankcode = m.bankcode || '';
-    var sponsor = m.sponsor || '';
-    var level = m.level || 0;
-    html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:0.5px solid rgba(255,255,255,0.04);font-family:Outfit,Nunito,sans-serif;" onclick="openMemberDetail(\''+_safe(m.username)+'\')" style2="cursor:pointer;">';
+    var daysColor = days===null?'rgba(255,255,255,0.2)':days<=7?'#E24B4A':days<=30?'#FFA500':days<=90?'#4ade80':'#FFD700';
+    var wa = (m.whatsapp||'').replace(/[^0-9]/g,'');
+    var ig = m.instagram||'';
+    var photo = m.photo||'';
+    var ini = (m.name||m.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+    var skyScore = m.sky_score||_scoreParts(m).total||0;
+    var bankcode = m.bankcode||'';
+    var sponsor = m.sponsor||'';
+    var level = m.level||0;
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:0.5px solid rgba(255,255,255,0.04);font-family:Outfit,Nunito,sans-serif;cursor:pointer;" onclick="openMemberDetail(\''+_safe(m.username)+'\')">';
     // Avatar
-    html += '<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.04);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);">' + (photo ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;">' : ini) + '</div>';
-    // Info block
+    html += '<div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.04);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);">'+(photo?'<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+    // Info
     html += '<div style="flex:1;min-width:0;">';
-    // Name + level + bankcode
-    html += '<div style="display:flex;align-items:center;gap:4px;">';
-    html += '<span style="font-size:12px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _safe(m.name || m.username) + '</span>';
-    html += '<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.3);">N'+level+'</span>';
-    // BANKCODE letters
-    if (bankcode) {
-      html += '<span style="font-size:8px;font-weight:900;letter-spacing:1px;">';
-      for (var bi=0; bi<bankcode.length; bi++) html += '<span style="color:'+(_bkCol[bankcode[bi]]||'#fff')+';">'+bankcode[bi]+'</span>';
-      html += '</span>';
-    }
+    html += '<div style="display:flex;align-items:center;gap:5px;">';
+    html += '<span style="font-size:14px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_safe(m.name||m.username)+'</span>';
+    html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);">N'+level+'</span>';
+    if(bankcode){html+='<span style="font-size:9px;font-weight:900;letter-spacing:1px;">';for(var bi=0;bi<bankcode.length;bi++)html+='<span style="color:'+(_bkCol[bankcode[bi]]||'#fff')+';">'+bankcode[bi]+'</span>';html+='</span>';}
     html += '</div>';
-    // Rank + days + sponsor
-    html += '<div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">';
-    html += '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:' + rk.bg + ';border:0.5px solid ' + rk.border + ';color:' + rk.color + ';">' + rk.icon + ' ' + rk.name + '</span>';
-    if (days !== null) html += '<span style="font-size:8px;color:' + daysColor + ';font-weight:700;">' + days + 'd</span>';
-    if (sponsor) html += '<span style="font-size:7px;color:rgba(255,255,255,0.2);">\u2191' + _safe(sponsor) + '</span>';
+    html += '<div style="display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap;">';
+    html += '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:'+rk.bg+';border:0.5px solid '+rk.border+';color:'+rk.color+';">'+rk.icon+' '+rk.name+'</span>';
+    if(days!==null) html += '<span style="font-size:9px;color:'+daysColor+';font-weight:700;">'+days+'d</span>';
+    if(sponsor) html += '<span style="font-size:8px;color:rgba(255,255,255,0.25);">\u2191'+_safe(sponsor)+'</span>';
     html += '</div></div>';
-    // Sky Score
-    html += '<div style="text-align:center;flex-shrink:0;min-width:32px;"><div style="font-size:14px;font-weight:900;color:#C9A84C;">'+skyScore+'</div><div style="font-size:6px;color:rgba(255,255,255,0.2);">SKY</div></div>';
-    // Contact buttons
+    // WA + IG
     html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
-    if (wa) html += '<a href="https://wa.me/' + wa + '" target="_blank" onclick="event.stopPropagation();" style="width:28px;height:28px;border-radius:6px;background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);display:flex;align-items:center;justify-content:center;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg></a>';
-    if (ig) html += '<a href="https://instagram.com/' + ig.replace('@','') + '" target="_blank" onclick="event.stopPropagation();" style="width:28px;height:28px;border-radius:6px;background:rgba(225,48,108,0.12);border:0.5px solid rgba(225,48,108,0.25);display:flex;align-items:center;justify-content:center;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/></svg></a>';
-    html += '</div></div>';
+    if(wa) html += '<a href="https://wa.me/'+wa+'" target="_blank" onclick="event.stopPropagation();" style="width:30px;height:30px;border-radius:7px;background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);display:flex;align-items:center;justify-content:center;text-decoration:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg></a>';
+    if(ig) html += '<a href="https://instagram.com/'+ig.replace('@','')+'" target="_blank" onclick="event.stopPropagation();" style="width:30px;height:30px;border-radius:7px;background:rgba(225,48,108,0.12);border:0.5px solid rgba(225,48,108,0.25);display:flex;align-items:center;justify-content:center;text-decoration:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/></svg></a>';
+    html += '</div>';
+    // Sky Score (last, after WA/IG)
+    html += '<div style="text-align:center;flex-shrink:0;min-width:36px;"><div style="font-size:16px;font-weight:900;color:#C9A84C;">'+skyScore+'</div><div style="font-size:7px;color:rgba(255,255,255,0.2);">SKY</div></div>';
+    html += '</div>';
   }
-  // Pagination arrows
+  // Pagination
   if (totalPages > 1) {
     html += '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-family:Outfit,Nunito,sans-serif;">';
-    html += '<button onclick="if(stState.sociosPage>1){stState.sociosPage--;document.getElementById(\'st-socios-list\').innerHTML=_buildSociosList();}" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page>1?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:12px;font-weight:700;cursor:pointer;">\u25C0</button>';
-    html += '<span style="font-size:11px;color:rgba(255,255,255,0.4);">P\u00e1g ' + page + ' de ' + totalPages + '</span>';
-    html += '<button onclick="if(stState.sociosPage<'+totalPages+'){stState.sociosPage++;document.getElementById(\'st-socios-list\').innerHTML=_buildSociosList();}" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page<totalPages?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:12px;font-weight:700;cursor:pointer;">\u25B6</button>';
+    html += '<button onclick="stState.sociosPage=Math.max(1,(stState.sociosPage||1)-1);document.getElementById(\'st-socios-list\').innerHTML=_buildSociosList();" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page>1?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:14px;font-weight:700;cursor:pointer;">\u25C0</button>';
+    html += '<span style="font-size:12px;color:rgba(255,255,255,0.4);">'+page+' / '+totalPages+'</span>';
+    html += '<button onclick="stState.sociosPage=Math.min('+totalPages+',(stState.sociosPage||1)+1);document.getElementById(\'st-socios-list\').innerHTML=_buildSociosList();" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page<totalPages?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:14px;font-weight:700;cursor:pointer;">\u25B6</button>';
     html += '</div>';
   }
   return html;
