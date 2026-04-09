@@ -114,12 +114,8 @@ export default async function handler(req, res) {
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({ etapa, updated_at: new Date().toISOString() })
       });
-      // Auto-log interaction
-      await sb('interacciones', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ prospecto_id: id, username: user, tipo: 'cambio_etapa', contenido: 'Movido a ' + etapa })
-      });
+      // Note: interaction is logged by the frontend BEFORE calling moveStage
+      // No auto-log here to avoid duplicate entries
       return res.status(200).json({ ok: true });
     }
 
