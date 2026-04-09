@@ -14250,11 +14250,27 @@ async function crmGenerateWaMessage() {
   });
   if (res && res.mensaje) {
     if (ctx) ctx.value = res.mensaje;
+    window._crmIaGenerated = crmDetailId; // Flag: IA generated for this prospect
     crmToast('Mensaje generado', 'success');
   } else {
     if (ctx) ctx.value = 'Hola ' + (p.nombre || '') + ', soy parte del equipo de SKYTEAM. Me gustar\u00EDa conversar contigo sobre una oportunidad que puede interesarte. \u00BFTienes un momento?';
     crmToast('Mensaje por defecto generado', 'info');
   }
+}
+// Track IA message usage (generate + copy/send = +2 pts, max 1 per prospect per 3 days)
+function _trackIaMessageUsed(prospectId) {
+  if (!window._crmIaGenerated || window._crmIaGenerated !== prospectId) return; // Must generate first
+  window._crmIaGenerated = null; // Reset flag
+  // Check 3-day cooldown per prospect
+  var coolKey = 'skyteam_ia_msg_' + (CU?CU.username:'') + '_' + prospectId;
+  var last = localStorage.getItem(coolKey);
+  if (last && Date.now() - parseInt(last) < 3*24*60*60*1000) return; // 3 day cooldown
+  localStorage.setItem(coolKey, String(Date.now()));
+  // Save as interaction (for ranking points)
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/prospectos', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:prospectId,tipo:'nota',contenido:'Mensaje generado con IA y enviado/copiado'}));
 }
 
 function copyCrmWaMessage() {
@@ -14262,6 +14278,7 @@ function copyCrmWaMessage() {
   if (!ctx || !ctx.value) { crmToast('No hay mensaje para copiar', 'error'); return; }
   navigator.clipboard.writeText(ctx.value).then(function() {
     crmToast('Mensaje copiado al portapapeles', 'success');
+    _trackIaMessageUsed(crmDetailId);
   });
 }
 
@@ -14310,6 +14327,7 @@ function sendViaCrmWhatsapp() {
   var msg = ctx ? encodeURIComponent(ctx.value) : '';
   var phone = p.telefono.replace(/\D/g, '');
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
+  _trackIaMessageUsed(crmDetailId);
   closeCrmModalWa();
   if (typeof crmDashAddXP === 'function') crmDashAddXP('whatsapp_sent', 10);
 }
@@ -14508,6 +14526,7 @@ async function crmGenerateIgMessage(){
   });
   if(res && res.mensaje){
     if(ctx) ctx.value = res.mensaje;
+    window._crmIaGenerated = crmDetailId;
     crmToast('Mensaje generado','success');
   } else {
     var nombre = (p.nombre||'').split(' ')[0];
@@ -14520,11 +14539,13 @@ function copyCrmIgMessage(){
   var ctx = document.getElementById('crm-ig-context');
   if(!ctx || !ctx.value){ crmToast('No hay mensaje para copiar','error'); return; }
   navigator.clipboard.writeText(ctx.value).then(function(){
-    crmToast('✅ Mensaje copiado al portapapeles','success');
+    crmToast('\u2705 Mensaje copiado al portapapeles','success');
+    _trackIaMessageUsed(crmDetailId);
   }).catch(function(){
     var ta = document.createElement('textarea'); ta.value = ctx.value;
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    crmToast('✅ Mensaje copiado','success');
+    crmToast('\u2705 Mensaje copiado','success');
+    _trackIaMessageUsed(crmDetailId);
   });
 }
 
@@ -14538,7 +14559,8 @@ function sendViaCrmInstagram(){
       var ta = document.createElement('textarea'); ta.value = ctx.value;
       document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     });
-    crmToast('✅ Mensaje copiado — pégalo en el DM','success');
+    crmToast('\u2705 Mensaje copiado \u2014 p\u00e9galo en el DM','success');
+    _trackIaMessageUsed(crmDetailId);
   }
   setTimeout(function(){
     window.open('https://ig.me/m/' + igUser, '_blank');

@@ -477,7 +477,7 @@ module.exports = async (req, res) => {
       // Nuevo contacto: +3 | Con WA: +2 | Con IG: +2 | Calificado: +2
       // Avance de etapa (solo adelante): +2 cada vez
       // Imagen abono: +20 | Imagen pago completo (cerrado): +60
-      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,imgAbono:0,imgPago:0,score:0}; };
+      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,imgAbono:0,imgPago:0,score:0}; };
       var stats2 = {};
       // Count new prospects in period
       allProspectos.forEach(function(p) {
@@ -509,14 +509,18 @@ module.exports = async (req, res) => {
         if (tipo === 'cierre') {
           s.imgPago++;
         }
+        // IA message generated + sent/copied (+2 pts, max 1 per prospect per 3 days — enforced client-side)
+        if (tipo === 'nota' && contenido.indexOf('mensaje generado con ia') > -1) {
+          s.msgIA++;
+        }
       });
 
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 3) + (s.conWa * 2) + (s.conIg * 2) + (s.calificados * 2) + (s.avances * 2) + (s.imgAbono * 20) + (s.imgPago * 60);
+        s.score = (s.contactos * 3) + (s.conWa * 2) + (s.conIg * 2) + (s.calificados * 2) + (s.avances * 2) + (s.msgIA * 2) + (s.imgAbono * 20) + (s.imgPago * 60);
         var usr = userMap2[u] || {};
-        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, contactos: s.contactos, conWa: s.conWa, conIg: s.conIg, calificados: s.calificados, avances: s.avances, abonos: s.imgAbono, pagos: s.imgPago };
+        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, contactos: s.contactos, conWa: s.conWa, conIg: s.conIg, calificados: s.calificados, avances: s.avances, msgIA: s.msgIA, abonos: s.imgAbono, pagos: s.imgPago };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
 
       return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), period: period });
