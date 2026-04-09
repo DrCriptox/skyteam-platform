@@ -3431,7 +3431,7 @@ function showLanding() {
         d.classList.add(Math.random() > 0.5 ? 'sky-scroll-reveal' : 'sky-scroll-slide');
       });
     }
-    setInterval(applyScrollDriven, 1000);
+    setInterval(applyScrollDriven, 5000);
     document.addEventListener('click', function(){ setTimeout(applyScrollDriven, 300); });
   }
 })();
@@ -3786,7 +3786,7 @@ function showApp() {
         body: JSON.stringify({ action:'syncPhoto', ref:_spRef, foto:_spFoto })
       }).catch(function(){});
     }
-  }, 3000);
+  }, 15000);
 
   // Renewal warning: grace period banner + notifications
   if(CU && CU.expiry && Number(CU.expiry) > 0) {
@@ -3924,7 +3924,7 @@ function showApp() {
           });
         }
       } catch(e) { console.warn('Birthday check error:', e); }
-    }, 3000);
+    }, 15000);
   }
 
   // Notification 3: Rank promotion check
@@ -9952,7 +9952,7 @@ function startChatPolling() {
         }
       }
     });
-  }, 3000);
+  }, 15000);
 }
 
 function stopChatPolling() {
@@ -11235,7 +11235,7 @@ function showToast(msg, type) {
         if(st.parentNode) { st.style.bottom = offset + 'px'; offset += st.offsetHeight + 8; }
       });
     }, 300);
-  }, 3000);
+  }, 15000);
 }
 
 /* ── ADMIN PANEL — CONFIG TAB ── */
@@ -12685,7 +12685,7 @@ function markPWAInstalled() {
     // On iOS where banner won't show (no deferredPrompt), show full tutorial
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if(isIOS) setTimeout(showInstallTutorial, 800);
-  }, 3000);
+  }, 15000);
 })();
 
 window.addEventListener('appinstalled', function() {
