@@ -140,7 +140,7 @@ export default async function handler(req, res) {
       const SB_KEY_T = process.env.SUPABASE_SERVICE_KEY;
       const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10); // Colombia time
       if (SB_URL_T && SB_KEY_T) {
-        const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' };
+        const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
         fetch(SB_URL_T + '/rest/v1/landing_visits', {
           method: 'POST', headers: sbH,
           body: JSON.stringify({ ref: trackRef, ip: deviceId, type: trackType, day: today, created_at: new Date().toISOString() })
