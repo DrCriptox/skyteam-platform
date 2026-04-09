@@ -11596,13 +11596,19 @@ function onSolImgChange(input) {
           if(d.sponsor)        lines.push('🤝 Patrocinador: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
           else                 lines.push('⚠️ <span style="color:#FFD700;">Patrocinador no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
           // Show checklist summary
-          var _ok = (d.days_remaining || d.days_remaining === 0) && d.username && d.classification && d.sponsor;
-          if(!_ok) {
-            // Missing data → REJECT the image, don't allow registration
+          var _detected = ((d.days_remaining || d.days_remaining === 0) ? 1 : 0) + (d.username ? 1 : 0) + (d.classification ? 1 : 0) + (d.sponsor ? 1 : 0);
+          if(_detected >= 3) {
+            // 3 of 4 detected — allow manual fill for the missing one
+            if(!d.username) { _solFieldEditable('sol-innova-user', true); lines.push('<br><span style="color:#FFD700;font-size:11px;font-weight:700;">\u270F\uFE0F Escribe tu usuario de Innova en el campo amarillo de abajo</span>'); }
+            if(!d.classification) { _solFieldEditable('sol-classification', true); lines.push('<br><span style="color:#FFD700;font-size:11px;font-weight:700;">\u270F\uFE0F Escribe tu rango/clasificaci\u00f3n en el campo amarillo de abajo</span>'); }
+            if(!d.sponsor) { _solFieldEditable('sol-sponsor', true); lines.push('<br><span style="color:#FFD700;font-size:11px;font-weight:700;">\u270F\uFE0F Escribe tu patrocinador en el campo amarillo de abajo</span>'); }
+            if(!(d.days_remaining || d.days_remaining === 0)) { lines.push('<br><span style="color:#FFD700;font-size:11px;">D\u00edas no detectados \u2014 se asignar\u00e1n 7 d\u00edas de prueba</span>'); d.days_remaining = 7; d.expiry_ts = Date.now() + 7*86400000; input._expiryData = d; }
+          } else if(_detected < 3) {
+            // Less than 3 detected — reject
             input._expiryData = null;
-            lines.push('<br><span style="color:#E24B4A;font-size:12px;font-weight:800;">FOTO RECHAZADA. Debe mostrar los 4 datos completos:</span>');
+            lines.push('<br><span style="color:#E24B4A;font-size:12px;font-weight:800;">FOTO RECHAZADA. Se necesitan al menos 3 de 4 datos.</span>');
             lines.push('<span style="color:#E24B4A;font-size:11px;">1. Dias restantes  2. Clasificacion/Rango  3. Tu usuario  4. Patrocinador</span>');
-            lines.push('<span style="color:#FFD700;font-size:11px;font-weight:700;">Sube una captura COMPLETA del perfil de Innova.</span>');
+            lines.push('<span style="color:#FFD700;font-size:11px;font-weight:700;">Sube una captura m\u00e1s completa del perfil de Innova.</span>');
             preview.style.borderColor = 'rgba(248,113,113,0.3)';
             preview.style.background = 'rgba(248,113,113,0.06)';
           }
