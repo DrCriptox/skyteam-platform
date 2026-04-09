@@ -15,11 +15,11 @@ async function sb(path, opts) {
       signal: ac.signal
     });
     clearTimeout(t);
-    if (!r.ok) return null;
+    if (!r.ok) { const errT = await r.text().catch(()=>''); console.error('[SB] FAIL:', r.status, path.substring(0,50), errT.substring(0,100)); return null; }
     const text = await r.text();
     if (!text) return null;
     return JSON.parse(text);
-  } catch(e) { clearTimeout(t); return null; }
+  } catch(e) { clearTimeout(t); console.error('[SB] ERROR:', path.substring(0,50), e.message); return null; }
 }
 
 async function askClaude(systemPrompt, userMsg) {
