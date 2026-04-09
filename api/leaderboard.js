@@ -474,10 +474,12 @@ module.exports = async (req, res) => {
       var userMap2 = {}; allUsers.forEach(function(u){ userMap2[u.username] = u; });
 
       // ── SCORING FORMULA ──
-      // Nuevo contacto: +3 | Con WA: +2 | Con IG: +2 | Calificado: +2
-      // Avance de etapa (solo adelante): +2 cada vez
-      // Imagen abono: +20 | Imagen pago completo (cerrado): +60
-      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,imgAbono:0,imgPago:0,score:0}; };
+      // Contacto: +2 | WA: +1 | IG: +1 | Calificado: +1
+      // Avance etapa: +2 | Mensaje IA: +2
+      // Interaccion/historial: +1 (max 1/prospecto/dia)
+      // Recordatorio: +1 (max 1/prospecto/dia)
+      // Img abono: +20 | Img pago completo: +60
+      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgAbono:0,imgPago:0,score:0}; };
       var stats2 = {};
       // Count new prospects in period
       allProspectos.forEach(function(p) {
@@ -490,39 +492,48 @@ module.exports = async (req, res) => {
           if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
         }
       });
-      // Count stage advances + images from interactions in period
+      // Count interactions in period
       allInteracciones.forEach(function(i) {
         if (!stats2[i.username]) stats2[i.username] = _defStats();
         var s = stats2[i.username];
         var tipo = (i.tipo||'').toLowerCase();
         var contenido = (i.contenido||'').toLowerCase();
-        // Each cambio_etapa = +2 (only forward moves counted — "Movido de X a Y")
+        // Cambio de etapa: +2
         if (tipo === 'cambio_etapa' && contenido.indexOf('movido de') > -1) {
           s.avances++;
         }
-        // Image of abono (in abonado stage interaction)
-        if (tipo === 'cambio_etapa' && contenido.indexOf('abonado') > -1) {
-          // Check if there's a proof/image attached (future: verify with AI)
+        // Abono con imagen: +20
+        if (contenido.indexOf('comprobante de abono') > -1) {
           s.imgAbono++;
         }
-        // Image of full payment (cierre type with proof)
+        // Cierre con factura: +60
         if (tipo === 'cierre') {
           s.imgPago++;
         }
-        // IA message generated + sent/copied
+        // Mensaje IA: +2
         if (tipo === 'nota' && contenido.indexOf('mensaje generado con ia') > -1) {
           s.msgIA++;
         }
-        // Any other interaction = actualizacion (llamada, whatsapp, nota, presentacion, etc)
-        if (tipo !== 'cambio_etapa' && contenido.indexOf('mensaje generado con ia') === -1) {
-          s.actualizaciones++;
+        // Actualizacion/historial: +1 (max 1 per prospect per day)
+        if (tipo !== 'cambio_etapa' && contenido.indexOf('mensaje generado con ia') === -1 && tipo !== 'cierre') {
+          if (!s._actDays) s._actDays = {};
+          var dayKey = (i.prospecto_id||'') + '_' + (i.created_at||'').slice(0,10);
+          if (!s._actDays[dayKey]) { s._actDays[dayKey] = true; s.actualizaciones++; }
         }
+      });
+      // Count reminders in period (max 1 per prospect per day)
+      allRecordatorios.forEach(function(r) {
+        if (!stats2[r.username]) stats2[r.username] = _defStats();
+        var s = stats2[r.username];
+        if (!s._remDays) s._remDays = {};
+        var remKey = (r.prospecto_id||r.id||'') + '_' + (r.created_at||'').slice(0,10);
+        if (!s._remDays[remKey]) { s._remDays[remKey] = true; s.recordatorios++; }
       });
 
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 3) + (s.conWa * 2) + (s.conIg * 2) + (s.calificados * 2) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 2) + (s.imgAbono * 20) + (s.imgPago * 60);
+        s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgAbono * 20) + (s.imgPago * 60);
         var usr = userMap2[u] || {};
         return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, contactos: s.contactos, avances: s.avances, msgIA: s.msgIA, actualizaciones: s.actualizaciones, abonos: s.imgAbono, pagos: s.imgPago };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
