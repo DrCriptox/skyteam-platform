@@ -10002,12 +10002,19 @@ function renderChat(msgs) {
   if(!container) return;
   var isAdmin = CU && (CU.isAdmin || CU.is_admin);
   container.innerHTML = msgs.map(function(m, idx) {
-    var mRk = RANKS[m.rank]||RANKS[1];
     var own = m.user === CU.name;
-    var uKey = Object.keys(USERS).find(function(u){return USERS[u].name===m.user;}) || '';
-    // Photo: try localStorage, then USERS table, then initials
-    var photo = localStorage.getItem('skyteam_photo_'+uKey) || (USERS[uKey] && USERS[uKey].photo ? USERS[uKey].photo : '') || '';
-    var avatarContent = photo ? '<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">' : (m.user||'?').substring(0,2).toUpperCase();
+    // Find user data: match by name or username
+    var uKey = '';
+    if (typeof USERS === 'object') {
+      uKey = Object.keys(USERS).find(function(u){ return USERS[u].name === m.user || u === m.user; }) || '';
+    }
+    var userData = uKey ? USERS[uKey] : null;
+    // Rank: from user profile (accurate), fallback to message rank
+    var realRank = userData ? (userData.rank || 0) : (m.rank || 0);
+    var mRk = RANKS[realRank] || RANKS[0];
+    // Photo: user profile photo (most reliable), then localStorage, then initials
+    var photo = (userData && userData.photo) ? userData.photo : localStorage.getItem('skyteam_photo_' + uKey) || '';
+    var avatarContent = photo ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">' : (m.user || '?').substring(0, 2).toUpperCase();
     var timeStr = _chatSmartTime(m.ts || m.time);
 
     var bubbleBg = own ? 'background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03));border:0.5px solid rgba(255,255,255,0.08);' : 'background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.06);';
