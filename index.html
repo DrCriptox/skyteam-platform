@@ -12954,7 +12954,7 @@ function crmMoveStage(id,etapa){
     if(_moveMicRecog) try{_moveMicRecog.stop();}catch(e){}
     ov.remove(); crmRenderKanban();
   });
-  // Confirm
+  // Confirm — uses XMLHttpRequest (synchronous-reliable, no promise chain issues)
   confirmBtn.addEventListener('click', function() {
     if(_moveMicActive && _moveMicRecog) try{_moveMicRecog.stop();}catch(e){} _moveMicActive=false;
     var nota = (ta.value || '').trim();
@@ -12963,28 +12963,42 @@ function crmMoveStage(id,etapa){
     var texto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
     var tempMap = {contactado:16,interesado:24,presentacion:32,confirmado_cierre:50,seguimiento:40,pendiente_pago:70,abonado:100,cerrado_ganado:100};
     var newTemp = tempMap[etapa] || null;
-    var curTemp = p.temperatura || 0;
-    if (newTemp && newTemp > curTemp) newTemp = newTemp; else newTemp = null;
-    console.log('[CONFIRM] Sending addInteraccion: id='+id+' user='+CU.username+' texto='+texto.substring(0,50));
-    fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}) })
-    .then(function(r){ console.log('[CONFIRM] addInteraccion response status:', r.status); return r.json(); })
-    .then(function(d){ console.log('[CONFIRM] addInteraccion result:', JSON.stringify(d).substring(0,100)); return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa})}); })
-    .then(function(r){ return r.json(); })
-    // Step 3: update temperature if higher
-    .then(function(){
-      if(newTemp) return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',user:CU.username,id:id,temperatura:newTemp})}).then(function(r){return r.json();});
-    })
-    .then(function(){
+    if (newTemp && newTemp <= (p.temperatura||0)) newTemp = null;
+    // Step 1: Save interaction via XHR
+    var xhr1 = new XMLHttpRequest();
+    xhr1.open('POST', '/api/prospectos', true);
+    xhr1.setRequestHeader('Content-Type', 'application/json');
+    xhr1.onload = function() {
+      console.log('[MOVE] Interaccion saved:', xhr1.status, xhr1.responseText.substring(0,80));
+      // Step 2: Move stage
+      var xhr2 = new XMLHttpRequest();
+      xhr2.open('POST', '/api/prospectos', true);
+      xhr2.setRequestHeader('Content-Type', 'application/json');
+      xhr2.onload = function() {
+        console.log('[MOVE] Stage moved:', xhr2.status);
+        // Step 3: Temperature (if needed)
+        if(newTemp) {
+          var xhr3 = new XMLHttpRequest();
+          xhr3.open('POST', '/api/prospectos', true);
+          xhr3.setRequestHeader('Content-Type', 'application/json');
+          xhr3.onload = function() { _finishMove(); };
+          xhr3.onerror = function() { _finishMove(); };
+          xhr3.send(JSON.stringify({action:'update',user:CU.username,id:id,temperatura:newTemp}));
+        } else { _finishMove(); }
+      };
+      xhr2.onerror = function() { console.error('[MOVE] moveStage failed'); _finishMove(); };
+      xhr2.send(JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa}));
+    };
+    xhr1.onerror = function() {
+      console.error('[MOVE] addInteraccion XHR failed');
+      _finishMove();
+    };
+    xhr1.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}));
+    function _finishMove() {
       ov.remove(); p.etapa=etapa; if(newTemp) p.temperatura=newTemp;
       crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success');
       crmLoadData();
-    })
-    .catch(function(e){
-      console.error('Move error:',e);
-      ov.remove(); p.etapa=etapa;
-      crmToast('\u2705 Movido a '+newLabel,'success');
-      crmLoadData();
-    });
+    }
   });
 }
 /* ============================================================================
