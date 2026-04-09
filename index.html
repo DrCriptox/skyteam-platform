@@ -10650,13 +10650,22 @@ function renderAdminUsuarios() {
   html += '<input type="text" id="admin-user-search" placeholder="Buscar..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--text);font-size:12px;padding:8px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
   html += '</div>';
 
+  // Search filter BEFORE pagination
+  var searchQ = (document.getElementById('admin-user-search') ? document.getElementById('admin-user-search').value : (window._adminSearchQ||'')).toLowerCase().trim();
+  window._adminSearchQ = searchQ;
+  var filteredList = nonAdminList;
+  if (searchQ) {
+    filteredList = nonAdminList.filter(function(u) {
+      return (u.user+' '+u.name+' '+(u.email||'')+' '+(u.sponsor||'')+' '+(u.wa||'')).toLowerCase().indexOf(searchQ) !== -1;
+    });
+  }
   // Pagination
   var PAGE_SIZE = 30;
   window._adminUserPage = window._adminUserPage || 0;
-  var totalPages = Math.max(1, Math.ceil(nonAdminList.length / PAGE_SIZE));
+  var totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
   if(window._adminUserPage >= totalPages) window._adminUserPage = totalPages - 1;
   var start = window._adminUserPage * PAGE_SIZE;
-  var pageUsers = nonAdminList.slice(start, start + PAGE_SIZE);
+  var pageUsers = filteredList.slice(start, start + PAGE_SIZE);
 
   // Table — compact
   html += '<div style="overflow-x:auto;"><table id="admin-users-table" style="width:100%;border-collapse:collapse;font-size:11px;">';
@@ -10952,12 +10961,12 @@ function toggleStatus(username) {
 }
 
 function filterAdminUsers() {
-  var query = (document.getElementById('admin-user-search').value || '').toLowerCase().trim();
-  var rows = document.querySelectorAll('#admin-users-table tbody tr');
-  rows.forEach(function(row) {
-    var data = row.getAttribute('data-search') || '';
-    row.style.display = (!query || data.indexOf(query) !== -1) ? '' : 'none';
-  });
+  window._adminSearchQ = (document.getElementById('admin-user-search').value || '').toLowerCase().trim();
+  window._adminUserPage = 0;
+  renderAdminUsuarios();
+  // Re-fill search input after re-render
+  var inp = document.getElementById('admin-user-search');
+  if(inp) { inp.value = window._adminSearchQ; inp.focus(); }
 }
 
 function filterAdminLegend() {
