@@ -139,7 +139,8 @@ export default async function handler(req, res) {
 
   const injectScript = `<script>
 (function(){
-  var _mergedData = ${mergedJson};
+  window._mergedData = ${mergedJson};
+  var _mergedData = window._mergedData;
   var _origFetch = window.fetch;
   window.fetch = function(url, opts) {
     if (typeof url === 'string') {
@@ -208,7 +209,7 @@ Quiero saber m\u00e1s</a>
     body: JSON.stringify({ action: 'track', ref: slug, type: 'visit', fp: _fp }), keepalive: true
   }).catch(function(){});
 
-  var a = _mergedData[slug] || _mergedData[_ref] || null;
+  var a = (window._mergedData && (window._mergedData[slug] || window._mergedData[_ref])) || null;
   if(!a) return;
   var wa = (a.whatsapp||'').replace(/[^0-9]/g,'');
   if(!wa) return;
