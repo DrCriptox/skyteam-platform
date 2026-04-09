@@ -382,18 +382,18 @@ export default async function handler(req, res) {
 
       // Count ALL asesores (not just filtered) for position display
       const totalAsesores = Object.keys(allAsesores).filter(function(r){ return r !== 'default'; }).length;
-      const top20 = ranking.slice(0, 20);
+      const top20 = ranking.slice(0, 10);
       const totalParticipants = totalAsesores;
 
-      // Find current user's position if not in top 20
+      // Always return user's position
       const userRef = (req.body.ref || '').toLowerCase();
       let myPosition = null;
       if (userRef) {
         const idx = ranking.findIndex(function(r) { return r.ref === userRef; });
-        if (idx >= 20) {
+        if (idx >= 0) {
           myPosition = { position: idx + 1, data: ranking[idx] };
-        } else if (idx === -1) {
-          myPosition = { position: totalParticipants + 1, data: { ref: userRef, nombre: userRef, visitas: 0, conversiones: 0, score: 0, whatsapp: '', foto: '' } };
+        } else {
+          myPosition = { position: totalParticipants + 1, data: { ref: userRef, nombre: userRef, visitas: 0, duplicadas: 0, conversiones: 0, score: 0, whatsapp: '', foto: '', efectividad: 0 } };
         }
       }
 
