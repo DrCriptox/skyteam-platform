@@ -12855,52 +12855,90 @@ function crmMoveStage(id,etapa){
     + '</div></div>';
   document.body.appendChild(ov);
   setTimeout(function(){ var ta = document.getElementById('_moveNote'); if(ta) ta.focus(); }, 100);
-  // Microphone
+  // Microphone — same pattern as WA/IG modals
   document.getElementById('_moveMic').onclick = function() {
     var btn = document.getElementById('_moveMic');
-    if (_moveMicActive && _moveMicRecog) { _moveMicRecog.stop(); _moveMicActive = false; if(btn){btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.10)';} return; }
+    // Toggle off
+    if (_moveMicActive && _moveMicRecog) {
+      _moveMicRecog.stop();
+      _moveMicActive = false;
+      if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+      return;
+    }
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { crmToast('Tu navegador no soporta voz','error'); return; }
-    _moveMicRecog = new SR(); _moveMicRecog.lang = 'es-CO'; _moveMicRecog.continuous = true; _moveMicRecog.interimResults = true;
-    var ta = document.getElementById('_moveNote'); var prev = ta ? ta.value : '';
-    _moveMicRecog.onresult = function(e) { var t=''; for(var i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript; if(ta) ta.value=prev+(prev?' ':'')+t; };
-    _moveMicRecog.onend = function() { _moveMicActive=false; if(btn){btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.10)';} };
-    _moveMicRecog.onerror = function(e) { if(e.error!=='no-speech') crmToast('Error voz: '+e.error,'error'); };
-    _moveMicRecog.start(); _moveMicActive = true;
-    if(btn){btn.style.background='rgba(226,75,74,0.15)';btn.style.borderColor='rgba(226,75,74,0.4)';}
+    if (!SR) { crmToast('Tu navegador no soporta voz', 'error'); return; }
+    _moveMicRecog = new SR();
+    _moveMicRecog.lang = 'es-CO';
+    _moveMicRecog.continuous = true;
+    _moveMicRecog.interimResults = true;
+    var ta = document.getElementById('_moveNote');
+    var prevText = ta ? ta.value : '';
+    _moveMicRecog.onresult = function(e) {
+      var transcript = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      if (ta) ta.value = prevText + (prevText ? ' ' : '') + transcript;
+    };
+    _moveMicRecog.onend = function() {
+      _moveMicActive = false;
+      if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+    };
+    _moveMicRecog.onerror = function(e) {
+      if (e.error !== 'no-speech') crmToast('Error de voz: ' + e.error, 'error');
+    };
+    _moveMicRecog.start();
+    _moveMicActive = true;
+    if(btn) { btn.style.background = 'rgba(226,75,74,0.2)'; btn.style.borderColor = 'rgba(226,75,74,0.5)'; }
   };
   // Cancel
   document.getElementById('_moveCancel').onclick = function() { if(_moveMicRecog) try{_moveMicRecog.stop();}catch(e){} ov.remove(); crmRenderKanban(); };
-  // Confirm
+  // Confirm — stop mic + save interaction + move stage
   document.getElementById('_moveConfirm').onclick = function() {
-    var nota = (document.getElementById('_moveNote').value || '').trim();
-    if (!nota) { document.getElementById('_moveNote').style.borderColor = 'rgba(226,75,74,0.5)'; crmToast('Escribe una nota sobre el cambio', 'error'); return; }
-    if(_moveMicRecog) try{_moveMicRecog.stop();}catch(e){}
-    var btn = document.getElementById('_moveConfirm');
-    if(btn){btn.textContent='Guardando...';btn.style.opacity='0.6';btn.style.pointerEvents='none';}
-    var interaccionTexto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
-    // Step 1: save interaction
-    fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:interaccionTexto})})
-    .then(function(r){return r.json();})
-    .then(function(){
-      // Step 2: move stage
-      return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa})});
-    })
-    .then(function(r){return r.json();})
-    .then(function(res){
-      ov.remove();
-      p.etapa = etapa;
-      crmToast('\u2705 Movido a ' + newLabel, 'success');
-      crmLoadData();
-    })
-    .catch(function(e){
-      console.error('MoveStage error:', e);
-      ov.remove();
-      // Move locally even if server fails
-      p.etapa = etapa;
-      crmToast('\u26A0\uFE0F Movido (sincronizando...)', 'info');
-      crmLoadData();
-    });
+    // Stop mic if active
+    if (_moveMicActive && _moveMicRecog) {
+      try { _moveMicRecog.stop(); } catch(e) {}
+      _moveMicActive = false;
+    }
+    // Wait a tick for final transcript to arrive
+    setTimeout(function() {
+      var nota = (document.getElementById('_moveNote').value || '').trim();
+      if (!nota) {
+        document.getElementById('_moveNote').style.borderColor = 'rgba(226,75,74,0.5)';
+        crmToast('Escribe o dicta una nota sobre el cambio', 'error');
+        return;
+      }
+      var btn = document.getElementById('_moveConfirm');
+      if(btn) { btn.textContent = 'Guardando...'; btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
+      var interaccionTexto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
+      fetch('/api/prospectos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addInteraccion', user: CU.username, prospecto_id: id, tipo: 'cambio_etapa', contenido: interaccionTexto })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        return fetch('/api/prospectos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'moveStage', user: CU.username, id: id, etapa: etapa })
+        });
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        ov.remove();
+        p.etapa = etapa;
+        crmToast('\u2705 Movido a ' + newLabel, 'success');
+        crmLoadData();
+      })
+      .catch(function(e) {
+        console.error('MoveStage error:', e);
+        ov.remove();
+        p.etapa = etapa;
+        crmToast('\u2705 Movido a ' + newLabel, 'success');
+        crmLoadData();
+      });
+    }, 300);
   };
 }
 /* ============================================================================
