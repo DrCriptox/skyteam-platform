@@ -9978,31 +9978,54 @@ function loadChat() {
   startChatPolling();
 }
 
+function _chatSmartTime(ts) {
+  if(!ts) return '';
+  var d = new Date(ts);
+  if(isNaN(d.getTime())) return ts;
+  var now = new Date();
+  var hh = d.getHours(); var mm = String(d.getMinutes()).padStart(2,'0');
+  var ampm = hh >= 12 ? 'pm' : 'am'; var h12 = hh % 12 || 12;
+  var timeStr = h12 + ':' + mm + ampm;
+  // Today → just time
+  if(d.toDateString() === now.toDateString()) return timeStr;
+  // Yesterday
+  var yest = new Date(now); yest.setDate(yest.getDate()-1);
+  if(d.toDateString() === yest.toDateString()) return 'ayer, ' + timeStr;
+  // This week
+  var dias = ['dom','lun','mar','mi\u00e9','jue','vie','s\u00e1b'];
+  var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return dias[d.getDay()] + ' ' + d.getDate() + ' ' + meses[d.getMonth()] + ', ' + timeStr;
+}
+
 function renderChat(msgs) {
   var container = document.getElementById('chat-msgs');
   if(!container) return;
-  container.innerHTML = msgs.map(function(m) {
+  var isAdmin = CU && (CU.isAdmin || CU.is_admin);
+  container.innerHTML = msgs.map(function(m, idx) {
     var mRk = RANKS[m.rank]||RANKS[1];
     var own = m.user === CU.name;
     var uKey = Object.keys(USERS).find(function(u){return USERS[u].name===m.user;}) || '';
-    var photo = localStorage.getItem('skyteam_photo_'+uKey) || '';
-    var avatarContent = photo ? '<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">' : m.user.substring(0,2).toUpperCase();
-    var timeStr = m.time || (m.ts ? new Date(m.ts).toLocaleDateString('es',{weekday:'short'})+' '+new Date(m.ts).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '');
+    // Photo: try localStorage, then USERS table, then initials
+    var photo = localStorage.getItem('skyteam_photo_'+uKey) || (USERS[uKey] && USERS[uKey].photo ? USERS[uKey].photo : '') || '';
+    var avatarContent = photo ? '<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">' : (m.user||'?').substring(0,2).toUpperCase();
+    var timeStr = _chatSmartTime(m.ts || m.time);
 
-    // Own messages: blue gradient, aligned right. Others: dark, aligned left
     var bubbleBg = own ? 'background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03));border:0.5px solid rgba(255,255,255,0.08);' : 'background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.06);';
     var bubbleRadius = own ? 'border-radius:14px 14px 4px 14px;' : 'border-radius:14px 14px 14px 4px;';
+    // Admin delete button
+    var deleteBtn = isAdmin ? '<button onclick="event.stopPropagation();_deleteChatMsg('+idx+')" style="position:absolute;top:4px;right:4px;background:rgba(226,75,74,0.15);border:0.5px solid rgba(226,75,74,0.3);color:#E24B4A;border-radius:6px;padding:2px 6px;font-size:9px;cursor:pointer;font-family:inherit;opacity:0;transition:opacity 0.2s;" class="_chat-del">\u2715</button>' : '';
 
-    return '<div class="chat-msg' + (own?' own':'') + '" style="' + (own?'flex-direction:row-reverse;':'') + '">'
+    return '<div class="chat-msg' + (own?' own':'') + '" style="' + (own?'flex-direction:row-reverse;':'') + 'position:relative;" onmouseenter="var d=this.querySelector(\'._chat-del\');if(d)d.style.opacity=1;" onmouseleave="var d=this.querySelector(\'._chat-del\');if(d)d.style.opacity=0;">'
       + '<div class="chat-avatar" style="background:' + mRk.bg + ';color:' + mRk.color + ';border:' + (own?'2px':'0.5px') + ' solid ' + (own?'rgba(255,255,255,0.15)':mRk.border) + ';overflow:hidden;flex-shrink:0;">' + avatarContent + '</div>'
-      + '<div class="chat-bubble" style="' + bubbleBg + bubbleRadius + 'max-width:75%;padding:10px 14px;">'
+      + '<div class="chat-bubble" style="' + bubbleBg + bubbleRadius + 'max-width:75%;padding:10px 14px;position:relative;">'
+      + deleteBtn
       + '<div class="chat-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
       + '<span class="chat-sender" style="font-weight:700;font-size:12px;color:' + (own?'#fff':mRk.color) + ';">' + _safe(m.user) + '</span>'
       + '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:' + mRk.bg + ';border:0.5px solid ' + mRk.border + ';color:' + mRk.color + ';font-weight:700;">' + mRk.icon + ' ' + mRk.name + '</span>'
       + '<span class="chat-time" style="font-size:10px;color:var(--muted2);margin-left:auto;">' + timeStr + '</span>'
       + '</div>'
       + '<div class="chat-text" style="font-size:13px;line-height:1.5;color:' + (own?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.7)') + ';">' + _safe(m.text) + '</div>'
-      + (own ? '<div style="text-align:right;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.30);">✓✓</div>' : '')
+      + (own ? '<div style="text-align:right;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.30);">\u2713\u2713</div>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -10010,6 +10033,19 @@ function renderChat(msgs) {
 }
 
 function scrollChat() { const c=document.getElementById('chat-msgs'); if(c) c.scrollTop=c.scrollHeight; }
+
+function _deleteChatMsg(idx) {
+  if(!confirm('\u00bfEliminar este mensaje para todos?')) return;
+  var msgs = getMessages();
+  if(idx >= 0 && idx < msgs.length) {
+    var removed = msgs.splice(idx, 1)[0];
+    saveMessages(msgs);
+    // Delete from server too
+    fetch('/api/chat-messages', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'delete', msgText:removed.text, msgUser:removed.user, adminKey:CU.username})}).catch(function(){});
+    renderChat(msgs);
+    showToast('\u2705 Mensaje eliminado');
+  }
+}
 
 
 /* ── EMOJI PICKER ── */

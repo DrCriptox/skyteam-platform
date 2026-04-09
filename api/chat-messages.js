@@ -15,11 +15,20 @@ export default async function handler(req, res) {
       if (!r.ok) throw new Error('Supabase GET failed: ' + r.status);
       const rows = await r.json();
       // Return in chronological order (oldest first) to match frontend expectations
-      const messages = rows.reverse().map(m => ({ user: m.username, text: m.text, avatar: m.avatar, ts: m.timestamp }));
+      const messages = rows.reverse().map(m => ({ user: m.username, text: m.text, avatar: m.avatar, ts: m.timestamp, rank: m.rank || 0 }));
       return res.status(200).json({ messages });
     }
 
     if (req.method === 'POST') {
+      // Admin delete
+      if (req.body.action === 'delete') {
+        const { msgText, msgUser } = req.body;
+        if (msgText && msgUser) {
+          await fetch(SUPABASE_URL + '/rest/v1/chat_messages?username=eq.' + encodeURIComponent(msgUser) + '&text=eq.' + encodeURIComponent(msgText) + '&limit=1', { method: 'DELETE', headers: HEADERS });
+        }
+        return res.status(200).json({ ok: true });
+      }
+
       const { messages } = req.body;
       if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'Missing messages array' });
 
@@ -31,7 +40,7 @@ export default async function handler(req, res) {
         const r = await fetch(SUPABASE_URL + '/rest/v1/chat_messages', {
           method: 'POST',
           headers: { ...HEADERS, Prefer: 'return=minimal' },
-          body: JSON.stringify({ username: lastMsg.user || lastMsg.username || 'anon', text: lastMsg.text, avatar: lastMsg.avatar || null })
+          body: JSON.stringify({ username: lastMsg.user || lastMsg.username || 'anon', text: lastMsg.text, avatar: lastMsg.avatar || null, rank: lastMsg.rank || 0 })
         });
         if (!r.ok) throw new Error('Supabase POST failed: ' + r.status);
       }
