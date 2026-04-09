@@ -4530,13 +4530,13 @@ function renderAgendaCitasUI() {
     var hasProof = cita.proof_url || cita.proof;
     html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.04);">';
     if(hasProof) {
-      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Foto verificada (+10 pts)</span>';
+      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Foto verificada (+20 pts)</span>';
     } else {
       html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border-radius:8px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);font-size:11px;font-weight:700;color:#1D9E75;font-family:Outfit,Nunito,sans-serif;">';
       html += '\uD83D\uDCF7 Subir foto';
       html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
       html += '</label>';
-      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+10 pts en ranking</span>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+20 pts en ranking</span>';
     }
     html += '</div>';
     html += '</div>';
@@ -4566,7 +4566,7 @@ function _uploadMeetingProof(input, bookingId) {
         body: JSON.stringify({ action: 'saveProof', user: CU.ref||CU.user||'', bookingId: bookingId, proof: b64 })
       }).then(function(r){ return r.json(); }).then(function(d) {
         if(d.ok || d.proof) {
-          showToast('\u2705 Foto subida (+10 pts en ranking)');
+          showToast('\u2705 Foto subida (+20 pts en ranking)');
           // Update local booking
           var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
           if(bk) bk.proof = true;
