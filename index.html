@@ -13569,18 +13569,30 @@ function _renderCrmRankingTab() {
   fetch('/api/leaderboard?action=prospectRanking&period='+_crmRankPeriod)
   .then(function(r){return r.json()}).then(function(d){
     var list=document.getElementById('crm-ranking-list');if(!list)return;
-    var ranking=d.ranking||d.data||[];
+    var fullRanking=d.ranking||d.data||[];
+    var ranking=fullRanking.slice(0,20);
     if(!ranking.length){list.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);"><div style="font-size:36px;margin-bottom:8px;">\uD83C\uDFC6</div>Sin datos a\u00fan</div>';return;}
+    // Country flag helper
+    var _rkFlag = function(wa){
+      if(!wa)return '';
+      var f={'+57':'co','+52':'mx','+51':'pe','+56':'cl','+54':'ar','+58':'ve','+593':'ec','+507':'pa','+506':'cr','+1':'us','+34':'es','+55':'br'};
+      var codes=Object.keys(f).sort(function(a,b){return b.length-a.length;});
+      for(var ci=0;ci<codes.length;ci++){if(wa.indexOf(codes[ci])===0)return '<img src="https://flagcdn.com/16x12/'+f[codes[ci]]+'.png" style="width:14px;height:10px;border-radius:1px;vertical-align:middle;margin-left:3px;">';}
+      return '';
+    };
     var rhtml='';
-    // Rows — Sky Sales IA style: photo left, name+stats, score right
+    var meInTop = false;
+    // Rows — top 20
     ranking.forEach(function(m,i){
       var isMe = CU && (m.username === CU.username);
+      if(isMe) meInTop = true;
       var pos = i + 1;
       var posColor = pos===1?'#FFD700':pos===2?'#C0C0C0':pos===3?'#CD7F32':'rgba(255,255,255,0.25)';
       var foto = m.photo || '';
-      var bgRow = isMe ? 'rgba(201,168,76,0.08)' : (pos<=3 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)');
-      var borderRow = isMe ? 'rgba(201,168,76,0.2)' : (pos<=3 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)');
-      rhtml += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border-radius:10px;background:'+bgRow+';border:0.5px solid '+borderRow+';">';
+      var bgRow = isMe ? 'rgba(127,119,221,0.08)' : (pos<=3 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)');
+      var borderRow = isMe ? '1px solid rgba(127,119,221,0.30)' : (pos<=3 ? '0.5px solid rgba(255,255,255,0.06)' : '0.5px solid rgba(255,255,255,0.03)');
+      var rowShadow = isMe ? 'box-shadow:0 0 12px rgba(127,119,221,0.10);' : '';
+      rhtml += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border-radius:10px;background:'+bgRow+';border:'+borderRow+';'+rowShadow+'">';
       // Position — podium bubbles for 1-3
       if(pos<=3) {
         var podiumBg = pos===1?'linear-gradient(135deg,#FFD700,#FFA500)':pos===2?'linear-gradient(135deg,#C0C0C0,#9A9A9A)':'linear-gradient(135deg,#CD7F32,#A0522D)';
@@ -13590,14 +13602,15 @@ function _renderCrmRankingTab() {
       }
       // Photo
       if (foto) {
-        rhtml += '<img src="'+foto+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid '+(pos<=3?posColor:'rgba(255,255,255,0.1)')+';flex-shrink:0;" />';
+        rhtml += '<img src="'+foto+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid '+(isMe?'rgba(127,119,221,0.5)':pos<=3?posColor:'rgba(255,255,255,0.1)')+';flex-shrink:0;" />';
       } else {
         var initials = (m.name||m.username||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
-        rhtml += '<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.04);border:2px solid '+(pos<=3?posColor:'rgba(255,255,255,0.08)')+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:rgba(255,255,255,0.4);flex-shrink:0;">'+initials+'</div>';
+        rhtml += '<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.04);border:2px solid '+(isMe?'rgba(127,119,221,0.5)':pos<=3?posColor:'rgba(255,255,255,0.08)')+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:rgba(255,255,255,0.4);flex-shrink:0;">'+initials+'</div>';
       }
-      // Name + stats
+      // Name + flag + (tú) + stats
+      var flag = _rkFlag(m.whatsapp||'');
       rhtml += '<div style="flex:1;min-width:0;">';
-      rhtml += '<div style="font-size:17px;font-weight:800;color:'+(isMe?'#C9A84C':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+'</div>';
+      rhtml += '<div style="font-size:17px;font-weight:800;color:'+(isMe?'#7F77DD':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(127,119,221,0.15);color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
       rhtml += '<div style="display:flex;gap:6px;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.35);flex-wrap:wrap;">';
       rhtml += '<span>\uD83D\uDCCB '+(m.contactos||0)+'</span>';
       rhtml += '<span>\u27A1\uFE0F '+(m.avances||0)+'</span>';
@@ -13612,6 +13625,28 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="font-size:9px;color:rgba(255,255,255,0.25);">PTS</div>';
       rhtml += '</div></div>';
     });
+    // If user NOT in top 20, show position 21
+    if(!meInTop && CU) {
+      var myIdx = fullRanking.findIndex(function(m){return m.username===CU.username;});
+      var myData = myIdx>=0 ? fullRanking[myIdx] : null;
+      var myPos = myIdx>=0 ? myIdx+1 : fullRanking.length+1;
+      rhtml += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.06);">';
+      rhtml += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.25);box-shadow:0 0 12px rgba(127,119,221,0.10);">';
+      rhtml += '<div style="min-width:28px;font-size:13px;font-weight:900;color:#7F77DD;text-align:center;">'+myPos+'</div>';
+      var myFoto = CU.photo||'';
+      var myIni = (CU.name||CU.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+      rhtml += myFoto ? '<img src="'+myFoto+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(127,119,221,0.5);flex-shrink:0;" />' : '<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.04);border:2px solid rgba(127,119,221,0.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:rgba(255,255,255,0.4);flex-shrink:0;">'+myIni+'</div>';
+      rhtml += '<div style="flex:1;min-width:0;">';
+      rhtml += '<div style="font-size:17px;font-weight:800;color:#7F77DD;">'+(CU.name||CU.username)+' <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(127,119,221,0.15);color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
+      if(myData) {
+        rhtml += '<div style="display:flex;gap:6px;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.35);flex-wrap:wrap;">';
+        rhtml += '<span>\uD83D\uDCCB '+(myData.contactos||0)+'</span><span>\u27A1\uFE0F '+(myData.avances||0)+'</span><span>\uD83E\uDD16 '+(myData.msgIA||0)+'</span><span>\uD83D\uDD04 '+(myData.actualizaciones||0)+'</span><span>\uD83D\uDCB0 '+(myData.abonos||0)+'</span><span>\u2705 '+(myData.pagos||0)+'</span>';
+        rhtml += '</div>';
+      }
+      rhtml += '</div>';
+      rhtml += '<div style="text-align:right;flex-shrink:0;"><div style="font-size:18px;font-weight:900;color:#7F77DD;">'+(myData?myData.score:0)+'</div><div style="font-size:9px;color:rgba(255,255,255,0.25);">PTS</div></div>';
+      rhtml += '</div></div>';
+    }
     list.innerHTML = rhtml;
   }).catch(function(){
     var list=document.getElementById('crm-ranking-list');

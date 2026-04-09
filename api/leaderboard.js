@@ -465,7 +465,7 @@ module.exports = async (req, res) => {
         sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&limit=5000'),
         sb('interacciones?select=username,tipo,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&limit=5000'),
         sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2 + '&limit=5000'),
-        sb('users?select=username,name,photo&limit=5000')
+        sb('users?select=username,name,photo,whatsapp&limit=5000')
       ]);
       var allProspectos = results2[0] || [];
       var allInteracciones = results2[1] || [];
@@ -539,7 +539,7 @@ module.exports = async (req, res) => {
         var u = e[0], s = e[1];
         s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgPresentacion * 10) + (s.imgAbono * 20) + (s.imgPago * 60);
         var usr = userMap2[u] || {};
-        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, contactos: s.contactos, avances: s.avances, msgIA: s.msgIA, actualizaciones: s.actualizaciones, abonos: s.imgAbono, pagos: s.imgPago };
+        return { username: u, name: usr.name || u, photo: usr.photo || null, whatsapp: usr.whatsapp || null, score: s.score, contactos: s.contactos, avances: s.avances, msgIA: s.msgIA, actualizaciones: s.actualizaciones, abonos: s.imgAbono, pagos: s.imgPago };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
 
       return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), period: period });
