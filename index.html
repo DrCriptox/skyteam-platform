@@ -3986,14 +3986,15 @@ function showApp() {
     }, 1500);
   }
 
-  // BANKCODE: sync localStorage → server if server is empty but local has it
+  // BANKCODE: if local has it, sync to server. If not, FORCE survey (blocks platform)
   setTimeout(function() {
-    if (CU && CU.bankcode) {
-      // Has bankcode locally — make sure server has it too (silent sync)
+    if (!CU) return;
+    if (CU.bankcode) {
+      // Has bankcode locally — sync to server silently
       fetch('/api/update-user', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:CU.username, updates:{bankcode:CU.bankcode, profession:CU.profession||null, income_goal:CU.income_goal||null, comm_style:CU.comm_style||null}, requestedBy:CU.username})}).catch(function(){});
-    } else if (CU && !CU.bankcode && typeof _showBankcodeSurvey === 'function') {
-      // No bankcode anywhere — show survey
-      _showBankcodeSurvey();
+    } else {
+      // No bankcode — FORCE survey (blocks entire platform until completed)
+      if(typeof _showBankcodeSurvey === 'function') _showBankcodeSurvey();
     }
   }, 2000);
 }

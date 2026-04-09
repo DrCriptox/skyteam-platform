@@ -1878,7 +1878,7 @@ window.mentorSendChat = function(presetText) {
     if (directos.length > 0) {
       context += 'DIRECTOS (' + directos.length + '):\n';
       directos.forEach(function(m) {
-        var bankCode = localStorage.getItem('bank_' + (m.username || m.ref)) || 'sin asignar';
+        var bankCode = m.bankcode || 'sin asignar';
         var bday = m.birthday || localStorage.getItem('skyteam_birthday_' + m.username) || '';
         var bdayStr = '';
         if (bday) {
