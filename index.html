@@ -12964,40 +12964,31 @@ function crmMoveStage(id,etapa){
     var tempMap = {contactado:16,interesado:24,presentacion:32,confirmado_cierre:50,seguimiento:40,pendiente_pago:70,abonado:100,cerrado_ganado:100};
     var newTemp = tempMap[etapa] || null;
     if (newTemp && newTemp <= (p.temperatura||0)) newTemp = null;
-    // Step 1: Save interaction via XHR
+    // Send ALL requests in parallel (don't wait for IA suggestion to move stage)
+    var done = 0, total = newTemp ? 3 : 2;
+    function _checkDone() { done++; if(done>=total) { ov.remove(); p.etapa=etapa; if(newTemp) p.temperatura=newTemp; crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success'); crmLoadData(); } }
+    // 1) Save interaction (can be slow due to IA)
     var xhr1 = new XMLHttpRequest();
     xhr1.open('POST', '/api/prospectos', true);
     xhr1.setRequestHeader('Content-Type', 'application/json');
-    xhr1.onload = function() {
-      console.log('[MOVE] Interaccion saved:', xhr1.status, xhr1.responseText.substring(0,80));
-      // Step 2: Move stage
-      var xhr2 = new XMLHttpRequest();
-      xhr2.open('POST', '/api/prospectos', true);
-      xhr2.setRequestHeader('Content-Type', 'application/json');
-      xhr2.onload = function() {
-        console.log('[MOVE] Stage moved:', xhr2.status);
-        // Step 3: Temperature (if needed)
-        if(newTemp) {
-          var xhr3 = new XMLHttpRequest();
-          xhr3.open('POST', '/api/prospectos', true);
-          xhr3.setRequestHeader('Content-Type', 'application/json');
-          xhr3.onload = function() { _finishMove(); };
-          xhr3.onerror = function() { _finishMove(); };
-          xhr3.send(JSON.stringify({action:'update',user:CU.username,id:id,temperatura:newTemp}));
-        } else { _finishMove(); }
-      };
-      xhr2.onerror = function() { console.error('[MOVE] moveStage failed'); _finishMove(); };
-      xhr2.send(JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa}));
-    };
-    xhr1.onerror = function() {
-      console.error('[MOVE] addInteraccion XHR failed');
-      _finishMove();
-    };
+    xhr1.onload = function() { console.log('[MOVE] Interaccion:', xhr1.status); _checkDone(); };
+    xhr1.onerror = function() { console.error('[MOVE] Interaccion failed'); _checkDone(); };
     xhr1.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}));
-    function _finishMove() {
-      ov.remove(); p.etapa=etapa; if(newTemp) p.temperatura=newTemp;
-      crmToast('\u2705 Movido a '+newLabel+(newTemp?' \u2022 Temp: '+newTemp+'%':''),'success');
-      crmLoadData();
+    // 2) Move stage (fast, no IA)
+    var xhr2 = new XMLHttpRequest();
+    xhr2.open('POST', '/api/prospectos', true);
+    xhr2.setRequestHeader('Content-Type', 'application/json');
+    xhr2.onload = function() { console.log('[MOVE] Stage:', xhr2.status); _checkDone(); };
+    xhr2.onerror = function() { console.error('[MOVE] Stage failed'); _checkDone(); };
+    xhr2.send(JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa}));
+    // 3) Temperature (if needed, also fast)
+    if(newTemp) {
+      var xhr3 = new XMLHttpRequest();
+      xhr3.open('POST', '/api/prospectos', true);
+      xhr3.setRequestHeader('Content-Type', 'application/json');
+      xhr3.onload = function() { _checkDone(); };
+      xhr3.onerror = function() { _checkDone(); };
+      xhr3.send(JSON.stringify({action:'update',user:CU.username,id:id,temperatura:newTemp}));
     }
   });
 }
