@@ -362,7 +362,7 @@ export default async function handler(req, res) {
         webpush.setVapidDetails(VAPID_SUB, VAPID_PUB, VAPID_PRIV);
         const SB_H2 = { apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' };
         // Get all users for sponsor chain
-        const allU = await (await sbFetch(SUPABASE_URL + '/rest/v1/users?select=username,name,sponsor&limit=5000', { headers: HEADERS })).json();
+        const allU = await (await sbFetch(SUPABASE_URL + '/rest/v1/users?select=username,name,sponsor,email&limit=5000', { headers: HEADERS })).json();
         const uMap = {}; if(Array.isArray(allU)) allU.forEach(function(u){ uMap[(u.username||'').toLowerCase()] = u; });
         const valor = sol.valor_inscripcion ? '$' + sol.valor_inscripcion + ' USD' : '';
         const fullName = sol.name || finalUsername;
@@ -397,6 +397,31 @@ export default async function handler(req, res) {
                 }
               }
             }
+          }
+          // Send email notification to sponsor too
+          var _spData = uMap[curSponsor];
+          var _spEmail = _spData ? (_spData.email || '') : '';
+          if (_spEmail && process.env.RESEND_API_KEY) {
+            var _emailSubject = valor ? '\uD83D\uDCB0 \u00a1Nueva venta ' + valor + ' en tu equipo!' : '\uD83C\uDF89 \u00a1Nueva venta en tu equipo!';
+            var _emailHtml = '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
+              + '<div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:24px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>'
+              + '<div style="text-align:center;margin-bottom:24px;">'
+              + (valor ? '<div style="font-size:36px;font-weight:900;color:#C9A84C;margin-bottom:8px;">' + valor + '</div>' : '')
+              + '<div style="font-size:14px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:2px;">Nueva Venta</div>'
+              + '</div>'
+              + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">'
+              + '<div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">\uD83D\uDD25 ' + fullName + '</div>'
+              + '<div style="font-size:13px;color:rgba(255,255,255,0.5);">' + (lvl===0 ? 'Venta directa' : levels[lvl]) + ' \u2022 ' + _hora + '</div>'
+              + '</div>'
+              + '<div style="text-align:center;margin-bottom:20px;">'
+              + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">\uD83D\uDE80 Ver mi equipo</a>'
+              + '</div>'
+              + '<p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;">\u00a1Sigue as\u00ed! Cada venta te acerca m\u00e1s a tus metas.</p>'
+              + '</div>';
+            fetch('https://api.resend.com/emails', {
+              method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+process.env.RESEND_API_KEY},
+              body:JSON.stringify({from:'SKYTEAM <ventas@skyteam.global>',to:[_spEmail],subject:_emailSubject,html:_emailHtml})
+            }).catch(function(e){console.warn('[EMAIL] Sale notification failed:',e.message);});
           }
           const sponsorData = uMap[curSponsor];
           curSponsor = sponsorData && sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;
