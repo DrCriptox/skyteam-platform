@@ -12839,107 +12839,101 @@ function crmMoveStage(id,etapa){
   if(oldEtapa === etapa) return;
   var oldLabel = CRM_ETAPAS[oldEtapa] ? CRM_ETAPAS[oldEtapa].label : oldEtapa;
   var newLabel = CRM_ETAPAS[etapa] ? CRM_ETAPAS[etapa].label : etapa;
+  // Remove any existing overlay
+  var oldOv = document.getElementById('_moveOverlay');
+  if(oldOv) oldOv.remove();
+  // Build modal using DOM (not innerHTML) to avoid event binding issues
   var ov = document.createElement('div');
+  ov.id = '_moveOverlay';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Outfit,Nunito,sans-serif;';
-  ov.innerHTML = '<div style="background:linear-gradient(145deg,#0a0a12,#12121c);border:0.5px solid rgba(201,168,76,0.2);border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">'
-    + '<div style="font-size:14px;font-weight:800;color:#F0EDE6;margin-bottom:4px;">Mover a: <span style="color:#C9A84C;">' + newLabel + '</span></div>'
-    + '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;">' + (p.nombre||'Prospecto') + '</div>'
-    + '<div style="font-size:11px;color:rgba(201,168,76,0.6);margin-bottom:10px;">\uD83D\uDCDD Cu\u00e9ntanos qu\u00e9 sucedi\u00f3 para avanzar a esta etapa</div>'
-    + '<div style="display:flex;gap:8px;margin-bottom:12px;">'
-    + '<textarea id="_moveNote" placeholder="Ej: Le present\u00e9 el plan y qued\u00f3 interesado..." rows="3" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;outline:none;"></textarea>'
-    + '<button id="_moveMic" title="Dictar por voz" style="flex-shrink:0;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:flex-start;">\uD83C\uDF99\uFE0F</button>'
-    + '</div>'
-    + '<div style="display:flex;gap:8px;">'
-    + '<button id="_moveCancel" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>'
-    + '<button id="_moveConfirm" style="flex:1;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">Confirmar</button>'
-    + '</div></div>';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:linear-gradient(145deg,#0a0a12,#12121c);border:0.5px solid rgba(201,168,76,0.2);border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);';
+  var h1 = document.createElement('div');
+  h1.style.cssText = 'font-size:14px;font-weight:800;color:#F0EDE6;margin-bottom:4px;';
+  h1.innerHTML = 'Mover a: <span style="color:#C9A84C;">' + newLabel + '</span>';
+  var h2 = document.createElement('div');
+  h2.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;';
+  h2.textContent = p.nombre || 'Prospecto';
+  var h3 = document.createElement('div');
+  h3.style.cssText = 'font-size:11px;color:rgba(201,168,76,0.6);margin-bottom:10px;';
+  h3.textContent = '\uD83D\uDCDD Cu\u00e9ntanos qu\u00e9 sucedi\u00f3 para avanzar a esta etapa';
+  // Textarea + mic row
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;';
+  var ta = document.createElement('textarea');
+  ta.rows = 3;
+  ta.placeholder = 'Ej: Le present\u00e9 el plan y qued\u00f3 interesado...';
+  ta.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:#F0EDE6;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;outline:none;';
+  var micBtn = document.createElement('button');
+  micBtn.textContent = '\uD83C\uDF99\uFE0F';
+  micBtn.title = 'Dictar por voz';
+  micBtn.style.cssText = 'flex-shrink:0;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:flex-start;';
+  row.appendChild(ta);
+  row.appendChild(micBtn);
+  // Buttons row
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;';
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;';
+  var confirmBtn = document.createElement('button');
+  confirmBtn.textContent = 'Confirmar';
+  confirmBtn.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;';
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(confirmBtn);
+  box.appendChild(h1);
+  box.appendChild(h2);
+  box.appendChild(h3);
+  box.appendChild(row);
+  box.appendChild(btnRow);
+  ov.appendChild(box);
   document.body.appendChild(ov);
-  setTimeout(function(){ var ta = document.getElementById('_moveNote'); if(ta) ta.focus(); }, 100);
-  // Microphone — same pattern as WA/IG modals
-  document.getElementById('_moveMic').onclick = function() {
-    var btn = document.getElementById('_moveMic');
-    // Toggle off
+  setTimeout(function(){ ta.focus(); }, 100);
+  // Mic
+  micBtn.addEventListener('click', function() {
     if (_moveMicActive && _moveMicRecog) {
-      _moveMicRecog.stop();
-      _moveMicActive = false;
-      if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
+      _moveMicRecog.stop(); _moveMicActive = false;
+      micBtn.style.background = 'rgba(255,255,255,0.04)'; micBtn.style.borderColor = 'rgba(255,255,255,0.10)';
       return;
     }
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { crmToast('Tu navegador no soporta voz', 'error'); return; }
-    _moveMicRecog = new SR();
-    _moveMicRecog.lang = 'es-CO';
-    _moveMicRecog.continuous = true;
-    _moveMicRecog.interimResults = true;
-    var ta = document.getElementById('_moveNote');
-    var prevText = ta ? ta.value : '';
-    _moveMicRecog.onresult = function(e) {
-      var transcript = '';
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-      }
-      if (ta) ta.value = prevText + (prevText ? ' ' : '') + transcript;
-    };
-    _moveMicRecog.onend = function() {
-      _moveMicActive = false;
-      if(btn) { btn.style.background = 'rgba(255,255,255,0.04)'; btn.style.borderColor = 'rgba(255,255,255,0.10)'; }
-    };
-    _moveMicRecog.onerror = function(e) {
-      if (e.error !== 'no-speech') crmToast('Error de voz: ' + e.error, 'error');
-    };
-    _moveMicRecog.start();
-    _moveMicActive = true;
-    if(btn) { btn.style.background = 'rgba(226,75,74,0.2)'; btn.style.borderColor = 'rgba(226,75,74,0.5)'; }
-  };
+    _moveMicRecog = new SR(); _moveMicRecog.lang = 'es-CO'; _moveMicRecog.continuous = true; _moveMicRecog.interimResults = true;
+    var prev = ta.value;
+    _moveMicRecog.onresult = function(e) { var t=''; for(var i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript; ta.value=prev+(prev?' ':'')+t; };
+    _moveMicRecog.onend = function() { _moveMicActive=false; micBtn.style.background='rgba(255,255,255,0.04)'; micBtn.style.borderColor='rgba(255,255,255,0.10)'; };
+    _moveMicRecog.onerror = function(e) { if(e.error!=='no-speech') crmToast('Error voz: '+e.error,'error'); };
+    _moveMicRecog.start(); _moveMicActive = true;
+    micBtn.style.background = 'rgba(226,75,74,0.2)'; micBtn.style.borderColor = 'rgba(226,75,74,0.5)';
+  });
   // Cancel
-  document.getElementById('_moveCancel').onclick = function() { if(_moveMicRecog) try{_moveMicRecog.stop();}catch(e){} ov.remove(); crmRenderKanban(); };
-  // Confirm — stop mic + save interaction + move stage
-  document.getElementById('_moveConfirm').onclick = function() {
-    // Stop mic if active
-    if (_moveMicActive && _moveMicRecog) {
-      try { _moveMicRecog.stop(); } catch(e) {}
-      _moveMicActive = false;
-    }
-    // Wait a tick for final transcript to arrive
-    setTimeout(function() {
-      var nota = (document.getElementById('_moveNote').value || '').trim();
-      if (!nota) {
-        document.getElementById('_moveNote').style.borderColor = 'rgba(226,75,74,0.5)';
-        crmToast('Escribe o dicta una nota sobre el cambio', 'error');
-        return;
-      }
-      var btn = document.getElementById('_moveConfirm');
-      if(btn) { btn.textContent = 'Guardando...'; btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
-      var interaccionTexto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
-      fetch('/api/prospectos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'addInteraccion', user: CU.username, prospecto_id: id, tipo: 'cambio_etapa', contenido: interaccionTexto })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function() {
-        return fetch('/api/prospectos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'moveStage', user: CU.username, id: id, etapa: etapa })
-        });
-      })
-      .then(function(r) { return r.json(); })
-      .then(function() {
-        ov.remove();
-        p.etapa = etapa;
-        crmToast('\u2705 Movido a ' + newLabel, 'success');
-        crmLoadData();
-      })
-      .catch(function(e) {
-        console.error('MoveStage error:', e);
-        ov.remove();
-        p.etapa = etapa;
-        crmToast('\u2705 Movido a ' + newLabel, 'success');
-        crmLoadData();
-      });
-    }, 300);
-  };
+  cancelBtn.addEventListener('click', function() {
+    if(_moveMicRecog) try{_moveMicRecog.stop();}catch(e){}
+    ov.remove(); crmRenderKanban();
+  });
+  // Confirm
+  confirmBtn.addEventListener('click', function() {
+    if(_moveMicActive && _moveMicRecog) try{_moveMicRecog.stop();}catch(e){} _moveMicActive=false;
+    var nota = (ta.value || '').trim();
+    if (!nota) { ta.style.borderColor='rgba(226,75,74,0.5)'; crmToast('Escribe o dicta una nota','error'); return; }
+    confirmBtn.textContent = 'Guardando...'; confirmBtn.style.opacity = '0.6'; confirmBtn.style.pointerEvents = 'none';
+    var texto = 'Movido de ' + oldLabel + ' a ' + newLabel + ': ' + nota;
+    fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ return fetch('/api/prospectos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'moveStage',user:CU.username,id:id,etapa:etapa})}); })
+    .then(function(r){ return r.json(); })
+    .then(function(){
+      ov.remove(); p.etapa=etapa;
+      crmToast('\u2705 Movido a '+newLabel,'success');
+      crmLoadData();
+    })
+    .catch(function(e){
+      console.error('Move error:',e);
+      ov.remove(); p.etapa=etapa;
+      crmToast('\u2705 Movido a '+newLabel,'success');
+      crmLoadData();
+    });
+  });
 }
 /* ============================================================================
    SKY PROSPECTOS \u2014 GAMIFICATION + METRICS ENGINE
