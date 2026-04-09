@@ -7905,7 +7905,7 @@ function _loadSSRanking() {
   .then(function(r){return r.json();}).then(function(d){
     var el = document.getElementById('ss-ranking-list');
     if(!el) return;
-    var ranking = (d.ranking || []).slice(0, 10); // Top 10
+    var ranking = d.ranking || [];
     if(ranking.length === 0 && !d.myPosition) { el.innerHTML = '<div style="font-size:48px;margin-bottom:8px;">\uD83C\uDFC6</div><p style="color:rgba(255,255,255,0.4);">Sin datos a\u00fan</p>'; return; }
     var ref = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
     var medals = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
@@ -7955,14 +7955,8 @@ function _loadSSRanking() {
       html += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(u.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       html += '</div>';
     });
-    // Always show user's position below top 10
+    // Show user position ONLY if not in top 20 (if in top, already highlighted with glow)
     var myPos = d.myPosition;
-    // If user is in top 10, build myPos from ranking data
-    if (!myPos && ref) {
-      var myIdx = (d.ranking||[]).findIndex(function(u){ return u.ref === ref; });
-      if (myIdx >= 0) myPos = { position: myIdx + 1, data: (d.ranking||[])[myIdx] };
-      else myPos = { position: d.totalParticipants || 999, data: { ref: ref, nombre: (CU&&CU.name)||ref, visitas: 0, duplicadas: 0, conversiones: 0, score: 0, whatsapp: '', foto: '' } };
-    }
     if(myPos) {
       var mu = myPos.data;
       var mIni = (mu.nombre||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
@@ -7980,10 +7974,10 @@ function _loadSSRanking() {
       html += '<div style="flex-shrink:0;text-align:right;"><span class="ss-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(mu.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       html += '</div></div>';
     }
-    // Check if user IS in top 10
+    // Check if user IS in top 20 — already highlighted in the list
     var inTop = ranking.some(function(u){ return u.ref === ref; });
     if(inTop) {
-      html += '<div style="text-align:center;margin-top:8px;font-size:10px;color:#C9A84C;">\u2B50 \u00a1Est\u00e1s en el Top 10!</div>';
+      html += '<div style="text-align:center;margin-top:8px;font-size:10px;color:#C9A84C;">\u2B50 \u00a1Est\u00e1s en el Top 20!</div>';
     }
     // Formula footer removed
     el.innerHTML = html;
