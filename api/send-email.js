@@ -239,9 +239,9 @@ async function handleTriggers(req, res) {
           const tag = 'skyteam-newreg-' + newUser.username + '-' + now.toISOString().slice(0, 16);
 
           let currentSponsor = newUser.sponsor ? newUser.sponsor.toLowerCase() : null;
-          const levels = ['1ra línea (directo)', '2da línea', '3ra línea'];
+          const levels = ['1ra línea (directo)', '2da línea', '3ra línea', '4ta línea'];
 
-          for (let level = 0; level < 3 && currentSponsor; level++) {
+          for (let level = 0; level < 4 && currentSponsor; level++) {
             const sponsorData = userMap[currentSponsor];
             if (!sponsorData) break;
 
@@ -292,9 +292,9 @@ async function handleTriggers(req, res) {
           const tag = 'skyteam-rank-' + user.username + '-' + user.rank + '-' + todayKey;
 
           let currentSponsor = user.sponsor ? user.sponsor.toLowerCase() : null;
-          const levels = ['1ra línea', '2da línea', '3ra línea'];
+          const levels = ['1ra línea', '2da línea', '3ra línea', '4ta línea'];
 
-          for (let level = 0; level < 3 && currentSponsor; level++) {
+          for (let level = 0; level < 4 && currentSponsor; level++) {
             const sponsorData = userMap2[currentSponsor];
             if (!sponsorData) break;
 

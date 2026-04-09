@@ -366,9 +366,9 @@ export default async function handler(req, res) {
         const uMap = {}; if(Array.isArray(allU)) allU.forEach(function(u){ uMap[(u.username||'').toLowerCase()] = u; });
         const valor = sol.valor_inscripcion ? '$' + sol.valor_inscripcion + ' USD' : '';
         const fullName = sol.name || finalUsername;
-        const levels = ['1ra linea (directo)', '2da linea', '3ra linea'];
+        const levels = ['1ra linea (directo)', '2da linea', '3ra linea', '4ta linea'];
         let curSponsor = finalSponsor.toLowerCase();
-        for (let lvl = 0; lvl < 3 && curSponsor; lvl++) {
+        for (let lvl = 0; lvl < 4 && curSponsor; lvl++) {
           // Get push subscriptions for this sponsor
           // Find subscriptions for this sponsor AND their "2" account (same team)
           var _spUser = curSponsor.replace(/2$/, ''); // base username
