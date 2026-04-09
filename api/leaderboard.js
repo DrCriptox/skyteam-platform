@@ -24,13 +24,16 @@ module.exports = async (req, res) => {
 
     // ===== GET WEEKLY TOP 10 (with IP flags) =====
     if (action === 'weeklyTop') {
-      const now = new Date();
-      const day = now.getUTCDay();
+      // Colombia time (UTC-5) for week boundaries
+      const nowCol = new Date(Date.now() - 18000000);
+      const day = nowCol.getUTCDay();
       const diff = day === 0 ? 6 : day - 1;
-      const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - diff); monday.setUTCHours(0, 0, 0, 0);
-      const mondayISO = monday.toISOString();
-      const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 7);
-      const sundayISO = sunday.toISOString();
+      const monday = new Date(nowCol); monday.setUTCDate(nowCol.getUTCDate() - diff); monday.setUTCHours(0, 0, 0, 0);
+      // Convert back to UTC for Supabase query (+5h)
+      const mondayUTC = new Date(monday.getTime() + 18000000);
+      const mondayISO = mondayUTC.toISOString();
+      const sundayUTC = new Date(mondayUTC.getTime() + 7 * 86400000);
+      const sundayISO = sundayUTC.toISOString();
 
       // Fetch bookings WITH ip_address
       const bookings = await sb(
@@ -103,11 +106,12 @@ module.exports = async (req, res) => {
 
     // ===== GET MONTHLY TOP 20 =====
     if (action === 'monthlyTop') {
-      const now = new Date();
-      const monthStart = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1);
-      const monthEnd = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
-      const fromISO = monthStart.toISOString();
-      const toISO = monthEnd.toISOString();
+      // Colombia time (UTC-5) for month boundaries
+      const nowCol = new Date(Date.now() - 18000000);
+      const mStr = nowCol.getUTCFullYear() + '-' + String(nowCol.getUTCMonth()+1).padStart(2,'0') + '-01T05:00:00.000Z';
+      const mEndStr = new Date(nowCol.getUTCFullYear(), nowCol.getUTCMonth()+1, 1).toISOString().split('T')[0] + 'T05:00:00.000Z';
+      const fromISO = mStr;
+      const toISO = mEndStr;
 
       const bookings = await sb(
         'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada)'
@@ -145,11 +149,11 @@ module.exports = async (req, res) => {
 
     // ===== GET DAILY TOP 5 (with IP flags) =====
     if (action === 'dailyTop') {
-      const now = new Date();
-      const today10pm = new Date(now); today10pm.setUTCHours(22, 0, 0, 0);
-      if (now < today10pm) today10pm.setUTCDate(today10pm.getUTCDate() - 1);
-      const fromISO = new Date(today10pm.getTime() - 24 * 60 * 60 * 1000).toISOString();
-      const toISO = today10pm.toISOString();
+      // Colombia day: midnight to midnight (00:00 COL = 05:00 UTC)
+      const nowCol = new Date(Date.now() - 18000000);
+      const todayStr = nowCol.toISOString().split('T')[0];
+      const fromISO = todayStr + 'T05:00:00.000Z'; // 00:00 Colombia
+      const toISO = new Date(new Date(fromISO).getTime() + 86400000).toISOString(); // +24h
 
       const bookings = await sb(
         'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada)'

@@ -78,10 +78,10 @@ export default async function handler(req, res) {
       const profilePhoto = userProfile && userProfile[0] ? userProfile[0].photo : null;
       const profileName = userProfile && userProfile[0] ? userProfile[0].name : null;
 
-      // Fetch plan_diario blocks for next 8 days to block personal time in agenda
-      const today = new Date();
+      // Fetch plan_diario blocks for next 8 days — Colombia time (UTC-5)
+      const today = new Date(Date.now() - 18000000);
       const fechaIni = today.toISOString().slice(0,10);
-      const futuro = new Date(today); futuro.setDate(futuro.getDate() + 8);
+      const futuro = new Date(today.getTime() + 8 * 86400000);
       const fechaFin = futuro.toISOString().slice(0,10);
       const planBlocks = await sb('plan_diario?username=eq.' + encodeURIComponent(user) + '&fecha=gte.' + fechaIni + '&fecha=lte.' + fechaFin + '&select=fecha,hora_inicio,hora_fin');
       const bloqueos_personales = {};
