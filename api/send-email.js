@@ -247,7 +247,14 @@ async function handleTriggers(req, res) {
 
             var _cHora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
             const title = valor ? '\uD83D\uDCB0 \u00a1VENTA ' + valor + '!' : '\uD83C\uDF89 \u00a1Nueva venta!';
-            const body = fullName + ' \u2014 ' + levels[level] + (valor ? '\n\uD83D\uDCB0 Membres\u00eda: ' + valor : '') + '\n\u23F0 ' + _cHora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
+            var body;
+            if (level === 0) {
+              body = '\uD83D\uDD25 ' + fullName + '\n\u23F0 ' + _cHora + '\n\uD83D\uDE80 \u00a1Sigue as\u00ed, cada venta te acerca m\u00e1s!';
+            } else {
+              var _spName = userMap[newUser.sponsor ? newUser.sponsor.toLowerCase() : ''];
+              var sponsorNombre = _spName ? (_spName.name || newUser.sponsor) : (newUser.sponsor || '');
+              body = fullName + ' \u2014 ' + levels[level] + '\nDirecta de ' + sponsorNombre + '\n\u23F0 ' + _cHora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
+            }
 
             const r = await pushToUser(currentSponsor, title, body, '/?nav=home', tag + '-L' + (level+1));
             results.triggers.push({ type: 'new_client_L' + (level+1), sponsor: currentSponsor, newUser: newUser.username, valor: newUser.valor_inscripcion, sent: r.sent });

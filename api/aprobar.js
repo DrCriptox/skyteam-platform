@@ -378,7 +378,13 @@ export default async function handler(req, res) {
           if (Array.isArray(subs) && subs.length > 0) {
             var _hora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
             var _titulo = valor ? '\uD83D\uDCB0 \u00a1VENTA ' + valor + '!' : '\uD83C\uDF89 \u00a1Nueva venta!';
-            var _cuerpo = fullName + ' \u2014 ' + levels[lvl] + (valor ? '\n\uD83D\uDCB0 Membresia: ' + valor : '') + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
+            var _cuerpo;
+            if (lvl === 0) {
+              _cuerpo = '\uD83D\uDD25 ' + fullName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Sigue as\u00ed, cada venta te acerca m\u00e1s!';
+            } else {
+              var _spName = uMap[finalSponsor.toLowerCase()] ? (uMap[finalSponsor.toLowerCase()].name || finalSponsor) : finalSponsor;
+              _cuerpo = fullName + ' \u2014 ' + levels[lvl] + '\nDirecta de ' + _spName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
+            }
             const payload = JSON.stringify({
               title: _titulo,
               body: _cuerpo,
