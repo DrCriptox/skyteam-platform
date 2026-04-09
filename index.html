@@ -13591,19 +13591,19 @@ function _renderCrmRankingTab() {
       var rowBorder = (isMe && !isPodium) ? '1px solid '+meColor+'0.30)' : (isMe && isPodium) ? '1.5px solid '+podiumBorder[i] : isPodium ? '0.5px solid '+podiumBorder[i] : 'none';
       var rowShadow = (isMe && !isPodium) ? 'box-shadow:0 0 15px '+meColor+'0.12);' : (isMe && isPodium) ? 'box-shadow:0 0 20px '+podiumGlow[i]+',0 0 40px '+podiumGlow[i]+';' : '';
       var avatarBorder = (isMe && !isPodium) ? 'rgba(127,119,221,0.5)' : isMe ? podiumBorder[i] : isPodium ? podiumBorder[i] : 'rgba(255,255,255,0.06)';
-      rhtml += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';'+rowShadow+'">';
+      rhtml += '<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';'+rowShadow+'">';
       // Position — medal or number
       if(isPodium) {
         rhtml += '<div style="width:22px;font-size:18px;text-align:center;flex-shrink:0;">'+medals[i]+'</div>';
       } else {
         rhtml += '<div style="width:22px;font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(i+1)+'</div>';
       }
-      // Avatar
-      rhtml += '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
-      // Name + flag + stats
+      // Avatar — 20% bigger (34→41px)
+      rhtml += '<div style="width:41px;height:41px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      // Name + flag + stats — centered
       rhtml += '<div style="flex:1;min-width:0;text-align:center;">';
-      rhtml += '<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:7px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
-      rhtml += '<div style="font-size:7px;margin-top:3px;letter-spacing:0.3px;">';
+      rhtml += '<div style="font-size:17px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      rhtml += '<div style="font-size:8px;margin-top:3px;letter-spacing:0.3px;">';
       rhtml += '<span style="color:#C9A84C;">\uD83D\uDCCB'+(m.contactos||0)+'</span> ';
       rhtml += '<span style="color:#7F77DD;">\u27A1\uFE0F'+(m.avances||0)+'</span> ';
       rhtml += '<span style="color:#1D9E75;">\uD83E\uDD16'+(m.msgIA||0)+'</span> ';
