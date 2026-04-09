@@ -4790,10 +4790,12 @@ function loadPlanDiario() {
         .then(function(bkData){
           var bookings = Array.isArray(bkData) ? bkData : (bkData.bookings||bkData.data||[]);
           bookings.forEach(function(bk){
-            if(!bk.fecha_iso) return;
-            var dt = new Date(bk.fecha_iso);
+            var fechaRaw = bk.fechaISO || bk.fecha_iso;
+            if(!fechaRaw) return;
+            var dt = new Date(fechaRaw);
             if(isNaN(dt.getTime())) return;
-            var fecha = dt.toISOString().split('T')[0];
+            // Use LOCAL date (not UTC) to match the calendar grid
+            var fecha = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
             var hi = String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
             var dur = (typeof agendaConfig!=='undefined' && agendaConfig && agendaConfig.duracion) ? agendaConfig.duracion : 60;
             var endDt = new Date(dt.getTime()+dur*60000);
