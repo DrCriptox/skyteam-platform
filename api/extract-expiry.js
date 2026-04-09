@@ -40,45 +40,71 @@ REGLAS:
 - SPONSOR: SOLO de "Patrocinador:". IGNORAR "Colocacion:" siempre.
 - DIAS: del badge O calcular desde "Vencimiento:" hasta hoy ${new Date().toISOString().slice(0,10)}.
 
-RECHAZAR (found=false) si falta cualquiera de los 4 datos o no es 8innova.biz.
+Si un dato no es visible, intenta inferirlo del contexto. Solo pon found=false si REALMENTE no puedes ver ningun dato.
 
 JSON:
 OK: {"found":true,"days_remaining":62,"expiry_date":"2026-06-09","username":"Billonario7","classification":"INN 500","sponsor":"BILLONARIA76"}
 FALTA: {"found":false,"reason":"No se ve X","visible":{"days_remaining":false,"username":"Billonario7","classification":false,"sponsor":false}}`;
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 256,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image_url', image_url: { url: 'data:' + (mimeType || 'image/jpeg') + ';base64,' + imageBase64 } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
+    // Auto-retry: up to 3 attempts if data is incomplete
+    let extracted = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const retryPrompt = attempt === 0 ? prompt : prompt + '\n\nINTENTO ' + (attempt+1) + ': el intento anterior no detecto todos los datos. Mira MUY cuidadosamente la imagen. Busca cada dato aunque este borroso o parcialmente visible. Es CRITICO que encuentres los 4 datos.';
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 300,
+          temperature: attempt * 0.2, // increase creativity on retries
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: 'data:' + (mimeType || 'image/jpeg') + ';base64,' + imageBase64 } },
+              { type: 'text', text: retryPrompt }
+            ]
+          }]
+        })
+      });
 
-    if (!r.ok) {
-      const errText = await r.text();
-      console.error('[OCR] API error:', r.status, errText.substring(0, 200));
-      // Return user-friendly error instead of crashing
-      return res.status(200).json({ found: false, apiError: true, reason: 'Sky IA no est\u00e1 disponible en este momento. Intenta de nuevo en unos minutos.' });
+      if (!r.ok) {
+        const errText = await r.text();
+        console.error('[OCR] API error attempt ' + attempt + ':', r.status, errText.substring(0, 200));
+        if (attempt === 2) return res.status(200).json({ found: false, apiError: true, reason: 'Sky IA no est\u00e1 disponible. Intenta de nuevo.' });
+        continue;
+      }
+
+      const gptData = await r.json();
+      const rawText = (gptData.choices?.[0]?.message?.content || '').trim();
+      console.log('[OCR] Attempt ' + attempt + ':', rawText.substring(0, 100));
+
+      let parsed;
+      try {
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+      } catch {
+        parsed = { found: false };
+      }
+
+      // Merge: keep best data from all attempts
+      if (!extracted) {
+        extracted = parsed;
+      } else if (parsed.found || parsed.username || parsed.classification || parsed.sponsor || parsed.days_remaining) {
+        // Fill in missing data from this attempt
+        if (!extracted.username && parsed.username) extracted.username = parsed.username;
+        if (!extracted.classification && parsed.classification) extracted.classification = parsed.classification;
+        if (!extracted.sponsor && parsed.sponsor) extracted.sponsor = parsed.sponsor;
+        if ((!extracted.days_remaining && extracted.days_remaining !== 0) && (parsed.days_remaining || parsed.days_remaining === 0)) extracted.days_remaining = parsed.days_remaining;
+        if (!extracted.expiry_date && parsed.expiry_date) extracted.expiry_date = parsed.expiry_date;
+        if (parsed.found) extracted.found = true;
+      }
+
+      // Check if we have all 4 data points
+      var have = (extracted.days_remaining || extracted.days_remaining === 0 || extracted.expiry_date ? 1 : 0) + (extracted.username ? 1 : 0) + (extracted.classification ? 1 : 0) + (extracted.sponsor ? 1 : 0);
+      if (have >= 4) { extracted.found = true; break; } // All 4 found, stop retrying
+      if (have >= 3 && attempt >= 1) { extracted.found = true; break; } // 3/4 after 2 tries is enough
     }
-
-    const gptData = await r.json();
-    const rawText = (gptData.choices?.[0]?.message?.content || '').trim();
-
-    let extracted;
-    try {
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      extracted = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
-    } catch {
-      extracted = { found: false };
-    }
+    if (!extracted) extracted = { found: false };
 
     // Validate 4 required fields
     if (extracted.found) {
