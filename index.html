@@ -13593,10 +13593,11 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="font-size:14px;font-weight:800;color:'+(isMe?'#C9A84C':'#F0EDE6')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(m.name||m.username||'?')+'</div>';
       rhtml += '<div style="display:flex;gap:6px;margin-top:2px;font-size:9px;color:rgba(255,255,255,0.35);flex-wrap:wrap;">';
       rhtml += '<span>\uD83D\uDCCB '+(m.contactos||0)+'</span>';
-      rhtml += '<span>\uD83D\uDD04 '+(m.avances||0)+' mov</span>';
-      rhtml += '<span>\uD83E\uDD16 '+(m.msgIA||0)+' msg</span>';
-      rhtml += '<span>\uD83D\uDCB0 '+(m.abonos||0)+' abn</span>';
-      rhtml += '<span>\u2705 '+(m.pagos||0)+' cerr</span>';
+      rhtml += '<span>\u27A1\uFE0F '+(m.avances||0)+'</span>';
+      rhtml += '<span>\uD83E\uDD16 '+(m.msgIA||0)+'</span>';
+      rhtml += '<span>\uD83D\uDD04 '+(m.actualizaciones||0)+'</span>';
+      rhtml += '<span>\uD83D\uDCB0 '+(m.abonos||0)+'</span>';
+      rhtml += '<span>\u2705 '+(m.pagos||0)+'</span>';
       rhtml += '</div></div>';
       // Score
       rhtml += '<div style="text-align:right;flex-shrink:0;">';
