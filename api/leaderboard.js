@@ -462,7 +462,7 @@ module.exports = async (req, res) => {
 
       // Fetch all data in parallel
       var results2 = await Promise.all([
-        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo&limit=5000'),
+        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&limit=5000'),
         sb('interacciones?select=username,tipo,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&limit=5000'),
         sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2 + '&limit=5000'),
         sb('users?select=username,name,photo&limit=5000')
@@ -473,7 +473,7 @@ module.exports = async (req, res) => {
       var allUsers = results2[3] || [];
       var userMap2 = {}; allUsers.forEach(function(u){ userMap2[u.username] = u; });
 
-      var _defStats = function(){ return {contactos:0,actualizaciones:0,mensajes:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0}; };
+      var _defStats = function(){ return {contactos:0,conWhatsapp:0,conInstagram:0,actualizaciones:0,mensajes:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0}; };
       var stats2 = {};
       // Count prospects per user — EVERYTHING filtered by period
       allProspectos.forEach(function(p) {
@@ -482,7 +482,9 @@ module.exports = async (req, res) => {
         // New contacts: created in this period
         if (p.created_at >= fromISO2) {
           s.contactos++;
-          // Only count qualities of NEW prospects (created in period)
+          // Bonus: contact has WhatsApp and/or Instagram filled
+          if (p.telefono && p.telefono.length >= 8) s.conWhatsapp++;
+          if (p.instagram && p.instagram.length >= 2) s.conInstagram++;
           if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
           if ((p.temperatura||0) >= 50) s.temp50++;
           if ((p.temperatura||0) >= 75) s.temp75++;
@@ -531,9 +533,9 @@ module.exports = async (req, res) => {
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 5) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 4) + (s.temp75 * 6) + (s.etapaAvance * 3) + (s.cerrados * 7) + ((s.facturas||0) * 50) + (s.recordatorios * 2) + (s.recCompletados * 3);
+        s.score = (s.contactos * 5) + (s.conWhatsapp * 2) + (s.conInstagram * 2) + (s.calificados * 3) + (s.actualizaciones * 2) + (s.mensajes * 3) + (s.temp50 * 4) + (s.temp75 * 6) + (s.etapaAvance * 3) + (s.cerrados * 7) + ((s.facturas||0) * 50) + (s.recordatorios * 2) + (s.recCompletados * 3);
         var usr = userMap2[u] || {};
-        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, prospectos: s.contactos, actualizaciones: s.actualizaciones, mensajes: s.mensajes, presentaciones: s.etapaAvance, cierres: s.cerrados };
+        return { username: u, name: usr.name || u, photo: usr.photo || null, score: s.score, prospectos: s.contactos, conWhatsapp: s.conWhatsapp, conInstagram: s.conInstagram, actualizaciones: s.actualizaciones, mensajes: s.mensajes, presentaciones: s.etapaAvance, cierres: s.cerrados };
       }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
 
       return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), period: period });
