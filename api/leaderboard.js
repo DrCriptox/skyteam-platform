@@ -442,15 +442,21 @@ module.exports = async (req, res) => {
     // ===== SKY PROSPECTS RANKING =====
     if (action === 'prospectRanking') {
       var period = body.period || req.query?.period || 'weekly';
-      var now2 = new Date();
+      // Colombia time (UTC-5) for ALL period calculations
+      var nowCol2 = new Date(Date.now() - 18000000);
       var fromDate;
       if (period === 'daily') {
-        fromDate = new Date(now2); fromDate.setHours(0,0,0,0);
+        // Hoy 00:01 Colombia = hoy 05:01 UTC
+        fromDate = new Date(nowCol2.toISOString().split('T')[0] + 'T05:00:00.000Z');
       } else if (period === 'monthly') {
-        fromDate = new Date(now2.getFullYear(), now2.getMonth(), 1);
+        // Primero del mes 00:01 Colombia
+        var mStr = nowCol2.getUTCFullYear() + '-' + String(nowCol2.getUTCMonth()+1).padStart(2,'0') + '-01';
+        fromDate = new Date(mStr + 'T05:00:00.000Z');
       } else {
-        var d2 = now2.getUTCDay(); var diff2 = d2===0?6:d2-1;
-        fromDate = new Date(now2); fromDate.setUTCDate(now2.getUTCDate()-diff2); fromDate.setUTCHours(0,0,0,0);
+        // Lunes 00:01 Colombia
+        var d2 = nowCol2.getUTCDay(); var diff2 = d2===0?6:d2-1;
+        var mon = new Date(nowCol2); mon.setUTCDate(nowCol2.getUTCDate()-diff2);
+        fromDate = new Date(mon.toISOString().split('T')[0] + 'T05:00:00.000Z');
       }
       var fromISO2 = fromDate.toISOString();
 
@@ -469,20 +475,23 @@ module.exports = async (req, res) => {
 
       var _defStats = function(){ return {contactos:0,actualizaciones:0,mensajes:0,calificados:0,temp50:0,temp75:0,etapaAvance:0,cerrados:0,recordatorios:0,recCompletados:0,score:0}; };
       var stats2 = {};
-      // Count prospects per user (all-time data, period filter for new contacts)
+      // Count prospects per user — EVERYTHING filtered by period
       allProspectos.forEach(function(p) {
         if (!stats2[p.username]) stats2[p.username] = _defStats();
         var s = stats2[p.username];
-        if (p.created_at >= fromISO2) s.contactos++;
-        if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
-        if ((p.temperatura||0) >= 50) s.temp50++;
-        if ((p.temperatura||0) >= 75) s.temp75++;
-        var stageW = {nuevo:0,contactado:1,interesado:2,presentacion:3,seguimiento:4,cerrado_ganado:5,cerrado_perdido:0};
-        if (stageW[p.etapa] >= 3) s.etapaAvance++;
-        if (p.etapa === 'cerrado_ganado') s.cerrados++;
-        // Actualizaciones: count if updated_at is in period AND different from created_at
+        // New contacts: created in this period
+        if (p.created_at >= fromISO2) {
+          s.contactos++;
+          // Only count qualities of NEW prospects (created in period)
+          if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
+          if ((p.temperatura||0) >= 50) s.temp50++;
+          if ((p.temperatura||0) >= 75) s.temp75++;
+          var stageW = {nuevo:0,contactado:1,interesado:2,presentacion:3,confirmado_cierre:4,seguimiento:4,pendiente_pago:4,abonado:5,cerrado_ganado:6,cerrado_perdido:0};
+          if (stageW[p.etapa] >= 3) s.etapaAvance++;
+          if (p.etapa === 'cerrado_ganado') s.cerrados++;
+        }
+        // Actualizaciones: updated in period (regardless of when created)
         if (p.updated_at && p.updated_at >= fromISO2 && p.updated_at !== p.created_at) {
-          // Anti-trampa: max 1 per prospect per day
           var dayKey = p.username + '_' + (p.id||'') + '_' + (p.updated_at||'').slice(0,10);
           if (!stats2[p.username]._actDays) stats2[p.username]._actDays = {};
           if (!stats2[p.username]._actDays[dayKey]) {
