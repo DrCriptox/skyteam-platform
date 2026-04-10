@@ -4633,8 +4633,8 @@ function _uploadMeetingProof(input, bookingId) {
   if(!file) return;
   var attempt = (_proofAttempts[bookingId] || 0) + 1;
   _proofAttempts[bookingId] = attempt;
-  if(attempt > 3) { showToast('❌ Máximo 3 intentos de verificación'); return; }
-  showToast('🔍 Verificando foto con IA... (intento ' + attempt + '/3)');
+  if(attempt > 2) { showToast('❌ Máximo 2 intentos de verificación'); return; }
+  showToast('🔍 Verificando foto con IA... (intento ' + attempt + '/2)');
   // Read original file (keep EXIF) + compressed version for AI
   var readerOrig = new FileReader();
   readerOrig.onload = function(eOrig) {
@@ -4707,12 +4707,8 @@ function loadSJRanking() {
       container.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:48px;margin-bottom:12px;">\uD83C\uDFC6</div><p style="color:rgba(255,255,255,0.4);font-size:14px;margin:0;">Sin datos a\u00fan</p></div>';
       return;
     }
-    ranking.forEach(function(u) {
-      u.pts_citas = (u.citas||0) * 10;
-      u.pts_verified = (u.verificadas||0) * 30;
-      u.pts_proofs = (u.proofs||0) * 30;
-      u.total = u.pts_citas + u.pts_verified + u.pts_proofs;
-    });
+    // Use backend-calculated score (already includes all bonuses/penalties)
+    ranking.forEach(function(u) { u.total = u.score || 0; });
     ranking.sort(function(a,b){return b.total - a.total;});
     var top20 = ranking.slice(0,20);
     var html = '';

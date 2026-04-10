@@ -165,12 +165,12 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, verified: true, method: 'ai', message: 'Foto verificada por IA', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
     } else {
       var currentAttempt = attempt || 1;
-      if (currentAttempt >= 3) {
-        // 3rd attempt failed — give partial points
-        await markProof(bookingId, username, 'failed', 'AI rejected after 3 attempts: ' + JSON.stringify(analysis), imgHash);
+      if (currentAttempt >= 2) {
+        // 2nd attempt failed — give partial points
+        await markProof(bookingId, username, 'failed', 'AI rejected after 2 attempts: ' + JSON.stringify(analysis), imgHash);
         return res.status(200).json({ ok: true, verified: false, method: 'ai_rejected', message: 'La foto no parece una reunión de video del horario de la cita. Se otorgan puntos parciales.', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence, reason: analysis.reason } });
       }
-      return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', message: analysis.reason || 'La foto no coincide. Intenta de nuevo.', attempt: currentAttempt, maxAttempts: 3, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
+      return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', message: analysis.reason || 'La foto no coincide. Intenta de nuevo.', attempt: currentAttempt, maxAttempts: 2, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
     }
 
   } catch(error) {

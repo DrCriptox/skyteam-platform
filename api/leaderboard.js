@@ -124,18 +124,35 @@ module.exports = async (req, res) => {
       );
 
       const userStats = {};
-      var _initM = function(u) { if(!userStats[u]) userStats[u] = { citas: 0, verificadas: 0, canceladas: 0, proofs: 0, proofsFailed: 0 }; };
+      var _initM = function(u) { if(!userStats[u]) userStats[u] = { citas: 0, verificadas: 0, canceladas: 0, proofs: 0, proofsFailed: 0, ips: {}, ipDupes: 0 }; };
       (bookings || []).forEach(function(b) {
         _initM(b.username);
         if (b.status === 'sospechosa') return;
         if (b.status === 'cancelada') { userStats[b.username].canceladas++; return; }
         userStats[b.username].citas++;
         if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
+        if (b.ip_address) {
+          if (!userStats[b.username].ips[b.ip_address]) userStats[b.username].ips[b.ip_address] = [];
+          userStats[b.username].ips[b.ip_address].push(b.nombre);
+        }
       });
       (proofs || []).forEach(function(p) {
         _initM(p.username);
         if (p.status === 'approved') userStats[p.username].proofs++;
         if (p.status === 'failed') userStats[p.username].proofsFailed++;
+      });
+
+      // IP dupe analysis (same as weekly/daily)
+      Object.keys(userStats).forEach(function(u) {
+        var s = userStats[u];
+        var ipDupes = 0;
+        Object.keys(s.ips).forEach(function(ip) {
+          var uniqueNames = [];
+          s.ips[ip].forEach(function(n) { if (uniqueNames.indexOf(n) === -1) uniqueNames.push(n); });
+          if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
+        });
+        s.ipDupes = ipDupes;
+        delete s.ips;
       });
 
       const usernames = Object.keys(userStats);
@@ -147,8 +164,9 @@ module.exports = async (req, res) => {
 
       const ranking = usernames.map(function(u) {
         var s = userStats[u];
-        var score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5);
-        return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score };
+        var score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (s.ipDupes * 10);
+        if (score < 0) score = 0;
+        return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score, ipDupes: s.ipDupes };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 
       return res.status(200).json({ ok: true, period: 'monthly', from: fromISO, to: toISO, ranking: ranking });
