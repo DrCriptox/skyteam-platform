@@ -13949,13 +13949,12 @@ function _renderCrmRankingTab() {
       // Name + flag + stats — centered like Sky Sales IA
       rhtml += '<div style="flex:1;min-width:0;">';
       rhtml += '<div class="sp-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span class="sp-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
-      rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;">';
-      rhtml += '<span style="color:#C9A84C;font-weight:600;">\uD83D\uDCCB'+(m.contactos||0)+'</span> ';
-      rhtml += '<span style="color:#7F77DD;font-weight:600;">\u27A1\uFE0F'+(m.avances||0)+'</span> ';
-      rhtml += '<span style="color:#1D9E75;font-weight:600;">\uD83E\uDD16'+(m.msgIA||0)+'</span> ';
-      rhtml += '<span style="color:#FFA500;font-weight:600;">\uD83D\uDD04'+(m.actualizaciones||0)+'</span> ';
-      rhtml += '<span style="color:#00D4AA;font-weight:600;">\uD83D\uDCB0'+(m.abonos||0)+'</span> ';
-      rhtml += '<span style="color:#25D366;font-weight:600;">\u2705'+(m.pagos||0)+'</span>';
+      rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;letter-spacing:0.3px;">';
+      rhtml += '<span style="color:#C9A84C;">'+(m.contactos||0)+'<span style="opacity:0.5;font-size:8px;"> con</span></span> ';
+      rhtml += '<span style="color:#7F77DD;">'+(m.avances||0)+'<span style="opacity:0.5;font-size:8px;"> mov</span></span> ';
+      rhtml += '<span style="color:#1D9E75;">'+(m.msgIA||0)+'<span style="opacity:0.5;font-size:8px;"> ia</span></span> ';
+      rhtml += '<span style="color:#00D4AA;">'+(m.abonos||0)+'<span style="opacity:0.5;font-size:8px;"> ab</span></span> ';
+      rhtml += '<span style="color:#25D366;">'+(m.pagos||0)+'<span style="opacity:0.5;font-size:8px;"> pg</span></span>';
       rhtml += '</div></div>';
       // Score
       rhtml += '<div style="flex-shrink:0;text-align:right;"><span class="sp-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(m.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
@@ -13975,13 +13974,12 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="flex:1;min-width:0;">';
       rhtml += '<div class="sp-rk-name" style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(CU.name||CU.username)+' <span class="sp-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
       if(myData) {
-        rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;">';
-        rhtml += '<span style="color:#C9A84C;font-weight:600;">\uD83D\uDCCB'+(myData.contactos||0)+'</span> ';
-        rhtml += '<span style="color:#7F77DD;font-weight:600;">\u27A1\uFE0F'+(myData.avances||0)+'</span> ';
-        rhtml += '<span style="color:#1D9E75;font-weight:600;">\uD83E\uDD16'+(myData.msgIA||0)+'</span> ';
-        rhtml += '<span style="color:#FFA500;font-weight:600;">\uD83D\uDD04'+(myData.actualizaciones||0)+'</span> ';
-        rhtml += '<span style="color:#00D4AA;font-weight:600;">\uD83D\uDCB0'+(myData.abonos||0)+'</span> ';
-        rhtml += '<span style="color:#25D366;font-weight:600;">\u2705'+(myData.pagos||0)+'</span>';
+        rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;letter-spacing:0.3px;">';
+        rhtml += '<span style="color:#C9A84C;">'+(myData.contactos||0)+'<span style="opacity:0.5;font-size:8px;"> con</span></span> ';
+        rhtml += '<span style="color:#7F77DD;">'+(myData.avances||0)+'<span style="opacity:0.5;font-size:8px;"> mov</span></span> ';
+        rhtml += '<span style="color:#1D9E75;">'+(myData.msgIA||0)+'<span style="opacity:0.5;font-size:8px;"> ia</span></span> ';
+        rhtml += '<span style="color:#00D4AA;">'+(myData.abonos||0)+'<span style="opacity:0.5;font-size:8px;"> ab</span></span> ';
+        rhtml += '<span style="color:#25D366;">'+(myData.pagos||0)+'<span style="opacity:0.5;font-size:8px;"> pg</span></span>';
         rhtml += '</div>';
       }
       rhtml += '</div>';
