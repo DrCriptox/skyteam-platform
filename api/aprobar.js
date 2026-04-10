@@ -403,16 +403,21 @@ export default async function handler(req, res) {
           var _spData = uMap[curSponsor];
           var _spEmail = _spData ? (_spData.email || '') : '';
           if (_spEmail && process.env.RESEND_API_KEY) {
-            // Subject: emphasize amount + team growth (NOT the person's name)
-            var _emailSubject = valor
-              ? '\uD83D\uDCC8 Nueva venta de ' + valor + ' \u2014 \u00a1Tu equipo sigue creciendo!'
+            // Email total = venta + $1 App SkyTeam
+            var _ventaNum = sol.valor_inscripcion ? Number(sol.valor_inscripcion) : 0;
+            var _totalEmail = _ventaNum > 0 ? (_ventaNum + 1) : 0;
+            var _totalStr = _totalEmail > 0 ? '$' + _totalEmail + ' USD' : '';
+            var _ventaStr = _ventaNum > 0 ? '$' + _ventaNum + ' USD' : '';
+            // Subject: total amount (NOT the person's name)
+            var _emailSubject = _totalStr
+              ? '\uD83D\uDCC8 Nueva venta de ' + _totalStr + ' \u2014 \u00a1Tu equipo sigue creciendo!'
               : '\uD83D\uDCC8 Nueva venta \u2014 \u00a1Tu equipo sigue creciendo!';
             var _levelLabel = lvl === 0 ? 'Venta directa en tu equipo' : 'Venta en tu ' + levels[lvl];
             var _emailHtml = '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
               + '<div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:24px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>'
               + '<div style="text-align:center;margin-bottom:24px;">'
               + '<div style="font-size:13px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:3px;margin-bottom:10px;">\u2714\uFE0F Confirmaci\u00f3n de venta</div>'
-              + (valor ? '<div style="font-size:48px;font-weight:900;color:#C9A84C;margin-bottom:6px;">' + valor + '</div>' : '<div style="font-size:36px;font-weight:900;color:#C9A84C;margin-bottom:6px;">Nueva Venta</div>')
+              + (_totalStr ? '<div style="font-size:48px;font-weight:900;color:#C9A84C;margin-bottom:6px;">' + _totalStr + '</div>' : '<div style="font-size:36px;font-weight:900;color:#C9A84C;margin-bottom:6px;">Nueva Venta</div>')
               + '<div style="font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:4px;">' + _levelLabel + '</div>'
               + '<div style="font-size:12px;color:rgba(255,255,255,0.2);">Tu franquicia digital est\u00e1 generando ingresos \uD83D\uDE80</div>'
               + '</div>'
@@ -420,10 +425,20 @@ export default async function handler(req, res) {
               + '<div style="font-size:20px;font-weight:900;color:#C9A84C;margin-bottom:6px;">\u00a1Felicidades!</div>'
               + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.6;">Acabas de registrar una nueva venta.<br>Tu red sigue creciendo y cada d\u00eda est\u00e1s m\u00e1s cerca de tus metas.</div>'
               + '</div>'
+              + (_ventaStr ? '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px;margin-bottom:20px;">'
+              + '<div style="font-size:11px;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;text-align:center;">Desglose</div>'
+              + '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Membres\u00eda</span><span style="font-size:13px;color:#F0EDE6;font-weight:700;">' + _ventaStr + '</span></div>'
+              + '<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;color:rgba(255,255,255,0.4);">App SkyTeam</span><span style="font-size:13px;color:#F0EDE6;font-weight:700;">$1 USD</span></div>'
+              + '<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;display:flex;justify-content:space-between;"><span style="font-size:14px;color:#C9A84C;font-weight:900;">Total</span><span style="font-size:14px;color:#C9A84C;font-weight:900;">' + _totalStr + '</span></div>'
+              + '</div>' : '')
               + '<div style="text-align:center;margin-bottom:20px;">'
               + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">\uD83D\uDCCA Ver mi equipo</a>'
               + '</div>'
-              + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:10px;">Sky Team \u2014 Tu plataforma de crecimiento digital</p>'
+              + '<div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.04);">'
+              + '<div style="font-size:10px;color:rgba(255,255,255,0.12);margin-bottom:4px;">Nuevo cliente</div>'
+              + '<div style="font-size:11px;color:rgba(255,255,255,0.15);">' + fullName + '</div>'
+              + '</div>'
+              + '<p style="text-align:center;color:rgba(255,255,255,0.1);font-size:9px;margin-top:12px;">Sky Team \u2014 Tu plataforma de crecimiento digital</p>'
               + '</div>';
             // Schedule email 5 minutes from now via Resend scheduled_at
             var _sendAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
