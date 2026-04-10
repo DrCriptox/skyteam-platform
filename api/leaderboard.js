@@ -89,13 +89,14 @@ module.exports = async (req, res) => {
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
-        const users = await sb('users?select=username,name,ref&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        const users = await sb('users?select=username,name,ref,photo,whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
       const ranking = usernames.map(function(u) {
         return {
           username: u, name: usersMap[u] ? usersMap[u].name : u, ref: usersMap[u] ? usersMap[u].ref : '',
+          photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '',
           citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].proofs,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes, ipFlags: userStats[u].ipFlags
         };
@@ -134,14 +135,14 @@ module.exports = async (req, res) => {
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
-        const users = await sb('users?select=username,name,ref&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        const users = await sb('users?select=username,name,ref,photo,whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
       const ranking = usernames.map(function(u) {
         var s = userStats[u];
         var score = (s.citas * 10) + (s.verificadas * 30) + (s.proofs * 30);
-        return { username: u, name: usersMap[u] ? usersMap[u].name : u, citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score };
+        return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 
       return res.status(200).json({ ok: true, period: 'monthly', from: fromISO, to: toISO, ranking: ranking });
@@ -187,15 +188,16 @@ module.exports = async (req, res) => {
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
-        const users = await sb('users?select=username,name&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        const users = await sb('users?select=username,name,photo,whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
       const ranking = usernames.map(function(u) {
         return { username: u, name: usersMap[u] ? usersMap[u].name : u,
+          photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '',
           citas: userStats[u].citas, verificadas: userStats[u].verificadas,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes };
-      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 5);
+      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 
       return res.status(200).json({ ok: true, period: 'daily', from: fromISO, to: toISO, ranking: ranking });
     }

@@ -4181,8 +4181,7 @@ function renderAgendaUI(el) {
   var pendientes = agendaBookings.filter(function(b){ return b.status !== 'cancelada'; });
   var fotoActual = (agendaConfig && agendaConfig.foto) ? agendaConfig.foto : (localStorage.getItem('skyteam_photo_' + (CU ? CU.username : '')) || '');
 
-  var html = '<div class="sc-sub">Configura tus horarios y gestiona las citas de tus prospectos</div>';
-  html += '<div style="max-width:680px;padding:8px 0;">';
+  var html = '<div style="max-width:680px;padding:2px 0;">';
 
   // Tabs FIRST (arriba de todo)
   html += '<div style="display:flex;gap:4px;margin-bottom:16px;">';
@@ -4657,20 +4656,13 @@ function _uploadMeetingProof(input, bookingId) {
 // ── Sky Journal Ranking ──
 var sjRankPeriod = 'weekly';
 function renderSJRankingUI() {
-  var html = '<div style="text-align:center;margin-bottom:16px;">';
-  html += '<p style="font-size:20px;font-weight:900;color:#F0EDE6;margin:0 0 4px;">\uD83C\uDFC6 Ranking de Cierres</p>';
-  html += '<p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0;">Gana puntos agendando y verificando citas</p>';
-  html += '</div>';
-  // Period toggle
-  html += '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:16px;">';
-  html += '<button onclick="sjRankPeriod=\'weekly\';loadSJRanking()" style="padding:8px 20px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:0.5px solid '+(sjRankPeriod==='weekly'?'rgba(201,168,76,0.4)':'rgba(255,255,255,0.08)')+';background:'+(sjRankPeriod==='weekly'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)')+';color:'+(sjRankPeriod==='weekly'?'#C9A84C':'rgba(255,255,255,0.4)')+';">Semanal</button>';
-  html += '<button onclick="sjRankPeriod=\'monthly\';loadSJRanking()" style="padding:8px 20px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:0.5px solid '+(sjRankPeriod==='monthly'?'rgba(201,168,76,0.4)':'rgba(255,255,255,0.08)')+';background:'+(sjRankPeriod==='monthly'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.03)')+';color:'+(sjRankPeriod==='monthly'?'#C9A84C':'rgba(255,255,255,0.4)')+';">Mensual</button>';
-  html += '</div>';
-  // Points info
-  html += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;">';
-  html += '<span style="font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);color:#1D9E75;">\uD83D\uDCC5 Cita agendada = 10 pts</span>';
-  html += '<span style="font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.20);color:#C9A84C;">\uD83D\uDCF7 Verificada = +30 pts</span>';
-  html += '<span style="font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(127,119,221,0.08);border:0.5px solid rgba(127,119,221,0.20);color:#7F77DD;">\uD83D\uDD25 Racha 7d = +50 pts</span>';
+  var _sjPeriodBtn = function(p, label) {
+    var on = sjRankPeriod === p;
+    return '<button onclick="sjRankPeriod=\''+p+'\';loadSJRanking()" style="padding:5px 12px;border-radius:8px;background:'+(on?'rgba(201,168,76,0.15)':'rgba(255,255,255,0.03)')+';border:0.5px solid '+(on?'rgba(201,168,76,0.3)':'rgba(255,255,255,0.06)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.4)')+';font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">'+label+'</button>';
+  };
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
+  html += '<div style="font-size:16px;font-weight:900;color:#fff;">\uD83C\uDFC6 Ranking de Cierres</div>';
+  html += '<div style="display:flex;gap:4px;">'+_sjPeriodBtn('daily','Hoy')+_sjPeriodBtn('weekly','Semana')+_sjPeriodBtn('monthly','Mes')+'</div>';
   html += '</div>';
   html += '<div id="sj-ranking-list"><div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div></div>';
   loadSJRanking();
@@ -4678,7 +4670,7 @@ function renderSJRankingUI() {
 }
 
 function loadSJRanking() {
-  var action = sjRankPeriod === 'weekly' ? 'weeklyTop' : 'monthlyTop';
+  var action = sjRankPeriod === 'daily' ? 'dailyTop' : sjRankPeriod === 'weekly' ? 'weeklyTop' : 'monthlyTop';
   fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:action,user:CU?CU.username:''})})
   .then(function(r){return r.json();})
   .then(function(d){
@@ -4686,10 +4678,9 @@ function loadSJRanking() {
     var container = document.getElementById('sj-ranking-list');
     if(!container) return;
     if(ranking.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:48px;margin-bottom:12px;">\uD83C\uDFC6</div><p style="color:rgba(255,255,255,0.4);font-size:14px;margin:0;">Sin datos de ranking a\u00fan</p><p style="color:rgba(255,255,255,0.25);font-size:11px;margin:6px 0 0;">Agenda citas por tu link p\u00fablico para empezar a sumar puntos</p></div>';
+      container.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:48px;margin-bottom:12px;">\uD83C\uDFC6</div><p style="color:rgba(255,255,255,0.4);font-size:14px;margin:0;">Sin datos a\u00fan</p></div>';
       return;
     }
-    // Recalculate scores: citas=10pts, verificadas=+30pts
     ranking.forEach(function(u) {
       u.pts_citas = (u.citas||0) * 10;
       u.pts_verified = (u.verificadas||0) * 30;
@@ -4699,43 +4690,30 @@ function loadSJRanking() {
     ranking.sort(function(a,b){return b.total - a.total;});
     var top20 = ranking.slice(0,20);
     var html = '';
-    // Podium (top 3)
     var medals = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
-    var podiumColors = ['linear-gradient(135deg,#FFD700,#C9A84C)','linear-gradient(135deg,#C0C0C0,#A0A0A0)','linear-gradient(135deg,#CD7F32,#A0522D)'];
-    if(top20.length >= 3) {
-      var order = [1,0,2];
-      html += '<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:20px;">';
-      order.forEach(function(pi){
-        var u = top20[pi];
-        if(!u) return;
-        var isMe = CU && u.username === CU.username;
-        var h = pi===0?'120px':'90px';
-        var sz = pi===0?'56px':'44px';
-        var ini = (u.name||u.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-        html += '<div style="flex:1;max-width:120px;text-align:center;">';
-        html += '<div style="width:'+sz+';height:'+sz+';margin:0 auto 6px;border-radius:50%;background:rgba(201,168,76,0.1);border:2px solid '+(isMe?'#C9A84C':'rgba(255,255,255,0.1)')+';display:flex;align-items:center;justify-content:center;font-weight:800;color:'+(isMe?'#C9A84C':'rgba(255,255,255,0.5)')+';font-size:'+(pi===0?'18px':'14px')+';">'+ini+'</div>';
-        html += '<div style="font-size:'+(pi===0?'13px':'11px')+';font-weight:700;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(u.name||u.username)+(isMe?' (t\u00fa)':'')+'</div>';
-        html += '<div style="font-size:10px;color:rgba(255,255,255,0.35);">'+u.total+' pts</div>';
-        html += '<div style="height:'+h+';background:'+podiumColors[pi]+';border-radius:10px 10px 0 0;margin-top:6px;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;">';
-        html += '<span style="font-size:'+(pi===0?'28px':'20px')+';">'+medals[pi]+'</span></div>';
-        html += '</div>';
-      });
-      html += '</div>';
-    }
-    // Rest of ranking
+    var podiumBg = ['linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04))','linear-gradient(135deg,rgba(192,192,192,0.08),rgba(160,160,160,0.04))','linear-gradient(135deg,rgba(205,127,50,0.08),rgba(160,82,45,0.04))'];
+    var podiumBorder = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.25)','rgba(205,127,50,0.25)'];
+    var _waFlag = function(wa){if(!wa)return '';var f={'+57':'co','+52':'mx','+51':'pe','+56':'cl','+54':'ar','+58':'ve','+593':'ec','+507':'pa','+506':'cr','+1':'us','+34':'es','+55':'br'};var codes=Object.keys(f).sort(function(a,b){return b.length-a.length;});for(var ci=0;ci<codes.length;ci++){if(wa.indexOf(codes[ci])===0)return '<img src="https://flagcdn.com/16x12/'+f[codes[ci]]+'.png" style="width:14px;height:10px;border-radius:1px;vertical-align:middle;margin-left:3px;">';}return '';};
     top20.forEach(function(u,i){
-      if(i < 3 && top20.length >= 3) return;
-      var pos = i+1;
       var isMe = CU && u.username === CU.username;
-      var ini = (u.name||u.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;margin-bottom:4px;'+(isMe?'background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);':'background:rgba(255,255,255,0.02);')+'">';
-      html += '<div style="width:24px;font-size:13px;font-weight:800;color:rgba(255,255,255,0.3);text-align:center;">'+pos+'</div>';
-      html += '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);">'+ini+'</div>';
-      html += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:'+(isMe?'700':'500')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.name||u.username)+(isMe?' (t\u00fa)':'')+'</div>';
-      html += '<div style="font-size:9px;color:rgba(255,255,255,0.3);">'+u.citas+' citas \u00b7 '+u.verificadas+' verificadas</div></div>';
-      html += '<div style="font-size:14px;font-weight:800;color:#C9A84C;">'+u.total+'</div>';
+      var isPodium = i < 3;
+      var ini = (u.name||u.username||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+      var foto = u.photo || '';
+      var flag = _waFlag(u.whatsapp||'');
+      var rowBg = isPodium ? podiumBg[i] : (isMe ? 'rgba(127,119,221,0.08)' : 'rgba(255,255,255,0.02)');
+      var rowBorder = isPodium ? '0.5px solid '+podiumBorder[i] : (isMe ? '1px solid rgba(127,119,221,0.25)' : 'none');
+      var avatarBorder = isPodium ? podiumBorder[i] : (isMe ? 'rgba(127,119,221,0.5)' : 'rgba(255,255,255,0.06)');
+      html += '<div class="sj-rk-row" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';">';
+      html += '<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?medals[i]:(i+1))+'</div>';
+      html += '<div class="sj-rk-avatar" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div class="sj-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.name||u.username)+flag+(isMe?' <span class="sj-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      html += '<div class="sj-rk-stats" style="font-size:9px;margin-top:2px;"><span style="color:#1D9E75;font-weight:600;">'+u.citas+' citas</span> <span style="color:rgba(255,255,255,0.15);">\u00b7</span> <span style="color:#C9A84C;font-weight:600;">'+u.verificadas+' verif.</span></div>';
+      html += '</div>';
+      html += '<div style="flex-shrink:0;text-align:right;"><span class="sj-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+u.total+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
       html += '</div>';
     });
+    html += '<style>@media(min-width:769px){.sj-rk-name{font-size:17px !important;}.sj-rk-stats{font-size:11px !important;}.sj-rk-pts{font-size:20px !important;}.sj-rk-avatar{width:42px !important;height:42px !important;font-size:13px !important;}.sj-rk-tu{font-size:14px !important;}}</style>';
     container.innerHTML = html;
   }).catch(function(){
     var c = document.getElementById('sj-ranking-list');
@@ -4891,7 +4869,7 @@ function renderPlanDiarioUI() {
   // Title + description
   html += '<div style="text-align:center;margin-bottom:16px;">';
   html += '<p style="font-size:20px;font-weight:900;color:#F0EDE6;margin:0;">📅 Mi Agenda</p>';
-  html += '<p style="font-size:12px;color:rgba(255,255,255,0.4);margin:6px 0 0;">Organiza tu tiempo personal. Los bloques se sincronizan con tu agenda de cierres.</p>';
+  html += '<p style="font-size:10px;color:rgba(255,255,255,0.3);margin:4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Organiza tu tiempo. Los bloques se sincronizan con tu agenda de cierres.</p>';
   html += '</div>';
 
   // Voice + text input card
