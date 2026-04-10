@@ -416,7 +416,8 @@ select option{background:#0a0a12;color:#F0EDE6;}
 /* ── MAIN CONTENT ── */
 #content{margin-left:var(--sidebar-w);flex:1;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:2;}
 .section{display:none;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
-.section.active{display:flex;flex-direction:column;animation:eliteFadeIn 0.35s cubic-bezier(0.22,1,0.36,1);}
+.section.active{display:flex;flex-direction:column;}
+.section.active .sc{animation:eliteFadeIn 0.35s cubic-bezier(0.22,1,0.36,1);}
 @keyframes eliteFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── TOP BAR — Elite Crystal ── */
