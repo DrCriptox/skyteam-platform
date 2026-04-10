@@ -96,7 +96,16 @@ export default async function handler(req, res) {
           const rows = await sbR.json();
           if (Array.isArray(rows) && rows.length > 0) {
             const row = rows[0];
-            return res.status(200).json({ ok: true, asesor: { nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp, mensaje: row.mensaje, foto: row.foto || '', verificado: true }, exists: true, source: 'supabase' });
+            // If landing has no foto, try users.photo as fallback
+            let foto = row.foto || '';
+            if (!foto) {
+              try {
+                const uR = await fetch(SB_URL + '/rest/v1/users?select=photo&or=(username.eq.' + slug + ',ref.eq.' + slug + ')&limit=1', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+                const uRows = await uR.json();
+                if (Array.isArray(uRows) && uRows.length > 0 && uRows[0].photo) foto = uRows[0].photo;
+              } catch(e) {}
+            }
+            return res.status(200).json({ ok: true, asesor: { nombre: row.nombre, rol: row.rol, whatsapp: row.whatsapp, mensaje: row.mensaje, foto: foto, verificado: true }, exists: true, source: 'supabase' });
           }
         } catch(e) { /* fall through to GitHub */ }
       }
