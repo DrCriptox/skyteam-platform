@@ -5286,7 +5286,7 @@ function processPlanDiarioInput() {
   var hoy = new Date();
   var todayStr = fmtDate(hoy);
   var dayOfWeek = hoy.getDay();
-  var DIAS_ES = {0:'domingo',1:'lunes',2:'martes',3:'miércoles',4:'jueves',5:'viernes',6:'sábado'};
+  var DIAS_ES = {0:'domingo',1:'lunes',2:'martes',3:'mi\u00e9rcoles',4:'jueves',5:'viernes',6:'s\u00e1bado'};
 
   // Build context of existing blocks for delete/modify
   var existingCtx = '';
@@ -5295,16 +5295,43 @@ function processPlanDiarioInput() {
     existingCtx = ' Bloques existentes esta semana: ' + weekBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
   }
 
-  // Build day-by-day map so AI knows exactly which date is which day
-  var _weekMap = dates.map(function(d){ return fmtDate(d) + '=' + DIAS_ES[d.getDay()]; }).join(', ');
-  var systemPrompt = 'Eres un asistente de calendario personal. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Dias de esta semana: '+_weekMap+'.'+existingCtx+' Responde SOLO con un JSON object (no array), sin explicacion. Formato: {"action":"add|delete|delete_all|modify","blocks":[...]}. ACCIONES: (1) "add": blocks con {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro. (2) "delete": blocks con {id} del bloque a borrar. (3) "delete_all": blocks con {fecha} para borrar TODOS los bloques de ese dia. (4) "modify": blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria}. REGLAS CRITICAS: - "lunes a viernes" = SOLO lunes,martes,miercoles,jueves,viernes. NUNCA incluir sabado ni domingo. - "todos los dias" = lunes a domingo (7 dias). - "entre semana" = lunes a viernes (5 dias). - "fin de semana" = solo sabado y domingo. - Si no especifica fecha usa hoy. - hora_inicio y hora_fin en formato HH:MM (24h). IMPORTANTE: Siempre responde con el JSON object, nunca texto adicional.';
+  // Build FULL calendar: rest of current month + next month (so AI can handle "todo abril", "todo mayo", etc.)
+  var _allDates = {};
+  var _cur = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  var _end = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 0); // end of next month
+  while(_cur <= _end) {
+    var _f = fmtDate(_cur);
+    var _d = _cur.getDay();
+    if(!_allDates[DIAS_ES[_d]]) _allDates[DIAS_ES[_d]] = [];
+    _allDates[DIAS_ES[_d]].push(_f);
+    _cur = new Date(_cur.getTime() + 86400000);
+  }
+  // Compact format: "lunes: [2026-04-07, 2026-04-14, ...]"
+  var _calendarMap = Object.keys(_allDates).map(function(dia){ return dia + ': [' + _allDates[dia].join(', ') + ']'; }).join('. ');
+
+  var systemPrompt = 'Eres un asistente de calendario personal. Hoy es ' + todayStr + ' (' + DIAS_ES[dayOfWeek] + '). Mes actual: ' + (hoy.getMonth()+1) + '/' + hoy.getFullYear() + '.' + existingCtx
+    + ' CALENDARIO COMPLETO (fechas por dia de la semana): ' + _calendarMap + '.'
+    + ' Responde SOLO con un JSON object, sin explicacion. Formato: {"action":"add|delete|delete_all|modify","blocks":[...]}.'
+    + ' ACCIONES: (1) "add": blocks con {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro.'
+    + ' (2) "delete": blocks con {id} del bloque a borrar.'
+    + ' (3) "delete_all": blocks con {fecha} para borrar TODOS los bloques de ese dia.'
+    + ' (4) "modify": blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria}.'
+    + ' REGLAS CRITICAS:'
+    + ' - "lunes a viernes" = SOLO lunes,martes,miercoles,jueves,viernes. JAMAS incluir sabado ni domingo.'
+    + ' - "entre semana" = lunes a viernes.'
+    + ' - "fin de semana" = solo sabado y domingo.'
+    + ' - "todo el mes" o "durante todo abril" = genera bloques para TODOS los dias indicados del mes completo (usa las fechas del calendario).'
+    + ' - "todo el mes de lunes a viernes" = usa SOLO las fechas de lunes,martes,miercoles,jueves,viernes del mes.'
+    + ' - Solo genera bloques desde hoy en adelante (no fechas pasadas).'
+    + ' - hora_inicio y hora_fin en formato HH:MM (24h).'
+    + ' IMPORTANTE: Genera TODOS los bloques necesarios (puede ser 20+). Siempre JSON, nunca texto.';
 
   fetch('/api/chat', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       model:'claude-haiku-4-5-20251001',
-      max_tokens:500,
+      max_tokens:2000,
       system:systemPrompt,
       messages:[{role:'user',content:text}]
     })
