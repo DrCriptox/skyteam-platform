@@ -7646,14 +7646,24 @@ function pbConfirmar(username) {
         var dateStr=esHoy?'hoy '+days[fd.getDay()]:days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()];
         document.getElementById('pb-confirm-msg').textContent='Tu cita es '+dateStr+' a las '+hStr+'. Completa los pasos para asegurar tu lugar.';
         // WhatsApp: message the SOCIO (not the prospect)
+        // Try agenda config whatsapp first, then fetch user profile as fallback
         var socioWa=(cfg.whatsapp||'').replace(/[^0-9]/g,'');
-        var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para '+dateStr+' a las '+hStr+'. ¡Nos vemos!';
-        if(cfg.linkReunion) msgToSocio+=' | Link: '+cfg.linkReunion;
-        if(socioWa){
-          document.getElementById('pb-wa-btn').href='https://wa.me/'+socioWa+'?text='+encodeURIComponent(msgToSocio);
+        var _setWaBtn = function(waNum) {
+          var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para '+dateStr+' a las '+hStr+'. ¡Nos vemos!';
+          if(cfg.linkReunion) msgToSocio+=' | Link: '+cfg.linkReunion;
+          document.getElementById('pb-wa-btn').href='https://wa.me/'+waNum+'?text='+encodeURIComponent(msgToSocio);
           document.getElementById('pb-wa-btn').style.display='';
+        };
+        if(socioWa) {
+          _setWaBtn(socioWa);
         } else {
-          document.getElementById('pb-wa-btn').style.display='none';
+          // Fallback: fetch user's WhatsApp from profile
+          fetch('/api/users?action=list').then(function(r){return r.json();}).then(function(ud){
+            var u=ud.users&&ud.users[username];
+            var fallbackWa=u&&u.whatsapp?(u.whatsapp||'').replace(/[^0-9]/g,''):'';
+            if(fallbackWa) _setWaBtn(fallbackWa);
+            else document.getElementById('pb-wa-btn').style.display='none';
+          }).catch(function(){ document.getElementById('pb-wa-btn').style.display='none'; });
         }
 
         // Google Calendar link
