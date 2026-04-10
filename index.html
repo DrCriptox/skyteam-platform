@@ -13657,17 +13657,19 @@ var _crmRankPeriod = 'weekly';
 function _renderCrmRankingTab() {
   var el = document.getElementById('crm-ranking-content');
   if (!el) return;
-  // Header with period tabs on the right
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
-  html += '<div style="font-size:16px;font-weight:900;color:#fff;">\uD83C\uDFC6 Ranking Sky Prospects</div>';
-  html += '<div style="display:flex;gap:4px;">';
+  // Wrapped in .card like Sky Sales IA
+  var html = '<div class="card">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking de Gesti\u00f3n de Prospectos</div>';
+  html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
   ['daily','weekly','monthly'].forEach(function(p){
     var labels={daily:'Hoy',weekly:'Semana',monthly:'Mes'};
     var active = _crmRankPeriod===p;
-    html+='<button onclick="_crmRankPeriod=\''+p+'\';_renderCrmRankingTab()" style="padding:5px 12px;border-radius:8px;background:'+(active?'rgba(201,168,76,0.15)':'rgba(255,255,255,0.03)')+';border:0.5px solid '+(active?'rgba(201,168,76,0.3)':'rgba(255,255,255,0.06)')+';color:'+(active?'#C9A84C':'rgba(255,255,255,0.4)')+';font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">'+labels[p]+'</button>';
+    html+='<button onclick="_crmRankPeriod=\''+p+'\';_renderCrmRankingTab()" style="padding:5px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(active?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(active?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(active?'#C9A84C':'rgba(255,255,255,0.3)')+';">'+labels[p]+'</button>';
   });
   html += '</div></div>';
   html += '<div id="crm-ranking-list"><div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);font-size:12px;">Cargando ranking...</div></div>';
+  html += '</div>';
   el.innerHTML = html;
   // Fetch
   fetch('/api/leaderboard?action=prospectRanking&period='+_crmRankPeriod)
