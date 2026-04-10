@@ -5360,28 +5360,36 @@ function processPlanDiarioInput() {
 
   // Detect time patterns — multiple regex attempts for robustness
   var _horaIni = null, _horaFin = null;
-  // Try patterns: "de 2 a 3", "2 a 3", "de 2pm a 3pm", "de 2 de la tarde a 3", "9 am a 10 am", "9:30 a 10:30"
   var _timePatterns = [
-    /(?:de\s+)?(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?\s*(?:a|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?/,
-    /(\d{1,2})\s*(am|pm)\s*(?:a|hasta|-)\s*(\d{1,2})\s*(am|pm)/
+    // Range: "de 2 a 3", "9 am a 10 am", "de 2 de la tarde a 3"
+    { re: /(?:de\s+)?(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|tarde|noche|am|pm)?\s*(?:a|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|tarde|noche|am|pm)?/, type: 'range' },
+    { re: /(\d{1,2})\s*(am|pm)\s*(?:a|hasta|-)\s*(\d{1,2})\s*(am|pm)/, type: 'range2' },
+    // Single: "10 am", "a las 3 pm", "3 de la tarde" (assumes 1h duration)
+    { re: /(?:a\s*las?\s*)?(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|tarde|noche|am|pm)/, type: 'single' },
+    { re: /(?:a\s*las?\s*)(\d{1,2})(?::(\d{2}))?/, type: 'single' }
   ];
   for(var _tp=0; _tp<_timePatterns.length && !_horaIni; _tp++) {
-    var _tm = _lowerText.match(_timePatterns[_tp]);
-    if(_tm) {
-      var h1, m1, h2, m2, p1, p2;
-      if(_tp===0) { h1=parseInt(_tm[1]); m1=_tm[2]||'00'; p1=(_tm[3]||'').replace(/\./g,''); h2=parseInt(_tm[4]); m2=_tm[5]||'00'; p2=(_tm[6]||'').replace(/\./g,''); }
-      else { h1=parseInt(_tm[1]); m1='00'; p1=_tm[2]; h2=parseInt(_tm[3]); m2='00'; p2=_tm[4]; }
-      // Convert to 24h
-      if(p1==='pm'||p1==='tarde'||p1==='noche') { if(h1<12) h1+=12; }
-      else if((p1==='am'||p1==='manana') && h1===12) h1=0;
-      if(p2==='pm'||p2==='tarde'||p2==='noche') { if(h2<12) h2+=12; }
-      else if((p2==='am'||p2==='manana') && h2===12) h2=0;
-      // If no AM/PM specified, infer: hours < 8 are probably PM
-      if(!p1 && !p2) { if(h1>=1 && h1<=7) h1+=12; if(h2>=1 && h2<=7) h2+=12; if(h2<=h1) h2+=12; }
-      else if(!p2) { if(h2<=h1 && h2<12) h2+=12; }
-      _horaIni = String(h1).padStart(2,'0') + ':' + m1;
-      _horaFin = String(h2).padStart(2,'0') + ':' + m2;
+    var _tm = _lowerText.match(_timePatterns[_tp].re);
+    if(!_tm) continue;
+    var h1, m1='00', h2, m2='00', p1='', p2='';
+    if(_timePatterns[_tp].type==='range') {
+      h1=parseInt(_tm[1]); m1=_tm[2]||'00'; p1=(_tm[3]||''); h2=parseInt(_tm[4]); m2=_tm[5]||'00'; p2=(_tm[6]||'');
+    } else if(_timePatterns[_tp].type==='range2') {
+      h1=parseInt(_tm[1]); p1=_tm[2]; h2=parseInt(_tm[3]); p2=_tm[4];
+    } else {
+      // Single time — assume 1 hour duration
+      h1=parseInt(_tm[1]); m1=_tm[2]||'00'; p1=(_tm[3]||''); h2=h1+1; p2=p1;
     }
+    // Convert to 24h
+    if(p1==='pm'||p1==='tarde'||p1==='noche') { if(h1<12) h1+=12; }
+    else if((p1==='am'||p1==='manana') && h1===12) h1=0;
+    if(p2==='pm'||p2==='tarde'||p2==='noche') { if(h2<12) h2+=12; }
+    else if((p2==='am'||p2==='manana') && h2===12) h2=0;
+    // If no AM/PM, infer: hours 1-7 = PM
+    if(!p1 && !p2) { if(h1>=1 && h1<=7) h1+=12; if(h2>=1 && h2<=7) h2+=12; if(h2<=h1) h2+=12; }
+    else if(!p2 && h2<=h1 && h2<12) h2+=12;
+    _horaIni = String(h1).padStart(2,'0') + ':' + m1;
+    _horaFin = String(h2).padStart(2,'0') + ':' + m2;
   }
   console.log('[AGENDA-PARSE] days:', _targetDays, 'time:', _horaIni, '-', _horaFin, 'month:', _monthScope, 'text:', text);
 
