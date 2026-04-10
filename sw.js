@@ -1,5 +1,5 @@
 // SKYTEAM - Service Worker v127
-var CACHE_NAME = 'skyteam-v342';
+var CACHE_NAME = 'skyteam-v343';
 var OFFLINE_URL = '/';
 
 // Install: cache the shell
@@ -89,8 +89,8 @@ self.addEventListener('push', function(event) {
 
   var options = {
     body: body,
-    icon: '/logo-skyteam.png',
-    badge: '/logo-skyteam.png',
+    icon: '/logo-icon.png',
+    badge: '/logo-icon.png',
     vibrate: [200, 100, 200],
     tag: data.tag || 'skyteam-notif-' + Date.now(),
     data: data.data || { url: data.url || '/' },
