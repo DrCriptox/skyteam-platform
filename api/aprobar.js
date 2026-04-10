@@ -106,7 +106,7 @@ export default async function handler(req, res) {
 
     // Check innova_user count — max 2 sociedades per innova_user
     const innovaUser = (sol.innova_user || username).toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
-    const innovaCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username,name,email', { headers: HEADERS });
+    const innovaCheck = await sbFetch(SUPABASE_URL + '/rest/v1/users?innova_user=eq.' + encodeURIComponent(innovaUser) + '&select=username,name,email,sponsor,rank', { headers: HEADERS });
     const innovaRows = await innovaCheck.json();
     const innovaCount = Array.isArray(innovaRows) ? innovaRows.length : 0;
     if (innovaCount >= 2) {
@@ -120,11 +120,18 @@ export default async function handler(req, res) {
       // So sponsor and rank should match the first account
       var existingSponsor = (existingUser.sponsor || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       var newSponsor = (sol.sponsor || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      // If sponsor detected from OCR is DIFFERENT from the first account's sponsor → OCR likely confused username with patrocinador
-      if (existingSponsor && newSponsor && existingSponsor !== newSponsor) {
-        console.log('[APROBAR] OCR CONFLICT: usuario=' + innovaUser + ' existing sponsor=' + existingSponsor + ' new sponsor=' + newSponsor);
+      // Validate: sponsor AND rank must match the first account (same Innova account = same data)
+      var existingRank = existingUser.rank || 0;
+      var newRank = rank; // rank already calculated from sol.classification
+      var sponsorMismatch = existingSponsor && newSponsor && existingSponsor !== newSponsor;
+      var rankMismatch = existingRank > 0 && newRank > 0 && existingRank !== newRank;
+      if (sponsorMismatch || rankMismatch) {
+        var reasons = [];
+        if (sponsorMismatch) reasons.push('patrocinador diferente (' + existingUser.sponsor + ' vs ' + (sol.sponsor||'?') + ')');
+        if (rankMismatch) reasons.push('rango diferente');
+        console.log('[APROBAR] OCR CONFLICT: usuario=' + innovaUser + ' ' + reasons.join(', '));
         return res.status(400).json({
-          error: 'El usuario de Innova detectado ("' + innovaUser + '") ya est\u00e1 registrado con otro patrocinador (' + existingUser.sponsor + '). Es probable que la foto haya confundido tu usuario con el patrocinador. Sube una captura donde se vea claramente TU USUARIO (debajo de tu nombre).',
+          error: 'El usuario de Innova detectado ("' + innovaUser + '") ya est\u00e1 registrado y los datos no coinciden: ' + reasons.join(', ') + '. Es probable que la foto haya confundido tu usuario con el de otra persona. Sube una captura donde se vea claramente TU USUARIO (debajo de tu nombre, NO el patrocinador).',
           ocrConflict: true
         });
       }
