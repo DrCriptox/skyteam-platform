@@ -12620,7 +12620,7 @@ function saveBirthday(val) {
           if(d && d.users && d.users[CU.username]) {
             var srv = d.users[CU.username];
             var changed = false;
-            ['rank','sponsor','expiry','name','email','whatsapp','ventas','equipo','ref','birthday'].forEach(function(k){
+            ['rank','sponsor','expiry','name','email','whatsapp','ventas','equipo','ref','birthday','bankcode','profession','income_goal','comm_style','photo','instagram'].forEach(function(k){
               if(srv[k] !== undefined && srv[k] !== null && srv[k] !== CU[k]) { CU[k] = srv[k]; changed = true; }
             });
             if(changed) {
