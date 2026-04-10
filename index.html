@@ -13621,7 +13621,7 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="width:49px;height:49px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       // Name + flag + stats — centered
       rhtml += '<div style="flex:1;min-width:0;text-align:center;">';
-      rhtml += '<div style="font-size:20px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:9px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      rhtml += '<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span style="font-size:13px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
       rhtml += '<div style="font-size:9px;margin-top:3px;letter-spacing:0.5px;font-family:Outfit,Nunito,sans-serif;">';
       rhtml += '<span style="color:#C9A84C;">\uD83D\uDCCB'+(m.contactos||0)+'</span> ';
       rhtml += '<span style="color:#7F77DD;">\u27A1\uFE0F'+(m.avances||0)+'</span> ';
@@ -13646,7 +13646,7 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="width:22px;font-size:12px;font-weight:800;color:#7F77DD;text-align:center;flex-shrink:0;">'+myPos+'</div>';
       rhtml += '<div style="width:49px;height:49px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(127,119,221,0.5);">'+(myFoto?'<img src="'+myFoto+'" style="width:100%;height:100%;object-fit:cover;">':myIni)+'</div>';
       rhtml += '<div style="flex:1;min-width:0;text-align:center;">';
-      rhtml += '<div style="font-size:20px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:Outfit,Nunito,sans-serif;">'+(CU.name||CU.username)+' <span style="font-size:9px;color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
+      rhtml += '<div style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(CU.name||CU.username)+' <span style="font-size:13px;color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
       if(myData) {
         rhtml += '<div style="font-size:9px;margin-top:3px;letter-spacing:0.5px;font-family:Outfit,Nunito,sans-serif;">';
         rhtml += '<span style="color:#C9A84C;">\uD83D\uDCCB'+(myData.contactos||0)+'</span> ';
