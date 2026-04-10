@@ -102,14 +102,19 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, verified: false, method: 'none', message: 'Verificación IA no disponible. Puntos parciales otorgados.' });
     }
 
-    // Resize image if too large (keep under 500KB for cost)
+    // GPT-4o-mini vision accepts images up to 20MB — no need to truncate
     var imgForAI = imageBase64;
-    if (imgForAI.length > 700000) {
-      // Truncate — GPT-4o-mini accepts lower res
-      imgForAI = imageBase64.substring(0, 700000);
-    }
+    // Ensure proper data URL format
+    if (!imgForAI.startsWith('data:')) imgForAI = 'data:image/jpeg;base64,' + imgForAI;
 
-    var prompt = 'Analyze this image. I need to verify it was taken during a video meeting (Zoom, Google Meet, Teams, or similar) on ' + bookingYear + '-' + String(bookingMonth).padStart(2, '0') + '-' + String(bookingDay).padStart(2, '0') + ' around ' + String(bookingHour).padStart(2, '0') + ':' + String(bookingMin).padStart(2, '0') + '.\n\nCheck:\n1. Does the image show a video call/meeting screen with 2 or more participants?\n2. Is there any visible clock, timestamp, or date on screen?\n3. If you can see a time, does it match approximately (±30 min) the expected time?\n\nRespond in JSON ONLY: {"isVideoCall": true/false, "visibleTime": "HH:MM or null", "visibleDate": "YYYY-MM-DD or null", "timeMatches": true/false/null, "confidence": 0-100, "reason": "brief explanation"}';
+    var prompt = 'Analyze this image. I need to verify it shows a video meeting.\n\n'
+      + 'Expected: video call on ' + bookingYear + '-' + String(bookingMonth).padStart(2,'0') + '-' + String(bookingDay).padStart(2,'0') + ' around ' + String(bookingHour).padStart(2,'0') + ':' + String(bookingMin).padStart(2,'0') + '.\n\n'
+      + 'Check:\n'
+      + '1. Does the image show a video call screen (Zoom, Meet, Teams) with 2+ people? Look for: video grid, participant names, webcam feeds, meeting controls (mute, camera, share screen buttons).\n'
+      + '2. Can you see ANY time/clock anywhere on screen (taskbar, status bar, meeting timer)?\n'
+      + '3. This could be a SCREENSHOT of a computer screen OR a PHOTO taken of a screen with a phone. Both are valid.\n\n'
+      + 'Be GENEROUS with confidence if you see a clear video call interface. Even without visible time, if the image clearly shows a Zoom/Meet/Teams meeting, give confidence 75+.\n\n'
+      + 'Respond in JSON ONLY: {"isVideoCall":true/false,"visibleTime":"HH:MM or null","visibleDate":"YYYY-MM-DD or null","timeMatches":true/false/null,"confidence":0-100,"reason":"brief"}';
 
     var aiR = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -152,11 +157,11 @@ module.exports = async (req, res) => {
 
     // Decision logic
     var isValid = false;
-    if (analysis.isVideoCall && analysis.confidence >= 60) {
+    if (analysis.isVideoCall) {
       if (analysis.timeMatches === true) {
         isValid = true; // Video call + time matches
-      } else if (analysis.timeMatches === null && analysis.confidence >= 70) {
-        isValid = true; // Video call, no visible time but high confidence
+      } else if (analysis.confidence >= 50) {
+        isValid = true; // Video call clearly visible — accept even without time
       }
     }
 

@@ -4636,24 +4636,24 @@ function _uploadMeetingProof(input, bookingId) {
   _proofAttempts[bookingId] = attempt;
   if(attempt > 2) { showToast('❌ Máximo 2 intentos de verificación'); return; }
   showToast('🔍 Verificando foto con IA... (intento ' + attempt + '/2)');
-  // Read original file (keep EXIF) + compressed version for AI
+  // Read file and compress to reasonable size for API
   var readerOrig = new FileReader();
   readerOrig.onload = function(eOrig) {
     var originalB64 = eOrig.target.result;
-    // Also create compressed version
+    // Compress to 1200px max (clear enough for AI, small enough for API)
     var img = new Image();
     img.onload = function() {
-      var MAX = 800;
+      var MAX = 1200;
       var w = img.naturalWidth, h = img.naturalHeight;
       if(w > MAX || h > MAX) { var r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
       var c = document.createElement('canvas'); c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      var compressedB64 = c.toDataURL('image/jpeg', 0.7);
-      // Send to verify-proof with ORIGINAL (has EXIF) for analysis
+      var compressedB64 = c.toDataURL('image/jpeg', 0.8);
+      // Send compressed version (original may be 5MB+, compressed ~200KB)
       fetch('/api/verify-proof', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ bookingId: bookingId, username: CU.username, imageBase64: originalB64, attempt: attempt })
+        body: JSON.stringify({ bookingId: bookingId, username: CU.username, imageBase64: compressedB64, attempt: attempt })
       }).then(function(r){ return r.json(); }).then(function(d) {
         if(d.verified) {
           showToast('✅ ¡Foto verificada! +25 pts en ranking');
