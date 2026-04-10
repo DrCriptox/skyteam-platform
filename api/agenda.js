@@ -187,23 +187,42 @@ export default async function handler(req, res) {
           try {
             const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
             const cfg = configs && configs[0] ? configs[0].config : {};
-            const users = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=email,name');
+            const users = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=email,name,whatsapp');
             const socioEmail = users && users[0] ? users[0].email : null;
             const socioName = users && users[0] ? users[0].name : user;
+            const socioWa = users && users[0] ? users[0].whatsapp || '' : '';
             const fd = new Date(booking.fechaISO);
             const citaMs = fd.getTime();
             const nowMs = Date.now();
-            const days = ['domingo','lunes','martes','mi\u00e9rcoles','jueves','viernes','s\u00e1bado'];
-            const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-            const rawH = fd.getHours(), mins = fd.getMinutes().toString().padStart(2,'0');
-            const ampm = rawH >= 12 ? 'PM' : 'AM', h12 = rawH % 12 || 12;
-            const hStr = h12 + ':' + mins + ' ' + ampm;
-            const fechaFull = days[fd.getDay()] + ' ' + fd.getDate() + ' de ' + months[fd.getMonth()] + ' a las ' + hStr;
+            // Timezone from WhatsApp country code
+            var _tzFromWa = function(wa) {
+              if(!wa) return 'America/Bogota';
+              var m = {'+57':'America/Bogota','+52':'America/Mexico_City','+51':'America/Lima','+56':'America/Santiago','+54':'America/Argentina/Buenos_Aires','+58':'America/Caracas','+593':'America/Guayaquil','+507':'America/Panama','+506':'America/Costa_Rica','+1':'America/New_York','+34':'Europe/Madrid','+55':'America/Sao_Paulo'};
+              var codes = Object.keys(m).sort(function(a,b){return b.length-a.length;});
+              for(var i=0;i<codes.length;i++) if(wa.indexOf(codes[i])===0) return m[codes[i]];
+              return 'America/Bogota';
+            };
+            var socioTZ = _tzFromWa(socioWa);
+            var prospectTZ = _tzFromWa(booking.whatsapp || '');
+            var _fmtDate = function(d, tz) {
+              try {
+                return d.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',timeZone:tz}) + ' a las ' + d.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:tz});
+              } catch(e) { var rH=d.getHours(),mn=d.getMinutes().toString().padStart(2,'0'),ap=rH>=12?'PM':'AM'; return d.toLocaleDateString('es-CO') + ' ' + (rH%12||12)+':'+mn+' '+ap; }
+            };
+            var _fmtTime = function(d, tz) {
+              try { return d.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:tz}); }
+              catch(e) { var rH=d.getHours(),mn=d.getMinutes().toString().padStart(2,'0'),ap=rH>=12?'PM':'AM'; return (rH%12||12)+':'+mn+' '+ap; }
+            };
+            var fechaSocio = _fmtDate(fd, socioTZ);
+            var horaSocio = _fmtTime(fd, socioTZ);
+            var fechaProspect = _fmtDate(fd, prospectTZ);
+            var horaProspect = _fmtTime(fd, prospectTZ);
             const linkSala = cfg.linkReunion || '';
             const prospectEmail = booking.email || null;
             const prospectName = booking.nombre || 'Estimado/a';
             const RESEND_H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY };
-            var _wrap = function(body) { return '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;"><div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:22px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>' + body + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:9px;margin-top:20px;">Sky Team \u2014 skyteam.global</p></div>'; };
+            const LOGO = 'https://skyteam.global/logo-skyteam-white.png';
+            var _wrap = function(body) { return '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;"><div style="text-align:center;margin-bottom:20px;"><img src="' + LOGO + '" alt="SKYTEAM" style="height:36px;" /></div>' + body + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:9px;margin-top:20px;">Sky Team \u2014 skyteam.global</p></div>'; };
             var _btn = function(text, url) { return '<div style="text-align:center;margin:20px 0;"><a href="' + url + '" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">' + text + '</a></div>'; };
             var _sendEmail = function(to, subject, html, sendAt) {
               var payload = { from: 'SKYTEAM <soporte@skyteam.global>', to: [to], subject: subject, html: html };
@@ -214,8 +233,8 @@ export default async function handler(req, res) {
             // ── SOCIO EMAIL 1: Instant — Nueva cita agendada ──
             if (socioEmail) {
               var ipWarning = ipFlag ? '<div style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.3);border-radius:8px;padding:10px;margin:12px 0;font-size:12px;color:#FF6B6B;">\u26A0\uFE0F IP repetida</div>' : '';
-              _sendEmail(socioEmail, '\uD83D\uDD14 Nueva cita: ' + prospectName + ' \u00b7 ' + hStr,
-                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83C\uDF89</div><h2 style="color:#C9A84C;font-size:18px;margin:0 0 6px;">\u00a1Nueva cita agendada!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaFull + '</p></div>'
+              _sendEmail(socioEmail, '\uD83D\uDD14 Nueva cita: ' + prospectName + ' \u00b7 ' + horaSocio,
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83C\uDF89</div><h2 style="color:#C9A84C;font-size:18px;margin:0 0 6px;">\u00a1Nueva cita agendada!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaSocio + '</p></div>'
                 + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:18px;margin-bottom:16px;">'
                 + '<p style="margin:6px 0;font-size:14px;">\uD83D\uDC64 <strong>' + prospectName + '</strong></p>'
                 + '<p style="margin:6px 0;font-size:13px;color:rgba(255,255,255,0.5);">\uD83D\uDCF1 ' + booking.whatsapp + (prospectEmail ? ' \u00b7 \uD83D\uDCE7 ' + prospectEmail : '') + '</p>'
@@ -225,7 +244,7 @@ export default async function handler(req, res) {
             // ── SOCIO EMAIL 2: 1h before — Recordatorio ──
             if (socioEmail && citaMs - nowMs > 65 * 60000) {
               _sendEmail(socioEmail, '\u23F0 En 1 hora: cita con ' + prospectName,
-                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\u23F0</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Falta 1 hora para tu cita</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">con <strong>' + prospectName + '</strong> a las <strong>' + hStr + '</strong></p></div>'
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\u23F0</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Falta 1 hora para tu cita</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">con <strong>' + prospectName + '</strong> a las <strong>' + horaSocio + '</strong></p></div>'
                 + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">'
                 + '<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.4);">Prepara tu presentaci\u00f3n y ten el link de la sala listo.</p></div>'
                 + _btn('\uD83D\uDCCB Revisar agenda', 'https://skyteam.global/?nav=agenda')), citaMs - 60 * 60000);
@@ -236,13 +255,13 @@ export default async function handler(req, res) {
               _sendEmail(socioEmail, '\uD83D\uDFE2 Ve abriendo sala \u2014 ' + prospectName + ' en 7 min',
                 _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDFE2</div><h2 style="color:#C9A84C;font-size:18px;margin:0 0 6px;">\u00a1Abre la sala!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">Le acabamos de notificar a <strong>' + prospectName + '</strong> que la reuni\u00f3n inicia en 2 minutos.</p></div>'
                 + (linkSala ? _btn('\uD83D\uDE80 Abrir sala de reuni\u00f3n', linkSala) : '<div style="text-align:center;padding:12px;color:rgba(255,255,255,0.3);font-size:12px;">Configura tu link de sala en Sky Journal \u2192 Configurar</div>')
-                + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;">\uD83D\uDCC5 ' + fechaFull + '</div>'), citaMs - 7 * 60000);
+                + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;">\uD83D\uDCC5 ' + fechaSocio + '</div>'), citaMs - 7 * 60000);
             }
 
             // ── PROSPECT EMAIL 1: 4h before — Confirmaci\u00f3n ──
             if (prospectEmail && citaMs - nowMs > 4.1 * 3600000) {
               _sendEmail(prospectEmail, '\uD83D\uDCC5 Tu reuni\u00f3n con ' + socioName + ' es hoy',
-                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCC5</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Hola ' + prospectName.split(' ')[0] + ', tu reuni\u00f3n es hoy</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaFull + '</p></div>'
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCC5</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Hola ' + prospectName.split(' ')[0] + ', tu reuni\u00f3n es hoy</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaProspect + '</p></div>'
                 + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:18px;margin-bottom:16px;text-align:center;">'
                 + '<p style="margin:0 0 8px;font-size:14px;color:#F0EDE6;"><strong>' + socioName + '</strong> te estar\u00e1 esperando</p>'
                 + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);">Ten lista tu c\u00e1mara y micr\u00f3fono para la mejor experiencia \uD83C\uDF1F</p></div>'
@@ -252,7 +271,7 @@ export default async function handler(req, res) {
             // ── PROSPECT EMAIL 2: 1h before — Recordatorio ──
             if (prospectEmail && citaMs - nowMs > 65 * 60000) {
               _sendEmail(prospectEmail, '\u23F0 En 1 hora nos vemos, ' + prospectName.split(' ')[0],
-                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\u23F0</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">En 1 hora nos vemos</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaFull + '</p></div>'
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\u23F0</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">En 1 hora nos vemos</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaProspect + '</p></div>'
                 + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px;margin-bottom:16px;text-align:center;">'
                 + '<p style="margin:0 0 8px;font-size:14px;color:#F0EDE6;"><strong>' + socioName + '</strong> ya est\u00e1 preparando todo para ti</p>'
                 + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);">Aseg\u00farate de tener c\u00e1mara y micr\u00f3fono activos, y estar en un lugar c\u00f3modo \uD83C\uDFA7</p></div>'
@@ -267,7 +286,7 @@ export default async function handler(req, res) {
                 + '<p style="margin:0 0 6px;font-size:15px;font-weight:800;color:#1D9E75;">La sala estar\u00e1 abierta en menos de 2 minutos</p>'
                 + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">Haz clic en el bot\u00f3n para conectarte directamente</p></div>'
                 + (linkSala ? _btn('\uD83D\uDCF2 Ingresar a la sala ahora', linkSala) : _btn('\uD83D\uDCF2 Ir a la reuni\u00f3n', 'https://skyteam.global'))
-                + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-top:8px;">\uD83D\uDCC5 ' + fechaFull + '</div>'), citaMs - 5 * 60000);
+                + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-top:8px;">\uD83D\uDCC5 ' + fechaProspect + '</div>'), citaMs - 5 * 60000);
             }
 
           } catch (e) { console.warn('[AGENDA] Email scheduling error:', e.message); }

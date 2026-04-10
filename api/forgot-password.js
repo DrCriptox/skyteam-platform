@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     if (process.env.RESEND_API_KEY) {
       const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;">
         <div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);">
-          <img src="https://skyteam.global/logo-skyteam.png" alt="SKYTEAM" style="height:44px;max-width:240px;" />
+          <img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:44px;max-width:240px;" />
         </div>
         <div style="padding:32px;">
           <div style="text-align:center;margin-bottom:24px;">
