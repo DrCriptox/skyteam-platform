@@ -440,8 +440,9 @@ export default async function handler(req, res) {
               + '</div>'
               + '<p style="text-align:center;color:rgba(255,255,255,0.1);font-size:9px;margin-top:12px;">Sky Team \u2014 Tu plataforma de crecimiento digital</p>'
               + '</div>';
-            // Schedule email 5 minutes from now via Resend scheduled_at
-            var _sendAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+            // Schedule email 4-10 minutes from now (random delay so it doesn't look mechanical)
+            var _delayMin = 4 + Math.floor(Math.random() * 7); // 4,5,6,7,8,9,10
+            var _sendAt = new Date(Date.now() + _delayMin * 60 * 1000).toISOString();
             fetch('https://api.resend.com/emails', {
               method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+process.env.RESEND_API_KEY},
               body:JSON.stringify({from:'SKYTEAM <ventas@skyteam.global>',to:[_spEmail],subject:_emailSubject,html:_emailHtml,scheduled_at:_sendAt})
