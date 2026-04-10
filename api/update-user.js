@@ -17,7 +17,7 @@ async function getUserRole(username) {
     const rows = await r.json();
     if (!rows || !rows[0]) return { isAdmin: false, isLeader: false, rank: 0 };
     const rank = rows[0].rank || 0;
-    return { isAdmin: rows[0].is_admin === true || rank >= 7, isLeader: rank >= 3, rank };
+    return { isAdmin: rows[0].is_admin === true, isLeader: rank >= 3, rank };
   } catch(e) { return { isAdmin: false, isLeader: false, rank: 0 }; }
 }
 async function isAdmin(username) { return (await getUserRole(username)).isAdmin; }
