@@ -139,9 +139,9 @@ export default async function handler(req, res) {
         var emailCheck = validateEmail(booking.email);
         if (!emailCheck.valid) return res.status(400).json({ error: 'Email invalido: ' + emailCheck.reason, field: 'email' });
 
-        // Check for duplicate slot
-        const taken = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&fecha_iso=eq.' + encodeURIComponent(booking.fechaISO) + '&status=neq.cancelada');
-        if (taken && taken.length > 0) return res.status(409).json({ error: 'Slot already taken' });
+        // Check for duplicate slot (double-check: pre-check + post-insert verification)
+        const taken = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&fecha_iso=eq.' + encodeURIComponent(booking.fechaISO) + '&status=in.(activa,completada,verificada,sospechosa)');
+        if (taken && taken.length > 0) return res.status(409).json({ error: 'Este horario ya fue reservado por alguien más. Elige otro.' });
 
         // === IP ANALYSIS — Flag if same IP as socio (auto-reserva) or repeated ===
         var ipFlag = null;
@@ -165,9 +165,10 @@ export default async function handler(req, res) {
         }
 
         // Insert booking with IP + email + user_agent + self_booking flag
+        var bookingId = booking.id || crypto.randomUUID();
         await sb('bookings', { method: 'POST',
           body: JSON.stringify({
-            id: booking.id || crypto.randomUUID(),
+            id: bookingId,
             username: user,
             nombre: booking.nombre,
             whatsapp: waCheck.cleaned || booking.whatsapp,
@@ -179,6 +180,18 @@ export default async function handler(req, res) {
             user_agent: userAgent.substring(0, 500)
           })
         });
+
+        // POST-INSERT race condition check: if 2+ bookings exist for same slot, delete this one
+        var raceCheck = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&fecha_iso=eq.' + encodeURIComponent(booking.fechaISO) + '&status=in.(activa,completada,verificada,sospechosa)&order=created_at.asc');
+        if (raceCheck && raceCheck.length > 1) {
+          // Keep the FIRST booking (earliest), delete this one
+          var first = raceCheck[0];
+          if (first.id !== bookingId) {
+            await sb('bookings?id=eq.' + encodeURIComponent(bookingId), { method: 'DELETE' });
+            console.log('[AGENDA] RACE CONDITION: deleted duplicate booking', bookingId, 'kept', first.id);
+            return res.status(409).json({ error: 'Este horario acaba de ser reservado por alguien más. Elige otro.' });
+          }
+        }
 
         // ══════════════════════════════════════════════════════
         // 6 SCHEDULED EMAILS: 3 for prospect + 3 for socio

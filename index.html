@@ -7883,8 +7883,23 @@ function pbConfirmar(username) {
         // Hide social proof toast
         var toast = document.getElementById('pb-toast');
         if(toast) toast.style.display = 'none';
-      } else { alert('Error al confirmar. Intenta de nuevo.'); }
-    }).catch(function(){alert('Error de conexión.');});
+      } else {
+        // Slot was taken (race condition or already booked)
+        var errMsg = d.error || 'Error al confirmar.';
+        alert(errMsg + '\n\nVamos a actualizar los horarios disponibles.');
+        // Refresh the entire booking page to get fresh slots
+        document.getElementById('pb-s2').style.display='none';
+        document.getElementById('pb-s1').style.display='block';
+        _pbSlotISO=null;
+        // Re-fetch bookings to update available slots
+        fetch('/api/agenda?user='+username+'&public=1').then(function(r2){return r2.json();}).then(function(d2){
+          if(d2.config && d2.bookings) {
+            var div = document.getElementById('public-booking');
+            if(div) renderPublicBookingUI(div, username, d2.config, d2.bookings||[]);
+          }
+        }).catch(function(){});
+      }
+    }).catch(function(){alert('Error de conexi\u00f3n. Intenta de nuevo.');});
 }
 
 // Interactive checklist for post-booking
