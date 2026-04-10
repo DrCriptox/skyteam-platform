@@ -4600,17 +4600,26 @@ function renderAgendaCitasUI() {
     }
     html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;">\u2715 Cancelar</button>';
     html += '</div>';
-    // Photo proof button
+    // Photo proof button — only visible from 30min before to 2h after the booking
     var hasProof = cita.proof_url || cita.proof;
+    var _citaTime = new Date(cita.fechaISO || cita.fecha_iso).getTime();
+    var _nowMs = Date.now();
+    var _canUpload = !hasProof && _nowMs >= (_citaTime - 30*60000) && _nowMs <= (_citaTime + 2*3600000);
+    var _tooEarly = !hasProof && _nowMs < (_citaTime - 30*60000);
+    var _tooLate = !hasProof && _nowMs > (_citaTime + 2*3600000);
     html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.04);">';
     if(hasProof) {
-      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Foto verificada (+20 pts)</span>';
-    } else {
+      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Foto verificada</span>';
+    } else if(_canUpload) {
       html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border-radius:8px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);font-size:11px;font-weight:700;color:#1D9E75;font-family:Outfit,Nunito,sans-serif;">';
-      html += '\uD83D\uDCF7 Subir foto';
+      html += '\uD83D\uDCF7 Verificar con foto';
       html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
       html += '</label>';
-      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+25 pts verificada \u00b7 +5 pts parcial</span>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+25 pts IA OK \u00b7 +5 pts parcial</span>';
+    } else if(_tooEarly) {
+      html += '<span style="font-size:10px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 Verificar disponible desde 30 min antes de la cita</span>';
+    } else if(_tooLate) {
+      html += '<span style="font-size:10px;color:rgba(255,100,100,0.5);">\u23F0 Ventana de verificaci\u00f3n cerrada (2h despu\u00e9s)</span>';
     }
     html += '</div>';
     html += '</div>';

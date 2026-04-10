@@ -31,6 +31,16 @@ module.exports = async (req, res) => {
     const bookingMonth = bookingDate.getMonth() + 1;
     const bookingYear = bookingDate.getFullYear();
 
+    // ── TIME WINDOW: only allow upload from 30min before to 2h after ──
+    const nowMs = Date.now();
+    const bookingMs = bookingDate.getTime();
+    if (nowMs < bookingMs - 30 * 60000) {
+      return res.status(400).json({ error: 'Muy temprano para verificar. Disponible desde 30 min antes de la cita.', tooEarly: true });
+    }
+    if (nowMs > bookingMs + 2 * 3600000) {
+      return res.status(400).json({ error: 'Ventana de verificación cerrada (2h después de la cita).', tooLate: true });
+    }
+
     // ── LAYER 1: Try EXIF data ──
     var exifDate = null;
     try {
