@@ -3490,7 +3490,7 @@ function doLogin() {
             .catch(function(e) { console.warn('[SKY] Photo sync failed:', e.message); });
         }
         // Also merge into USERS for local lookups (no password)
-        USERS[CU.username] = {name:CU.name, rank:CU.rank, ref:CU.ref, ventas:CU.ventas, equipo:CU.equipo, expiry:CU.expiry, isAdmin:CU.isAdmin};
+        USERS[CU.username] = {name:CU.name, rank:CU.rank, ref:CU.ref, ventas:CU.ventas, equipo:CU.equipo, expiry:CU.expiry, isAdmin:CU.isAdmin, photo:CU.photo||null};
         err.textContent = '';
         showApp();
       } else {

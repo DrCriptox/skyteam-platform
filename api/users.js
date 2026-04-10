@@ -38,7 +38,10 @@ export default async function handler(req, res) {
         createdAt: row.created_at || null,
         isAdmin: row.is_admin || false,
         innova_user: row.innova_user || null,
-        birthday: row.birthday || null
+        birthday: row.birthday || null,
+        photo: row.photo || null,
+        bankcode: row.bankcode || null,
+        instagram: row.instagram || null
       };
     }
 
