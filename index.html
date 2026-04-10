@@ -6218,12 +6218,14 @@ function refreshNotifications() {
     activeCount++;
   });
 
-  // ── Agenda booking reminders ──
+  // ── Agenda booking reminders (ONLY future bookings) ──
   if(agendaBookings) agendaBookings.forEach(function(b) {
     if(b.status === 'cancelada') return;
     var t = new Date(b.fechaISO).getTime();
+    if(isNaN(t)) return; // invalid date
     var diff = t - now;
-    if(diff < 0 || diff > 4 * 3600000) return; // only future within 4h
+    if(diff < -60000) return; // past (1min grace) — skip entirely
+    if(diff > 4 * 3600000) return; // more than 4h away — not yet
 
     var dismissKey = b.id + '_';
     var days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -6232,54 +6234,75 @@ function refreshNotifications() {
     var ampm = rawH >= 12 ? 'PM' : 'AM', h12 = rawH % 12 || 12;
     var timeStr = h12 + ':' + mins + ' ' + ampm;
     var dayStr = days[fd.getDay()];
-
     var prospectWa = (b.whatsapp||'').replace(/[^0-9]/g,'');
+    var _nativeKey = 'skyteam_booking_native_';
 
-    // 3h reminder (between 3h and 30min)
-    if(diff <= 3*3600000 && diff > 30*60000) {
-      var dk = dismissKey + '3h';
-      if(!_notifDismissed[dk]) {
+    // 4h reminder
+    if(diff <= 4*3600000 && diff > 60*60000) {
+      var dk0 = dismissKey + '4h';
+      if(!_notifDismissed[dk0]) {
         notifs.push({
-          id: dk, booking: b, type: 'info', icon: '📋', timeStr: timeStr, dayStr: dayStr,
-          title: 'Hoy tienes cita con ' + (b.nombre||'un prospecto'),
-          subtitle: dayStr + ' a las ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
-          msg: '¡Buen momento para preparar tus notas y tener todo listo! 📝',
+          id: dk0, booking: b, type: 'info', icon: '📋', timeStr: timeStr, dayStr: dayStr,
+          title: 'Cita hoy con ' + (b.nombre||'prospecto'),
+          subtitle: dayStr + ' a las ' + timeStr,
+          msg: 'Prepara tus notas y ten todo listo. Faltan ~' + Math.ceil(diff/3600000) + 'h 📝',
           waMsg: 'Hola ' + (b.nombre||'') + ', te saluda ' + (CU.name||'tu asesor') + ' de SKYTEAM. Te escribo para recordarte nuestra reunión de hoy a las ' + timeStr + '. ¿Nos vemos ahí? 😊',
           priority: 1
         });
         activeCount++;
+        // Native push at 4h
+        if(!localStorage.getItem(_nativeKey+dk0)){localStorage.setItem(_nativeKey+dk0,'1');showNativeNotification('📋 Cita en ~'+Math.ceil(diff/3600000)+'h','Hoy con '+(b.nombre||'prospecto')+' a las '+timeStr,null,'/?nav=agenda');}
       }
     }
 
-    // 30min reminder
-    if(diff <= 30*60000 && diff > 60000) {
-      var dk2 = dismissKey + '30m';
-      if(!_notifDismissed[dk2]) {
+    // 1h reminder
+    if(diff <= 60*60000 && diff > 15*60000) {
+      var dk1 = dismissKey + '1h';
+      if(!_notifDismissed[dk1]) {
         notifs.push({
-          id: dk2, booking: b, type: 'soon', icon: '⏰', timeStr: timeStr, dayStr: dayStr,
-          title: (b.nombre||'Tu prospecto') + ' te espera pronto',
-          subtitle: 'En ' + Math.ceil(diff/60000) + ' min — ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
-          msg: 'Recuérdale que la sala está lista. Sería genial que tuviera cámara y micrófono activos, y esté en un lugar cómodo.',
-          waMsg: '¡Hey ' + (b.nombre||'') + '! Soy ' + (CU.name||'tu asesor') + '. En unos 30 minutos arranca nuestra reunión (' + timeStr + '). Ya tengo todo preparado para ti. ¿Todo bien para conectarnos? 🚀\n\nSería genial que tuvieras tu cámara y micrófono activos, y estés en un lugar cómodo. ¡Nos vemos!',
+          id: dk1, booking: b, type: 'info', icon: '⏰', timeStr: timeStr, dayStr: dayStr,
+          title: 'En 1 hora: cita con ' + (b.nombre||'prospecto'),
+          subtitle: 'A las ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
+          msg: 'Recuérdale al prospecto. Revisa tu presentación y el link de la sala.',
+          waMsg: 'Hola ' + (b.nombre||'') + ', soy ' + (CU.name||'tu asesor') + '. En 1 hora tenemos nuestra reunión (' + timeStr + '). ¿Todo listo? 🚀',
           priority: 2
         });
         activeCount++;
+        if(!localStorage.getItem(_nativeKey+dk1)){localStorage.setItem(_nativeKey+dk1,'1');showNativeNotification('⏰ Cita en 1 hora','Con '+(b.nombre||'prospecto')+' a las '+timeStr,null,'/?nav=agenda');}
       }
     }
 
-    // 1min reminder — sala abierta
-    if(diff <= 60000) {
-      var dk3 = dismissKey + '1m';
+    // 15min reminder
+    if(diff <= 15*60000 && diff > 5*60000) {
+      var dk2 = dismissKey + '15m';
+      if(!_notifDismissed[dk2]) {
+        notifs.push({
+          id: dk2, booking: b, type: 'soon', icon: '🔔', timeStr: timeStr, dayStr: dayStr,
+          title: '¡15 minutos! — ' + (b.nombre||'Prospecto'),
+          subtitle: 'Faltan 15 min — ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
+          msg: 'Recuérdale que la sala está lista. Cámara y micro listos.',
+          waMsg: '¡' + (b.nombre||'Hola') + '! Soy ' + (CU.name||'tu asesor') + '. En 15 minutos arranca nuestra reunión. ¿Estás listo/a? 🚀\n\nTen tu cámara y micrófono activos. ¡Nos vemos!',
+          priority: 2.5
+        });
+        activeCount++;
+        if(!localStorage.getItem(_nativeKey+dk2)){localStorage.setItem(_nativeKey+dk2,'1');showNativeNotification('🔔 ¡15 minutos!','Cita con '+(b.nombre||'prospecto')+' a las '+timeStr,null,'/?nav=agenda');}
+      }
+    }
+
+    // 5min reminder — hora de abrir sala
+    if(diff <= 5*60000) {
+      var dk3 = dismissKey + '5m';
       if(!_notifDismissed[dk3]) {
         notifs.push({
           id: dk3, booking: b, type: 'urgent', icon: '🟢', timeStr: timeStr, dayStr: dayStr,
-          title: '¡Sala abierta! — ' + (b.nombre||'Prospecto'),
+          title: '¡Abre la sala! — ' + (b.nombre||'Prospecto'),
           subtitle: '¡AHORA! — ' + timeStr + (prospectWa ? ' · 📱 +' + prospectWa : ''),
-          msg: 'Envíale el link de la sala y conéctate ya.',
+          msg: 'Es hora de abrir la sala y empezar la reunión.',
           waMsg: '¡' + (b.nombre||'Hola') + '! Ya estoy en la sala esperándote. Conéctate por aquí 👇\n' + (agendaConfig && agendaConfig.linkReunion ? agendaConfig.linkReunion : '(tu link de reunión)') + '\n¡Te espero!',
           priority: 3
         });
         activeCount++;
+        if(!localStorage.getItem(_nativeKey+dk3)){localStorage.setItem(_nativeKey+dk3,'1');showNativeNotification('🟢 ¡Abre la sala!','Cita con '+(b.nombre||'prospecto')+' — ¡AHORA!',null,'/?nav=agenda');}
       }
     }
   });
