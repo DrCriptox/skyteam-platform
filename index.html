@@ -3816,6 +3816,54 @@ function showApp() {
     }
   }
 
+  // ── Photo reminder: prompt users who haven't uploaded a profile photo ──
+  if(CU && !CU.photo && !localStorage.getItem('skyteam_photo_' + CU.username)) {
+    var _photoDismissed = localStorage.getItem('skyteam_photo_remind_' + CU.username);
+    var _showPhotoReminder = function() {
+      // Don't show if they uploaded in the meantime
+      if(CU.photo || localStorage.getItem('skyteam_photo_' + CU.username)) return;
+      var existing = document.getElementById('photo-reminder-modal');
+      if(existing) existing.remove();
+      var m = document.createElement('div');
+      m.id = 'photo-reminder-modal';
+      m.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;font-family:Outfit,Nunito,sans-serif;';
+      m.innerHTML = '<div style="background:linear-gradient(145deg,#12121a,#1a1a2e);border:1px solid rgba(201,168,76,0.2);border-radius:20px;padding:32px 28px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">'
+        + '<div style="width:80px;height:80px;border-radius:50%;background:rgba(201,168,76,0.08);border:2px dashed rgba(201,168,76,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:36px;">📸</div>'
+        + '<h3 style="color:#F0EDE6;font-size:18px;font-weight:800;margin:0 0 8px;">¡Sube tu foto de perfil!</h3>'
+        + '<p style="color:rgba(255,255,255,0.45);font-size:13px;margin:0 0 20px;line-height:1.5;">Tu foto aparece en el ranking, la comunidad y tu landing de ventas. ¡Hazlo más profesional!</p>'
+        + '<button id="photo-remind-upload" style="width:100%;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:12px;padding:14px;font-size:15px;font-weight:900;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-bottom:10px;">📷 Subir foto ahora</button>'
+        + '<button id="photo-remind-later" style="width:100%;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.35);border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Más tarde</button>'
+        + '</div>';
+      document.body.appendChild(m);
+      document.getElementById('photo-remind-upload').addEventListener('click', function() {
+        m.remove();
+        navigate('journal');
+        setTimeout(function() {
+          var tabs = document.querySelectorAll('[data-stab]');
+          tabs.forEach(function(t){ if(t.getAttribute('data-stab')==='config') t.click(); });
+          setTimeout(function() {
+            var inp = document.getElementById('perfil-photo-input');
+            if(inp) inp.click();
+          }, 500);
+        }, 300);
+      });
+      document.getElementById('photo-remind-later').addEventListener('click', function() {
+        m.remove();
+        localStorage.setItem('skyteam_photo_remind_' + CU.username, String(Date.now()));
+      });
+    };
+    if(!_photoDismissed) {
+      // First login without photo: show after 3 seconds
+      setTimeout(_showPhotoReminder, 3000);
+    } else {
+      // Already dismissed: show again after 1 hour
+      var _elapsed = Date.now() - Number(_photoDismissed);
+      if(_elapsed > 3600000) {
+        setTimeout(_showPhotoReminder, 30000);
+      }
+    }
+  }
+
   // Only show admin if truly admin
   if(CU && (CU.isAdmin === true || CU.rank === 8)) {
     if(al) al.style.display='block';
