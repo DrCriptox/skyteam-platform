@@ -2427,7 +2427,33 @@ document.addEventListener('DOMContentLoaded',function(){
           <input type="password" id="sol-pass2" placeholder="Repite la contraseña" style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:13px;padding:10px 36px 10px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;box-sizing:border-box;">
           <button type="button" onclick="togglePassVis('sol-pass2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:15px;line-height:1;">👁</button>
         </div>
-        <button onclick="sendSolicitud()" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:900;cursor:pointer;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.5px;">Solicitar acceso →</button>
+        <button id="btn-solicitar" onclick="sendSolicitud()" disabled style="width:100%;padding:12px;border-radius:10px;background:rgba(100,100,100,0.3);color:rgba(255,255,255,0.3);font-size:14px;font-weight:900;cursor:not-allowed;border:none;font-family:Outfit,Nunito,sans-serif;letter-spacing:0.5px;">Completa todos los campos</button>
+        <script>
+        (function(){
+          var fields=['sol-innova-user','sol-sponsor','sol-email','sol-name','sol-wa-num','sol-valor-inscripcion','sol-pass','sol-pass2'];
+          var btn=document.getElementById('btn-solicitar');
+          function checkFields(){
+            var ok=true;
+            for(var i=0;i<fields.length;i++){var el=document.getElementById(fields[i]);if(!el||!el.value.trim()){ok=false;break;}}
+            // Also check valor > 0 and pass length
+            var val=parseInt((document.getElementById('sol-valor-inscripcion')||{}).value)||0;
+            var p1=(document.getElementById('sol-pass')||{}).value||'';
+            var p2=(document.getElementById('sol-pass2')||{}).value||'';
+            if(val<=0||p1.length<6||p1!==p2) ok=false;
+            // Also check image uploaded
+            var img=document.getElementById('sol-img');
+            if(!img||!img.files||!img.files.length) ok=false;
+            btn.disabled=!ok;
+            btn.style.background=ok?'linear-gradient(135deg,#C9A84C,#E8D48B)':'rgba(100,100,100,0.3)';
+            btn.style.color=ok?'#0a0a12':'rgba(255,255,255,0.3)';
+            btn.style.cursor=ok?'pointer':'not-allowed';
+            btn.textContent=ok?'Solicitar acceso →':'Completa todos los campos';
+          }
+          fields.forEach(function(id){var el=document.getElementById(id);if(el){el.addEventListener('input',checkFields);el.addEventListener('change',checkFields);}});
+          var imgEl=document.getElementById('sol-img');if(imgEl)imgEl.addEventListener('change',function(){setTimeout(checkFields,500);});
+          setInterval(checkFields,2000);
+        })();
+        </script>
       </div>
     </div>
 
@@ -11784,7 +11810,7 @@ function sendSolicitud() {
               + ' ' + now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 
     var birthday = document.getElementById('sol-birthday') ? document.getElementById('sol-birthday').value : '';
-    var valorInscripcion = document.getElementById('sol-valor-inscripcion') ? parseInt(document.getElementById('sol-valor-inscripcion').value) || 0 : 0;
+    // Re-use validated valorInscripcion from outer scope (don't re-read DOM — it may have been cleared)
     // Get registration screenshot thumbnail for admin audit
     var _regScreenshot = null;
     try {
