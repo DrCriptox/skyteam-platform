@@ -330,7 +330,7 @@ export default async function handler(req, res) {
       // Overlay registered user names (users table) so ranking always shows real names
       if (SB_URL2 && SB_KEY2) {
         try {
-          const usersR = await fetch(SB_URL2 + '/rest/v1/users?select=username,name,ref,whatsapp&limit=5000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
+          const usersR = await fetch(SB_URL2 + '/rest/v1/users?select=username,name,ref,whatsapp,photo&limit=5000', { headers: { apikey: SB_KEY2, Authorization: 'Bearer ' + SB_KEY2 } });
           const usersData = await usersR.json();
           if (Array.isArray(usersData)) usersData.forEach(function(u) {
             var uRef = (u.ref || u.username || '').toLowerCase().replace(/[^a-z0-9]/g, '');
