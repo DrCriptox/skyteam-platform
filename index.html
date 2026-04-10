@@ -2665,12 +2665,12 @@ document.addEventListener('DOMContentLoaded',function(){
   <!-- AGENDA DE CIERRES -->
 <div class="section" id="section-agenda">
   <div class="topbar"><div class="topbar-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;position:relative;top:-2px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Sky Journal</div><button class="hamburger" onclick="openSidebar()">☰</button></div>
-  <div class="sc" id="agenda-content"></div>
+  <div class="sc" style="padding-top:8px;" id="agenda-content"></div>
 </div>
 
   <div class="section" id="section-prospectos">
   <div class="topbar"><div class="topbar-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;position:relative;top:-2px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><circle cx="11" cy="9" r="2.5"/><path d="M7.5 15c0-2 1.5-3 3.5-3s3.5 1 3.5 3"/></svg>Sky Prospects</div><div class="topbar-right"><button class="hamburger" onclick="openSidebar()">☰</button></div></div>
-  <div class="sc" id="prospectos-content">
+  <div class="sc" style="padding-top:8px;" id="prospectos-content">
     <div class="crm-control-bar">
       <div class="crm-view-toggles">
         <button class="crm-view-btn crm-view-btn-active" data-view="kanban">📊 Kanban</button>
@@ -4658,13 +4658,15 @@ var sjRankPeriod = 'weekly';
 function renderSJRankingUI() {
   var _sjPeriodBtn = function(p, label) {
     var on = sjRankPeriod === p;
-    return '<button onclick="sjRankPeriod=\''+p+'\';loadSJRanking()" style="padding:5px 12px;border-radius:8px;background:'+(on?'rgba(201,168,76,0.15)':'rgba(255,255,255,0.03)')+';border:0.5px solid '+(on?'rgba(201,168,76,0.3)':'rgba(255,255,255,0.06)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.4)')+';font-size:10px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">'+label+'</button>';
+    return '<button onclick="sjRankPeriod=\''+p+'\';loadSJRanking()" style="padding:5px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.3)')+';">'+label+'</button>';
   };
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
-  html += '<div style="font-size:16px;font-weight:900;color:#fff;">\uD83C\uDFC6 Ranking de Cierres</div>';
-  html += '<div style="display:flex;gap:4px;">'+_sjPeriodBtn('daily','Hoy')+_sjPeriodBtn('weekly','Semana')+_sjPeriodBtn('monthly','Mes')+'</div>';
+  var html = '<div class="card">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking de Cierres y Citas de Negocio</div>';
+  html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">'+_sjPeriodBtn('daily','Hoy')+_sjPeriodBtn('weekly','Semana')+_sjPeriodBtn('monthly','Mes')+'</div>';
   html += '</div>';
   html += '<div id="sj-ranking-list"><div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div></div>';
+  html += '</div>';
   loadSJRanking();
   return html;
 }
