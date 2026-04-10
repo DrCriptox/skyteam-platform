@@ -4656,16 +4656,18 @@ function _uploadMeetingProof(input, bookingId) {
         body: JSON.stringify({ bookingId: bookingId, username: CU.username, imageBase64: compressedB64, attempt: attempt })
       }).then(function(r){ return r.json(); }).then(function(d) {
         if(d.verified) {
-          showToast('✅ ¡Foto verificada! +25 pts en ranking');
+          showToast('✅ ¡Foto verificada! +25 pts');
           var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
           if(bk) bk.proof = true;
-          _proofAttempts[bookingId] = 99; // prevent more attempts
+          _proofAttempts[bookingId] = 99;
           renderAgendaUI(document.getElementById('agenda-content'));
         } else if(d.method === 'ai_retry') {
-          showToast('⚠️ ' + (d.message||'Intenta con otra foto') + ' (intento ' + attempt + '/3)');
+          showToast('⚠️ ' + (d.message||'Intenta con otra foto') + ' (intento ' + attempt + '/2)');
+        } else if(d.duplicate) {
+          showToast('❌ Imagen duplicada. Sube una foto diferente.');
+          _proofAttempts[bookingId]--; // no consume intento
         } else {
-          // Failed after 3 or partial points
-          showToast('📸 ' + (d.message||'Verificación parcial') + ' (+5 pts)');
+          showToast('📸 ' + (d.message||'No verificada. +5 pts parciales.'));
           var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
           if(bk) bk.proof = true;
           _proofAttempts[bookingId] = 99;

@@ -150,31 +150,36 @@ module.exports = async (req, res) => {
       if (jsonMatch) analysis = JSON.parse(jsonMatch[0]);
     } catch(e) { console.log('[VERIFY] JSON parse error:', e.message); }
 
+    var currentAttempt = attempt || 1;
+
     if (!analysis) {
-      await markProof(bookingId, username, 'failed', 'AI response unparseable', imgHash);
-      return res.status(200).json({ ok: true, verified: false, method: 'ai_fail', message: 'No se pudo analizar la imagen. Puntos parciales.', attempt: attempt || 1 });
+      if (currentAttempt >= 2) {
+        await markProof(bookingId, username, 'failed', 'AI unparseable after 2 attempts', imgHash);
+        return res.status(200).json({ ok: true, verified: false, method: 'ai_fail', message: 'No se pudo analizar la imagen. +5 pts parciales.' });
+      }
+      return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', message: 'No se pudo analizar. Intenta con otra foto.', attempt: currentAttempt, maxAttempts: 2 });
     }
 
     // Decision logic
     var isValid = false;
     if (analysis.isVideoCall) {
       if (analysis.timeMatches === true) {
-        isValid = true; // Video call + time matches
+        isValid = true;
       } else if (analysis.confidence >= 50) {
-        isValid = true; // Video call clearly visible — accept even without time
+        isValid = true;
       }
     }
 
     if (isValid) {
+      // VERIFIED — +25 pts (only save on success, never accumulates with failed)
       await markProof(bookingId, username, 'approved', 'AI verified: ' + JSON.stringify(analysis), imgHash);
-      return res.status(200).json({ ok: true, verified: true, method: 'ai', message: 'Foto verificada por IA', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
+      return res.status(200).json({ ok: true, verified: true, method: 'ai', message: 'Foto verificada por IA. +25 pts', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
+    } else if (currentAttempt >= 2) {
+      // 2nd attempt failed — +5 pts partial (only now, not on attempt 1)
+      await markProof(bookingId, username, 'failed', 'AI rejected after 2 attempts: ' + JSON.stringify(analysis), imgHash);
+      return res.status(200).json({ ok: true, verified: false, method: 'ai_rejected', message: 'Imagen no verificada. +5 pts parciales.', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence, reason: analysis.reason } });
     } else {
-      var currentAttempt = attempt || 1;
-      if (currentAttempt >= 2) {
-        // 2nd attempt failed — give partial points
-        await markProof(bookingId, username, 'failed', 'AI rejected after 2 attempts: ' + JSON.stringify(analysis), imgHash);
-        return res.status(200).json({ ok: true, verified: false, method: 'ai_rejected', message: 'La foto no parece una reunión de video del horario de la cita. Se otorgan puntos parciales.', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence, reason: analysis.reason } });
-      }
+      // Attempt 1 failed — NO points saved, allow retry
       return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', message: analysis.reason || 'La foto no coincide. Intenta de nuevo.', attempt: currentAttempt, maxAttempts: 2, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
     }
 
