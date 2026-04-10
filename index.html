@@ -5301,35 +5301,49 @@ function processPlanDiarioInput() {
   var _targetDays = null; // null = let AI decide (single day)
   var _monthScope = false;
 
-  // Detect "lunes a viernes", "entre semana", "fin de semana"
-  if(_lowerText.match(/lunes\s*a\s*viernes/) || _lowerText.match(/entre\s*semana/)) _targetDays = [1,2,3,4,5];
+  // Detect day patterns — "lunes a viernes" ALWAYS wins over "todos los dias"
+  // Check specific ranges FIRST (highest priority)
+  if(_lowerText.match(/lunes\s*(a|al?|hasta)\s*viernes/) || _lowerText.match(/entre\s*semana/) || _lowerText.match(/de\s*lunes\s*a\s*viernes/)) _targetDays = [1,2,3,4,5];
+  else if(_lowerText.match(/lunes\s*(a|al?|hasta)\s*sabado/) || _lowerText.match(/lunes\s*(a|al?|hasta)\s*s.bado/)) _targetDays = [1,2,3,4,5,6];
   else if(_lowerText.match(/fin\s*de\s*semana/)) _targetDays = [6,0];
-  else if(_lowerText.match(/todos\s*los\s*dias/) || _lowerText.match(/cada\s*dia/)) _targetDays = [0,1,2,3,4,5,6];
+  else if(_lowerText.match(/todos\s*los\s*dias/) || _lowerText.match(/cada\s*dia/) || _lowerText.match(/diario/)) _targetDays = [0,1,2,3,4,5,6];
   else if(_lowerText.match(/todos\s*los\s*lunes/)) _targetDays = [1];
   else if(_lowerText.match(/todos\s*los\s*martes/)) _targetDays = [2];
-  else if(_lowerText.match(/todos\s*los\s*miercoles/)) _targetDays = [3];
+  else if(_lowerText.match(/todos\s*los\s*mi.rcoles/)) _targetDays = [3];
   else if(_lowerText.match(/todos\s*los\s*jueves/)) _targetDays = [4];
   else if(_lowerText.match(/todos\s*los\s*viernes/)) _targetDays = [5];
+  else if(_lowerText.match(/todos\s*los\s*s.bados?/)) _targetDays = [6];
+  else if(_lowerText.match(/todos\s*los\s*domingos?/)) _targetDays = [0];
 
   // Detect month scope
   if(_lowerText.match(/todo\s*(el\s*)?mes/) || _lowerText.match(/durante\s*todo/) || _lowerText.match(/todo\s*abril/) || _lowerText.match(/todo\s*mayo/) || _lowerText.match(/mensual/)) _monthScope = true;
 
-  // Detect time patterns
-  var _timeMatch = _lowerText.match(/(\d{1,2})\s*(de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?\s*(a|hasta|al?)\s*(\d{1,2})\s*(de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?/);
+  // Detect time patterns — multiple regex attempts for robustness
   var _horaIni = null, _horaFin = null;
-  if(_timeMatch) {
-    var h1 = parseInt(_timeMatch[1]), p1 = (_timeMatch[3]||'').replace(/\./g,'');
-    var h2 = parseInt(_timeMatch[5]), p2 = (_timeMatch[7]||'').replace(/\./g,'');
-    if(p1==='pm'||p1==='tarde'||p1==='noche') { if(h1<12) h1+=12; }
-    else if((p1==='am'||p1==='manana'||p1==='mañana') && h1===12) h1=0;
-    else if(!p1 && h1<8) h1+=12; // "2 a 3" = 14:00-15:00
-    if(p2==='pm'||p2==='tarde'||p2==='noche') { if(h2<12) h2+=12; }
-    else if((p2==='am'||p2==='manana'||p2==='mañana') && h2===12) h2=0;
-    else if(!p2 && h2<=h1 && h2<12) h2+=12;
-    else if(!p2 && h2<8) h2+=12;
-    _horaIni = String(h1).padStart(2,'0') + ':00';
-    _horaFin = String(h2).padStart(2,'0') + ':00';
+  // Try patterns: "de 2 a 3", "2 a 3", "de 2pm a 3pm", "de 2 de la tarde a 3", "9 am a 10 am", "9:30 a 10:30"
+  var _timePatterns = [
+    /(?:de\s+)?(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?\s*(?:a|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(?:de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?/,
+    /(\d{1,2})\s*(am|pm)\s*(?:a|hasta|-)\s*(\d{1,2})\s*(am|pm)/
+  ];
+  for(var _tp=0; _tp<_timePatterns.length && !_horaIni; _tp++) {
+    var _tm = _lowerText.match(_timePatterns[_tp]);
+    if(_tm) {
+      var h1, m1, h2, m2, p1, p2;
+      if(_tp===0) { h1=parseInt(_tm[1]); m1=_tm[2]||'00'; p1=(_tm[3]||'').replace(/\./g,''); h2=parseInt(_tm[4]); m2=_tm[5]||'00'; p2=(_tm[6]||'').replace(/\./g,''); }
+      else { h1=parseInt(_tm[1]); m1='00'; p1=_tm[2]; h2=parseInt(_tm[3]); m2='00'; p2=_tm[4]; }
+      // Convert to 24h
+      if(p1==='pm'||p1==='tarde'||p1==='noche') { if(h1<12) h1+=12; }
+      else if((p1==='am'||p1==='manana') && h1===12) h1=0;
+      if(p2==='pm'||p2==='tarde'||p2==='noche') { if(h2<12) h2+=12; }
+      else if((p2==='am'||p2==='manana') && h2===12) h2=0;
+      // If no AM/PM specified, infer: hours < 8 are probably PM
+      if(!p1 && !p2) { if(h1>=1 && h1<=7) h1+=12; if(h2>=1 && h2<=7) h2+=12; if(h2<=h1) h2+=12; }
+      else if(!p2) { if(h2<=h1 && h2<12) h2+=12; }
+      _horaIni = String(h1).padStart(2,'0') + ':' + m1;
+      _horaFin = String(h2).padStart(2,'0') + ':' + m2;
+    }
   }
+  console.log('[AGENDA-PARSE] days:', _targetDays, 'time:', _horaIni, '-', _horaFin, 'month:', _monthScope, 'text:', text);
 
   // If we detected days + time, build blocks directly in JS (NO AI needed for day logic)
   if(_targetDays && _horaIni && _horaFin) {
@@ -5358,10 +5372,17 @@ function processPlanDiarioInput() {
     if(fmtDate(hoy) >= fmtDate(new Date()) && parseInt(_horaIni) > hoy.getHours()) _genStart = new Date(hoy);
 
     var _blocks = [];
+    var _skipped = 0;
     var _d = new Date(_genStart);
     while(_d <= _genEnd) {
       if(_targetDays.indexOf(_d.getDay()) !== -1) {
-        _blocks.push({ fecha: fmtDate(_d), hora_inicio: _horaIni, hora_fin: _horaFin, titulo: _title, categoria: _cat });
+        var _fecha = fmtDate(_d);
+        // Skip if there's already a cierre block at this time
+        var _hasConflict = planDiarioBlocks.some(function(pb) {
+          return pb.fecha === _fecha && pb.categoria === 'cierre' && pb.hora_inicio < _horaFin && pb.hora_fin > _horaIni;
+        });
+        if(_hasConflict) { _skipped++; }
+        else { _blocks.push({ fecha: _fecha, hora_inicio: _horaIni, hora_fin: _horaFin, titulo: _title, categoria: _cat }); }
       }
       _d = new Date(_d.getTime() + 86400000);
     }
@@ -5372,7 +5393,7 @@ function processPlanDiarioInput() {
       fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:_blocks})})
         .then(function(r2){return r2.json();})
         .then(function(d2){
-          if(d2.ok){ showToast('\u2705 '+_blocks.length+' bloques de "'+_title+'" agregados'); input.value=''; setTimeout(function(){if(aiStatus)aiStatus.style.display='none';},2000); loadPlanDiario(); }
+          if(d2.ok){ showToast('\u2705 '+_blocks.length+' bloques de "'+_title+'" agregados' + (_skipped ? ' ('+_skipped+' omitidos por cita de cierre)' : '')); input.value=''; setTimeout(function(){if(aiStatus)aiStatus.style.display='none';},2000); loadPlanDiario(); }
           else showToast('\u274C Error guardando');
         }).catch(function(){showToast('\u274C Error de conexi\u00f3n');});
       return; // Skip AI entirely
