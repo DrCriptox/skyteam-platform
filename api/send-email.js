@@ -1,4 +1,4 @@
-// Communications API â handles email (Resend), push notifications (web-push), and smart triggers
+// Communications API ✅ handles email (Resend), push notifications (web-push), and smart triggers
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -34,7 +34,7 @@ async function sendWebPush(subscription, payload) {
   }
 }
 
-// ââ Send push to a specific user (internal helper) ââ
+// ✅✅ Send push to a specific user (internal helper) ✅✅
 async function pushToUser(username, title, body, url, tag) {
   // Find subscriptions for user AND their "2" account (same team notifications)
   var _baseUser = username.replace(/2$/, '');
@@ -53,9 +53,9 @@ async function pushToUser(username, title, body, url, tag) {
   return { sent, expired: expired.length };
 }
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// SMART PUSH TRIGGERS â called by Vercel Cron every 15 minutes
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
+// SMART PUSH TRIGGERS ✅ called by Vercel Cron every 15 minutes
+// ✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
 
 async function handleTriggers(req, res) {
   // Verify cron secret (Vercel sends Authorization header for cron jobs)
@@ -75,7 +75,7 @@ async function handleTriggers(req, res) {
   const results = { triggers: [], sent: 0, errors: [] };
 
   try {
-    // ââ TRIGGER 1: Prospectos sin seguimiento 3+ dÃ­as ââ
+    // ✅✅ TRIGGER 1: Prospectos sin seguimiento 3+ dias ✅✅
     if (cHour >= 8 && cHour <= 9) {
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
     // Get prospects that are active (not closed) and haven't been updated in 3+ days
@@ -106,7 +106,7 @@ async function handleTriggers(req, res) {
           body = 'Tienes ' + count + ' prospectos sin seguimiento. ' + firstName + ' lleva ' + daysAgo + ' dias esperando.';
         }
 
-        const r = await pushToUser(username, 'ð Seguimiento pendiente', body, '/?nav=prospectos', 'skyteam-stale-' + now.toISOString().slice(0, 10));
+        const r = await pushToUser(username, '🔥 Seguimiento pendiente', body, '/?nav=prospectos', 'skyteam-stale-' + now.toISOString().slice(0, 10));
         results.triggers.push({ type: 'stale_prospects', user: username, count, sent: r.sent });
         results.sent += r.sent;
       }
@@ -114,7 +114,7 @@ async function handleTriggers(req, res) {
 
     } // end TRIGGER 1 hour check
 
-    // ââ TRIGGER 2: Reuniones/bookings prÃ³ximos (en los prÃ³ximos 30 min) ââ
+    // ✅✅ TRIGGER 2: Reuniones/bookings proximos (en los proximos 30 min) ✅✅
     const in30min = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
     const nowISO = now.toISOString();
     const upcomingBookings = await sb(
@@ -131,13 +131,13 @@ async function handleTriggers(req, res) {
         const minsLeft = Math.round((meetTime - now) / 60000);
         const body = 'Tu reunion con ' + booking.nombre + ' es en ' + minsLeft + ' minutos. Preparate para cerrar.';
 
-        const r = await pushToUser(booking.username, 'ð Reunion en ' + minsLeft + ' min', body, '/?nav=agenda', 'skyteam-booking-' + booking.id);
+        const r = await pushToUser(booking.username, '🔥 Reunion en ' + minsLeft + ' min', body, '/?nav=agenda', 'skyteam-booking-' + booking.id);
         results.triggers.push({ type: 'upcoming_booking', user: booking.username, prospect: booking.nombre, minsLeft, sent: r.sent });
         results.sent += r.sent;
       }
     }
 
-    // ââ TRIGGER 3: Recordatorios vencidos (fecha_recordatorio ya paso y no completados) ââ
+    // ✅✅ TRIGGER 3: Recordatorios vencidos (fecha_recordatorio ya paso y no completados) ✅✅
     const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
     const pendingReminders = await sb(
       'recordatorios?select=id,username,prospecto_id,mensaje,fecha_recordatorio' +
@@ -157,13 +157,13 @@ async function handleTriggers(req, res) {
         } catch (e) {}
 
         const body = 'Recordatorio para ' + prospectName + ': ' + (reminder.mensaje || 'Hacer seguimiento').substring(0, 100);
-        const r = await pushToUser(reminder.username, 'â° Recordatorio de seguimiento', body, '/?nav=prospectos', 'skyteam-reminder-' + reminder.id);
+        const r = await pushToUser(reminder.username, '⏰ Recordatorio de seguimiento', body, '/?nav=prospectos', 'skyteam-reminder-' + reminder.id);
         results.triggers.push({ type: 'reminder', user: reminder.username, prospect: prospectName, sent: r.sent });
         results.sent += r.sent;
       }
     }
 
-    // ââ TRIGGER 4: Fecha de cierre estimada = hoy o maÃ±ana ââ
+    // ✅✅ TRIGGER 4: Fecha de cierre estimada = hoy o manana ✅✅
     if (cHour >= 9 && cHour <= 10) {
     const today = now.toISOString().slice(0, 10);
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -180,7 +180,7 @@ async function handleTriggers(req, res) {
         const valor = p.valor_estimado ? ' ($' + Number(p.valor_estimado).toLocaleString() + ')' : '';
         const body = p.nombre + valor + ' tiene fecha de cierre ' + (isToday ? 'HOY' : 'MANANA') + '. Es momento de cerrar.';
 
-        const r = await pushToUser(p.username, isToday ? 'ð¥ Cierre HOY' : 'ð Cierre maÃ±ana', body, '/?nav=prospectos', 'skyteam-closing-' + p.id);
+        const r = await pushToUser(p.username, isToday ? '🔥¥ Cierre HOY' : '🔥 Cierre manana', body, '/?nav=prospectos', 'skyteam-closing-' + p.id);
         results.triggers.push({ type: 'closing_date', user: p.username, prospect: p.nombre, isToday, sent: r.sent });
         results.sent += r.sent;
       }
@@ -188,7 +188,7 @@ async function handleTriggers(req, res) {
 
     } // end TRIGGER 4 hour check
 
-    // ââ TRIGGER 5: Prospectos calientes sin acciÃ³n (temperatura >= 70, sin interacciÃ³n 2+ dÃ­as) ââ
+    // ✅✅ TRIGGER 5: Prospectos calientes sin accion (temperatura >= 70, sin interaccion 2+ dias) ✅✅
     if (cHour >= 14 && cHour <= 15) {
     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const hotStale = await sb(
@@ -208,9 +208,9 @@ async function handleTriggers(req, res) {
 
       for (const [username, prospects] of Object.entries(byUser)) {
         const names = prospects.slice(0, 3).map(p => p.nombre.split(' ')[0]).join(', ');
-        const body = (prospects.length === 1 ? names + ' esta caliente (' + prospects[0].temperatura + 'Â°)' : names + ' estan calientes') + ' pero no los has contactado. No dejes enfriar el interes.';
+        const body = (prospects.length === 1 ? names + ' esta caliente (' + prospects[0].temperatura + '°)' : names + ' estan calientes') + ' pero no los has contactado. No dejes enfriar el interes.';
 
-        const r = await pushToUser(username, 'ð¥ Prospecto caliente sin accion', body, '/?nav=prospectos', 'skyteam-hot-' + now.toISOString().slice(0, 10));
+        const r = await pushToUser(username, '🔥 Prospecto caliente sin accion', body, '/?nav=prospectos', 'skyteam-hot-' + now.toISOString().slice(0, 10));
         results.triggers.push({ type: 'hot_stale', user: username, count: prospects.length, sent: r.sent });
         results.sent += r.sent;
       }
@@ -501,7 +501,7 @@ async function handleTriggers(req, res) {
   }
 }
 
-// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
 
 async function handlePush(req, res) {
   const { action, user, subscription, recipientUser, title, body, url, adminKey } = req.body;
@@ -577,12 +577,12 @@ export default async function handler(req, res) {
       return handlePush(req, res);
     }
 
-    // ââ Email sending (original send-email logic) ââ
+    // ✅✅ Email sending (original send-email logic) ✅✅
     const { to, from, nombre, usuario, password, sponsor, membresia, linkRef, subject, html: customHtml } = req.body;
     if (!to) return res.status(400).json({ error: 'Missing email' });
 
     const senderLabels = {
-      'lideres@skyteam.global': 'SKYTEAM LÃ­deres',
+      'lideres@skyteam.global': 'SKYTEAM Lideres',
       'soporte@skyteam.global': 'SKYTEAM Soporte',
       'academy@skyteam.global': 'SKYTEAM Academy'
     };
