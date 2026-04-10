@@ -3638,7 +3638,7 @@ function _showBankcodeSurvey() {
     var q = questions[step];
     var progress = Math.round(((step)/questions.length)*100);
     var html = '<div style="background:linear-gradient(145deg,#0a0a12,#0f0f18);border:0.5px solid rgba(201,168,76,0.15);border-radius:24px;padding:32px 28px;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">';
-    html += '<div style="text-align:center;margin-bottom:4px;"><img src="/logo-skyteam.png" style="height:28px;opacity:0.6;" /></div>';
+    html += '<div style="text-align:center;margin-bottom:4px;"><img src="/logo-skyteam-white.png" style="height:28px;opacity:0.6;" /></div>';
     html += '<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:16px;overflow:hidden;"><div style="width:'+progress+'%;height:100%;background:linear-gradient(90deg,#C9A84C,#E8D48B);border-radius:2px;transition:width 0.3s;"></div></div>';
     html += '<div style="font-size:10px;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:12px;">Pregunta '+(step+1)+' de '+questions.length+'</div>';
     html += '<div style="text-align:center;font-size:36px;margin-bottom:10px;">'+q.icon+'</div>';
@@ -6698,7 +6698,14 @@ function showPublicBookingPage(username) {
   var old=document.getElementById('public-booking'); if(old) old.remove();
   var div=document.createElement('div'); div.id='public-booking';
   div.style.cssText='min-height:100dvh;background:#0a0a12;color:#F0EDE6;font-family:Outfit,Nunito,sans-serif;overflow-x:hidden;width:100%;max-width:100vw;';
-  div.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;"><div style="text-align:center;"><img src="/logo-skyteam.png" style="height:40px;margin-bottom:16px;" /><p style="color:rgba(255,255,255,0.4);">Cargando agenda...</p></div></div>';
+  div.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;"><div style="text-align:center;">'
+    + '<div style="position:relative;margin-bottom:24px;">'
+    + '<img src="/logo-skyteam-white.png" style="height:40px;animation:stLoadPulse 2s ease-in-out infinite;" />'
+    + '<div style="width:120px;height:3px;background:rgba(255,255,255,0.06);border-radius:3px;margin:16px auto 0;overflow:hidden;">'
+    + '<div style="width:40%;height:100%;background:linear-gradient(90deg,#C9A84C,#E8D48B,#C9A84C);border-radius:3px;animation:stLoadBar 1.5s ease-in-out infinite;"></div></div></div>'
+    + '<p style="color:rgba(255,255,255,0.3);font-size:12px;letter-spacing:2px;text-transform:uppercase;">Cargando</p>'
+    + '<style>@keyframes stLoadPulse{0%,100%{opacity:0.4;transform:scale(1);}50%{opacity:1;transform:scale(1.05);}}@keyframes stLoadBar{0%{transform:translateX(-100%);}100%{transform:translateX(350%);}}</style>'
+    + '</div></div>';
   document.body.appendChild(div);
 
   fetch('/api/agenda?user='+username+'&public=1')
@@ -6709,7 +6716,7 @@ function showPublicBookingPage(username) {
         d.config.photoDataUrl = d.config.photoDataUrl || '';
       }
       if(!d.config||!d.config.activa){
-        div.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:20px;"><div style="text-align:center;max-width:400px;"><img src="/logo-skyteam.png" style="height:40px;margin-bottom:24px;" /><div style="font-size:48px;margin-bottom:16px;">📭</div><h2 style="color:#F0EDE6;font-size:20px;margin:0 0 8px;">Agenda no disponible</h2><p style="color:rgba(255,255,255,0.4);">Esta agenda no está activa en este momento.</p></div></div>';
+        div.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:20px;"><div style="text-align:center;max-width:400px;"><img src="/logo-skyteam-white.png" style="height:40px;margin-bottom:24px;opacity:0.6;" /><div style="font-size:48px;margin-bottom:16px;">📭</div><h2 style="color:#F0EDE6;font-size:20px;margin:0 0 8px;">Agenda no disponible</h2><p style="color:rgba(255,255,255,0.4);">Esta agenda no est\u00e1 activa en este momento.</p></div></div>';
         return;
       }
       window._pbCfg=d.config; window._pbUser=username;
@@ -10595,7 +10602,7 @@ function _doAprobar(sol, id) {
 
       // Header con gradiente
       + '<div style="background:linear-gradient(135deg,#0a0a12 0%,#0f0f18 50%,#050508 100%);padding:36px 32px 28px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">'
-      + '<img src="https://skyteam.global/logo-skyteam.png" alt="SKYTEAM" style="height:48px;max-width:260px;object-fit:contain;" />'
+      + '<img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:48px;max-width:260px;object-fit:contain;" />'
       + '<p style="color:rgba(255,255,255,0.35);font-size:12px;margin:6px 0 0;letter-spacing:1px;text-transform:uppercase;">Plataforma del Equipo SKYTEAM</p>'
       + '</div>'
 
@@ -10651,7 +10658,7 @@ function _doAprobar(sol, id) {
 
     // EMAIL 2 — Link de duplicación personalizado
     var html2 = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
-      + '<div style="text-align:center;margin-bottom:20px;"><img src="https://skyteam.global/logo-skyteam.png" alt="SKYTEAM" style="height:44px;max-width:240px;object-fit:contain;" />'
+      + '<div style="text-align:center;margin-bottom:20px;"><img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:44px;max-width:240px;object-fit:contain;" />'
       + '<p style="color:rgba(255,255,255,0.4);font-size:12px;margin:4px 0 0;">Plataforma del Equipo SKYTEAM</p></div>'
       + '<h2 style="color:#FFD700;font-size:20px;">🚀 Tu link de duplicación está listo</h2>'
       + '<p style="color:rgba(255,255,255,0.8);line-height:1.7;">Hola <strong>' + primerNombre + '</strong>, este es tu link personalizado para empezar a crecer tu red desde hoy:</p>'
