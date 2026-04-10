@@ -41,6 +41,22 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Ventana de verificación cerrada (2h después de la cita).', tooLate: true });
     }
 
+    // ── IMAGE HASH: prevent reuse of the same photo ──
+    const crypto = require('crypto');
+    const imgBuffer = Buffer.from(imageBase64.replace(/^data:image\/[a-z]+;base64,/, ''), 'base64');
+    const imgHash = crypto.createHash('sha256').update(imgBuffer).digest('hex');
+    // Check if this hash was already used by ANY user
+    try {
+      const hashCheck = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?image_hash=eq.' + imgHash + '&select=id,username,booking_id', { headers: SB_HEADERS });
+      const hashRows = await hashCheck.json();
+      if (Array.isArray(hashRows) && hashRows.length > 0) {
+        var prevUser = hashRows[0].username;
+        var prevBooking = hashRows[0].booking_id;
+        console.log('[VERIFY] DUPLICATE IMAGE hash=' + imgHash.substring(0, 16) + ' already used by ' + prevUser + ' for booking ' + prevBooking);
+        return res.status(400).json({ error: 'Esta foto ya fue usada para verificar otra cita. Sube una foto diferente.', duplicate: true, previousUser: prevUser === username ? 'tuya' : 'otro socio' });
+      }
+    } catch(e) { console.log('[VERIFY] Hash check error (column may not exist):', e.message); }
+
     // ── LAYER 1: Try EXIF data ──
     var exifDate = null;
     try {
@@ -71,7 +87,7 @@ module.exports = async (req, res) => {
       var diffMin = diffMs / 60000;
       if (diffMin <= 30) {
         // EXIF matches! Approve
-        await markProof(bookingId, username, 'approved', 'EXIF date matches: ' + JSON.stringify(exifDate));
+        await markProof(bookingId, username, 'approved', 'EXIF date matches: ' + JSON.stringify(exifDate), imgHash);
         return res.status(200).json({ ok: true, verified: true, method: 'exif', message: 'Foto verificada por fecha EXIF' });
       } else {
         console.log('[VERIFY] EXIF date mismatch: photo=' + exifTime.toISOString() + ' booking=' + bookingDate.toISOString() + ' diff=' + Math.round(diffMin) + 'min');
@@ -82,7 +98,7 @@ module.exports = async (req, res) => {
     // ── LAYER 2: GPT-4o-mini Vision ──
     if (!OPENAI_KEY) {
       // No OpenAI key — accept with reduced points
-      await markProof(bookingId, username, 'failed', 'No AI key available');
+      await markProof(bookingId, username, 'failed', 'No AI key available', imgHash);
       return res.status(200).json({ ok: true, verified: false, method: 'none', message: 'Verificación IA no disponible. Puntos parciales otorgados.' });
     }
 
@@ -114,7 +130,7 @@ module.exports = async (req, res) => {
     if (!aiR.ok) {
       var errTxt = await aiR.text();
       console.error('[VERIFY] OpenAI error:', aiR.status, errTxt.substring(0, 200));
-      await markProof(bookingId, username, 'failed', 'AI error: ' + aiR.status);
+      await markProof(bookingId, username, 'failed', 'AI error: ' + aiR.status, imgHash);
       return res.status(200).json({ ok: true, verified: false, method: 'ai_error', message: 'Error en verificación IA. Puntos parciales otorgados.' });
     }
 
@@ -130,7 +146,7 @@ module.exports = async (req, res) => {
     } catch(e) { console.log('[VERIFY] JSON parse error:', e.message); }
 
     if (!analysis) {
-      await markProof(bookingId, username, 'failed', 'AI response unparseable');
+      await markProof(bookingId, username, 'failed', 'AI response unparseable', imgHash);
       return res.status(200).json({ ok: true, verified: false, method: 'ai_fail', message: 'No se pudo analizar la imagen. Puntos parciales.', attempt: attempt || 1 });
     }
 
@@ -145,13 +161,13 @@ module.exports = async (req, res) => {
     }
 
     if (isValid) {
-      await markProof(bookingId, username, 'approved', 'AI verified: ' + JSON.stringify(analysis));
+      await markProof(bookingId, username, 'approved', 'AI verified: ' + JSON.stringify(analysis), imgHash);
       return res.status(200).json({ ok: true, verified: true, method: 'ai', message: 'Foto verificada por IA', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
     } else {
       var currentAttempt = attempt || 1;
       if (currentAttempt >= 3) {
         // 3rd attempt failed — give partial points
-        await markProof(bookingId, username, 'failed', 'AI rejected after 3 attempts: ' + JSON.stringify(analysis));
+        await markProof(bookingId, username, 'failed', 'AI rejected after 3 attempts: ' + JSON.stringify(analysis), imgHash);
         return res.status(200).json({ ok: true, verified: false, method: 'ai_rejected', message: 'La foto no parece una reunión de video del horario de la cita. Se otorgan puntos parciales.', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence, reason: analysis.reason } });
       }
       return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', message: analysis.reason || 'La foto no coincide. Intenta de nuevo.', attempt: currentAttempt, maxAttempts: 3, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
@@ -163,7 +179,7 @@ module.exports = async (req, res) => {
   }
 };
 
-async function markProof(bookingId, username, status, notes) {
+async function markProof(bookingId, username, status, notes, imageHash) {
   try {
     // Update booking status
     var newStatus = status === 'approved' ? 'verificada' : 'completada';
@@ -171,10 +187,12 @@ async function markProof(bookingId, username, status, notes) {
       method: 'PATCH', headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
       body: JSON.stringify({ status: newStatus, proof_url: status, updated_at: new Date().toISOString() })
     });
-    // Save to booking_proofs
+    // Save to booking_proofs with image hash (prevents reuse)
+    var proofData = { username: username, booking_id: bookingId, status: status, notes: (notes || '').substring(0, 500), created_at: new Date().toISOString() };
+    if (imageHash) proofData.image_hash = imageHash;
     await fetch(SUPABASE_URL + '/rest/v1/booking_proofs', {
       method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ username: username, booking_id: bookingId, status: status, notes: (notes || '').substring(0, 500), created_at: new Date().toISOString() })
+      body: JSON.stringify(proofData)
     });
     console.log('[VERIFY] Proof marked:', bookingId, status);
   } catch(e) { console.error('[VERIFY] markProof error:', e.message); }
