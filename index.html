@@ -5385,8 +5385,9 @@ function processPlanDiarioInput() {
     else if((p1==='am'||p1==='manana') && h1===12) h1=0;
     if(p2==='pm'||p2==='tarde'||p2==='noche') { if(h2<12) h2+=12; }
     else if((p2==='am'||p2==='manana') && h2===12) h2=0;
-    // If no AM/PM, infer: hours 1-7 = PM
-    if(!p1 && !p2) { if(h1>=1 && h1<=7) h1+=12; if(h2>=1 && h2<=7) h2+=12; if(h2<=h1) h2+=12; }
+    // If no AM/PM specified, assume AM (7:30 = 7:30 AM, not PM)
+    // Only add 12 if h2 <= h1 (e.g. "11 a 1" = 11:00-13:00)
+    if(!p1 && !p2) { if(h2<=h1) h2+=12; }
     else if(!p2 && h2<=h1 && h2<12) h2+=12;
     _horaIni = String(h1).padStart(2,'0') + ':' + m1;
     _horaFin = String(h2).padStart(2,'0') + ':' + m2;
