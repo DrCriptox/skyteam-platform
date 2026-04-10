@@ -5296,7 +5296,13 @@ function processPlanDiarioInput() {
   // ── PRE-PROCESSOR: JS-based delete (no AI needed) ──
   var _isDeleteCmd = _lowerText.match(/borr|elimin|quit|limpi/);
   var _allUserBlocks = planDiarioBlocks.filter(function(b){ return !b._isBooking && b.fecha >= todayStr; });
-  if(_isDeleteCmd && _allUserBlocks.length > 0) {
+  console.log('[AGENDA-DELETE] isDelete:', !!_isDeleteCmd, 'allBlocks:', planDiarioBlocks.length, 'deletable:', _allUserBlocks.length, 'ids:', _allUserBlocks.map(function(b){return b.id||'NO_ID';}).join(','));
+  if(_isDeleteCmd) {
+    if(_allUserBlocks.length === 0) {
+      showToast('No hay bloques personales para borrar (solo cierres)');
+      if(aiStatus) aiStatus.style.display='none';
+      return;
+    }
     var _exceptCierre = _lowerText.match(/excepto|acepto|menos|salvo|sin\s*tocar|no\s*borr|no\s*las\s*de/) && _lowerText.match(/cierre|cierres|reunion|reuniones|cita|citas|agenda\s*de\s*cierre/);
     var _onlyToday = _lowerText.match(/de\s*hoy|del\s*dia/);
     var _toDelete = _allUserBlocks.filter(function(b) {
