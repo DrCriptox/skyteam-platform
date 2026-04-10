@@ -5295,43 +5295,100 @@ function processPlanDiarioInput() {
     existingCtx = ' Bloques existentes esta semana: ' + weekBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
   }
 
-  // Build FULL calendar: rest of current month + next month (so AI can handle "todo abril", "todo mayo", etc.)
-  var _allDates = {};
-  var _cur = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  var _end = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 0); // end of next month
-  while(_cur <= _end) {
-    var _f = fmtDate(_cur);
-    var _d = _cur.getDay();
-    if(!_allDates[DIAS_ES[_d]]) _allDates[DIAS_ES[_d]] = [];
-    _allDates[DIAS_ES[_d]].push(_f);
-    _cur = new Date(_cur.getTime() + 86400000);
-  }
-  // Compact format: "lunes: [2026-04-07, 2026-04-14, ...]"
-  var _calendarMap = Object.keys(_allDates).map(function(dia){ return dia + ': [' + _allDates[dia].join(', ') + ']'; }).join('. ');
+  // ── PRE-PROCESSOR: parse days + time in JS (don't trust AI for day logic) ──
+  var _lowerText = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  var _dayNames = {lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6,domingo:0};
+  var _targetDays = null; // null = let AI decide (single day)
+  var _monthScope = false;
 
-  var systemPrompt = 'Eres un asistente de calendario personal. Hoy es ' + todayStr + ' (' + DIAS_ES[dayOfWeek] + '). Mes actual: ' + (hoy.getMonth()+1) + '/' + hoy.getFullYear() + '.' + existingCtx
-    + ' CALENDARIO COMPLETO (fechas por dia de la semana): ' + _calendarMap + '.'
-    + ' Responde SOLO con un JSON object, sin explicacion. Formato: {"action":"add|delete|delete_all|modify","blocks":[...]}.'
-    + ' ACCIONES: (1) "add": blocks con {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro.'
-    + ' (2) "delete": blocks con {id} del bloque a borrar.'
-    + ' (3) "delete_all": blocks con {fecha} para borrar TODOS los bloques de ese dia.'
-    + ' (4) "modify": blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria}.'
-    + ' REGLAS CRITICAS:'
-    + ' - "lunes a viernes" = SOLO lunes,martes,miercoles,jueves,viernes. JAMAS incluir sabado ni domingo.'
-    + ' - "entre semana" = lunes a viernes.'
-    + ' - "fin de semana" = solo sabado y domingo.'
-    + ' - "todo el mes" o "durante todo abril" = genera bloques para TODOS los dias indicados del mes completo (usa las fechas del calendario).'
-    + ' - "todo el mes de lunes a viernes" = usa SOLO las fechas de lunes,martes,miercoles,jueves,viernes del mes.'
-    + ' - Solo genera bloques desde hoy en adelante (no fechas pasadas).'
-    + ' - hora_inicio y hora_fin en formato HH:MM (24h).'
-    + ' IMPORTANTE: Genera TODOS los bloques necesarios (puede ser 20+). Siempre JSON, nunca texto.';
+  // Detect "lunes a viernes", "entre semana", "fin de semana"
+  if(_lowerText.match(/lunes\s*a\s*viernes/) || _lowerText.match(/entre\s*semana/)) _targetDays = [1,2,3,4,5];
+  else if(_lowerText.match(/fin\s*de\s*semana/)) _targetDays = [6,0];
+  else if(_lowerText.match(/todos\s*los\s*dias/) || _lowerText.match(/cada\s*dia/)) _targetDays = [0,1,2,3,4,5,6];
+  else if(_lowerText.match(/todos\s*los\s*lunes/)) _targetDays = [1];
+  else if(_lowerText.match(/todos\s*los\s*martes/)) _targetDays = [2];
+  else if(_lowerText.match(/todos\s*los\s*miercoles/)) _targetDays = [3];
+  else if(_lowerText.match(/todos\s*los\s*jueves/)) _targetDays = [4];
+  else if(_lowerText.match(/todos\s*los\s*viernes/)) _targetDays = [5];
+
+  // Detect month scope
+  if(_lowerText.match(/todo\s*(el\s*)?mes/) || _lowerText.match(/durante\s*todo/) || _lowerText.match(/todo\s*abril/) || _lowerText.match(/todo\s*mayo/) || _lowerText.match(/mensual/)) _monthScope = true;
+
+  // Detect time patterns
+  var _timeMatch = _lowerText.match(/(\d{1,2})\s*(de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?\s*(a|hasta|al?)\s*(\d{1,2})\s*(de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?/);
+  var _horaIni = null, _horaFin = null;
+  if(_timeMatch) {
+    var h1 = parseInt(_timeMatch[1]), p1 = (_timeMatch[3]||'').replace(/\./g,'');
+    var h2 = parseInt(_timeMatch[5]), p2 = (_timeMatch[7]||'').replace(/\./g,'');
+    if(p1==='pm'||p1==='tarde'||p1==='noche') { if(h1<12) h1+=12; }
+    else if((p1==='am'||p1==='manana'||p1==='mañana') && h1===12) h1=0;
+    else if(!p1 && h1<8) h1+=12; // "2 a 3" = 14:00-15:00
+    if(p2==='pm'||p2==='tarde'||p2==='noche') { if(h2<12) h2+=12; }
+    else if((p2==='am'||p2==='manana'||p2==='mañana') && h2===12) h2=0;
+    else if(!p2 && h2<=h1 && h2<12) h2+=12;
+    else if(!p2 && h2<8) h2+=12;
+    _horaIni = String(h1).padStart(2,'0') + ':00';
+    _horaFin = String(h2).padStart(2,'0') + ':00';
+  }
+
+  // If we detected days + time, build blocks directly in JS (NO AI needed for day logic)
+  if(_targetDays && _horaIni && _horaFin) {
+    // Extract title: remove time and day patterns from text
+    var _title = text.replace(/de\s*\d{1,2}\s*(de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?\s*(a|hasta)\s*\d{1,2}\s*(de la\s*)?(manana|mañana|tarde|noche|am|pm|a\.?m|p\.?m)?/gi,'')
+      .replace(/lunes\s*a\s*viernes|entre\s*semana|fin\s*de\s*semana|todos\s*los\s*dias|todos\s*los\s*(lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo)/gi,'')
+      .replace(/todo\s*(el\s*)?mes|durante\s*todo\s*(el\s*)?(mes|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/gi,'')
+      .replace(/de\s*la\s*tarde|de\s*la\s*manana|de\s*la\s*mañana/gi,'')
+      .replace(/agrega|agregar|programa|programar|pon|poner|agendar|agenda/gi,'')
+      .replace(/,/g,'').trim();
+    if(!_title) _title = 'Actividad';
+    _title = _title.charAt(0).toUpperCase() + _title.slice(1);
+    var _cat = 'personal';
+    if(_lowerText.match(/gym|gimnasio/)) _cat = 'gym';
+    else if(_lowerText.match(/estudi|universid|clase|curso/)) _cat = 'estudio';
+    else if(_lowerText.match(/trabaj|oficin|reuni/)) _cat = 'trabajo';
+    else if(_lowerText.match(/medic|doctor|salud|terapia/)) _cat = 'salud';
+
+    // Generate dates
+    var _genStart = new Date(hoy); _genStart.setHours(0,0,0,0);
+    if(_genStart < hoy) _genStart = new Date(hoy.getTime() + 86400000); // start tomorrow if today already
+    var _genEnd = _monthScope ? new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0) : new Date(dates[dates.length-1]);
+    // If month scope and today is past the 20th, extend to end of next month
+    if(_monthScope && hoy.getDate() > 20) _genEnd = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 0);
+    // Include today if time hasn't passed
+    if(fmtDate(hoy) >= fmtDate(new Date()) && parseInt(_horaIni) > hoy.getHours()) _genStart = new Date(hoy);
+
+    var _blocks = [];
+    var _d = new Date(_genStart);
+    while(_d <= _genEnd) {
+      if(_targetDays.indexOf(_d.getDay()) !== -1) {
+        _blocks.push({ fecha: fmtDate(_d), hora_inicio: _horaIni, hora_fin: _horaFin, titulo: _title, categoria: _cat });
+      }
+      _d = new Date(_d.getTime() + 86400000);
+    }
+
+    if(_blocks.length > 0) {
+      var userRef = CU.ref||CU.user||'';
+      if(aiStatus){aiStatus.style.display='block';aiStatus.textContent='\u2705 ' + _blocks.length + ' bloques de "' + _title + '" (' + _horaIni + '-' + _horaFin + ')';}
+      fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:_blocks})})
+        .then(function(r2){return r2.json();})
+        .then(function(d2){
+          if(d2.ok){ showToast('\u2705 '+_blocks.length+' bloques de "'+_title+'" agregados'); input.value=''; setTimeout(function(){if(aiStatus)aiStatus.style.display='none';},2000); loadPlanDiario(); }
+          else showToast('\u274C Error guardando');
+        }).catch(function(){showToast('\u274C Error de conexi\u00f3n');});
+      return; // Skip AI entirely
+    }
+  }
+
+  // ── FALLBACK: AI for complex/single-day commands ──
+  var _weekMap = dates.map(function(d){ return fmtDate(d) + '=' + DIAS_ES[d.getDay()]; }).join(', ');
+  var systemPrompt = 'Eres un asistente de calendario. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Semana: '+_weekMap+'.'+existingCtx+' Responde SOLO JSON: {"action":"add|delete|delete_all|modify","blocks":[...]}. Blocks: {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro. Para delete: {id}. hora en HH:MM 24h. Si no dice fecha usa hoy '+todayStr+'.';
 
   fetch('/api/chat', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       model:'claude-haiku-4-5-20251001',
-      max_tokens:2000,
+      max_tokens:500,
       system:systemPrompt,
       messages:[{role:'user',content:text}]
     })
@@ -5341,12 +5398,10 @@ function processPlanDiarioInput() {
     if(aiStatus) aiStatus.style.display='none';
     if(d.content && d.content[0] && d.content[0].text) {
       var raw = d.content[0].text.trim();
-      // Extract JSON object or array from response
       var jsonMatch = raw.match(/\{[\s\S]*\}/) || raw.match(/\[[\s\S]*\]/);
       if(jsonMatch) {
         try {
           var parsed = JSON.parse(jsonMatch[0]);
-          // Normalize: if array, treat as add action
           if(Array.isArray(parsed)) parsed = {action:'add', blocks:parsed};
           var act = parsed.action || 'add';
           var blocks = parsed.blocks || [];
