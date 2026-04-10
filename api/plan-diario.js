@@ -80,13 +80,16 @@ export default async function handler(req, res) {
       }
 
       if (action === 'delete') {
-        const { id } = body;
-        if (!id) return res.status(400).json({ error: 'Missing block id' });
-        await sb('plan_diario?id=eq.' + encodeURIComponent(id), {
-          method: 'DELETE'
-        });
+        const { id, ids } = body;
+        // Support single id or array of ids
+        var deleteIds = ids || (id ? [id] : []);
+        if (!deleteIds.length) return res.status(400).json({ error: 'Missing block id or ids' });
+        // Delete all matching ids
+        for (var di = 0; di < deleteIds.length; di++) {
+          await sb('plan_diario?id=eq.' + encodeURIComponent(deleteIds[di]), { method: 'DELETE' });
+        }
         await syncAgendaBlocks(user);
-        return res.status(200).json({ ok: true });
+        return res.status(200).json({ ok: true, deleted: deleteIds.length });
       }
 
       if (action === 'deleteAll') {
