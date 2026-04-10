@@ -6268,7 +6268,7 @@ function refreshNotifications() {
           priority: 2
         });
         activeCount++;
-        if(!localStorage.getItem(_nativeKey+dk1)){localStorage.setItem(_nativeKey+dk1,'1');showNativeNotification('⏰ Cita en 1 hora','Con '+(b.nombre||'prospecto')+' a las '+timeStr,null,'/?nav=agenda');}
+        if(!localStorage.getItem(_nativeKey+dk1)){localStorage.setItem(_nativeKey+dk1,'1');showNativeNotification('⏰ Falta 1 hora para tu cita','Con '+(b.nombre||'prospecto')+' ('+timeStr+'). Ya casi iniciamos.',null,'/?nav=agenda');}
       }
     }
 
@@ -6285,7 +6285,7 @@ function refreshNotifications() {
           priority: 2.5
         });
         activeCount++;
-        if(!localStorage.getItem(_nativeKey+dk2)){localStorage.setItem(_nativeKey+dk2,'1');showNativeNotification('🔔 ¡15 minutos!','Cita con '+(b.nombre||'prospecto')+' a las '+timeStr,null,'/?nav=agenda');}
+        if(!localStorage.getItem(_nativeKey+dk2)){localStorage.setItem(_nativeKey+dk2,'1');showNativeNotification('🔔 En 15 minutos inicia tu reunión','Con '+(b.nombre||'prospecto')+' ('+timeStr+')',null,'/?nav=agenda');}
       }
     }
 
@@ -6302,7 +6302,7 @@ function refreshNotifications() {
           priority: 3
         });
         activeCount++;
-        if(!localStorage.getItem(_nativeKey+dk3)){localStorage.setItem(_nativeKey+dk3,'1');showNativeNotification('🟢 ¡Abre la sala!','Cita con '+(b.nombre||'prospecto')+' — ¡AHORA!',null,'/?nav=agenda');}
+        if(!localStorage.getItem(_nativeKey+dk3)){localStorage.setItem(_nativeKey+dk3,'1');showNativeNotification('🟢 Ve abriendo sala','Cita con '+(b.nombre||'prospecto')+' ('+timeStr+'). Estamos a 5 minutos del inicio.',null,'/?nav=agenda');}
       }
     }
   });
