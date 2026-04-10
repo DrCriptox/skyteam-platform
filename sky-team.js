@@ -1312,13 +1312,16 @@ function _buildSociosList() {
   // Pagination
   if (totalPages > 1) {
     html += '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-family:Outfit,Nunito,sans-serif;">';
-    html += '<button onclick="stState.sociosPage=Math.max(1,(stState.sociosPage||1)-1);document.getElementById(\'st-socios-list\').innerHTML=_buildSociosList();" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page>1?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:14px;font-weight:700;cursor:pointer;">\u25C0</button>';
+    html += '<button onclick="window.stState.sociosPage=Math.max(1,(window.stState.sociosPage||1)-1);document.getElementById(\'st-socios-list\').innerHTML=window._buildSociosList();" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page>1?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:14px;font-weight:700;cursor:pointer;">\u25C0</button>';
     html += '<span style="font-size:12px;color:rgba(255,255,255,0.4);">'+page+' / '+totalPages+'</span>';
-    html += '<button onclick="stState.sociosPage=Math.min('+totalPages+',(stState.sociosPage||1)+1);document.getElementById(\'st-socios-list\').innerHTML=_buildSociosList();" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page<totalPages?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:14px;font-weight:700;cursor:pointer;">\u25B6</button>';
+    html += '<button onclick="window.stState.sociosPage=Math.min('+totalPages+',(window.stState.sociosPage||1)+1);document.getElementById(\'st-socios-list\').innerHTML=window._buildSociosList();" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:'+(page<totalPages?'#C9A84C':'rgba(255,255,255,0.15)')+';font-size:14px;font-weight:700;cursor:pointer;">\u25B6</button>';
     html += '</div>';
   }
   return html;
 }
+// Expose for inline onclick pagination buttons
+window._buildSociosList = _buildSociosList;
+window.stState = stState;
 
 // ═══════════════════════════════════════════════════════════════
 
