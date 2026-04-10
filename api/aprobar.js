@@ -385,10 +385,11 @@ export default async function handler(req, res) {
               var _spName = uMap[finalSponsor.toLowerCase()] ? (uMap[finalSponsor.toLowerCase()].name || finalSponsor) : finalSponsor;
               _cuerpo = fullName + ' \u2014 ' + levels[lvl] + '\nDirecta de ' + _spName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
             }
+            // Tag WITHOUT Date.now() → same sale replaces previous push (no duplicates)
             const payload = JSON.stringify({
               title: _titulo,
               body: _cuerpo,
-              url: '/?nav=home', tag: 'skyteam-newclient-' + finalUsername + '-' + Date.now()
+              url: '/?nav=home', tag: 'skyteam-sale-' + finalUsername
             });
             for (const sub of subs) {
               try { await webpush.sendNotification(sub.subscription, payload); } catch(e) {
@@ -398,30 +399,40 @@ export default async function handler(req, res) {
               }
             }
           }
-          // Send email notification to sponsor too
+          // Send email notification 5 MINUTES LATER (so it looks like a different confirmation)
           var _spData = uMap[curSponsor];
           var _spEmail = _spData ? (_spData.email || '') : '';
           if (_spEmail && process.env.RESEND_API_KEY) {
-            var _emailSubject = valor ? '\uD83D\uDCB0 \u00a1Nueva venta ' + valor + ' en tu equipo!' : '\uD83C\uDF89 \u00a1Nueva venta en tu equipo!';
+            // Subject: emphasize amount + team growth (NOT the person's name)
+            var _emailSubject = valor
+              ? '\uD83D\uDCC8 ' + valor + ' \u2014 \u00a1Tu equipo sigue creciendo!'
+              : '\uD83D\uDCC8 \u00a1Tu equipo acaba de generar una nueva venta!';
+            var _levelLabel = lvl === 0 ? 'Venta directa en tu equipo' : 'Venta en tu ' + levels[lvl];
             var _emailHtml = '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
               + '<div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:24px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>'
               + '<div style="text-align:center;margin-bottom:24px;">'
-              + (valor ? '<div style="font-size:36px;font-weight:900;color:#C9A84C;margin-bottom:8px;">' + valor + '</div>' : '')
-              + '<div style="font-size:14px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:2px;">Nueva Venta</div>'
+              + (valor ? '<div style="font-size:42px;font-weight:900;color:#C9A84C;margin-bottom:4px;">' + valor + '</div>' : '')
+              + '<div style="font-size:13px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;">' + _levelLabel + '</div>'
+              + '<div style="font-size:11px;color:rgba(255,255,255,0.25);">Tu franquicia digital est\u00e1 trabajando para ti \uD83D\uDE80</div>'
               + '</div>'
-              + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.2);border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">'
-              + '<div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">\uD83D\uDD25 ' + fullName + '</div>'
-              + '<div style="font-size:13px;color:rgba(255,255,255,0.5);">' + (lvl===0 ? 'Venta directa' : levels[lvl]) + ' \u2022 ' + _hora + '</div>'
+              + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">'
+              + '<div style="font-size:11px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Nuevo socio</div>'
+              + '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">' + fullName + '</div>'
+              + '<div style="font-size:12px;color:rgba(201,168,76,0.6);">' + _hora + '</div>'
               + '</div>'
               + '<div style="text-align:center;margin-bottom:20px;">'
-              + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">\uD83D\uDE80 Ver mi equipo</a>'
+              + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Ver mi equipo \u2192</a>'
               + '</div>'
-              + '<p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;">\u00a1Sigue as\u00ed! Cada venta te acerca m\u00e1s a tus metas.</p>'
+              + '<p style="text-align:center;color:rgba(255,255,255,0.2);font-size:10px;">Cada venta te acerca m\u00e1s a tus metas. \u00a1Sigue construyendo!</p>'
               + '</div>';
+            // Schedule email 5 minutes from now via Resend scheduled_at
+            var _sendAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
             fetch('https://api.resend.com/emails', {
               method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+process.env.RESEND_API_KEY},
-              body:JSON.stringify({from:'SKYTEAM <ventas@skyteam.global>',to:[_spEmail],subject:_emailSubject,html:_emailHtml})
-            }).catch(function(e){console.warn('[EMAIL] Sale notification failed:',e.message);});
+              body:JSON.stringify({from:'SKYTEAM <ventas@skyteam.global>',to:[_spEmail],subject:_emailSubject,html:_emailHtml,scheduled_at:_sendAt})
+            }).then(function(r){return r.json();}).then(function(d){
+              console.log('[EMAIL] Sale scheduled for', _spEmail, 'at', _sendAt, 'id:', d.id||'?');
+            }).catch(function(e){console.warn('[EMAIL] Sale email schedule failed:',e.message);});
           }
           const sponsorData = uMap[curSponsor];
           curSponsor = sponsorData && sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;
