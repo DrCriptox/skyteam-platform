@@ -377,14 +377,13 @@ export default async function handler(req, res) {
           const subs = await subsR.json();
           if (Array.isArray(subs) && subs.length > 0) {
             var _hora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
-            var _titulo = valor ? '\uD83D\uDCB0 \u00a1VENTA ' + valor + '!' : '\uD83C\uDF89 \u00a1Nueva venta!';
-            var _nLevel = 'N' + (lvl + 1);
+            var _titulo = valor ? '\uD83D\uDCB0 \u00a1Nueva venta ' + valor + '!' : '\uD83D\uDCB0 \u00a1Nueva venta!';
             var _cuerpo;
             if (lvl === 0) {
-              _cuerpo = '\uD83D\uDD25 ' + fullName + ' \u00b7 ' + _nLevel + ' directa\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Sigue as\u00ed, cada venta te acerca m\u00e1s!';
+              _cuerpo = '\uD83D\uDD25 ' + fullName + ' \u00b7 N1 directa\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Sigue as\u00ed, cada venta te acerca m\u00e1s!';
             } else {
               var _spName = uMap[finalSponsor.toLowerCase()] ? (uMap[finalSponsor.toLowerCase()].name || finalSponsor) : finalSponsor;
-              _cuerpo = '\uD83D\uDD25 ' + fullName + ' \u00b7 ' + _nLevel + '\n' + levels[lvl] + ' \u2014 Directa de ' + _spName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
+              _cuerpo = '\uD83D\uDD25 ' + fullName + '\n' + levels[lvl] + ' \u2014 Directa de ' + _spName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
             }
             // Tag WITHOUT Date.now() → same sale replaces previous push (no duplicates)
             const payload = JSON.stringify({
@@ -406,8 +405,8 @@ export default async function handler(req, res) {
           if (_spEmail && process.env.RESEND_API_KEY) {
             // Subject: emphasize amount + team growth (NOT the person's name)
             var _emailSubject = valor
-              ? '\uD83D\uDCC8 ' + valor + ' \u2014 \u00a1Tu equipo sigue creciendo!'
-              : '\uD83D\uDCC8 \u00a1Tu equipo acaba de generar una nueva venta!';
+              ? '\uD83D\uDCC8 Nueva venta de ' + valor + ' \u2014 \u00a1Tu equipo sigue creciendo!'
+              : '\uD83D\uDCC8 Nueva venta \u2014 \u00a1Tu equipo sigue creciendo!';
             var _levelLabel = lvl === 0 ? 'Venta directa en tu equipo' : 'Venta en tu ' + levels[lvl];
             var _emailHtml = '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
               + '<div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:24px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>'
