@@ -13923,7 +13923,7 @@ function _renderCrmRankingTab() {
     var podiumBg = ['linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04))','linear-gradient(135deg,rgba(192,192,192,0.08),rgba(160,160,160,0.04))','linear-gradient(135deg,rgba(205,127,50,0.08),rgba(160,82,45,0.04))'];
     var podiumBorder = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.25)','rgba(205,127,50,0.25)'];
     var podiumGlow = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.20)','rgba(205,127,50,0.20)'];
-    var _si = function(c,svg,n,first){ return '<span style="color:'+c+';display:inline-flex;align-items:center;gap:2px;margin-right:'+(first?'3':'6')+'px;opacity:0.45;font-size:8px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">'+svg+'</svg><span style="font-size:10px;font-weight:700;opacity:1;">'+n+'</span></span>'; };
+    var _si = function(c,svg,n,first){ return '<span style="color:'+c+';display:inline-flex;align-items:center;gap:2px;margin-right:'+(first?'3':'6')+'px;opacity:0.45;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">'+svg+'</svg><span style="font-size:13px;font-weight:700;opacity:1;">'+n+'</span></span>'; };
     var rhtml='<style>@media(min-width:769px){.sp-rk-name{font-size:17px !important;}.sp-rk-stats{font-size:11px !important;}.sp-rk-pts{font-size:20px !important;}.sp-rk-avatar{width:42px !important;height:42px !important;font-size:13px !important;}.sp-rk-tu{font-size:14px !important;}}</style>';
     var meInTop = false;
     ranking.forEach(function(m,i){
