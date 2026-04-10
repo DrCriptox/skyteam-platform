@@ -5916,7 +5916,25 @@ function _agendaFotoFileChange(input) {
   var file = input.files[0];
   var reader = new FileReader();
   reader.onload = function(e) {
-    _cropCallback = function() { _cropCallback = null; renderAgendaUI(); };
+    _cropCallback = function() {
+      // Generate cropped image from the crop canvas
+      var out = 280;
+      var offscreen = document.createElement('canvas');
+      offscreen.width = out; offscreen.height = out;
+      var ctx = offscreen.getContext('2d');
+      ctx.drawImage(_cropState.img, _cropState.ox, _cropState.oy, _cropState.img.naturalWidth*_cropState.scale, _cropState.img.naturalHeight*_cropState.scale);
+      var result = offscreen.toDataURL('image/jpeg', 0.85);
+      // Save to agenda config only (NOT profile)
+      agendaConfig.foto = result;
+      window._agendaFotoDataUrl = result;
+      var key = 'skyteam_agenda_photo_' + (CU.ref||CU.user||'');
+      try { localStorage.setItem(key, result); } catch(e) {}
+      // Update preview
+      var preview = document.getElementById('agenda-foto-preview');
+      if(preview) preview.innerHTML = '<img src="'+result+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,168,76,0.5);">';
+      showToast('✅ Foto de agenda actualizada');
+      _cropCallback = null;
+    };
     openCropModal(e.target.result);
   };
   reader.readAsDataURL(file);
