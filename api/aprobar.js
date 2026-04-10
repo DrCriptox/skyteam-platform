@@ -377,13 +377,13 @@ export default async function handler(req, res) {
           const subs = await subsR.json();
           if (Array.isArray(subs) && subs.length > 0) {
             var _hora = new Date().toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Bogota'});
-            var _titulo = valor ? '\uD83D\uDCB0 \u00a1Nueva venta ' + valor + '!' : '\uD83D\uDCB0 \u00a1Nueva venta!';
+            var _titulo = valor ? '\uD83D\uDCB0 \u00a1VENTA ' + valor + '!' : '\uD83C\uDF89 \u00a1Nueva venta!';
             var _cuerpo;
             if (lvl === 0) {
-              _cuerpo = '\uD83D\uDD25 ' + fullName + ' \u00b7 N1 directa\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Sigue as\u00ed, cada venta te acerca m\u00e1s!';
+              _cuerpo = '\uD83D\uDD25 ' + fullName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Sigue as\u00ed, cada venta te acerca m\u00e1s!';
             } else {
               var _spName = uMap[finalSponsor.toLowerCase()] ? (uMap[finalSponsor.toLowerCase()].name || finalSponsor) : finalSponsor;
-              _cuerpo = '\uD83D\uDD25 ' + fullName + '\n' + levels[lvl] + ' \u2014 Directa de ' + _spName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
+              _cuerpo = fullName + ' \u2014 ' + levels[lvl] + '\nDirecta de ' + _spName + '\n\u23F0 ' + _hora + '\n\uD83D\uDE80 \u00a1Tu equipo sigue creciendo!';
             }
             // Tag WITHOUT Date.now() → same sale replaces previous push (no duplicates)
             const payload = JSON.stringify({
@@ -411,19 +411,19 @@ export default async function handler(req, res) {
             var _emailHtml = '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;">'
               + '<div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:24px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>'
               + '<div style="text-align:center;margin-bottom:24px;">'
-              + (valor ? '<div style="font-size:42px;font-weight:900;color:#C9A84C;margin-bottom:4px;">' + valor + '</div>' : '')
-              + '<div style="font-size:13px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;">' + _levelLabel + '</div>'
-              + '<div style="font-size:11px;color:rgba(255,255,255,0.25);">Tu franquicia digital est\u00e1 trabajando para ti \uD83D\uDE80</div>'
+              + '<div style="font-size:13px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:3px;margin-bottom:10px;">\u2714\uFE0F Confirmaci\u00f3n de venta</div>'
+              + (valor ? '<div style="font-size:48px;font-weight:900;color:#C9A84C;margin-bottom:6px;">' + valor + '</div>' : '<div style="font-size:36px;font-weight:900;color:#C9A84C;margin-bottom:6px;">Nueva Venta</div>')
+              + '<div style="font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:4px;">' + _levelLabel + '</div>'
+              + '<div style="font-size:12px;color:rgba(255,255,255,0.2);">Tu franquicia digital est\u00e1 generando ingresos \uD83D\uDE80</div>'
               + '</div>'
-              + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">'
-              + '<div style="font-size:11px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Nuevo socio</div>'
-              + '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">' + fullName + '</div>'
-              + '<div style="font-size:12px;color:rgba(201,168,76,0.6);">' + _hora + '</div>'
+              + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">'
+              + '<div style="font-size:20px;font-weight:900;color:#C9A84C;margin-bottom:6px;">\u00a1Felicidades!</div>'
+              + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.6;">Acabas de registrar una nueva venta.<br>Tu red sigue creciendo y cada d\u00eda est\u00e1s m\u00e1s cerca de tus metas.</div>'
               + '</div>'
               + '<div style="text-align:center;margin-bottom:20px;">'
-              + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">Ver mi equipo \u2192</a>'
+              + '<a href="https://skyteam.global" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">\uD83D\uDCCA Ver mi equipo</a>'
               + '</div>'
-              + '<p style="text-align:center;color:rgba(255,255,255,0.2);font-size:10px;">Cada venta te acerca m\u00e1s a tus metas. \u00a1Sigue construyendo!</p>'
+              + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:10px;">Sky Team \u2014 Tu plataforma de crecimiento digital</p>'
               + '</div>';
             // Schedule email 5 minutes from now via Resend scheduled_at
             var _sendAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
