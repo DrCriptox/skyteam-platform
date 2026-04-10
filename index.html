@@ -5412,10 +5412,14 @@ function processPlanDiarioInput() {
 
     // Generate dates
     var _genStart = new Date(hoy); _genStart.setHours(0,0,0,0);
-    if(_genStart < hoy) _genStart = new Date(hoy.getTime() + 86400000); // start tomorrow if today already
-    var _genEnd = _monthScope ? new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0) : new Date(dates[dates.length-1]);
-    // If month scope and today is past the 20th, extend to end of next month
-    if(_monthScope && hoy.getDate() > 20) _genEnd = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 0);
+    // Default: 4 weeks for recurring patterns, full month if "todo el mes"
+    var _genEnd;
+    if(_monthScope) {
+      _genEnd = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0); // end of current month
+      if(hoy.getDate() > 20) _genEnd = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 0); // extend to next month
+    } else {
+      _genEnd = new Date(hoy.getTime() + 28 * 86400000); // 4 weeks by default
+    }
     // Include today if time hasn't passed
     if(fmtDate(hoy) >= fmtDate(new Date()) && parseInt(_horaIni) > hoy.getHours()) _genStart = new Date(hoy);
 
