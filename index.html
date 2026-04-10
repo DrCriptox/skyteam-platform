@@ -4840,8 +4840,8 @@ let planDiarioRecognition = null;
 function switchAgendaTab(t) { agendaTab=t; renderAgendaUI(document.getElementById('agenda-content')); if(t==='plandiario') loadPlanDiario(); }
 function getPlanDiarioWeekDates(offset) {
   var today = new Date(); today.setHours(0,0,0,0);
-  // Start from yesterday, show: ayer, hoy, +3 días = 5 días
-  var start = new Date(today); start.setDate(today.getDate() - 1 + (offset||0)*5);
+  // Start from TODAY, show: hoy + 4 días = 5 días
+  var start = new Date(today); start.setDate(today.getDate() + (offset||0)*5);
   var dates = [];
   for(var i=0; i<5; i++) { var d = new Date(start); d.setDate(start.getDate()+i); dates.push(d); }
   return dates;
@@ -4851,7 +4851,11 @@ function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(
 function loadPlanDiario() {
   if(!CU) return;
   var dates = getPlanDiarioWeekDates(planDiarioWeekOffset);
-  var ws = fmtDate(dates[0]), we = fmtDate(dates[dates.length-1]);
+  // Load wider range (today to +60 days) so delete commands can see all future blocks
+  var _today = new Date(); _today.setHours(0,0,0,0);
+  var _farEnd = new Date(_today.getTime() + 60*86400000);
+  var ws = fmtDate(_today < dates[0] ? _today : dates[0]);
+  var we = fmtDate(_farEnd > dates[dates.length-1] ? _farEnd : dates[dates.length-1]);
   fetch('/api/plan-diario?user='+(CU.ref||CU.user||'')+'&weekStart='+ws+'&weekEnd='+we)
     .then(function(r){return r.json();})
     .then(function(d){
@@ -5288,11 +5292,18 @@ function processPlanDiarioInput() {
   var dayOfWeek = hoy.getDay();
   var DIAS_ES = {0:'domingo',1:'lunes',2:'martes',3:'mi\u00e9rcoles',4:'jueves',5:'viernes',6:'s\u00e1bado'};
 
-  // Build context of existing blocks for delete/modify
+  // Build context of ALL existing blocks (not just visible week) for delete/modify
   var existingCtx = '';
-  var weekBlocks = planDiarioBlocks.filter(function(b){ return b.fecha>=fmtDate(dates[0]) && b.fecha<=fmtDate(dates[dates.length-1]) && !b._isBooking; });
-  if(weekBlocks.length>0) {
-    existingCtx = ' Bloques existentes esta semana: ' + weekBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
+  var _isDeleteCmd = text.toLowerCase().match(/borr|elimin|quit|cancel|limpi/);
+  var _allUserBlocks = planDiarioBlocks.filter(function(b){ return !b._isBooking && b.fecha >= todayStr; });
+  if(_isDeleteCmd && _allUserBlocks.length > 0) {
+    // For delete commands: send ALL future blocks so AI can delete across weeks
+    existingCtx = ' TODOS los bloques futuros: ' + _allUserBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
+  } else {
+    var weekBlocks = planDiarioBlocks.filter(function(b){ return b.fecha>=fmtDate(dates[0]) && b.fecha<=fmtDate(dates[dates.length-1]) && !b._isBooking; });
+    if(weekBlocks.length>0) {
+      existingCtx = ' Bloques existentes esta semana: ' + weekBlocks.map(function(b){ return b.titulo+' el '+b.fecha+' de '+b.hora_inicio+' a '+b.hora_fin+' (id:'+b.id+')'; }).join('; ') + '.';
+    }
   }
 
   // ── PRE-PROCESSOR: parse days + time in JS (don't trust AI for day logic) ──
