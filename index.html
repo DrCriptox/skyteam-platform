@@ -4658,7 +4658,7 @@ var sjRankPeriod = 'weekly';
 function renderSJRankingUI() {
   var _sjPeriodBtn = function(p, label) {
     var on = sjRankPeriod === p;
-    return '<button onclick="sjRankPeriod=\''+p+'\';loadSJRanking()" style="padding:5px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.3)')+';">'+label+'</button>';
+    return '<button onclick="sjRankPeriod=\''+p+'\';switchAgendaTab(\'sjranking\')" style="padding:5px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'rgba(201,168,76,0.10)':'rgba(255,255,255,0.02)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.3)')+';">'+label+'</button>';
   };
   var html = '<div class="card">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
