@@ -407,11 +407,11 @@ select option{background:#0a0a12;color:#F0EDE6;}
 
 /* ── MAIN CONTENT ── */
 #content{margin-left:var(--sidebar-w);flex:1;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:2;}
-.section{display:none;flex:1;min-height:0;}
-.section.active{display:flex;flex-direction:column;overflow:hidden;}
+.section{display:none;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
+.section.active{display:block;}
 
 /* ── TOP BAR — Elite Crystal ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:64px;min-height:64px;background:linear-gradient(180deg,rgba(5,5,8,0.92) 0%,rgba(5,5,8,0.85) 100%);border-bottom:none;z-index:50;backdrop-filter:blur(24px);box-sizing:border-box;flex-shrink:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:64px;min-height:64px;background:linear-gradient(180deg,rgba(5,5,8,0.92) 0%,rgba(5,5,8,0.85) 100%);border-bottom:none;position:sticky;top:0;z-index:50;backdrop-filter:blur(24px);box-sizing:border-box;flex-shrink:0;}
 .topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);}
 .topbar-title{font-family:'Outfit','Nunito',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:0.5px;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -431,7 +431,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .notif-wa-btn:active{transform:scale(0.95);}
 
 /* ── SECTION CONTENT — Elite Crystal ── */
-.sc{padding:28px;padding-bottom:calc(28px + env(safe-area-inset-bottom, 80px));flex:1 1 0%;overflow-y:auto;overflow-x:hidden;min-height:0;-webkit-overflow-scrolling:touch;height:0;}
+.sc{padding:28px;padding-bottom:calc(28px + env(safe-area-inset-bottom, 80px));}
 .sc-title{font-family:'Outfit','Nunito',sans-serif;font-size:26px;font-weight:800;color:#fff;margin-bottom:6px;letter-spacing:-0.3px;line-height:1.2;}
 .sc-sub{font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:24px;font-family:'Outfit','Nunito',sans-serif;font-weight:400;letter-spacing:0.2px;}
 
