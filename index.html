@@ -111,15 +111,8 @@ body.landing-active{height:auto;min-height:100%;} @supports (padding-bottom: env
 .sky-reveal:nth-child(5){transition-delay:0.24s;}
 .sky-reveal:nth-child(6){transition-delay:0.30s;}
 
-.section.active .sc>*{opacity:0;animation:skyFadeIn 0.35s ease both;}
-.section.active .sc>*:nth-child(1){animation-delay:0.03s;}
-.section.active .sc>*:nth-child(2){animation-delay:0.06s;}
-.section.active .sc>*:nth-child(3){animation-delay:0.09s;}
-.section.active .sc>*:nth-child(4){animation-delay:0.12s;}
-.section.active .sc>*:nth-child(5){animation-delay:0.15s;}
-.section.active .sc>*:nth-child(6){animation-delay:0.18s;}
-.section.active .sc>*:nth-child(7){animation-delay:0.21s;}
-.section.active .sc>*:nth-child(8){animation-delay:0.40s;}
+/* Content fades in smoothly — no stagger to avoid layout thrashing with async renders */
+.section.active .sc{animation:skyFadeIn 0.3s ease both;}
 
 /* ── Card entry animation (spring bounce) ── */
 @keyframes skyCardIn{from{opacity:0;transform:translateY(16px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
@@ -200,7 +193,7 @@ button:hover:not(:disabled){filter:brightness(1.06);}
 
 /* ── PWA SAFE AREA — prevent content under status bar ── */
 @media all and (display-mode: standalone){
-  .topbar{padding-top:max(env(safe-area-inset-top,44px),44px);height:calc(64px + max(env(safe-area-inset-top,44px),44px));}
+  .topbar{padding-top:max(env(safe-area-inset-top,44px),44px);height:calc(64px + max(env(safe-area-inset-top,44px),44px));min-height:calc(64px + max(env(safe-area-inset-top,44px),44px));flex-shrink:0;}
   #sidebar{padding-top:max(env(safe-area-inset-top,44px),44px);}
   #login-logo-wrap{top:calc(24px + max(env(safe-area-inset-top,44px),44px)) !important;}
   #login-screen{padding-top:calc(180px + max(env(safe-area-inset-top,44px),44px)) !important;}
@@ -414,11 +407,11 @@ select option{background:#0a0a12;color:#F0EDE6;}
 
 /* ── MAIN CONTENT ── */
 #content{margin-left:var(--sidebar-w);flex:1;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:2;}
-.section{display:none;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
-.section.active{display:flex;flex-direction:column;}
+.section{display:none;flex:1;min-height:0;}
+.section.active{display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── TOP BAR — Elite Crystal ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:64px;background:linear-gradient(180deg,rgba(5,5,8,0.92) 0%,rgba(5,5,8,0.85) 100%);border-bottom:none;position:sticky;top:0;z-index:50;backdrop-filter:blur(24px);box-sizing:border-box;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:64px;min-height:64px;background:linear-gradient(180deg,rgba(5,5,8,0.92) 0%,rgba(5,5,8,0.85) 100%);border-bottom:none;z-index:50;backdrop-filter:blur(24px);box-sizing:border-box;flex-shrink:0;}
 .topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);}
 .topbar-title{font-family:'Outfit','Nunito',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:0.5px;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -438,7 +431,7 @@ select option{background:#0a0a12;color:#F0EDE6;}
 .notif-wa-btn:active{transform:scale(0.95);}
 
 /* ── SECTION CONTENT — Elite Crystal ── */
-.sc{padding:28px;padding-bottom:calc(28px + env(safe-area-inset-bottom, 80px));}
+.sc{padding:28px;padding-bottom:calc(28px + env(safe-area-inset-bottom, 80px));flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
 .sc-title{font-family:'Outfit','Nunito',sans-serif;font-size:26px;font-weight:800;color:#fff;margin-bottom:6px;letter-spacing:-0.3px;line-height:1.2;}
 .sc-sub{font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:24px;font-family:'Outfit','Nunito',sans-serif;font-weight:400;letter-spacing:0.2px;}
 
