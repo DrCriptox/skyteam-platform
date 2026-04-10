@@ -11863,12 +11863,13 @@ function onSolImgChange(input) {
       var jpegUrl = canvas.toDataURL('image/jpeg', 0.92);
       var b64 = jpegUrl.substring(jpegUrl.indexOf(',') + 1);
 
-      // Save thumbnail for admin audit (small 200px version)
+      // Save thumbnail for admin audit (600px, quality 0.8 — readable)
       try {
-        var thumbW = Math.min(200, w), thumbH = Math.round(h * (thumbW / w));
+        var thumbW = Math.min(600, w), thumbH = Math.round(h * (thumbW / w));
         var tc = document.createElement('canvas'); tc.width = thumbW; tc.height = thumbH;
         tc.getContext('2d').drawImage(img, 0, 0, thumbW, thumbH);
-        input._thumbnailBase64 = tc.toDataURL('image/jpeg', 0.5).substring(tc.toDataURL('image/jpeg', 0.5).indexOf(',') + 1);
+        var thumbDataUrl = tc.toDataURL('image/jpeg', 0.8);
+        input._thumbnailBase64 = thumbDataUrl.substring(thumbDataUrl.indexOf(',') + 1);
       } catch(e) { input._thumbnailBase64 = null; }
 
       fetch('/api/extract-expiry', {
@@ -12081,7 +12082,7 @@ function sendSolicitud() {
       patrocinador:sponsor||'Sin especificar', membresia:'Por confirmar',
       fecha:fecha, ref:newRef, landingLink:landingLink, rank:0,
       password:pass, birthday: birthday || null, valor_inscripcion: valorInscripcion || null,
-      phone: expiryData ? JSON.stringify({ expiry_ts: expiryData.expiry_ts, expiry_label: expiryData.expiry_label, days_remaining: expiryData.days_remaining, screenshot: _regScreenshot }) : null
+      phone: JSON.stringify({ expiry_ts: expiryData ? expiryData.expiry_ts : null, expiry_label: expiryData ? expiryData.expiry_label : null, days_remaining: expiryData ? expiryData.days_remaining : null, screenshot: _regScreenshot })
     };
 
     // Show loading state
