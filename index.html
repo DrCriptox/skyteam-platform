@@ -5381,14 +5381,28 @@ function processPlanDiarioInput() {
 
   // ── FALLBACK: AI for complex/single-day commands ──
   var _weekMap = dates.map(function(d){ return fmtDate(d) + '=' + DIAS_ES[d.getDay()]; }).join(', ');
-  var systemPrompt = 'Eres un asistente de calendario. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Semana: '+_weekMap+'.'+existingCtx+' Responde SOLO JSON: {"action":"add|delete|delete_all|modify","blocks":[...]}. Blocks: {fecha,hora_inicio,hora_fin,titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro. Para delete: {id}. hora en HH:MM 24h. Si no dice fecha usa hoy '+todayStr+'.';
+  var systemPrompt = 'Eres un asistente de calendario. Hoy es '+todayStr+' ('+DIAS_ES[dayOfWeek]+'). Semana: '+_weekMap+'.'
+    + existingCtx
+    + ' Responde SOLO JSON: {"action":"add|delete|delete_all|modify","blocks":[...]}.'
+    + ' ACCIONES:'
+    + ' (1) add: blocks con {fecha,hora_inicio(HH:MM),hora_fin(HH:MM),titulo,categoria}. categoria: personal|gym|estudio|trabajo|salud|otro.'
+    + ' (2) delete: blocks con {id} de bloques existentes a borrar. Busca el id en los bloques existentes de arriba.'
+    + ' (3) delete_all: blocks con {fecha} para borrar TODO de ese dia.'
+    + ' (4) modify: blocks con {id,fecha,hora_inicio,hora_fin,titulo,categoria}.'
+    + ' REGLAS:'
+    + ' - "borra todo" o "borra toda la agenda" = delete todos los ids de bloques existentes.'
+    + ' - "borra todo excepto X" = delete todos los ids EXCEPTO los que contengan X en el titulo.'
+    + ' - "borra todo excepto cierre" = NO borrar bloques cuyo titulo contenga "Cierre" o "cierre".'
+    + ' - Si no dice fecha usa hoy '+todayStr+'.'
+    + ' - lunes a viernes = SOLO lun-vie, NUNCA sabado ni domingo.'
+    + ' IMPORTANTE: Responde SOLO el JSON, sin texto adicional.';
 
   fetch('/api/chat', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:500,
+      model:'gpt-4o-mini',
+      max_tokens:1000,
       system:systemPrompt,
       messages:[{role:'user',content:text}]
     })
