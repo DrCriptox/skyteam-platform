@@ -75,7 +75,9 @@ module.exports = async (req, res) => {
           if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
         });
         s.ipDupes = ipDupes;
-        s.score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (ipDupes * 10);
+        var verifiedPts = Math.max(s.proofs, s.verificadas);
+        s.score = (s.citas * 10) + (verifiedPts * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (ipDupes * 10);
+        s.verifiedPts = verifiedPts;
         if (s.score < 0) s.score = 0;
         var ipSummary = {};
         Object.keys(s.ips).forEach(function(ip) {
@@ -99,7 +101,7 @@ module.exports = async (req, res) => {
         return {
           username: u, name: usersMap[u] ? usersMap[u].name : u, ref: usersMap[u] ? usersMap[u].ref : '',
           photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '',
-          citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].proofs,
+          citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].verifiedPts,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes, ipFlags: userStats[u].ipFlags
         };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
@@ -164,9 +166,11 @@ module.exports = async (req, res) => {
 
       const ranking = usernames.map(function(u) {
         var s = userStats[u];
-        var score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (s.ipDupes * 10);
+        // Use max(proofs, verificadas) — verificadas from bookings table is reliable, proofs from booking_proofs may lag
+        var verifiedPts = Math.max(s.proofs, s.verificadas);
+        var score = (s.citas * 10) + (verifiedPts * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (s.ipDupes * 10);
         if (score < 0) score = 0;
-        return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score, ipDupes: s.ipDupes };
+        return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: verifiedPts, score: score, ipDupes: s.ipDupes };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 
       return res.status(200).json({ ok: true, period: 'monthly', from: fromISO, to: toISO, ranking: ranking });
@@ -215,7 +219,9 @@ module.exports = async (req, res) => {
           if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
         });
         s.ipDupes = ipDupes;
-        s.score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (ipDupes * 10);
+        var verifiedPts = Math.max(s.proofs, s.verificadas);
+        s.score = (s.citas * 10) + (verifiedPts * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (ipDupes * 10);
+        s.verifiedPts = verifiedPts;
         if (s.score < 0) s.score = 0;
         delete s.ips;
       });
@@ -230,7 +236,7 @@ module.exports = async (req, res) => {
       const ranking = usernames.map(function(u) {
         return { username: u, name: usersMap[u] ? usersMap[u].name : u,
           photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '',
-          citas: userStats[u].citas, verificadas: userStats[u].verificadas,
+          citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].verifiedPts,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 

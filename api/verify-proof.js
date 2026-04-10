@@ -193,12 +193,24 @@ async function markProof(bookingId, username, status, notes, imageHash) {
       body: JSON.stringify({ status: newStatus, proof_url: status, updated_at: new Date().toISOString() })
     });
     // Save to booking_proofs with image hash (prevents reuse)
-    var proofData = { username: username, booking_id: bookingId, status: status, notes: (notes || '').substring(0, 500), created_at: new Date().toISOString() };
+    var proofData = { username: username, booking_id: bookingId, status: status, created_at: new Date().toISOString() };
+    // Only include optional columns if they have values (columns may not exist yet)
     if (imageHash) proofData.image_hash = imageHash;
-    await fetch(SUPABASE_URL + '/rest/v1/booking_proofs', {
-      method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    if (notes) proofData.notes = (notes || '').substring(0, 500);
+    var proofR = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs', {
+      method: 'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
       body: JSON.stringify(proofData)
     });
+    if (!proofR.ok) {
+      var errTxt = await proofR.text();
+      console.error('[VERIFY] booking_proofs INSERT failed:', proofR.status, errTxt.substring(0, 200));
+      // Retry without optional columns
+      var retryData = { username: username, booking_id: bookingId, status: status, created_at: new Date().toISOString() };
+      await fetch(SUPABASE_URL + '/rest/v1/booking_proofs', {
+        method: 'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify(retryData)
+      });
+    }
     console.log('[VERIFY] Proof marked:', bookingId, status);
   } catch(e) { console.error('[VERIFY] markProof error:', e.message); }
 }
