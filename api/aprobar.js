@@ -112,11 +112,30 @@ export default async function handler(req, res) {
     if (innovaCount >= 2) {
       return res.status(400).json({ error: 'Este usuario de Innova ya tiene 2 sociedades registradas. No se puede crear otra.' });
     }
-    // If innova_user already has 1 account, create "usuario2" (parejas/segunda sociedad)
+    // If innova_user already has 1 account, validate before creating "usuario2"
     let finalUsername = username;
     if (innovaCount === 1) {
+      var existingUser = innovaRows[0];
+      var existingName = (existingUser.name || '').toLowerCase().trim();
+      var newName = (sol.name || '').toLowerCase().trim();
+      // Check if names share at least one word (likely same family/pareja)
+      var existingWords = existingName.split(/\s+/).filter(function(w){return w.length>2;});
+      var newWords = newName.split(/\s+/).filter(function(w){return w.length>2;});
+      var sharedWord = existingWords.some(function(ew){ return newWords.some(function(nw){ return ew === nw; }); });
+      // Also check if existing email matches new email (same person, different device)
+      var sameEmail = sol.email && existingUser.email && sol.email.toLowerCase().trim() === existingUser.email.toLowerCase().trim();
+
+      if (!sharedWord && !sameEmail) {
+        // Names are completely different and emails don't match — likely OCR error
+        console.log('[APROBAR] POSSIBLE OCR ERROR: existing="' + existingUser.name + '" new="' + sol.name + '" for innova_user=' + innovaUser);
+        return res.status(400).json({
+          error: 'El usuario de Innova detectado ("' + innovaUser + '") ya pertenece a ' + existingUser.name + '. Es posible que la foto haya confundido tu usuario con el de otra persona. Verifica que tu USUARIO aparezca claramente en la captura (debajo de tu nombre, NO el patrocinador).',
+          ocrConflict: true,
+          existingName: existingUser.name
+        });
+      }
       finalUsername = username + '2';
-      console.log('[APROBAR] Segunda sociedad: ' + username + ' → ' + finalUsername);
+      console.log('[APROBAR] Segunda sociedad confirmada: ' + username + ' → ' + finalUsername + ' (shared word or email match)');
     }
 
     // Check duplicate email (if provided)

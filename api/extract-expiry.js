@@ -34,11 +34,14 @@ FORMATO 3 (celular, menu desplegable abierto arriba-derecha):
 - "Patrocinador: BILLONARIA76" → DATO 4
 - IGNORAR: "Colocacion" y "Paquete" (NO son datos relevantes)
 
-REGLAS:
-- USUARIO: palabra corta SIN ESPACIOS. Puede estar debajo del nombre O en el menu desplegable arriba-derecha. NUNCA es el nombre completo, ni Patrocinador, ni Colocacion.
+REGLAS CRITICAS:
+- USUARIO (username): Es la palabra corta SIN ESPACIOS que identifica a ESTA persona. Aparece debajo del nombre completo de la persona O en el menu desplegable arriba-derecha. NUNCA confundir con Patrocinador ni Colocacion. El USUARIO es diferente al PATROCINADOR. Si ves "Patrocinador: ABC" y debajo del nombre ves "XYZ", el username es XYZ y el sponsor es ABC. SON DIFERENTES.
+- SPONSOR (patrocinador): SOLO el valor que dice "Patrocinador:" explicitamente. NUNCA usar el username como sponsor.
 - RANGO: SOLO de "Clasificacion Actual:". Validos: Cliente, INN 200, INN 500, NOVA, NOVA 1500, NOVA 5K, NOVA 10K, NOVA DIAMOND, NOVA 50K, NOVA 100K, No se Alcanzo Rango. IGNORAR "Paquete:" (INNPULSE, PIONEER, EXPLORER NO son rangos).
-- SPONSOR: SOLO de "Patrocinador:". IGNORAR "Colocacion:" siempre.
 - DIAS: del badge O calcular desde "Vencimiento:" hasta hoy ${new Date().toISOString().slice(0,10)}.
+- COLOCACION: SIEMPRE IGNORAR. Nunca usar como username ni como sponsor.
+
+IMPORTANTE: username y sponsor son SIEMPRE palabras DIFERENTES. Si detectas que son iguales, revisa de nuevo.
 
 Si un dato no es visible, intenta inferirlo del contexto. Solo pon found=false si REALMENTE no puedes ver ningun dato.
 
