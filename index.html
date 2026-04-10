@@ -4564,7 +4564,16 @@ function aplicarATodos() {
 
 function renderAgendaCitasUI() {
   var pendientes = agendaBookings.filter(function(b){ return b.status !== 'cancelada'; });
-  pendientes.sort(function(a,b){ return new Date(a.fechaISO)-new Date(b.fechaISO); });
+  // Próximas primero (más cercana arriba), pasadas al final
+  var ahora = new Date();
+  pendientes.sort(function(a,b){
+    var da = new Date(a.fechaISO), db = new Date(b.fechaISO);
+    var aFutura = da >= ahora, bFutura = db >= ahora;
+    if(aFutura && !bFutura) return -1; // futuras arriba
+    if(!aFutura && bFutura) return 1;  // pasadas abajo
+    if(aFutura && bFutura) return da - db; // próxima primero
+    return db - da; // pasadas: más reciente primero
+  });
   var html = '';
   if(!pendientes.length) {
     return '<div class="card" style="text-align:center;padding:40px 20px;"><div style="font-size:48px;margin-bottom:12px;">📭</div><p style="color:rgba(255,255,255,0.4);font-size:15px;margin:0;">Sin citas agendadas</p><p style="color:rgba(255,255,255,0.25);font-size:12px;margin:8px 0 0;">Comparte tu link y empieza a recibir reuniones</p></div>';
