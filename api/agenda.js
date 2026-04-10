@@ -180,34 +180,97 @@ export default async function handler(req, res) {
           })
         });
 
-        // Send email notification
+        // ══════════════════════════════════════════════════════
+        // 6 SCHEDULED EMAILS: 3 for prospect + 3 for socio
+        // ══════════════════════════════════════════════════════
         if (process.env.RESEND_API_KEY) {
           try {
             const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
             const cfg = configs && configs[0] ? configs[0].config : {};
-            const users = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=email');
+            const users = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=email,name');
             const socioEmail = users && users[0] ? users[0].email : null;
+            const socioName = users && users[0] ? users[0].name : user;
+            const fd = new Date(booking.fechaISO);
+            const citaMs = fd.getTime();
+            const nowMs = Date.now();
+            const days = ['domingo','lunes','martes','mi\u00e9rcoles','jueves','viernes','s\u00e1bado'];
+            const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            const rawH = fd.getHours(), mins = fd.getMinutes().toString().padStart(2,'0');
+            const ampm = rawH >= 12 ? 'PM' : 'AM', h12 = rawH % 12 || 12;
+            const hStr = h12 + ':' + mins + ' ' + ampm;
+            const fechaFull = days[fd.getDay()] + ' ' + fd.getDate() + ' de ' + months[fd.getMonth()] + ' a las ' + hStr;
+            const linkSala = cfg.linkReunion || '';
+            const prospectEmail = booking.email || null;
+            const prospectName = booking.nombre || 'Estimado/a';
+            const RESEND_H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY };
+            var _wrap = function(body) { return '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;"><div style="text-align:center;margin-bottom:20px;"><h1 style="color:#C9A84C;font-size:22px;margin:0;">SKY<span style="color:#fff;">TEAM</span></h1></div>' + body + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:9px;margin-top:20px;">Sky Team \u2014 skyteam.global</p></div>'; };
+            var _btn = function(text, url) { return '<div style="text-align:center;margin:20px 0;"><a href="' + url + '" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">' + text + '</a></div>'; };
+            var _sendEmail = function(to, subject, html, sendAt) {
+              var payload = { from: 'SKYTEAM <soporte@skyteam.global>', to: [to], subject: subject, html: html };
+              if (sendAt && sendAt > nowMs + 60000) payload.scheduled_at = new Date(sendAt).toISOString();
+              fetch('https://api.resend.com/emails', { method: 'POST', headers: RESEND_H, body: JSON.stringify(payload) }).catch(function(){});
+            };
+
+            // ── SOCIO EMAIL 1: Instant — Nueva cita agendada ──
             if (socioEmail) {
-              const fd = new Date(booking.fechaISO);
-              const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-              const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-              const hStr = fd.getHours().toString().padStart(2,'0') + ':' + fd.getMinutes().toString().padStart(2,'0');
-              const fechaLabel = days[fd.getDay()] + ' ' + fd.getDate() + ' ' + months[fd.getMonth()] + ' · ' + hStr;
-
-              // Include IP warning in email if flagged
-              var ipWarning = '';
-              if (ipFlag) {
-                ipWarning = '<div style="background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.4);border-radius:8px;padding:12px;margin:12px 0;"><p style="margin:0;font-size:13px;color:#FF6B6B;">⚠️ <strong>Alerta IP:</strong> Esta reserva viene de la misma IP que ' + ipFlag.count + ' reserva(s) anterior(es) (' + ipFlag.previousNames.join(', ') + ')</p></div>';
-              }
-
-              const html = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;"><div style="text-align:center;margin-bottom:20px;"><img src="https://skyteam.global/logo-skyteam.png" alt="SKYTEAM" style="height:44px;" /></div><h2 style="color:#FFD700;font-size:20px;">🔔 Nueva cita agendada</h2><div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;margin:16px 0;"><p style="margin:8px 0;font-size:14px;">👤 <strong>Prospecto:</strong> ' + booking.nombre + '</p><p style="margin:8px 0;font-size:14px;">📱 <strong>WhatsApp:</strong> ' + booking.whatsapp + '</p>' + (booking.email ? '<p style="margin:8px 0;font-size:14px;">📧 <strong>Email:</strong> ' + booking.email + '</p>' : '') + '<p style="margin:8px 0;font-size:14px;">📅 <strong>Fecha:</strong> ' + fechaLabel + '</p><p style="margin:8px 0;font-size:14px;">🌐 <strong>IP:</strong> ' + clientIP + '</p>' + (cfg.linkReunion ? '<p style="margin:8px 0;font-size:14px;">🔗 <strong>Sala:</strong> <a href="' + cfg.linkReunion + '" style="color:#C9A84C;">' + cfg.linkReunion + '</a></p>' : '') + '</div>' + ipWarning + '<div style="text-align:center;"><a href="https://skyteam.global" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:900;">Ver en SKY SYSTEM →</a></div><p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;margin-top:20px;">SKYTEAM · skyteam.global</p></div>';
-
-              fetch('https://api.resend.com/emails', { method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY },
-                body: JSON.stringify({ from: 'SKYTEAM <lideres@skyteam.global>', to: [socioEmail],
-                  subject: '🔔 Nueva cita: ' + booking.nombre + ' · ' + fechaLabel + (ipFlag ? ' ⚠️ IP repetida' : ''), html }) });
+              var ipWarning = ipFlag ? '<div style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.3);border-radius:8px;padding:10px;margin:12px 0;font-size:12px;color:#FF6B6B;">\u26A0\uFE0F IP repetida</div>' : '';
+              _sendEmail(socioEmail, '\uD83D\uDD14 Nueva cita: ' + prospectName + ' \u00b7 ' + hStr,
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83C\uDF89</div><h2 style="color:#C9A84C;font-size:18px;margin:0 0 6px;">\u00a1Nueva cita agendada!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaFull + '</p></div>'
+                + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:18px;margin-bottom:16px;">'
+                + '<p style="margin:6px 0;font-size:14px;">\uD83D\uDC64 <strong>' + prospectName + '</strong></p>'
+                + '<p style="margin:6px 0;font-size:13px;color:rgba(255,255,255,0.5);">\uD83D\uDCF1 ' + booking.whatsapp + (prospectEmail ? ' \u00b7 \uD83D\uDCE7 ' + prospectEmail : '') + '</p>'
+                + '</div>' + ipWarning + _btn('\uD83D\uDCCA Ver mi agenda', 'https://skyteam.global/?nav=agenda')), nowMs);
             }
-          } catch (e) { /* email is best-effort */ }
+
+            // ── SOCIO EMAIL 2: 1h before — Recordatorio ──
+            if (socioEmail && citaMs - nowMs > 65 * 60000) {
+              _sendEmail(socioEmail, '\u23F0 En 1 hora: cita con ' + prospectName,
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\u23F0</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Falta 1 hora para tu cita</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">con <strong>' + prospectName + '</strong> a las <strong>' + hStr + '</strong></p></div>'
+                + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">'
+                + '<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.4);">Prepara tu presentaci\u00f3n y ten el link de la sala listo.</p></div>'
+                + _btn('\uD83D\uDCCB Revisar agenda', 'https://skyteam.global/?nav=agenda')), citaMs - 60 * 60000);
+            }
+
+            // ── SOCIO EMAIL 3: 7min before — Abre sala ──
+            if (socioEmail && citaMs - nowMs > 10 * 60000) {
+              _sendEmail(socioEmail, '\uD83D\uDFE2 Ve abriendo sala \u2014 ' + prospectName + ' en 7 min',
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDFE2</div><h2 style="color:#C9A84C;font-size:18px;margin:0 0 6px;">\u00a1Abre la sala!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">Le acabamos de notificar a <strong>' + prospectName + '</strong> que la reuni\u00f3n inicia en 2 minutos.</p></div>'
+                + (linkSala ? _btn('\uD83D\uDE80 Abrir sala de reuni\u00f3n', linkSala) : '<div style="text-align:center;padding:12px;color:rgba(255,255,255,0.3);font-size:12px;">Configura tu link de sala en Sky Journal \u2192 Configurar</div>')
+                + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;">\uD83D\uDCC5 ' + fechaFull + '</div>'), citaMs - 7 * 60000);
+            }
+
+            // ── PROSPECT EMAIL 1: 4h before — Confirmaci\u00f3n ──
+            if (prospectEmail && citaMs - nowMs > 4.1 * 3600000) {
+              _sendEmail(prospectEmail, '\uD83D\uDCC5 Tu reuni\u00f3n con ' + socioName + ' es hoy',
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCC5</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Hola ' + prospectName.split(' ')[0] + ', tu reuni\u00f3n es hoy</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaFull + '</p></div>'
+                + '<div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:18px;margin-bottom:16px;text-align:center;">'
+                + '<p style="margin:0 0 8px;font-size:14px;color:#F0EDE6;"><strong>' + socioName + '</strong> te estar\u00e1 esperando</p>'
+                + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);">Ten lista tu c\u00e1mara y micr\u00f3fono para la mejor experiencia \uD83C\uDF1F</p></div>'
+                + _btn('\u2705 Confirmar asistencia', 'https://skyteam.global')), citaMs - 4 * 3600000);
+            }
+
+            // ── PROSPECT EMAIL 2: 1h before — Recordatorio ──
+            if (prospectEmail && citaMs - nowMs > 65 * 60000) {
+              _sendEmail(prospectEmail, '\u23F0 En 1 hora nos vemos, ' + prospectName.split(' ')[0],
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\u23F0</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">En 1 hora nos vemos</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaFull + '</p></div>'
+                + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px;margin-bottom:16px;text-align:center;">'
+                + '<p style="margin:0 0 8px;font-size:14px;color:#F0EDE6;"><strong>' + socioName + '</strong> ya est\u00e1 preparando todo para ti</p>'
+                + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);">Aseg\u00farate de tener c\u00e1mara y micr\u00f3fono activos, y estar en un lugar c\u00f3modo \uD83C\uDFA7</p></div>'
+                + _btn('\uD83D\uDC4D \u00a1Ah\u00ed estar\u00e9!', 'https://skyteam.global')), citaMs - 60 * 60000);
+            }
+
+            // ── PROSPECT EMAIL 3: 5min before — Ingresa a la sala ──
+            if (prospectEmail && citaMs - nowMs > 8 * 60000) {
+              _sendEmail(prospectEmail, '\uD83D\uDFE2 Ya puedes ir ingresando a la sala',
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:44px;margin-bottom:8px;">\uD83D\uDE80</div><h2 style="color:#C9A84C;font-size:20px;margin:0 0 6px;">\u00a1Estamos a punto de iniciar!</h2><p style="color:rgba(255,255,255,0.5);font-size:14px;margin:0;"><strong>' + socioName + '</strong> te est\u00e1 esperando</p></div>'
+                + '<div style="background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.2);border-radius:12px;padding:20px;margin-bottom:16px;text-align:center;">'
+                + '<p style="margin:0 0 6px;font-size:15px;font-weight:800;color:#1D9E75;">La sala estar\u00e1 abierta en menos de 2 minutos</p>'
+                + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">Haz clic en el bot\u00f3n para conectarte directamente</p></div>'
+                + (linkSala ? _btn('\uD83D\uDCF2 Ingresar a la sala ahora', linkSala) : _btn('\uD83D\uDCF2 Ir a la reuni\u00f3n', 'https://skyteam.global'))
+                + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-top:8px;">\uD83D\uDCC5 ' + fechaFull + '</div>'), citaMs - 5 * 60000);
+            }
+
+          } catch (e) { console.warn('[AGENDA] Email scheduling error:', e.message); }
         }
 
         return res.status(200).json({ ok: true, ipFlag: ipFlag });
