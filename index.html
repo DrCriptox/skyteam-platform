@@ -4610,7 +4610,7 @@ function renderAgendaCitasUI() {
       html += '\uD83D\uDCF7 Subir foto';
       html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
       html += '</label>';
-      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+20 pts en ranking</span>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+25 pts verificada \u00b7 +5 pts parcial</span>';
     }
     html += '</div>';
     html += '</div>';
@@ -4618,13 +4618,19 @@ function renderAgendaCitasUI() {
   return html;
 }
 
+var _proofAttempts = {};
 function _uploadMeetingProof(input, bookingId) {
   var file = input.files[0];
   if(!file) return;
-  showToast('\u23F3 Subiendo foto...');
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    // Compress to JPEG thumbnail
+  var attempt = (_proofAttempts[bookingId] || 0) + 1;
+  _proofAttempts[bookingId] = attempt;
+  if(attempt > 3) { showToast('❌ Máximo 3 intentos de verificación'); return; }
+  showToast('🔍 Verificando foto con IA... (intento ' + attempt + '/3)');
+  // Read original file (keep EXIF) + compressed version for AI
+  var readerOrig = new FileReader();
+  readerOrig.onload = function(eOrig) {
+    var originalB64 = eOrig.target.result;
+    // Also create compressed version
     var img = new Image();
     img.onload = function() {
       var MAX = 800;
@@ -4632,25 +4638,34 @@ function _uploadMeetingProof(input, bookingId) {
       if(w > MAX || h > MAX) { var r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
       var c = document.createElement('canvas'); c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      var b64 = c.toDataURL('image/jpeg', 0.7);
-      // Save proof via API
-      fetch('/api/agenda', {
+      var compressedB64 = c.toDataURL('image/jpeg', 0.7);
+      // Send to verify-proof with ORIGINAL (has EXIF) for analysis
+      fetch('/api/verify-proof', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ action: 'saveProof', user: CU.ref||CU.user||'', bookingId: bookingId, proof: b64 })
+        body: JSON.stringify({ bookingId: bookingId, username: CU.username, imageBase64: originalB64, attempt: attempt })
       }).then(function(r){ return r.json(); }).then(function(d) {
-        if(d.ok || d.proof) {
-          showToast('\u2705 Foto subida (+20 pts en ranking)');
-          // Update local booking
+        if(d.verified) {
+          showToast('✅ ¡Foto verificada! +25 pts en ranking');
           var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
           if(bk) bk.proof = true;
+          _proofAttempts[bookingId] = 99; // prevent more attempts
           renderAgendaUI(document.getElementById('agenda-content'));
-        } else { showToast('\u274C Error: ' + (d.error||'')); }
-      }).catch(function(){ showToast('\u274C Error de conexi\u00f3n'); });
+        } else if(d.method === 'ai_retry') {
+          showToast('⚠️ ' + (d.message||'Intenta con otra foto') + ' (intento ' + attempt + '/3)');
+        } else {
+          // Failed after 3 or partial points
+          showToast('📸 ' + (d.message||'Verificación parcial') + ' (+5 pts)');
+          var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
+          if(bk) bk.proof = true;
+          _proofAttempts[bookingId] = 99;
+          renderAgendaUI(document.getElementById('agenda-content'));
+        }
+      }).catch(function(){ showToast('❌ Error de conexión'); });
     };
-    img.src = e.target.result;
+    img.src = originalB64;
   };
-  reader.readAsDataURL(file);
+  readerOrig.readAsDataURL(file);
 }
 
 // ── Sky Journal Ranking ──
