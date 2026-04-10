@@ -13923,6 +13923,7 @@ function _renderCrmRankingTab() {
     var podiumBg = ['linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04))','linear-gradient(135deg,rgba(192,192,192,0.08),rgba(160,160,160,0.04))','linear-gradient(135deg,rgba(205,127,50,0.08),rgba(160,82,45,0.04))'];
     var podiumBorder = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.25)','rgba(205,127,50,0.25)'];
     var podiumGlow = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.20)','rgba(205,127,50,0.20)'];
+    var _si = function(c,svg,n){ return '<span style="color:'+c+';display:inline-flex;align-items:center;gap:1px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">'+svg+'</svg>'+n+'</span> '; };
     var rhtml='<style>@media(min-width:769px){.sp-rk-name{font-size:17px !important;}.sp-rk-stats{font-size:11px !important;}.sp-rk-pts{font-size:20px !important;}.sp-rk-avatar{width:42px !important;height:42px !important;font-size:13px !important;}.sp-rk-tu{font-size:14px !important;}}</style>';
     var meInTop = false;
     ranking.forEach(function(m,i){
@@ -13949,12 +13950,13 @@ function _renderCrmRankingTab() {
       // Name + flag + stats — centered like Sky Sales IA
       rhtml += '<div style="flex:1;min-width:0;">';
       rhtml += '<div class="sp-rk-name" style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.name||m.username||'?')+flag+(isMe?' <span class="sp-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
-      rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;letter-spacing:0.3px;">';
-      rhtml += '<span style="color:#C9A84C;">'+(m.contactos||0)+'<span style="opacity:0.5;font-size:8px;"> con</span></span> ';
-      rhtml += '<span style="color:#7F77DD;">'+(m.avances||0)+'<span style="opacity:0.5;font-size:8px;"> mov</span></span> ';
-      rhtml += '<span style="color:#1D9E75;">'+(m.msgIA||0)+'<span style="opacity:0.5;font-size:8px;"> ia</span></span> ';
-      rhtml += '<span style="color:#00D4AA;">'+(m.abonos||0)+'<span style="opacity:0.5;font-size:8px;"> ab</span></span> ';
-      rhtml += '<span style="color:#25D366;">'+(m.pagos||0)+'<span style="opacity:0.5;font-size:8px;"> pg</span></span>';
+      rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;">';
+      rhtml += _si('#C9A84C','<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',m.contactos||0);
+      rhtml += _si('#7F77DD','<polyline points="9 18 15 12 9 6"/>',m.avances||0);
+      rhtml += _si('#1D9E75','<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',m.msgIA||0);
+      rhtml += _si('#FFA500','<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>',m.actualizaciones||0);
+      rhtml += _si('#00D4AA','<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',m.abonos||0);
+      rhtml += _si('#25D366','<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',m.pagos||0);
       rhtml += '</div></div>';
       // Score
       rhtml += '<div style="flex-shrink:0;text-align:right;"><span class="sp-rk-pts" style="font-size:16px;font-weight:900;color:#C9A84C;">'+(m.score||0)+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
@@ -13974,12 +13976,13 @@ function _renderCrmRankingTab() {
       rhtml += '<div style="flex:1;min-width:0;">';
       rhtml += '<div class="sp-rk-name" style="font-size:13px;font-weight:700;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(CU.name||CU.username)+' <span class="sp-rk-tu" style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span></div>';
       if(myData) {
-        rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;letter-spacing:0.3px;">';
-        rhtml += '<span style="color:#C9A84C;">'+(myData.contactos||0)+'<span style="opacity:0.5;font-size:8px;"> con</span></span> ';
-        rhtml += '<span style="color:#7F77DD;">'+(myData.avances||0)+'<span style="opacity:0.5;font-size:8px;"> mov</span></span> ';
-        rhtml += '<span style="color:#1D9E75;">'+(myData.msgIA||0)+'<span style="opacity:0.5;font-size:8px;"> ia</span></span> ';
-        rhtml += '<span style="color:#00D4AA;">'+(myData.abonos||0)+'<span style="opacity:0.5;font-size:8px;"> ab</span></span> ';
-        rhtml += '<span style="color:#25D366;">'+(myData.pagos||0)+'<span style="opacity:0.5;font-size:8px;"> pg</span></span>';
+        rhtml += '<div class="sp-rk-stats" style="font-size:9px;margin-top:2px;">';
+        rhtml += _si('#C9A84C','<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',myData.contactos||0);
+        rhtml += _si('#7F77DD','<polyline points="9 18 15 12 9 6"/>',myData.avances||0);
+        rhtml += _si('#1D9E75','<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',myData.msgIA||0);
+        rhtml += _si('#FFA500','<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>',myData.actualizaciones||0);
+        rhtml += _si('#00D4AA','<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',myData.abonos||0);
+        rhtml += _si('#25D366','<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',myData.pagos||0);
         rhtml += '</div>';
       }
       rhtml += '</div>';
