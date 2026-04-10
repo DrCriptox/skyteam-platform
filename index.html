@@ -4185,11 +4185,11 @@ function renderAgendaUI(el) {
   html += '<div style="max-width:680px;padding:8px 0;">';
 
   // Tabs FIRST (arriba de todo)
-  html += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">';
-  html += '<button onclick="switchAgendaTab(\'config\')" class="' + (agendaTab==='config'?'atab-on':'atab-off') + '">\u2699\uFE0F Configurar</button>';
-  html += '<button onclick="switchAgendaTab(\'citas\')" class="' + (agendaTab==='citas'?'atab-on':'atab-off') + '">\uD83D\uDCCB Citas (' + pendientes.length + ')</button>';
-  html += '<button onclick="switchAgendaTab(\'plandiario\')" class="' + (agendaTab==='plandiario'?'atab-on':'atab-off') + '">\uD83D\uDCC5 Mi Agenda</button>';
-  html += '<button onclick="switchAgendaTab(\'sjranking\')" class="' + (agendaTab==='sjranking'?'atab-on':'atab-off') + '">\uD83C\uDFC6 Ranking</button>';
+  html += '<div style="display:flex;gap:4px;margin-bottom:16px;">';
+  html += '<button onclick="switchAgendaTab(\'config\')" class="' + (agendaTab==='config'?'atab-on':'atab-off') + '" style="flex:1;padding:8px 4px;font-size:11px;white-space:nowrap;min-width:0;">\u2699\uFE0F Configurar</button>';
+  html += '<button onclick="switchAgendaTab(\'citas\')" class="' + (agendaTab==='citas'?'atab-on':'atab-off') + '" style="flex:1;padding:8px 4px;font-size:11px;white-space:nowrap;min-width:0;">\uD83D\uDCCB Citas (' + pendientes.length + ')</button>';
+  html += '<button onclick="switchAgendaTab(\'plandiario\')" class="' + (agendaTab==='plandiario'?'atab-on':'atab-off') + '" style="flex:1;padding:8px 4px;font-size:11px;white-space:nowrap;min-width:0;">\uD83D\uDCC5 Mi Agenda</button>';
+  html += '<button onclick="switchAgendaTab(\'sjranking\')" class="' + (agendaTab==='sjranking'?'atab-on':'atab-off') + '" style="flex:1;padding:8px 4px;font-size:11px;white-space:nowrap;min-width:0;">\uD83C\uDFC6 Ranking</button>';
   html += '</div>';
 
   // Profile card ONLY in Configurar tab
