@@ -111,15 +111,14 @@ body.landing-active{height:auto;min-height:100%;} @supports (padding-bottom: env
 .sky-reveal:nth-child(5){transition-delay:0.24s;}
 .sky-reveal:nth-child(6){transition-delay:0.30s;}
 
-.section.active .sc{animation:skyFadeInUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both;}
-.section.active .sc>*{opacity:0;animation:skyFadeIn 0.5s cubic-bezier(0.22,1,0.36,1) both;}
-.section.active .sc>*:nth-child(1){animation-delay:0.05s;}
-.section.active .sc>*:nth-child(2){animation-delay:0.10s;}
-.section.active .sc>*:nth-child(3){animation-delay:0.15s;}
-.section.active .sc>*:nth-child(4){animation-delay:0.20s;}
-.section.active .sc>*:nth-child(5){animation-delay:0.25s;}
-.section.active .sc>*:nth-child(6){animation-delay:0.30s;}
-.section.active .sc>*:nth-child(7){animation-delay:0.35s;}
+.section.active .sc>*{opacity:0;animation:skyFadeIn 0.35s ease both;}
+.section.active .sc>*:nth-child(1){animation-delay:0.03s;}
+.section.active .sc>*:nth-child(2){animation-delay:0.06s;}
+.section.active .sc>*:nth-child(3){animation-delay:0.09s;}
+.section.active .sc>*:nth-child(4){animation-delay:0.12s;}
+.section.active .sc>*:nth-child(5){animation-delay:0.15s;}
+.section.active .sc>*:nth-child(6){animation-delay:0.18s;}
+.section.active .sc>*:nth-child(7){animation-delay:0.21s;}
 .section.active .sc>*:nth-child(8){animation-delay:0.40s;}
 
 /* ── Card entry animation (spring bounce) ── */
@@ -417,8 +416,6 @@ select option{background:#0a0a12;color:#F0EDE6;}
 #content{margin-left:var(--sidebar-w);flex:1;height:100vh;padding:0;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:2;}
 .section{display:none;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
 .section.active{display:flex;flex-direction:column;}
-.section.active .sc{animation:eliteFadeIn 0.35s cubic-bezier(0.22,1,0.36,1);}
-@keyframes eliteFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── TOP BAR — Elite Crystal ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:64px;background:linear-gradient(180deg,rgba(5,5,8,0.92) 0%,rgba(5,5,8,0.85) 100%);border-bottom:none;position:sticky;top:0;z-index:50;backdrop-filter:blur(24px);box-sizing:border-box;}
