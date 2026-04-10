@@ -237,10 +237,14 @@ export default async function handler(req, res) {
             const LOGO = 'https://skyteam.global/logo-skyteam-white.png';
             var _wrap = function(body) { return '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;"><div style="text-align:center;margin-bottom:20px;"><img src="' + LOGO + '" alt="SKYTEAM" style="height:36px;" /></div>' + body + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:9px;margin-top:20px;">Sky Team \u2014 skyteam.global</p></div>'; };
             var _btn = function(text, url) { return '<div style="text-align:center;margin:20px 0;"><a href="' + url + '" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">' + text + '</a></div>'; };
+            var _scheduledEmailIds = [];
             var _sendEmail = function(to, subject, html, sendAt) {
               var payload = { from: 'SKYTEAM <soporte@skyteam.global>', to: [to], subject: subject, html: html };
               if (sendAt && sendAt > nowMs + 60000) payload.scheduled_at = new Date(sendAt).toISOString();
-              fetch('https://api.resend.com/emails', { method: 'POST', headers: RESEND_H, body: JSON.stringify(payload) }).catch(function(){});
+              fetch('https://api.resend.com/emails', { method: 'POST', headers: RESEND_H, body: JSON.stringify(payload) })
+                .then(function(r){return r.json();})
+                .then(function(d){ if(d.id) _scheduledEmailIds.push(d.id); })
+                .catch(function(){});
             };
 
             // ── SOCIO EMAIL 1: Instant — Nueva cita agendada ──
@@ -305,9 +309,36 @@ export default async function handler(req, res) {
           } catch (e) { console.warn('[AGENDA] Email scheduling error:', e.message); }
         }
 
+        // Save scheduled email IDs to booking for cancellation
+        setTimeout(function() {
+          if (_scheduledEmailIds.length > 0) {
+            var emailIdsStr = 'EMAIL_IDS:' + _scheduledEmailIds.join(',');
+            sb('bookings?id=eq.' + encodeURIComponent(bookingId), {
+              method: 'PATCH', body: JSON.stringify({ proof_url: emailIdsStr })
+            }).catch(function(){});
+            console.log('[AGENDA] Saved', _scheduledEmailIds.length, 'email IDs for booking', bookingId);
+          }
+        }, 5000);
+
         return res.status(200).json({ ok: true, ipFlag: ipFlag });
 
       } else if (action === 'cancelBooking') {
+        // Get booking to find scheduled email IDs
+        var cancelBooking = await sb('bookings?id=eq.' + encodeURIComponent(id) + '&select=proof_url');
+        if (cancelBooking && cancelBooking[0] && cancelBooking[0].proof_url && cancelBooking[0].proof_url.startsWith('EMAIL_IDS:')) {
+          var emailIds = cancelBooking[0].proof_url.replace('EMAIL_IDS:', '').split(',').filter(Boolean);
+          var RESEND_KEY = process.env.RESEND_API_KEY;
+          if (RESEND_KEY && emailIds.length > 0) {
+            console.log('[AGENDA] Cancelling', emailIds.length, 'scheduled emails for booking', id);
+            for (var ei = 0; ei < emailIds.length; ei++) {
+              fetch('https://api.resend.com/emails/' + emailIds[ei] + '/cancel', {
+                method: 'POST', headers: { 'Authorization': 'Bearer ' + RESEND_KEY }
+              }).then(function(r){return r.json();}).then(function(d){
+                console.log('[AGENDA] Email cancel:', d.id || d.error || 'ok');
+              }).catch(function(){});
+            }
+          }
+        }
         await sb('bookings?id=eq.' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ status: 'cancelada' }) });
 
       } else if (action === 'saveProof') {
