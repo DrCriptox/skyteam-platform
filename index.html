@@ -4596,9 +4596,8 @@ function renderAgendaCitasUI() {
       html += '<a href="https://wa.me/'+waNum+'?text='+m30+'" target="_blank" class="reminder-btn">\u23F0 30 min</a>';
       if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">\uD83D\uDE80 Sala abierta</a>';
     }
-    html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;">\u2715 Cancelar</button>';
     html += '</div>';
-    // Photo proof button — only visible from 30min before to 2h after the booking
+    // Bottom row: Photo proof + Cancel button
     var hasProof = cita.proof_url || cita.proof;
     var _citaTime = new Date(cita.fechaISO || cita.fecha_iso).getTime();
     var _nowMs = Date.now();
@@ -4613,12 +4612,14 @@ function renderAgendaCitasUI() {
       html += '\uD83D\uDCF7 Verificar con foto';
       html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
       html += '</label>';
-      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+25 pts IA OK \u00b7 +5 pts parcial</span>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+25 pts \u00b7 +5 parcial</span>';
     } else if(_tooEarly) {
-      html += '<span style="font-size:10px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 Verificar disponible desde 30 min antes de la cita</span>';
+      html += '<span style="font-size:10px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 Verificar desde 30 min antes</span>';
     } else if(_tooLate) {
-      html += '<span style="font-size:10px;color:rgba(255,100,100,0.5);">\u23F0 Ventana de verificaci\u00f3n cerrada (2h despu\u00e9s)</span>';
+      html += '<span style="font-size:10px;color:rgba(255,100,100,0.5);">\u23F0 Ventana cerrada</span>';
     }
+    // Cancel button at the right end of this row
+    html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;flex-shrink:0;">\u2715 Cancelar</button>';
     html += '</div>';
     html += '</div>';
   });
