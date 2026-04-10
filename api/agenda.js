@@ -143,16 +143,28 @@ export default async function handler(req, res) {
         const taken = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&fecha_iso=eq.' + encodeURIComponent(booking.fechaISO) + '&status=neq.cancelada');
         if (taken && taken.length > 0) return res.status(409).json({ error: 'Slot already taken' });
 
-        // === IP ANALYSIS — Flag if same IP has booked before for this user ===
+        // === IP ANALYSIS — Flag if same IP as socio (auto-reserva) or repeated ===
         var ipFlag = null;
+        var selfBooking = false;
         if (clientIP && clientIP !== 'unknown') {
-          var sameIPBookings = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&ip_address=eq.' + encodeURIComponent(clientIP) + '&status=neq.cancelada&select=id,nombre');
-          if (sameIPBookings && sameIPBookings.length > 0) {
-            ipFlag = { count: sameIPBookings.length, previousNames: sameIPBookings.map(function(b) { return b.nombre; }) };
+          // Check if booking IP matches the socio's last login IP
+          var socioData = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=last_ip');
+          var socioIP = socioData && socioData[0] ? socioData[0].last_ip : '';
+          if (socioIP && socioIP === clientIP) {
+            selfBooking = true;
+            ipFlag = { count: 0, selfBooking: true, reason: 'IP coincide con la del socio' };
+            console.log('[AGENDA] SELF-BOOKING detected: socio=' + user + ' IP=' + clientIP);
+          }
+          // Also check if same IP has booked before for this user
+          if (!selfBooking) {
+            var sameIPBookings = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&ip_address=eq.' + encodeURIComponent(clientIP) + '&status=neq.cancelada&select=id,nombre');
+            if (sameIPBookings && sameIPBookings.length > 0) {
+              ipFlag = { count: sameIPBookings.length, selfBooking: false, previousNames: sameIPBookings.map(function(b) { return b.nombre; }) };
+            }
           }
         }
 
-        // Insert booking with IP + email + user_agent
+        // Insert booking with IP + email + user_agent + self_booking flag
         await sb('bookings', { method: 'POST',
           body: JSON.stringify({
             id: booking.id || crypto.randomUUID(),
@@ -161,8 +173,8 @@ export default async function handler(req, res) {
             whatsapp: waCheck.cleaned || booking.whatsapp,
             email: booking.email || null,
             fecha_iso: booking.fechaISO,
-            status: 'activa',
-            notas: booking.notas || null,
+            status: selfBooking ? 'sospechosa' : 'activa',
+            notas: selfBooking ? 'Auto-reserva detectada (misma IP que socio)' : (booking.notas || null),
             ip_address: clientIP,
             user_agent: userAgent.substring(0, 500)
           })

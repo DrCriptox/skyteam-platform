@@ -74,6 +74,13 @@ export default async function handler(req, res) {
     }
 
     const user = rows[0];
+    // Save last login IP for anti-fraud (fire-and-forget)
+    try {
+      const loginIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+      fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(user.username), {
+        method: 'PATCH', headers: HEADERS, body: JSON.stringify({ last_ip: loginIP })
+      }).catch(function(){});
+    } catch(e) {}
     // Grace period: 3 days after expiry, user can still login but sees renewal banner
     const GRACE_MS = 3 * 86400000;
     if (user.expiry && Date.now() > (user.expiry + GRACE_MS)) {

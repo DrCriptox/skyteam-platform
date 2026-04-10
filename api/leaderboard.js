@@ -35,35 +35,39 @@ module.exports = async (req, res) => {
       const sundayUTC = new Date(mondayUTC.getTime() + 7 * 86400000);
       const sundayISO = sundayUTC.toISOString();
 
-      // Fetch bookings WITH ip_address
+      // Fetch ALL bookings (including cancelled + sospechosa) for full scoring
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + mondayISO + '&fecha_iso=lt.' + sundayISO + '&status=in.(activa,completada,verificada)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + mondayISO + '&fecha_iso=lt.' + sundayISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
       );
       const proofs = await sb(
-        'booking_proofs?select=username,status,created_at&created_at=gte.' + mondayISO + '&created_at=lt.' + sundayISO
+        'booking_proofs?select=username,status,booking_id,created_at&created_at=gte.' + mondayISO + '&created_at=lt.' + sundayISO
       );
 
       const userStats = {};
+      var _init = function(u) { if(!userStats[u]) userStats[u] = { citas: 0, verificadas: 0, canceladas: 0, sospechosas: 0, proofs: 0, proofsFailed: 0, score: 0, ips: {}, ipDupes: 0 }; };
       (bookings || []).forEach(function(b) {
-        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, proofs: 0, score: 0, ips: {}, ipDupes: 0 };
-        userStats[b.username].citas++;
-        if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
-        // Track IPs
+        _init(b.username);
+        var s = userStats[b.username];
+        if (b.status === 'sospechosa') { s.sospechosas++; return; } // 0 pts for self-booking
+        if (b.status === 'cancelada') { s.canceladas++; return; } // -5 pts
+        s.citas++; // 10 pts
+        if (b.status === 'verificada' || b.status === 'completada') s.verificadas++; // +25 pts (if proof OK) or +5 pts (if proof failed)
         if (b.ip_address) {
-          if (!userStats[b.username].ips[b.ip_address]) userStats[b.username].ips[b.ip_address] = [];
-          userStats[b.username].ips[b.ip_address].push(b.nombre);
+          if (!s.ips[b.ip_address]) s.ips[b.ip_address] = [];
+          s.ips[b.ip_address].push(b.nombre);
         }
       });
 
       (proofs || []).forEach(function(p) {
-        if (!userStats[p.username]) userStats[p.username] = { citas: 0, verificadas: 0, proofs: 0, score: 0, ips: {}, ipDupes: 0 };
-        if (p.status === 'approved') userStats[p.username].proofs++;
+        _init(p.username);
+        if (p.status === 'approved') userStats[p.username].proofs++; // +25 pts
+        if (p.status === 'failed') userStats[p.username].proofsFailed++; // +5 pts
       });
 
-      // Calculate score + IP analysis
+      // Calculate score
+      // Cita agendada: 10pts | Verificada foto OK: +25pts | Verificada foto fail: +5pts | Cancelada: -5pts | Auto-reserva: 0pts
       Object.keys(userStats).forEach(function(u) {
         var s = userStats[u];
-        // Count IPs that have multiple different prospects
         var ipDupes = 0;
         Object.keys(s.ips).forEach(function(ip) {
           var uniqueNames = [];
@@ -71,10 +75,8 @@ module.exports = async (req, res) => {
           if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
         });
         s.ipDupes = ipDupes;
-        // Points: 10 per booking, +30 per verified/proof, -10 per IP dupe
-        s.score = (s.citas * 10) + (s.verificadas * 30) + (s.proofs * 30) - (ipDupes * 10);
+        s.score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (ipDupes * 10);
         if (s.score < 0) s.score = 0;
-        // Clean up ips object for response (just counts)
         var ipSummary = {};
         Object.keys(s.ips).forEach(function(ip) {
           if (s.ips[ip].length > 1) {
@@ -115,21 +117,25 @@ module.exports = async (req, res) => {
       const toISO = mEndStr;
 
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
       );
       const proofs = await sb(
         'booking_proofs?select=username,status,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO
       );
 
       const userStats = {};
+      var _initM = function(u) { if(!userStats[u]) userStats[u] = { citas: 0, verificadas: 0, canceladas: 0, proofs: 0, proofsFailed: 0 }; };
       (bookings || []).forEach(function(b) {
-        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, proofs: 0 };
+        _initM(b.username);
+        if (b.status === 'sospechosa') return;
+        if (b.status === 'cancelada') { userStats[b.username].canceladas++; return; }
         userStats[b.username].citas++;
         if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
       });
       (proofs || []).forEach(function(p) {
-        if (!userStats[p.username]) userStats[p.username] = { citas: 0, verificadas: 0, proofs: 0 };
+        _initM(p.username);
         if (p.status === 'approved') userStats[p.username].proofs++;
+        if (p.status === 'failed') userStats[p.username].proofsFailed++;
       });
 
       const usernames = Object.keys(userStats);
@@ -141,7 +147,7 @@ module.exports = async (req, res) => {
 
       const ranking = usernames.map(function(u) {
         var s = userStats[u];
-        var score = (s.citas * 10) + (s.verificadas * 30) + (s.proofs * 30);
+        var score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5);
         return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: s.proofs, score: score };
       }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
 
@@ -157,18 +163,29 @@ module.exports = async (req, res) => {
       const toISO = new Date(new Date(fromISO).getTime() + 86400000).toISOString(); // +24h
 
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
+      );
+      const proofs = await sb(
+        'booking_proofs?select=username,status,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO
       );
 
       const userStats = {};
+      var _initD = function(u) { if(!userStats[u]) userStats[u] = { citas: 0, verificadas: 0, canceladas: 0, proofs: 0, proofsFailed: 0, score: 0, ips: {}, ipDupes: 0 }; };
       (bookings || []).forEach(function(b) {
-        if (!userStats[b.username]) userStats[b.username] = { citas: 0, verificadas: 0, score: 0, ips: {}, ipDupes: 0 };
+        _initD(b.username);
+        if (b.status === 'sospechosa') return;
+        if (b.status === 'cancelada') { userStats[b.username].canceladas++; return; }
         userStats[b.username].citas++;
         if (b.status === 'verificada' || b.status === 'completada') userStats[b.username].verificadas++;
         if (b.ip_address) {
           if (!userStats[b.username].ips[b.ip_address]) userStats[b.username].ips[b.ip_address] = [];
           userStats[b.username].ips[b.ip_address].push(b.nombre);
         }
+      });
+      (proofs || []).forEach(function(p) {
+        _initD(p.username);
+        if (p.status === 'approved') userStats[p.username].proofs++;
+        if (p.status === 'failed') userStats[p.username].proofsFailed++;
       });
 
       Object.keys(userStats).forEach(function(u) {
@@ -180,7 +197,7 @@ module.exports = async (req, res) => {
           if (uniqueNames.length > 1) ipDupes += uniqueNames.length - 1;
         });
         s.ipDupes = ipDupes;
-        s.score = (s.verificadas * 10) + ((s.citas - s.verificadas) * 3) - (ipDupes * 5);
+        s.score = (s.citas * 10) + (s.proofs * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (ipDupes * 10);
         if (s.score < 0) s.score = 0;
         delete s.ips;
       });
