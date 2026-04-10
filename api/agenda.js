@@ -233,6 +233,23 @@ export default async function handler(req, res) {
         } catch(e) { console.warn('Proof points save failed:', e.message); }
         return res.status(200).json({ ok: true, proof: true });
 
+      } else if (action === 'addColumn') {
+        // One-time migration: add last_ip column to users + sospechosa to bookings status check
+        const adminKey = req.body.adminKey;
+        if (adminKey !== SUPABASE_KEY) return res.status(403).json({ error: 'Unauthorized' });
+        const results = [];
+        // Add last_ip to users
+        try {
+          const r1 = await fetch(SUPABASE_URL + '/rest/v1/rpc/exec_sql', { method: 'POST', headers: HEADERS, body: JSON.stringify({ sql: "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_ip text" }) });
+          results.push('last_ip: ' + r1.status);
+        } catch(e) { results.push('last_ip error: ' + e.message); }
+        // Try direct PATCH to test if column works
+        try {
+          const r2 = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.admin', { method: 'PATCH', headers: { ...HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify({ last_ip: 'test' }) });
+          results.push('patch test: ' + r2.status);
+        } catch(e) { results.push('patch error: ' + e.message); }
+        return res.status(200).json({ ok: true, results });
+
       } else {
         return res.status(400).json({ error: 'Unknown action' });
       }
