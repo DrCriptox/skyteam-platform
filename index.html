@@ -13899,9 +13899,9 @@ function _renderCrmRankingTab() {
   if (!el) return;
   // Wrapped in .card like Sky Sales IA
   var html = '<div class="card">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
-  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking de Gesti\u00f3n de Prospectos</div>';
-  html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:8px;">';
+  html += '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;min-width:0;">\uD83C\uDFC6 Ranking<br>de Prospectos</div>';
+  html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
   ['daily','weekly','monthly'].forEach(function(p){
     var labels={daily:'Hoy',weekly:'Semana',monthly:'Mes'};
     var active = _crmRankPeriod===p;
