@@ -35,9 +35,9 @@ module.exports = async (req, res) => {
       const sundayUTC = new Date(mondayUTC.getTime() + 7 * 86400000);
       const sundayISO = sundayUTC.toISOString();
 
-      // Fetch ALL bookings (including cancelled + sospechosa) for full scoring
+      // Filter by created_at (when booking was MADE), not fecha_iso (when meeting IS)
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + mondayISO + '&fecha_iso=lt.' + sundayISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre,created_at&created_at=gte.' + mondayISO + '&created_at=lt.' + sundayISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
       );
       const proofs = await sb(
         'booking_proofs?select=username,status,booking_id,created_at&created_at=gte.' + mondayISO + '&created_at=lt.' + sundayISO
@@ -118,8 +118,9 @@ module.exports = async (req, res) => {
       const fromISO = mStr;
       const toISO = mEndStr;
 
+      // Filter by created_at (when booking was MADE), not fecha_iso (when meeting IS)
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
       );
       const proofs = await sb(
         'booking_proofs?select=username,status,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO
@@ -184,8 +185,9 @@ module.exports = async (req, res) => {
       const fromISO = todayStr + 'T05:00:00.000Z'; // 00:00 Colombia
       const toISO = new Date(new Date(fromISO).getTime() + 86400000).toISOString(); // +24h
 
+      // Filter by created_at (when booking was MADE), not fecha_iso (when meeting IS)
       const bookings = await sb(
-        'bookings?select=username,status,fecha_iso,ip_address,nombre&fecha_iso=gte.' + fromISO + '&fecha_iso=lt.' + toISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
+        'bookings?select=username,status,fecha_iso,ip_address,nombre,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO + '&status=in.(activa,completada,verificada,cancelada,sospechosa)'
       );
       const proofs = await sb(
         'booking_proofs?select=username,status,created_at&created_at=gte.' + fromISO + '&created_at=lt.' + toISO
