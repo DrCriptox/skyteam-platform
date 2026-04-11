@@ -13155,7 +13155,9 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
     var hh=fecha.getHours(),mn=fecha.getMinutes().toString().padStart(2,'0'),ap=hh>=12?'pm':'am',h12=hh%12||12;
     var horaStr=h12+':'+mn+ap;
     var esHoy=fecha.toDateString()===now.toDateString();
-    var timeLabel=urgente?'Vencido':esHoy?'Hoy '+horaStr:crmFecha(fecha)+' '+horaStr;
+    // Always show the time, add "vencido" label if past
+    var timeLabel = esHoy ? horaStr : crmFecha(fecha) + ' ' + horaStr;
+    if(urgente) timeLabel += ' (vencido)';
     var dotColor=urgente?'#E24B4A':pronto?'#FFA500':'#C9A84C';
     var wa=(r.prospectos&&r.prospectos.telefono)?r.prospectos.telefono.replace(/[^0-9]/g,''):'';
     html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-bottom:4px;border-radius:8px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.04);">'
@@ -13163,8 +13165,8 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
       +'<span style="font-size:11px;font-weight:700;color:#F0EDE6;white-space:nowrap;">'+crmEsc(primerNombre)+'</span>'
       +'<span style="font-size:10px;color:rgba(255,255,255,0.3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+crmEsc(mensaje)+'</span>'
       +'<span style="font-size:9px;color:'+dotColor+';font-weight:700;white-space:nowrap;">'+timeLabel+'</span>'
-      +(wa?'<a href="https://wa.me/'+wa+'" target="_blank" onclick="event.stopPropagation();" style="font-size:10px;text-decoration:none;">📱</a>':'')
-      +'<button onclick="crmCompleteReminder(\''+r.id+'\')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;padding:2px;line-height:1;">\u2715</button></div>';});
+      +(wa?'<a href="https://wa.me/'+wa+'" target="_blank" onclick="event.stopPropagation();" style="font-size:10px;text-decoration:none;">\uD83D\uDCF1</a>':'')
+      +'<button onclick="event.stopPropagation();crmCompleteReminder(\''+r.id+'\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);font-size:10px;cursor:pointer;padding:3px 6px;border-radius:4px;line-height:1;font-family:inherit;">Listo</button></div>';});
   if(activos.length>2) html+='<div style="text-align:center;font-size:9px;color:rgba(255,255,255,0.2);margin-top:2px;">+'+(activos.length-2)+' m\u00e1s en Recordatorios</div>';
   el.innerHTML=html;}
 
