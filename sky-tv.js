@@ -188,19 +188,19 @@ function renderCountdown(container) {
   if (heroEvents.length === 0 && next && next.flyer_url) heroEvents = [next];
   if (heroEvents.length > 0) {
     var carouselWrap = document.createElement('div');
-    carouselWrap.style.cssText = 'position:relative;margin-bottom:12px;overflow:hidden;border-radius:16px;';
+    carouselWrap.style.cssText = 'position:relative;margin-bottom:12px;overflow:hidden;border-radius:16px;width:100%;';
     var track = document.createElement('div');
     track.id = 'skytv-hero-track';
-    track.style.cssText = 'display:flex;transition:transform 0.4s ease;will-change:transform;';
+    track.style.cssText = 'display:flex;transition:transform 0.4s ease;will-change:transform;width:100%;';
     for (var hi = 0; hi < heroEvents.length; hi++) {
       var he = heroEvents[hi];
       var slide = document.createElement('div');
-      slide.style.cssText = 'min-width:100%;position:relative;cursor:pointer;background:#0a0a12;flex-shrink:0;';
+      slide.style.cssText = 'width:100%;min-width:100%;max-width:100%;position:relative;cursor:pointer;background:#0a0a12;flex-shrink:0;overflow:hidden;';
       slide.setAttribute('data-idx', hi);
       (function(evt){ slide.onclick = function(){ openEventDetail(evt); }; })(he);
       var img = document.createElement('img');
       img.src = he.flyer_url; img.alt = he.titulo || '';
-      img.style.cssText = 'width:100%;height:auto;display:block;border-radius:16px;';
+      img.style.cssText = 'width:100%;max-width:100%;height:auto;display:block;border-radius:16px;';
       var grad = document.createElement('div');
       grad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
       var info = document.createElement('div');
