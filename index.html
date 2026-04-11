@@ -7664,13 +7664,11 @@ function generarSlotsAgenda(cfg, bookings) {
     var MIN_VISIBLE = 7;
     var daySlots = [];
 
-    if(selected.length >= 7) {
-      // MANY SLOTS (7+): apply 40% busy + max spread + day rotation
-      var nBusy = Math.round(selected.length * BUSY_RATIO);
-      var nAvail = selected.length - nBusy;
-      if(nAvail < 3) nAvail = 3;
+    if(selected.length >= 5) {
+      // 5+ SLOTS: show max 4-5 available, rest as occupied
+      var nAvail = selected.length <= 6 ? 4 : Math.min(5, Math.ceil(selected.length * 0.6));
       if(nAvail > selected.length) nAvail = selected.length;
-      nBusy = selected.length - nAvail;
+      var nBusy = selected.length - nAvail;
 
       var availIndices = {};
       if(nAvail >= selected.length) {
@@ -7752,11 +7750,47 @@ function generarSlotsAgenda(cfg, bookings) {
       });
 
     } else {
-      // FEW SLOTS (1-6): show ALL as available — maximize bookings
-      // No artificial scarcity when there are few real options
+      // FEW SLOTS (1-4): show all real as available + pad with occupied to min 6
       selected.forEach(function(s) {
         daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
       });
+      // Add artificial "occupied" slots from rawUnavail to reach 6 visible
+      var MIN_TOTAL = 6;
+      var need = MIN_TOTAL - daySlots.length;
+      if(need > 0 && rawUnavail.length > 0) {
+        // Pick unavailable slots spread across the day, not adjacent to available ones
+        var usedMins = {};
+        daySlots.forEach(function(s){ usedMins[s.wallMin] = true; });
+        var candidates = rawUnavail.filter(function(s){ return !usedMins[s.wallMin]; });
+        // Sort by distance from existing available slots (prefer far away = more spread)
+        var availMins = daySlots.map(function(s){ return s.wallMin; });
+        candidates.sort(function(a,b){
+          var minDistA = Math.min.apply(null, availMins.map(function(m){ return Math.abs(a.wallMin - m); }));
+          var minDistB = Math.min.apply(null, availMins.map(function(m){ return Math.abs(b.wallMin - m); }));
+          return minDistB - minDistA; // farthest first
+        });
+        for(var pi=0; pi<Math.min(need, candidates.length); pi++) {
+          daySlots.push({ iso: candidates[pi].iso, wallMin: candidates[pi].wallMin, available: false });
+        }
+      }
+      // If still not enough, add synthetic occupied slots
+      if(daySlots.length < MIN_TOTAL) {
+        var synthNeeded = MIN_TOTAL - daySlots.length;
+        var existingMins = {};
+        daySlots.forEach(function(s){ existingMins[s.wallMin] = true; });
+        var synthCur = toMins(dayBloques && dayBloques.length ? dayBloques[0].ini : '09:00');
+        var synthEnd = toMins(dayBloques && dayBloques.length ? dayBloques[dayBloques.length-1].fin : '18:00');
+        while(synthNeeded > 0 && synthCur < synthEnd) {
+          if(!existingMins[synthCur]) {
+            var sh=Math.floor(synthCur/60), sm=synthCur%60;
+            var synUTC=new Date(Date.UTC(y,mo,d,sh+offsetHrs,sm,0,0));
+            daySlots.push({ iso: synUTC.toISOString(), wallMin: synthCur, available: false });
+            existingMins[synthCur] = true;
+            synthNeeded--;
+          }
+          synthCur += dur;
+        }
+      }
     }
 
     // 5) Visual padding — fill with "Reservado" from real schedule slots
