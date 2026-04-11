@@ -13375,16 +13375,27 @@ function crmMoveStage(id,etapa){
     xhr1.onload = function() { _checkDone(); };
     xhr1.onerror = function() { _checkDone(); };
     xhr1.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:texto}));
-    // 1b) If photo proof, save as interaction (for ranking points)
+    // 1b) If photo proof, verify with AI + save image + add interaction
     if(hasProofPhoto) {
-      var xhrP = new XMLHttpRequest();
-      xhrP.open('POST', '/api/prospectos', true);
-      xhrP.setRequestHeader('Content-Type', 'application/json');
-      xhrP.onload = function() { _checkDone(); };
-      xhrP.onerror = function() { _checkDone(); };
-      var proofTipo = etapa==='cerrado_ganado' ? 'cierre' : etapa==='presentacion' ? 'presentacion' : 'nota';
-      var proofText = etapa==='cerrado_ganado' ? 'Factura de venta - cierre pagado' : etapa==='abonado' ? 'Comprobante de abono cargado' : 'Evidencia de presentacion cargada';
-      xhrP.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:proofTipo,contenido:proofText}));
+      var proofTipo = etapa==='cerrado_ganado' ? 'cierre' : etapa==='abonado' ? 'abono' : 'presentacion';
+      // Verify + save photo
+      fetch('/api/verify-crm-proof', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({action:'verify', username:CU.username, prospecto_id:id, prospecto_nombre:p.nombre||'', tipo:proofTipo, imageBase64:_movePhotoData})
+      }).then(function(r){return r.json();}).then(function(d){
+        if(d.duplicate) { crmToast('Imagen duplicada - sube otra foto','error'); }
+        else if(d.verified) { crmToast('Foto verificada por IA','success'); }
+        else { crmToast('Foto guardada (revision pendiente)','info'); }
+        // Save interaction regardless
+        var xhrP = new XMLHttpRequest();
+        xhrP.open('POST', '/api/prospectos', true);
+        xhrP.setRequestHeader('Content-Type', 'application/json');
+        xhrP.onload = function() { _checkDone(); };
+        xhrP.onerror = function() { _checkDone(); };
+        var proofText = etapa==='cerrado_ganado' ? 'Factura de venta verificada' : etapa==='abonado' ? 'Comprobante de abono verificado' : 'Evidencia de presentacion';
+        if(d.aiResult && d.aiResult.amount) proofText += ' - Monto: ' + d.aiResult.amount;
+        xhrP.send(JSON.stringify({action:'addInteraccion',user:CU.username,prospecto_id:id,tipo:'cambio_etapa',contenido:proofText}));
+      }).catch(function(){ _checkDone(); });
     }
     // 2) Move stage (fast, no IA)
     var xhr2 = new XMLHttpRequest();
