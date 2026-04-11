@@ -7507,9 +7507,12 @@ function generarSlotsAgenda(cfg, bookings) {
   var allSlots = [];
   var ahora = new Date();
   var dur = cfg.duracion || 60;
+  // Normalize booked dates to ISO Z format (Supabase returns +00:00, slots use .000Z)
   var booked = bookings
     .filter(function(b){ return b.status !== 'cancelada'; })
-    .map(function(b){ return b.fechaISO; });
+    .map(function(b){
+      try { return new Date(b.fechaISO).toISOString(); } catch(e) { return b.fechaISO; }
+    });
 
   function toMins(t){ var p=(t||'00:00').split(':').map(Number); return p[0]*60+(p[1]||0); }
 
