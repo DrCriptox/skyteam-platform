@@ -7560,8 +7560,8 @@ function generarSlotsAgenda(cfg, bookings) {
     {name:'tarde',    from:15*60,to:18*60},
     {name:'noche',    from:18*60,to:24*60}
   ];
-  var MAX_PER_DAY = 8;       // Max slots shown per day
-  var BUSY_RATIO  = 0.40;    // ~40% appear busy
+  var MAX_PER_DAY = 10;      // Max slots shown per day
+  var BUSY_RATIO  = 0.35;    // ~35% appear busy (only when 7+ slots)
 
   for(var di=0;di<8;di++){
     var base=new Date(ahora); base.setDate(base.getDate()+di);
@@ -7664,11 +7664,11 @@ function generarSlotsAgenda(cfg, bookings) {
     var MIN_VISIBLE = 7;
     var daySlots = [];
 
-    if(selected.length >= 4) {
-      // NORMAL CASE: enough real slots — apply 40% busy + max spread + day rotation
+    if(selected.length >= 7) {
+      // MANY SLOTS (7+): apply 40% busy + max spread + day rotation
       var nBusy = Math.round(selected.length * BUSY_RATIO);
       var nAvail = selected.length - nBusy;
-      if(nAvail < 2) nAvail = 2;
+      if(nAvail < 3) nAvail = 3;
       if(nAvail > selected.length) nAvail = selected.length;
       nBusy = selected.length - nAvail;
 
@@ -7752,33 +7752,11 @@ function generarSlotsAgenda(cfg, bookings) {
       });
 
     } else {
-      // SCARCE CASE (1-3 real slots):
-      // - 3 consecutive slots → hide middle one (show 2 spread + 1 occupied)
-      // - 2 slots → always show both
-      // - 1 slot → show 1 available (padding added later in step 5)
-      if(selected.length === 3) {
-        // Check if all 3 are consecutive (each one is ~dur apart)
-        var gap01 = selected[1].wallMin - selected[0].wallMin;
-        var gap12 = selected[2].wallMin - selected[1].wallMin;
-        var isConsecutive = (gap01 <= dur + 5) && (gap12 <= dur + 5);
-
-        if(isConsecutive) {
-          // Hide middle slot — show first and last for max spread
-          daySlots.push({ iso: selected[0].iso, wallMin: selected[0].wallMin, available: true });
-          daySlots.push({ iso: selected[1].iso, wallMin: selected[1].wallMin, available: false }); // middle = occupied
-          daySlots.push({ iso: selected[2].iso, wallMin: selected[2].wallMin, available: true });
-        } else {
-          // Not consecutive — show all 3 as available
-          selected.forEach(function(s) {
-            daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
-          });
-        }
-      } else {
-        // 1 or 2 slots — show all as available
-        selected.forEach(function(s) {
-          daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
-        });
-      }
+      // FEW SLOTS (1-6): show ALL as available — maximize bookings
+      // No artificial scarcity when there are few real options
+      selected.forEach(function(s) {
+        daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
+      });
     }
 
     // 5) Visual padding — fill with "Reservado" from real schedule slots
