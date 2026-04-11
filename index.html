@@ -15794,12 +15794,12 @@ function lbInjectRankingUI() {
   lbSwitchTab('weekly');
 }
 
-/* --- Patch navigate to inject when ranking is opened --- */
+/* --- Patch navigate — ranking now uses combined global ranking --- */
 var _origNavigateForLb = navigate;
 navigate = function(section) {
   _origNavigateForLb(section);
   if (section === 'ranking') {
-    setTimeout(lbInjectRankingUI, 100);
+    setTimeout(renderRanking, 100);
   }
 };
 
