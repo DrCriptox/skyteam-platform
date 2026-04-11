@@ -10051,25 +10051,24 @@ function renderMateriales() {
 }
 
 /* ── RANKING ── */
-var _rkTab = 'live'; // 'live' or 'cycle'
+var _rkPeriod = 'weekly';
 function renderRanking() {
   var el = document.getElementById('ranking-content');
   if(!el) return;
-  // Tabs
-  var liveOn = _rkTab === 'live';
-  var tabStyle = function(on){ return 'padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06))':'rgba(255,255,255,0.02)')+';color:'+(on?'#E8D48B':'rgba(255,255,255,0.35)')+';'+(on?'box-shadow:0 2px 12px rgba(201,168,76,0.15);':''); };
+  var _pb = function(p, label) {
+    var on = _rkPeriod === p;
+    return '<button onclick="_rkPeriod=\''+p+'\';renderRanking()" style="padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06))':'rgba(255,255,255,0.02)')+';color:'+(on?'#E8D48B':'rgba(255,255,255,0.35)')+';'+(on?'box-shadow:0 2px 12px rgba(201,168,76,0.15);':'')+'">'+label+'</button>';
+  };
   el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:16px;">'
-    + '<button onclick="_rkTab=\'live\';renderRanking()" style="'+tabStyle(liveOn)+'">Ranking en Vivo</button>'
-    + '<button onclick="_rkTab=\'cycle\';renderRanking()" style="'+tabStyle(!liveOn)+'">Ultimo Ciclo</button>'
+    + _pb('daily','Hoy') + _pb('weekly','Semana') + _pb('monthly','Mes')
     + '</div><div id="rk-combined-list"><div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div></div>';
   _loadCombinedRanking();
 }
 function _loadCombinedRanking() {
-  var period = _rkTab === 'live' ? 'weekly' : 'monthly';
-  // Fetch all 3 rankings in parallel
-  var salesAction = period === 'weekly' ? 'weekly' : 'monthly';
-  var cierresAction = period === 'weekly' ? 'weeklyTop' : 'monthlyTop';
-  var prospectAction = period === 'weekly' ? 'weekly' : 'monthly';
+  var period = _rkPeriod;
+  var salesAction = period;
+  var cierresAction = period === 'daily' ? 'dailyTop' : period === 'weekly' ? 'weeklyTop' : 'monthlyTop';
+  var prospectAction = period;
   Promise.all([
     fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:CU?(CU.ref||CU.username):''})} ).then(function(r){return r.json();}),
     fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:cierresAction,user:CU?CU.username:''})}).then(function(r){return r.json();}),
@@ -10093,19 +10092,43 @@ function _loadCombinedRanking() {
     var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
     var podiumBg=['linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04))','linear-gradient(135deg,rgba(192,192,192,0.08),rgba(160,160,160,0.04))','linear-gradient(135deg,rgba(205,127,50,0.08),rgba(160,82,45,0.04))'];
     var podiumBorder=['rgba(255,215,0,0.25)','rgba(192,192,192,0.25)','rgba(205,127,50,0.25)'];
-    var html='<div class="card">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking Global</div></div>';
+    var podiumColors=['linear-gradient(135deg,#FFD700,#C9A84C)','linear-gradient(135deg,#C0C0C0,#A0A0A0)','linear-gradient(135deg,#CD7F32,#A0522D)'];
+    var podiumHeights=['130px','100px','80px'];
+    var podiumOrder=[1,0,2];
+    var html='';
+    // Podium for top 3
+    if(top20.length>=3){
+      html+='<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:10px 0 20px;padding:0 10px;">';
+      podiumOrder.forEach(function(pi){
+        var u=top20[pi]; if(!u) return;
+        var isMe=CU&&(u.ref===CU.username||u.ref===(CU.ref||'').toLowerCase());
+        var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+        var foto=u.photo||'';
+        var sz=pi===0?'64px':'50px';
+        var flag=_waFlag(u.whatsapp||'');
+        html+='<div style="flex:1;max-width:130px;text-align:center;">';
+        html+='<div style="width:'+sz+';height:'+sz+';margin:0 auto 6px;border-radius:50%;background:rgba(255,255,255,0.04);border:2.5px solid '+podiumBorder[pi]+';display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:'+(pi===0?'18px':'14px')+';font-weight:800;color:rgba(255,255,255,0.5);'+(isMe?'box-shadow:0 0 15px rgba(201,168,76,0.4);':'')+ '">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+        html+='<div style="font-size:'+(pi===0?'13px':'11px')+';font-weight:700;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(u.name||'?')+flag+'</div>';
+        html+='<div style="font-size:9px;color:rgba(255,255,255,0.3);margin:2px 0;">'+u.total+' pts</div>';
+        html+='<div style="height:'+podiumHeights[pi]+';background:'+podiumColors[pi]+';border-radius:10px 10px 0 0;margin-top:4px;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;">';
+        html+='<span style="font-size:'+(pi===0?'28px':'20px')+';">'+medals[pi]+'</span></div>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+    // Rest (4-20) in card
+    html+='<div class="card" style="padding:8px;">';
     top20.forEach(function(u,i){
+      if(i<3 && top20.length>=3) return;
       var isMe=CU&&(u.ref===CU.username||u.ref===(CU.ref||'').toLowerCase());
-      var isPodium=i<3;
       var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
       var foto=u.photo||'';
       var flag=_waFlag(u.whatsapp||'');
-      var rowBg=isPodium?podiumBg[i]:(isMe?'rgba(127,119,221,0.08)':'rgba(255,255,255,0.02)');
-      var rowBorder=isPodium?'0.5px solid '+podiumBorder[i]:(isMe?'1px solid rgba(127,119,221,0.25)':'none');
-      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';">';
-      html+='<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?medals[i]:(i+1))+'</div>';
-      html+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+(isPodium?podiumBorder[i]:'rgba(255,255,255,0.06)')+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      var rowBg=isMe?'rgba(127,119,221,0.08)':'rgba(255,255,255,0.02)';
+      var rowBorder=isMe?'1px solid rgba(127,119,221,0.25)':'none';
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:'+rowBg+';border:'+rowBorder+';">';
+      html+='<div style="width:20px;font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(i+1)+'</div>';
+      html+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.06);">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
       html+='<div style="flex:1;min-width:0;">';
       html+='<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.name||'?')+flag+(isMe?' <span style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
       html+='<div style="font-size:8px;margin-top:2px;color:rgba(255,255,255,0.25);">S:'+u.sales+' C:'+u.cierres+' P:'+u.prospects+'</div>';
