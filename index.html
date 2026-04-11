@@ -7664,10 +7664,9 @@ function generarSlotsAgenda(cfg, bookings) {
     var MIN_VISIBLE = 7;
     var daySlots = [];
 
-    if(selected.length >= 5) {
-      // 5+ SLOTS: show max 4-5 available, rest as occupied
-      var nAvail = selected.length <= 6 ? 4 : Math.min(5, Math.ceil(selected.length * 0.6));
-      if(nAvail > selected.length) nAvail = selected.length;
+    if(selected.length >= 6) {
+      // 6+ REAL SLOTS: pick best 4 with max spread, rest as occupied
+      var nAvail = 4;
       var nBusy = selected.length - nAvail;
 
       var availIndices = {};
@@ -7750,12 +7749,12 @@ function generarSlotsAgenda(cfg, bookings) {
       });
 
     } else {
-      // FEW SLOTS (1-4): show all real as available + pad with occupied to min 6
+      // 1-5 REAL SLOTS: show all as available + pad with occupied
+      // 1-4 reales: pad to 7 total. 5 reales: pad to 8 total.
       selected.forEach(function(s) {
         daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
       });
-      // Add artificial "occupied" slots from rawUnavail to reach 6 visible
-      var MIN_TOTAL = 6;
+      var MIN_TOTAL = selected.length === 5 ? 8 : 7;
       var need = MIN_TOTAL - daySlots.length;
       if(need > 0 && rawUnavail.length > 0) {
         // Pick unavailable slots spread across the day, not adjacent to available ones
