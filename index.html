@@ -7900,7 +7900,23 @@ function pbConfirmar(username) {
         // Try agenda config whatsapp first, then fetch user profile as fallback
         var socioWa=(cfg.whatsapp||'').replace(/[^0-9]/g,'');
         var _setWaBtn = function(waNum) {
-          var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para '+dateStr+' a las '+hStr+'. ¡Nos vemos!';
+          // Detect prospect's timezone and socio's timezone for smart message
+          var prospectTZ = ''; try { prospectTZ = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e){}
+          var socioTZMap = {'+57':'America/Bogota','+52':'America/Mexico_City','+51':'America/Lima','+54':'America/Argentina/Buenos_Aires','+58':'America/Caracas','+1':'America/New_York'};
+          var socioWaFull = cfg.whatsapp || '';
+          var socioTZ = 'America/Bogota';
+          var codes = Object.keys(socioTZMap).sort(function(a,b){return b.length-a.length;});
+          for(var ci=0;ci<codes.length;ci++){ if(socioWaFull.indexOf(codes[ci])===0){ socioTZ=socioTZMap[codes[ci]]; break; } }
+          // Format time in both timezones
+          var prospectTime = hStr; // already in prospect's local time
+          var socioTime = '';
+          try { socioTime = fd.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:socioTZ}); } catch(e){ socioTime = hStr; }
+          // Build message with both times if different
+          var sameTZ = prospectTime === socioTime || !prospectTZ || prospectTZ === socioTZ;
+          var timeMsg = sameTZ
+            ? dateStr + ' a las ' + hStr
+            : dateStr + ' a las ' + socioTime + ' (tu hora) / ' + prospectTime + ' (mi hora)';
+          var msgToSocio='Hola '+(cfg.nombre||username)+', soy '+nombre+'. Acabo de agendar contigo para '+timeMsg+'. \u00a1Nos vemos!';
           if(cfg.linkReunion) msgToSocio+=' | Link: '+cfg.linkReunion;
           document.getElementById('pb-wa-btn').href='https://wa.me/'+waNum+'?text='+encodeURIComponent(msgToSocio);
           document.getElementById('pb-wa-btn').style.display='';
