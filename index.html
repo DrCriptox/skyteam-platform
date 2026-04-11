@@ -4394,6 +4394,14 @@ function renderAgendaConfigUI() {
   html += '<input class="ag-input-field" id="agenda-link" value="' + (cfg.linkReunion||'') + '" placeholder="https://meet.google.com/xxx o https://zoom.us/j/...">';
   html += '</div>';
 
+  // ── WhatsApp ──────────────────────────────────────────────
+  var _agWa = (cfg.whatsapp||'').replace(/^\+/,'');
+  html += '<div class="ag-card" style="padding:10px 14px;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<span style="font-size:12px;color:rgba(255,255,255,0.4);white-space:nowrap;">📱 WhatsApp</span>';
+  html += '<input class="ag-input-field" id="agenda-whatsapp" value="' + _agWa + '" placeholder="573001234567" style="flex:1;margin:0;padding:8px 10px;font-size:13px;">';
+  html += '</div></div>';
+
   // ── Message ───────────────────────────────────────────────
   html += '<div class="ag-card">';
   html += '<p class="ag-label">💬 Mensaje de confirmación</p>';
@@ -5776,8 +5784,10 @@ function guardarAgendaConfig() {
   if(!allValid){ showToast('⚠️ Bloques solapados — corrígelos antes de guardar', 'err'); return; }
   var link = document.getElementById('agenda-link');
   var msg = document.getElementById('agenda-msg');
+  var waInput = document.getElementById('agenda-whatsapp');
   if(link) agendaConfig.linkReunion=link.value;
   if(msg) agendaConfig.mensaje=msg.value;
+  if(waInput) { var _v=waInput.value.replace(/[^0-9]/g,''); agendaConfig.whatsapp=_v?'+'+_v:''; }
   // Validate before saving
   if(typeof validarTodosLosDias==='function' && !validarTodosLosDias()){
     showToast('⚠️ Corrige los horarios en rojo antes de guardar');
@@ -5860,8 +5870,10 @@ function guardarForzado() {
   if(!allValid){ showToast('⚠️ Bloques solapados o invertidos — corrígelos antes de guardar', 'err'); return; }
   var link = document.getElementById('agenda-link');
   var msg = document.getElementById('agenda-msg');
+  var waInput2 = document.getElementById('agenda-whatsapp');
   if(link) agendaConfig.linkReunion = link.value;
   if(msg) agendaConfig.mensaje = msg.value;
+  if(waInput2) { var _v2=waInput2.value.replace(/[^0-9]/g,''); agendaConfig.whatsapp=_v2?'+'+_v2:''; }
   agendaConfig.nombre = CU ? CU.name : '';
   agendaConfig.timezone = 'America/Bogota';
   if(window._agendaFotoDataUrl) agendaConfig.foto = window._agendaFotoDataUrl;
