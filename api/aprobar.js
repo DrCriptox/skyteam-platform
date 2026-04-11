@@ -467,14 +467,14 @@ export default async function handler(req, res) {
               + '<p style="text-align:center;color:rgba(255,255,255,0.1);font-size:9px;margin-top:12px;">Sky Team \u2014 Tu plataforma de crecimiento digital</p>'
               + '</div>';
             // Schedule email 4-10 minutes from now (random delay so it doesn't look mechanical)
-            var _delayMin = 4 + Math.floor(Math.random() * 7); // 4,5,6,7,8,9,10
-            var _sendAt = new Date(Date.now() + _delayMin * 60 * 1000).toISOString();
+            // Send immediately (scheduled_at was unreliable — emails were not arriving)
             fetch('https://api.resend.com/emails', {
               method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+process.env.RESEND_API_KEY},
-              body:JSON.stringify({from:'SKYTEAM <ventas@skyteam.global>',to:[_spEmail],subject:_emailSubject,html:_emailHtml,scheduled_at:_sendAt})
+              body:JSON.stringify({from:'SKYTEAM <ventas@skyteam.global>',to:[_spEmail],subject:_emailSubject,html:_emailHtml})
             }).then(function(r){return r.json();}).then(function(d){
-              console.log('[EMAIL] Sale scheduled for', _spEmail, 'at', _sendAt, 'id:', d.id||'?');
-            }).catch(function(e){console.warn('[EMAIL] Sale email schedule failed:',e.message);});
+              if(d.id) console.log('[EMAIL] Sale sent to', _spEmail, 'id:', d.id);
+              else console.error('[EMAIL] Sale FAILED for', _spEmail, JSON.stringify(d).substring(0,200));
+            }).catch(function(e){console.warn('[EMAIL] Sale email failed:',e.message);});
           }
           const sponsorData = uMap[curSponsor];
           curSponsor = sponsorData && sponsorData.sponsor ? sponsorData.sponsor.toLowerCase() : null;

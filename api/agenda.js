@@ -239,12 +239,19 @@ export default async function handler(req, res) {
             var _btn = function(text, url) { return '<div style="text-align:center;margin:20px 0;"><a href="' + url + '" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">' + text + '</a></div>'; };
             var _scheduledEmailIds = [];
             var _sendEmail = function(to, subject, html, sendAt) {
+              // Only send emails that are due NOW or in the past (don't use scheduled_at — unreliable)
+              if (sendAt && sendAt > nowMs + 60000) {
+                console.log('[AGENDA] Skipping future email for', to, 'scheduled for', new Date(sendAt).toISOString());
+                return; // Skip future emails — push notifications handle reminders
+              }
               var payload = { from: 'SKYTEAM <soporte@skyteam.global>', to: [to], subject: subject, html: html };
-              if (sendAt && sendAt > nowMs + 60000) payload.scheduled_at = new Date(sendAt).toISOString();
               fetch('https://api.resend.com/emails', { method: 'POST', headers: RESEND_H, body: JSON.stringify(payload) })
                 .then(function(r){return r.json();})
-                .then(function(d){ if(d.id) _scheduledEmailIds.push(d.id); })
-                .catch(function(){});
+                .then(function(d){
+                  if(d.id) { _scheduledEmailIds.push(d.id); console.log('[AGENDA] Email sent to', to, 'id:', d.id); }
+                  else { console.error('[AGENDA] Email FAILED for', to, JSON.stringify(d).substring(0,200)); }
+                })
+                .catch(function(e){ console.error('[AGENDA] Email error:', e.message); });
             };
 
             // ── SOCIO EMAIL 1: Instant — Nueva cita agendada ──
