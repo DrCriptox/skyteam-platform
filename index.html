@@ -13173,6 +13173,22 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
   if(activos.length>2) html+='<div style="text-align:center;font-size:9px;color:rgba(255,255,255,0.2);margin-top:2px;">+'+(activos.length-2)+' m\u00e1s en Recordatorios</div>';
   el.innerHTML=html;}
 
+function crmCompleteReminder(id) {
+  // Mark reminder as completed in server + remove from local list
+  fetch('/api/prospectos', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'completeRecordatorio', user:CU.username, id:id})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.ok) {
+      // Remove from local array
+      crmRecordatorios = crmRecordatorios.filter(function(r){return r.id !== id;});
+      crmRenderMetricsBar();
+      crmRenderRemindersBar();
+      showToast('\u2705 Recordatorio completado');
+    } else { showToast('\u274C Error: '+(d.error||'')); }
+  }).catch(function(){ showToast('\u274C Error de conexi\u00f3n'); });
+}
+
 function crmCalcStars(p) {
   var f = ['calif_positivo','calif_social','calif_emprendedor','calif_dinero','calif_lider'];
   var count = 0;
