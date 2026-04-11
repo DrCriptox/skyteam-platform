@@ -10051,67 +10051,74 @@ function renderMateriales() {
 }
 
 /* ── RANKING ── */
+var _rkTab = 'live'; // 'live' or 'cycle'
 function renderRanking() {
-  // Try to load real data from leaderboard API
-  if (!window._rankingLoaded) {
-    window._rankingLoaded = true;
-    lbApi('weeklyTop').then(function(d) {
-      if (d && d.ranking && d.ranking.length > 0) {
-        RANKING_DATA.length = 0;
-        d.ranking.forEach(function(u) {
-          var nm = u.name || u.username || 'Socio';
-          var parts = nm.trim().split(/\s+/);
-          var ini = parts.length >= 2 ? (parts[0][0]+parts[1][0]).toUpperCase() : nm.substring(0,2).toUpperCase();
-          RANKING_DATA.push({ name: nm, rank: u.rank || 0, ventas: u.score || u.citas || 0, equipo: u.verificadas || 0, initials: ini });
-        });
-        renderRanking();
-      }
-    }).catch(function(){});
-  }
-  var top3 = RANKING_DATA.slice(0, 3);
-  var rest = RANKING_DATA.slice(3);
-  var medals = ['🥇','🥈','🥉'];
-  var podiumColors = ['linear-gradient(135deg,#FFD700,#C9A84C)','linear-gradient(135deg,#C0C0C0,#A0A0A0)','linear-gradient(135deg,#CD7F32,#A0522D)'];
-  var podiumHeights = ['140px','110px','90px'];
-  var podiumOrder = [1,0,2]; // silver, gold, bronze display order
-
-  // Podium section
-  var podiumHtml = '<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:20px 0 24px;padding:0 10px;">';
-  podiumOrder.forEach(function(pi) {
-    var m = top3[pi];
-    if(!m) return;
-    var rk = RANKS[m.rank]||RANKS[1];
-    var isMe = m.name.includes(CU.name);
-    podiumHtml += '<div style="flex:1;max-width:130px;text-align:center;animation:skyFadeInUp 0.5s cubic-bezier(0.22,1,0.36,1) ' + (pi*0.15) + 's both;">'
-      + '<div style="width:' + (pi===0?'64px':'52px') + ';height:' + (pi===0?'64px':'52px') + ';margin:0 auto 8px;border-radius:50%;background:' + rk.bg + ';border:2px solid ' + rk.color + ';display:flex;align-items:center;justify-content:center;font-weight:800;color:' + rk.color + ';font-size:' + (pi===0?'18px':'15px') + ';box-shadow:0 0 20px ' + rk.color + '30;'+(isMe?'outline:2px solid var(--gold);outline-offset:3px;':'') + '">' + m.initials + '</div>'
-      + '<div style="font-size:' + (pi===0?'13px':'11px') + ';font-weight:700;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + (isMe?' (tú)':'') + '</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-bottom:8px;">' + rk.icon + ' ' + m.ventas + ' ventas</div>'
-      + '<div style="height:' + podiumHeights[pi] + ';background:' + podiumColors[pi] + ';border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:12px;">'
-      + '<span style="font-size:' + (pi===0?'28px':'22px') + ';">' + medals[pi] + '</span>'
-      + '</div>'
-      + '</div>';
+  var el = document.getElementById('ranking-content');
+  if(!el) return;
+  // Tabs
+  var liveOn = _rkTab === 'live';
+  var tabStyle = function(on){ return 'padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06))':'rgba(255,255,255,0.02)')+';color:'+(on?'#E8D48B':'rgba(255,255,255,0.35)')+';'+(on?'box-shadow:0 2px 12px rgba(201,168,76,0.15);':''); };
+  el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:16px;">'
+    + '<button onclick="_rkTab=\'live\';renderRanking()" style="'+tabStyle(liveOn)+'">Ranking en Vivo</button>'
+    + '<button onclick="_rkTab=\'cycle\';renderRanking()" style="'+tabStyle(!liveOn)+'">Ultimo Ciclo</button>'
+    + '</div><div id="rk-combined-list"><div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div></div>';
+  _loadCombinedRanking();
+}
+function _loadCombinedRanking() {
+  var period = _rkTab === 'live' ? 'weekly' : 'monthly';
+  // Fetch all 3 rankings in parallel
+  var salesAction = period === 'weekly' ? 'weekly' : 'monthly';
+  var cierresAction = period === 'weekly' ? 'weeklyTop' : 'monthlyTop';
+  var prospectAction = period === 'weekly' ? 'weekly' : 'monthly';
+  Promise.all([
+    fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:CU?(CU.ref||CU.username):''})} ).then(function(r){return r.json();}),
+    fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:cierresAction,user:CU?CU.username:''})}).then(function(r){return r.json();}),
+    fetch('/api/leaderboard?action=prospectRanking&period='+period).then(function(r){return r.json();})
+  ]).then(function(results) {
+    var salesData = results[0].ranking || [];
+    var cierresData = results[1].ranking || [];
+    var prospectsData = results[2].ranking || [];
+    // Merge by username/ref
+    var combined = {};
+    salesData.forEach(function(u){ var k=(u.ref||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.nombre||u.ref,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].sales=u.score||0; if(u.foto) combined[k].photo=u.foto; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
+    cierresData.forEach(function(u){ var k=(u.username||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.name||u.username,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].cierres=u.score||0; if(u.photo) combined[k].photo=u.photo; if(u.name) combined[k].name=u.name; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
+    prospectsData.forEach(function(u){ var k=(u.username||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.name||u.username,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].prospects=u.score||0; if(u.photo) combined[k].photo=u.photo; if(u.name) combined[k].name=u.name; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
+    // Calculate total and sort
+    var ranking = Object.keys(combined).map(function(k){ var c=combined[k]; c.ref=k; c.total=c.sales+c.cierres+c.prospects; return c; });
+    ranking.sort(function(a,b){return b.total-a.total;});
+    var top20=ranking.slice(0,20);
+    var container=document.getElementById('rk-combined-list');if(!container)return;
+    if(!top20.length){container.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:48px;margin-bottom:8px;">\uD83C\uDFC6</div>Sin datos</div>';return;}
+    var _waFlag=function(wa){if(!wa)return '';var f={'+57':'co','+52':'mx','+51':'pe','+56':'cl','+54':'ar','+58':'ve','+593':'ec','+1':'us'};var codes=Object.keys(f).sort(function(a,b){return b.length-a.length;});for(var ci=0;ci<codes.length;ci++){if(wa.indexOf(codes[ci])===0)return '<img src="https://flagcdn.com/16x12/'+f[codes[ci]]+'.png" style="width:14px;height:10px;border-radius:1px;vertical-align:middle;margin-left:3px;">';}return '';};
+    var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+    var podiumBg=['linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04))','linear-gradient(135deg,rgba(192,192,192,0.08),rgba(160,160,160,0.04))','linear-gradient(135deg,rgba(205,127,50,0.08),rgba(160,82,45,0.04))'];
+    var podiumBorder=['rgba(255,215,0,0.25)','rgba(192,192,192,0.25)','rgba(205,127,50,0.25)'];
+    var html='<div class="card">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(201,168,76,0.50);text-transform:uppercase;">\uD83C\uDFC6 Ranking Global</div></div>';
+    top20.forEach(function(u,i){
+      var isMe=CU&&(u.ref===CU.username||u.ref===(CU.ref||'').toLowerCase());
+      var isPodium=i<3;
+      var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+      var foto=u.photo||'';
+      var flag=_waFlag(u.whatsapp||'');
+      var rowBg=isPodium?podiumBg[i]:(isMe?'rgba(127,119,221,0.08)':'rgba(255,255,255,0.02)');
+      var rowBorder=isPodium?'0.5px solid '+podiumBorder[i]:(isMe?'1px solid rgba(127,119,221,0.25)':'none');
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin:0 -4px 4px;background:'+rowBg+';border:'+rowBorder+';">';
+      html+='<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?medals[i]:(i+1))+'</div>';
+      html+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+(isPodium?podiumBorder[i]:'rgba(255,255,255,0.06)')+'">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+      html+='<div style="flex:1;min-width:0;">';
+      html+='<div style="font-size:13px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(u.name||'?')+flag+(isMe?' <span style="font-size:8px;color:#7F77DD;font-weight:700;">(t\u00fa)</span>':'')+'</div>';
+      html+='<div style="font-size:8px;margin-top:2px;color:rgba(255,255,255,0.25);">S:'+u.sales+' C:'+u.cierres+' P:'+u.prospects+'</div>';
+      html+='</div>';
+      html+='<div style="flex-shrink:0;text-align:right;"><span style="font-size:16px;font-weight:900;color:#C9A84C;">'+u.total+'</span><span style="font-size:8px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
+      html+='</div>';
+    });
+    html+='</div>';
+    container.innerHTML=html;
+  }).catch(function(e){
+    var c=document.getElementById('rk-combined-list');
+    if(c) c.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u274C Error cargando ranking</div>';
   });
-  podiumHtml += '</div>';
-
-  // Rest of the ranking
-  var rows = '';
-  rest.forEach(function(m, i) {
-    var rk = RANKS[m.rank]||RANKS[1];
-    var isMe = m.name.includes(CU.name);
-    var pos = i + 4;
-    rows += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;margin-bottom:4px;' + (isMe?'background:var(--gold-d);border:0.5px solid var(--gold-b);':'background:rgba(255,255,255,0.02);') + 'transition:background 0.2s;">'
-      + '<div style="width:28px;font-size:14px;font-weight:800;color:var(--muted);text-align:center;">' + pos + '</div>'
-      + '<div style="width:36px;height:36px;border-radius:50%;background:' + rk.bg + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:' + rk.color + ';border:1px solid ' + rk.border + ';">' + m.initials + '</div>'
-      + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:' + (isMe?'700':'500') + ';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.name + (isMe?' (tú)':'') + '</div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + rk.icon + ' ' + rk.name + '</div></div>'
-      + '<div style="text-align:right;"><div style="font-size:14px;font-weight:800;color:var(--gold);">' + m.ventas + '</div><div style="font-size:9px;color:var(--muted2);">ventas</div></div>'
-      + '<div style="text-align:right;width:40px;"><div style="font-size:13px;font-weight:600;color:var(--muted);">' + m.equipo + '</div><div style="font-size:9px;color:var(--muted2);">equipo</div></div>'
-      + '</div>';
-  });
-
-  document.getElementById('ranking-content').innerHTML = '<p class="sc-sub">Posiciones actuales del equipo. Se actualiza mensualmente.</p>'
-    + podiumHtml
-    + '<div class="card" style="padding:8px;">' + rows + '</div>';
 }
 
 /* ── VIAJES ── */
