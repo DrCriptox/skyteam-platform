@@ -7893,8 +7893,11 @@ function pbConfirmar(username) {
         var hStr=h12+':'+mins+' '+ampm;
         // Check if today
         var now=new Date();
-        var esHoy=fd.getFullYear()===now.getFullYear()&&fd.getMonth()===now.getMonth()&&fd.getDate()===now.getDate();
-        var dateStr=esHoy?'hoy '+days[fd.getDay()]:days[fd.getDay()]+' '+fd.getDate()+' de '+months[fd.getMonth()];
+        var _diffDays = Math.round((new Date(fd.getFullYear(),fd.getMonth(),fd.getDate()) - new Date(now.getFullYear(),now.getMonth(),now.getDate())) / 86400000);
+        var dateStr;
+        if(_diffDays === 0) dateStr = 'hoy';
+        else if(_diffDays === 1) dateStr = 'ma\u00f1ana ' + days[fd.getDay()];
+        else dateStr = days[fd.getDay()] + ' ' + fd.getDate() + ' de ' + months[fd.getMonth()];
         document.getElementById('pb-confirm-msg').textContent='Tu cita es '+dateStr+' a las '+hStr+'. Completa los pasos para asegurar tu lugar.';
         // WhatsApp: message the SOCIO (not the prospect)
         // Try agenda config whatsapp first, then fetch user profile as fallback
