@@ -61,7 +61,11 @@ export default async function handler(req, res) {
       const nuevos_7d = all.filter(p => p.created_at >= d7).length;
       const cerrados_30d = all.filter(p => p.etapa === 'cerrado_ganado' && p.updated_at >= d30).length;
       const perdidos_30d = all.filter(p => p.etapa === 'cerrado_perdido' && p.updated_at >= d30).length;
-      const tasa = cerrados_30d + perdidos_30d > 0 ? Math.round(cerrados_30d / (cerrados_30d + perdidos_30d) * 100) : 0;
+      // Tasa de cierre: cerrados / todos los que pasaron de presentación en adelante
+      const etapasAvanzadas = ['presentacion','confirmado_cierre','seguimiento','pendiente_pago','abonado','cerrado_ganado','cerrado_perdido'];
+      const avanzados = all.filter(p => etapasAvanzadas.indexOf(p.etapa) !== -1).length;
+      const cerradosTotal = all.filter(p => p.etapa === 'cerrado_ganado').length;
+      const tasa = avanzados > 0 ? Math.round(cerradosTotal / avanzados * 100) : 0;
       const valor = all.filter(p => !p.etapa || (!p.etapa.startsWith('cerrado'))).reduce((s, p) => s + (p.valor_estimado || 0), 0);
 
       return res.status(200).json({

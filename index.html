@@ -966,6 +966,10 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator,input[type='date
   .crm-dash-kpi-value {
     font-size: 24px;
   }
+  .crm-kpi-grid{gap:4px !important;}
+  .crm-kpi-card{padding:8px 4px !important;border-radius:10px !important;}
+  .crm-kpi-val{font-size:15px !important;}
+  .crm-kpi-lbl{font-size:7px !important;letter-spacing:0 !important;}
 }
 
 /* ============================================================================
@@ -13122,19 +13126,18 @@ function crmRenderAll(){crmRenderMetricsBar();crmRenderRemindersBar();
 
 function crmRenderMetricsBar(){
   var m=crmMetricas;var el=document.getElementById('crm-metrics-bar');if(!el)return;
-  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:4px;">'
+  el.innerHTML='<div class="crm-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;">'
     +crmStat('\uD83D\uDC65',m.total||0,'Total','#C9A84C')
-    +crmStat('\uD83C\uDFAF',(m.tasa_conversion||0)+'%','Tasa Cierre','#25D366')
-    +crmStat('\uD83C\uDD95',m.nuevos_7d||0,'Nuevos 7d','#FFD700')
-    +crmStat('\u2705',m.cerrados_30d||0,'Cerrados 30d','#1D9E75')
+    +crmStat('\uD83C\uDFAF',(m.tasa_conversion||0)+'%','Cierre','#25D366')
+    +crmStat('\u2705',m.cerrados_30d||0,'Cerrados','#1D9E75')
     +crmStat('\uD83D\uDCB0','$'+((m.valor_pipeline||0).toLocaleString()),'Pipeline','#7F77DD')
     +'</div>';}
 
 function crmStat(icon,num,label,color){
-  return '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;text-align:center;backdrop-filter:blur(8px);">'
-    +'<div style="font-size:18px;margin-bottom:2px;">'+icon+'</div>'
-    +'<div style="font-family:Outfit,Nunito,sans-serif;font-size:20px;font-weight:900;color:'+color+';">'+num+'</div>'
-    +'<div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">'+label+'</div></div>';}
+  return '<div class="crm-kpi-card" style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 6px;text-align:center;">'
+    +'<div style="font-size:14px;margin-bottom:1px;">'+icon+'</div>'
+    +'<div class="crm-kpi-val" style="font-family:Outfit,Nunito,sans-serif;font-size:18px;font-weight:900;color:'+color+';">'+num+'</div>'
+    +'<div class="crm-kpi-lbl" style="font-size:8px;color:rgba(255,255,255,0.35);margin-top:1px;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">'+label+'</div></div>';}
 
 function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var hoy=new Date();var dd=f.getDate(),mm=f.getMonth()+1,yy=f.getFullYear();var str=dd+'/'+mm+'/'+yy;var diff=Math.floor((f-hoy)/(1000*60*60*24));if(diff===0)return 'hoy';if(diff===1)return 'ma\u00F1ana';if(diff===-1)return 'ayer';return str;}
     function crmRenderRemindersBar(){
