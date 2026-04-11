@@ -2619,8 +2619,10 @@ document.addEventListener('DOMContentLoaded',function(){
           <button class="admin-tab" id="atab-anuncios" onclick="switchAdminTab('anuncios-admin')">Anuncios</button>
           <button class="admin-tab" id="atab-config" onclick="switchAdminTab('config')">Configuracion</button>
           <button class="admin-tab" id="atab-duplicadas" onclick="switchAdminTab('duplicadas')">Duplicadas</button>
+          <button class="admin-tab" id="atab-pruebas" onclick="switchAdminTab('pruebas')">Pruebas CRM</button>
         </div>
         <div id="admin-solicitudes"></div>
+        <div id="admin-pruebas" style="display:none;"></div>
         <div id="admin-usuarios" style="display:none;"></div>
         <div id="admin-contenido" style="display:none;"></div>
         <div id="admin-anuncios-admin" style="display:none;"></div>
@@ -10648,7 +10650,7 @@ function renderAdminDuplicadas() {
 }
 
 function switchAdminTab(tab) {
-  ['solicitudes','usuarios','contenido','anuncios-admin','config','duplicadas'].forEach(t=>{
+  ['solicitudes','usuarios','contenido','anuncios-admin','config','duplicadas','pruebas'].forEach(t=>{
     var panel = document.getElementById('admin-'+t);
     if(panel) panel.style.display = t===tab?'block':'none';
     var btnId = t === 'anuncios-admin' ? 'atab-anuncios' : 'atab-'+t;
@@ -10657,6 +10659,54 @@ function switchAdminTab(tab) {
   });
   if(tab === 'config') renderAdminConfig();
   if(tab === 'duplicadas') renderAdminDuplicadas();
+  if(tab === 'pruebas') renderAdminPruebas();
+}
+
+function renderAdminPruebas() {
+  var el = document.getElementById('admin-pruebas');
+  if(!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando pruebas...</div>';
+  fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'list', adminUser:CU.username}) })
+  .then(function(r){return r.json();}).then(function(d){
+    if(!d.proofs || !d.proofs.length) { el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCCB</div>Sin pruebas registradas</div>'; return; }
+    var html = '<h3 style="color:#C9A84C;font-size:16px;margin:0 0 16px;">\uD83D\uDD0D Pruebas de Cierre/Abono (' + d.proofs.length + ')</h3>';
+    html += '<div style="overflow-x:auto;"><table class="admin-table"><thead><tr>';
+    html += '<th>Socio</th><th>Prospecto</th><th>Tipo</th><th>Estado</th><th>Confianza</th><th>Monto</th><th>Factura</th><th>Paquete</th><th>Fecha</th><th>Imagen</th>';
+    html += '</tr></thead><tbody>';
+    d.proofs.forEach(function(p){
+      var statusColor = p.ai_status==='approved' ? '#1D9E75' : '#FFA500';
+      var statusLabel = p.ai_status==='approved' ? '\u2705 Aprobada' : '\u23F3 Pendiente';
+      var fecha = p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      html += '<tr>';
+      html += '<td style="font-weight:700;">' + (p.username||'') + '</td>';
+      html += '<td>' + (p.prospecto_nombre||'') + '</td>';
+      html += '<td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:' + (p.tipo==='cierre'?'rgba(201,168,76,0.15)':'rgba(29,158,117,0.15)') + ';color:' + (p.tipo==='cierre'?'#C9A84C':'#1D9E75') + ';">' + (p.tipo||'').toUpperCase() + '</span></td>';
+      html += '<td style="color:'+statusColor+';font-weight:700;font-size:12px;">' + statusLabel + '</td>';
+      html += '<td style="text-align:center;">' + (p.ai_confidence||0) + '%</td>';
+      html += '<td style="color:#C9A84C;font-weight:700;">' + (p.ai_amount||'-') + '</td>';
+      html += '<td style="font-family:monospace;font-size:11px;">' + (p.ai_invoice||'-') + '</td>';
+      html += '<td style="font-size:11px;">' + (p.ai_package||'-') + '</td>';
+      html += '<td style="font-size:11px;color:rgba(255,255,255,0.4);">' + fecha + '</td>';
+      html += '<td><button onclick="_viewProofImage('+p.id+')" style="padding:4px 10px;border-radius:6px;background:rgba(127,119,221,0.12);border:0.5px solid rgba(127,119,221,0.25);color:#7F77DD;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">\uD83D\uDCF7 Ver</button></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  }).catch(function(e){ el.innerHTML='<div style="padding:20px;color:#E24B4A;">Error: '+e.message+'</div>'; });
+}
+
+function _viewProofImage(proofId) {
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  modal.onclick = function(){ modal.remove(); };
+  modal.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);">\u23F3 Cargando imagen...</div>';
+  document.body.appendChild(modal);
+  fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'getImage', adminUser:CU.username, proofId:proofId}) })
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.image) {
+      modal.innerHTML = '<img src="' + d.image + '" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);" onclick="event.stopPropagation();" />';
+    } else { modal.innerHTML = '<div style="color:#E24B4A;font-size:16px;">Imagen no encontrada</div>'; }
+  }).catch(function(){ modal.innerHTML = '<div style="color:#E24B4A;">Error cargando imagen</div>'; });
 }
 
 function renderSolicitudes() {

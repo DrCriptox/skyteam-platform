@@ -147,8 +147,15 @@ module.exports = async (req, res) => {
 
     // ── LIST proofs for admin review ──
     if (req.method === 'POST' && action === 'list') {
-      const { adminKey } = req.body;
-      if (adminKey !== SUPABASE_KEY) return res.status(403).json({ error: 'Unauthorized' });
+      // Admin check: verify user is admin
+      const { adminUser } = req.body;
+      if (adminUser) {
+        try {
+          var uCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser) + '&select=is_admin', { headers: SB_H });
+          var uRows = await uCheck.json();
+          if (!Array.isArray(uRows) || !uRows.length || !uRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+        } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
+      } else { return res.status(403).json({ error: 'Unauthorized' }); }
       var proofs = await fetch(SUPABASE_URL + '/rest/v1/proof_images?select=id,username,prospecto_nombre,tipo,ai_status,ai_confidence,ai_amount,ai_invoice,ai_detected_user,ai_detected_name,ai_package,ai_reason,exif_date,created_at,image_hash&order=created_at.desc&limit=50', { headers: SB_H });
       var rows = await proofs.json();
       return res.status(200).json({ ok: true, proofs: rows });
@@ -156,8 +163,14 @@ module.exports = async (req, res) => {
 
     // ── GET single proof image (admin) ──
     if (req.method === 'POST' && action === 'getImage') {
-      const { adminKey, proofId } = req.body;
-      if (adminKey !== SUPABASE_KEY) return res.status(403).json({ error: 'Unauthorized' });
+      const { adminUser, proofId } = req.body;
+      if (adminUser) {
+        try {
+          var uCheck2 = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser) + '&select=is_admin', { headers: SB_H });
+          var uRows2 = await uCheck2.json();
+          if (!Array.isArray(uRows2) || !uRows2.length || !uRows2[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+        } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
+      } else { return res.status(403).json({ error: 'Unauthorized' }); }
       var imgR = await fetch(SUPABASE_URL + '/rest/v1/proof_images?id=eq.' + encodeURIComponent(proofId) + '&select=image_data', { headers: SB_H });
       var imgs = await imgR.json();
       if (Array.isArray(imgs) && imgs.length > 0) return res.status(200).json({ ok: true, image: imgs[0].image_data });
