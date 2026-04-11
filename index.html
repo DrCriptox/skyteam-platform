@@ -4380,7 +4380,7 @@ function renderAgendaConfigUI() {
   html += '<p class="ag-label">⏳ Anticipación mínima para agendar</p>';
   html += '<p style="font-size:11px;color:rgba(255,255,255,0.25);margin:0 0 10px;">¿Con cuánto tiempo de anticipación pueden reservarte?</p>';
   html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-  var anticipOpts = [{val:15,label:'15 min'},{val:60,label:'1 hora'},{val:120,label:'2 horas'},{val:300,label:'5 horas'},{val:480,label:'8 horas'}];
+  var anticipOpts = [{val:15,label:'15 min'},{val:30,label:'30 min'},{val:60,label:'1 hora'},{val:120,label:'2 horas'},{val:300,label:'5 horas'}];
   var currentAnticip = cfg.anticipacionMin || 60;
   anticipOpts.forEach(function(opt) {
     var on = currentAnticip === opt.val;
