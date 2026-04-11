@@ -7604,28 +7604,30 @@ function generarSlotsAgenda(cfg, bookings) {
       return false;
     }
 
-    // 1) Generate ALL slots in schedule — separate available vs unavailable
+    // 1) Generate ALL slots per BLOCK (each block starts from its own ini)
     var rawAvail = [];
-    var rawUnavail = []; // past, within buffer, or booked — for "Reservado" padding
-    var cur = earliestIni;
-    while(cur + dur <= latestEnd) {
-      var h=Math.floor(cur/60), m2=cur%60;
-      var slotUTC=new Date(Date.UTC(y,mo,d,h+offsetHrs,m2,0,0));
-      var slotISO=slotUTC.toISOString();
-      if(isInBloques(dayBloques, cur)) {
-        if(isBlockedByPersonal(cur)) {
-          rawUnavail.push({iso:slotISO, wallMin:cur});
-        } else if(slotUTC-ahora >= anticipMs && booked.indexOf(slotISO)===-1) {
-          rawAvail.push({iso:slotISO, wallMin:cur});
-        } else {
-          // Past slots, within anticipation buffer, or already booked
-          // ALL go to rawUnavail — perfect as "Reservado" padding
-          // (past slots = "ya se llenaron", buffer = "muy pronto", booked = real)
-          rawUnavail.push({iso:slotISO, wallMin:cur});
+    var rawUnavail = [];
+    var _seenMins = {};
+    dayBloques.forEach(function(blk) {
+      var blkIni = toMins(blk.ini), blkFin = toMins(blk.fin);
+      var cur = blkIni;
+      while(cur + dur <= blkFin) {
+        if(!_seenMins[cur]) {
+          _seenMins[cur] = true;
+          var h=Math.floor(cur/60), m2=cur%60;
+          var slotUTC=new Date(Date.UTC(y,mo,d,h+offsetHrs,m2,0,0));
+          var slotISO=slotUTC.toISOString();
+          if(isBlockedByPersonal(cur)) {
+            rawUnavail.push({iso:slotISO, wallMin:cur});
+          } else if(slotUTC-ahora >= anticipMs && booked.indexOf(slotISO)===-1) {
+            rawAvail.push({iso:slotISO, wallMin:cur});
+          } else {
+            rawUnavail.push({iso:slotISO, wallMin:cur});
+          }
         }
+        cur+=dur;
       }
-      cur+=dur;
-    }
+    });
 
     if(!rawAvail.length) continue; // skip day entirely if zero available
 
