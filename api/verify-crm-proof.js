@@ -53,11 +53,33 @@ module.exports = async (req, res) => {
 
         var promptText;
         if (tipo === 'cierre') {
-          promptText = 'Analyze this image STRICTLY. It MUST show an OFFICIAL INVOICE or BACKOFFICE RECEIPT from a virtual office/platform. Look for: official invoice number, system-generated receipt, backoffice screenshot showing payment confirmation with amounts, dates, and order/transaction IDs. This should look like a screenshot from a company dashboard or platform, NOT a casual photo or chat screenshot. If it looks like a casual photo, chat, or handwritten note, set isPaymentProof=false.';
+          promptText = 'Analyze this image STRICTLY. It must be a screenshot from the INNOVA backoffice (8innova.biz or similar platform). '
+            + 'Valid invoices show MOST of these elements: '
+            + '- Invoice number starting with "INV" (e.g. INV046891) '
+            + '- "Fecha de Pedido" with a date '
+            + '- "Nombre de usuario" with a username '
+            + '- "Nombre completo" with full name '
+            + '- "Paquete" or "Producto" (INNSTARTER, INNSTRUMENT, INNPULSE, PIONEER, EXPLORER, etc.) '
+            + '- "Monto del paquete" or "Precio" with dollar amount ($229, $549, $999, etc.) '
+            + '- "Importe total" or "Cantidad pagada" '
+            + '- Payment method like "E-wallet" '
+            + '- "Cantidad adeudada: $0.00" means fully paid '
+            + '- OR a registration flow with "Patrocinador", "Colocacion", "Resumen del pedido", "VP" points '
+            + '- The innova logo (blue checkmark/infinity symbol) is a strong indicator '
+            + 'If you see the innova interface with financial data, it is valid. '
+            + 'REJECT if: casual photo, chat screenshot, handwritten note, or unrelated image.';
         } else {
-          promptText = 'Analyze this image FLEXIBLY. Does it show ANY evidence of a payment or money? This can be: a bank transfer screenshot, a chat/WhatsApp message confirming payment, a photo of cash/money on a table, a deposit receipt, a payment app screenshot (Nequi, Daviplata, PayPal, Zelle), or any visual evidence that money was exchanged. Be GENEROUS — if you see money, a payment amount, or someone saying they paid, accept it.';
+          promptText = 'Analyze this image FLEXIBLY. Does it show ANY evidence of a payment or money transfer? Accept ANY of these: '
+            + '- Bank transfer screenshot or confirmation '
+            + '- WhatsApp/chat message confirming payment or showing a transfer receipt '
+            + '- Photo of cash/bills on a table or in hand '
+            + '- Payment app screenshot (Nequi, Daviplata, PayPal, Zelle, Binance, etc.) '
+            + '- Deposit receipt from a bank or agent '
+            + '- Any visual evidence that money was exchanged or promised '
+            + 'Be GENEROUS. If you see money, an amount, or someone discussing payment, accept it.';
         }
-        promptText += '\n\nRespond JSON ONLY: {"isPaymentProof":true/false,"amount":"detected amount or null","date":"detected date or null","confidence":0-100,"reason":"brief"}';
+        promptText += '\n\nExtract if visible: invoice number, username, full name, package name, amount paid. '
+          + 'Respond JSON ONLY: {"isPaymentProof":true/false,"invoiceNumber":"INVxxxxx or null","username":"detected or null","fullName":"detected or null","package":"detected or null","amount":"$xxx or null","date":"detected date or null","confidence":0-100,"reason":"brief"}';
 
         try {
           var aiR = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -99,6 +121,10 @@ module.exports = async (req, res) => {
         ai_confidence: aiResult.confidence || 0,
         ai_reason: (aiResult.reason || '').substring(0, 200),
         ai_amount: aiResult.amount || null,
+        ai_invoice: aiResult.invoiceNumber || null,
+        ai_detected_user: aiResult.username || null,
+        ai_detected_name: aiResult.fullName || null,
+        ai_package: aiResult.package || null,
         exif_date: exifDate,
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 10 * 86400000).toISOString() // 10 days
@@ -123,7 +149,7 @@ module.exports = async (req, res) => {
     if (req.method === 'POST' && action === 'list') {
       const { adminKey } = req.body;
       if (adminKey !== SUPABASE_KEY) return res.status(403).json({ error: 'Unauthorized' });
-      var proofs = await fetch(SUPABASE_URL + '/rest/v1/proof_images?select=id,username,prospecto_nombre,tipo,ai_status,ai_confidence,ai_amount,exif_date,created_at,image_hash&order=created_at.desc&limit=50', { headers: SB_H });
+      var proofs = await fetch(SUPABASE_URL + '/rest/v1/proof_images?select=id,username,prospecto_nombre,tipo,ai_status,ai_confidence,ai_amount,ai_invoice,ai_detected_user,ai_detected_name,ai_package,ai_reason,exif_date,created_at,image_hash&order=created_at.desc&limit=50', { headers: SB_H });
       var rows = await proofs.json();
       return res.status(200).json({ ok: true, proofs: rows });
     }
