@@ -188,7 +188,7 @@ function renderCountdown(container) {
   if (heroEvents.length === 0 && next && next.flyer_url) heroEvents = [next];
   if (heroEvents.length > 0) {
     var carouselWrap = document.createElement('div');
-    carouselWrap.style.cssText = 'position:relative;margin-bottom:12px;overflow:hidden;border-radius:16px;width:100%;';
+    carouselWrap.style.cssText = 'position:relative;margin-bottom:12px;overflow:hidden;border-radius:16px;width:100%;border:none;outline:none;';
     var track = document.createElement('div');
     track.id = 'skytv-hero-track';
     track.style.cssText = 'display:flex;transition:transform 0.4s ease;will-change:transform;width:100%;';
