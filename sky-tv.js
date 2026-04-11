@@ -200,7 +200,7 @@ function renderCountdown(container) {
       (function(evt){ slide.onclick = function(){ openEventDetail(evt); }; })(he);
       var img = document.createElement('img');
       img.src = he.flyer_url; img.alt = he.titulo || '';
-      img.style.cssText = 'width:100%;display:block;border-radius:16px;';
+      img.style.cssText = 'width:100%;display:block;border-radius:16px;object-fit:contain;max-height:50vh;background:#0a0a12;';
       var grad = document.createElement('div');
       grad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
       var info = document.createElement('div');
