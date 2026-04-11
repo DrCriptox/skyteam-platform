@@ -13141,22 +13141,31 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
   var el=document.getElementById('crm-reminders-bar');if(!el)return;
   var now=new Date();var activos=(crmRecordatorios||[]).filter(function(r){return !r.completado;});
   if(activos.length===0){el.style.display='none';return;}
-  // Sort by date, show only nearest 3
   activos.sort(function(a,b){return new Date(a.fecha_recordatorio)-new Date(b.fecha_recordatorio);});
-  var visibles = activos.slice(0, 3);
+  var visibles = activos.slice(0, 2); // Solo los 2 más próximos
   el.style.display='block';
-  var html='<div style="font-size:13px;font-weight:800;color:#FFD700;margin-bottom:8px;">\u23F0 Recordatorios ('+activos.length+')</div>';
+  var html='';
   visibles.forEach(function(r){
     var fecha=new Date(r.fecha_recordatorio);var diff=fecha-now;
     var urgente=diff<0;var pronto=diff<3600000&&diff>=0;
     var nombre=r.prospectos?r.prospectos.nombre:'Prospecto';
-    var bc=urgente?'rgba(226,75,74,0.3)':pronto?'rgba(255,160,0,0.25)':'rgba(255,255,255,0.06)';
-    var bg=urgente?'rgba(226,75,74,0.06)':pronto?'rgba(255,160,0,0.04)':'rgba(255,255,255,0.02)';
-    html+='<div style="background:'+bg+';border:0.5px solid '+bc+';border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">'
-      +'<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:#fff;">'+crmEsc(nombre)+'</div>'
-      +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">'+crmEsc(r.mensaje||'Seguimiento')+'</div>'
-      +'<div style="font-size:10px;color:'+(urgente?'#E24B4A':pronto?'#FFA000':'rgba(255,255,255,0.25)')+';margin-top:3px;">'+(urgente?'\u26A0\uFE0F VENCIDO':'\uD83D\uDCC5 '+crmFecha(fecha))+'</div></div>'
-      +'<button onclick="crmCompleteReminder(\''+r.id+'\')" style="background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2713</button></div>';});
+    var primerNombre=(nombre||'').split(' ')[0];
+    var mensaje=(r.mensaje||'Seguimiento').length>30?(r.mensaje||'').substring(0,30)+'...':r.mensaje||'Seguimiento';
+    // Format time
+    var hh=fecha.getHours(),mn=fecha.getMinutes().toString().padStart(2,'0'),ap=hh>=12?'pm':'am',h12=hh%12||12;
+    var horaStr=h12+':'+mn+ap;
+    var esHoy=fecha.toDateString()===now.toDateString();
+    var timeLabel=urgente?'Vencido':esHoy?'Hoy '+horaStr:crmFecha(fecha)+' '+horaStr;
+    var dotColor=urgente?'#E24B4A':pronto?'#FFA500':'#C9A84C';
+    var wa=(r.prospectos&&r.prospectos.telefono)?r.prospectos.telefono.replace(/[^0-9]/g,''):'';
+    html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-bottom:4px;border-radius:8px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.04);">'
+      +'<div style="width:6px;height:6px;border-radius:50%;background:'+dotColor+';flex-shrink:0;"></div>'
+      +'<span style="font-size:11px;font-weight:700;color:#F0EDE6;white-space:nowrap;">'+crmEsc(primerNombre)+'</span>'
+      +'<span style="font-size:10px;color:rgba(255,255,255,0.3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+crmEsc(mensaje)+'</span>'
+      +'<span style="font-size:9px;color:'+dotColor+';font-weight:700;white-space:nowrap;">'+timeLabel+'</span>'
+      +(wa?'<a href="https://wa.me/'+wa+'" target="_blank" onclick="event.stopPropagation();" style="font-size:10px;text-decoration:none;">📱</a>':'')
+      +'<button onclick="crmCompleteReminder(\''+r.id+'\')" style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;padding:2px;line-height:1;">\u2715</button></div>';});
+  if(activos.length>2) html+='<div style="text-align:center;font-size:9px;color:rgba(255,255,255,0.2);margin-top:2px;">+'+(activos.length-2)+' m\u00e1s en Recordatorios</div>';
   el.innerHTML=html;}
 
 function crmCalcStars(p) {
