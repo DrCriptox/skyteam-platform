@@ -51,10 +51,12 @@ module.exports = async (req, res) => {
         var imgForAI = imageBase64;
         if (!imgForAI.startsWith('data:')) imgForAI = 'data:image/jpeg;base64,' + imgForAI;
 
-        var promptText = tipo === 'cierre'
-          ? 'Analyze this image. Does it show a PAYMENT RECEIPT, INVOICE, or TRANSACTION CONFIRMATION? Look for: amount in dollars/currency, transaction date, payment confirmation, receipt number, bank transfer confirmation, or any proof of financial payment. Be GENEROUS — even a chat screenshot showing payment confirmation counts.'
-          : 'Analyze this image. Does it show a PARTIAL PAYMENT (abono), DEPOSIT RECEIPT, PAYMENT SCREENSHOT, or BANK TRANSFER? Look for: amount, date, confirmation, chat showing payment discussion, or any evidence of a financial transaction.';
-
+        var promptText;
+        if (tipo === 'cierre') {
+          promptText = 'Analyze this image STRICTLY. It MUST show an OFFICIAL INVOICE or BACKOFFICE RECEIPT from a virtual office/platform. Look for: official invoice number, system-generated receipt, backoffice screenshot showing payment confirmation with amounts, dates, and order/transaction IDs. This should look like a screenshot from a company dashboard or platform, NOT a casual photo or chat screenshot. If it looks like a casual photo, chat, or handwritten note, set isPaymentProof=false.';
+        } else {
+          promptText = 'Analyze this image FLEXIBLY. Does it show ANY evidence of a payment or money? This can be: a bank transfer screenshot, a chat/WhatsApp message confirming payment, a photo of cash/money on a table, a deposit receipt, a payment app screenshot (Nequi, Daviplata, PayPal, Zelle), or any visual evidence that money was exchanged. Be GENEROUS — if you see money, a payment amount, or someone saying they paid, accept it.';
+        }
         promptText += '\n\nRespond JSON ONLY: {"isPaymentProof":true/false,"amount":"detected amount or null","date":"detected date or null","confidence":0-100,"reason":"brief"}';
 
         try {
@@ -83,7 +85,9 @@ module.exports = async (req, res) => {
       }
 
       // 4) Save to proof_images table
-      var proofStatus = aiResult.isPaymentProof && aiResult.confidence >= 40 ? 'approved' : 'pending_review';
+      // Cierre requires higher confidence (official invoice), abono is more flexible
+      var minConfidence = tipo === 'cierre' ? 60 : 35;
+      var proofStatus = aiResult.isPaymentProof && aiResult.confidence >= minConfidence ? 'approved' : 'pending_review';
       var proofData = {
         username: username,
         prospecto_id: prospecto_id,
