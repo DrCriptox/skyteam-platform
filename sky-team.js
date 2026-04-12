@@ -1273,6 +1273,7 @@ function _renderPodium(top) {
 function renderSTSocios() {
   var d = stState.data;
   if (!d || !d.members) return _spinnerHTML();
+  if(!_globalScoresLoaded) { _loadGlobalScores(function(){ renderSkyTeam(); }); }
   if (!stState.sociosPage) stState.sociosPage = 1;
   if (!stState.sociosFilterLevel) stState.sociosFilterLevel = 'all';
   if (!stState.sociosFilterRank) stState.sociosFilterRank = 'all';
@@ -1331,7 +1332,7 @@ function _buildSociosList() {
     var ig = m.instagram||'';
     var photo = m.photo||'';
     var ini = (m.name||m.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-    var skyScore = m.sky_score||_scoreParts(m).total||0;
+    var skyScore = _getGlobalScore(m.username).total || _scoreParts(m).total || 0;
     var bankcode = m.bankcode||'';
     var sponsor = m.sponsor||'';
     var level = m.level||0;
