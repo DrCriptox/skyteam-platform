@@ -1170,14 +1170,21 @@ function renderSTRanking() {
 
       var rhtml='';
       var cuUsername = (typeof CU!=='undefined'&&CU)?CU.username:'';
+      var _podBg = ['linear-gradient(135deg,rgba(255,215,0,0.08),rgba(201,168,76,0.04))','linear-gradient(135deg,rgba(192,192,192,0.08),rgba(160,160,160,0.04))','linear-gradient(135deg,rgba(205,127,50,0.08),rgba(160,82,45,0.04))'];
+      var _podBorder = ['rgba(255,215,0,0.25)','rgba(192,192,192,0.25)','rgba(205,127,50,0.25)'];
+      var _medals = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
       top20.forEach(function(u,i){
         var isMe = u.username===cuUsername;
+        var isPodium = i < 3;
         var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
         var foto=u.photo||'';
         var rk=_getRank(u.rank);
-        rhtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:'+(isMe?'rgba(127,119,221,0.08)':'rgba(255,255,255,0.02)')+';border:'+(isMe?'1px solid rgba(127,119,221,0.25)':'none')+';cursor:pointer;" onclick="openMemberDetail(\''+_safe(u.username)+'\')">';
-        rhtml+='<div style="width:20px;font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(i+1)+'</div>';
-        rhtml+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.06);">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+        var rowBg = isPodium ? _podBg[i] : (isMe ? 'rgba(127,119,221,0.08)' : 'rgba(255,255,255,0.02)');
+        var rowBorder = isPodium ? '0.5px solid '+_podBorder[i] : (isMe ? '1px solid rgba(127,119,221,0.25)' : 'none');
+        var avatarBorder = isPodium ? _podBorder[i] : 'rgba(255,255,255,0.06)';
+        rhtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:'+rowBg+';border:'+rowBorder+';cursor:pointer;" onclick="openMemberDetail(\''+_safe(u.username)+'\')">';
+        rhtml+='<div style="width:20px;font-size:'+(isPodium?'18px':'12px')+';font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(isPodium?_medals[i]:(i+1))+'</div>';
+        rhtml+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid '+avatarBorder+';">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
         rhtml+='<div style="flex:1;min-width:0;">';
         rhtml+='<div style="font-size:12px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_safe(u.name||'?')+'</div>';
         rhtml+='<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">'
