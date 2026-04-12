@@ -10790,9 +10790,11 @@ function renderAdminPruebas() {
   var el = document.getElementById('admin-pruebas');
   if(!el) return;
   el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando pruebas...</div>';
-  fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'list', adminUser:CU.username}) })
-  .then(function(r){return r.json();}).then(function(d){
-    if(!d.proofs || !d.proofs.length) { el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCCB</div>Sin pruebas registradas</div>'; return; }
+  console.log('[ADMIN] Loading pruebas for user:', CU?CU.username:'NO CU');
+  fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'list', adminUser:CU?CU.username:'admin'}) })
+  .then(function(r){ console.log('[ADMIN] Pruebas response status:', r.status); return r.json(); }).then(function(d){
+    console.log('[ADMIN] Pruebas data:', d.ok, 'count:', d.proofs?d.proofs.length:0, 'error:', d.error||'none');
+    if(!d.proofs || !d.proofs.length) { el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCCB</div>Sin pruebas registradas'+(d.error?' ('+d.error+')':'')+'</div>'; return; }
     var html = '<h3 style="color:#C9A84C;font-size:16px;margin:0 0 16px;">\uD83D\uDD0D Pruebas de Cierre/Abono (' + d.proofs.length + ')</h3>';
     html += '<div style="overflow-x:auto;"><table class="admin-table"><thead><tr>';
     html += '<th>Socio</th><th>Prospecto</th><th>Tipo</th><th>Estado</th><th>Confianza</th><th>Monto</th><th>Factura</th><th>Paquete</th><th>Fecha</th><th>Imagen</th>';
