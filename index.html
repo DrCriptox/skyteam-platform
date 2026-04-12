@@ -10128,7 +10128,7 @@ function _loadCombinedRanking() {
     ]).catch(function(){return {ranking:[]};}); // On error, return empty ranking
   };
   Promise.all([
-    _fetchT('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:CU?(CU.ref||CU.username):'',noPhoto:true})}),
+    _fetchT('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:CU?(CU.ref||CU.username):''})}),
     _fetchT('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:cierresAction,user:CU?CU.username:'',noPhoto:true})}),
     _fetchT('/api/leaderboard?action=prospectRanking&period='+period+'&noPhoto=1',{})
   ]).then(function(results) {
@@ -10146,6 +10146,20 @@ function _loadCombinedRanking() {
     var ranking = Object.keys(combined).map(function(k){ var c=combined[k]; c.ref=k; c.total=c.sales+c.cierres+c.prospects; return c; });
     ranking.sort(function(a,b){return b.total-a.total;});
     var top20=ranking.slice(0,20);
+
+    // Get photos from multiple sources (USERS cache > localStorage > landing foto)
+    top20.forEach(function(u){
+      if(!u.photo && typeof USERS!=='undefined' && USERS[u.ref] && USERS[u.ref].photo) u.photo = USERS[u.ref].photo;
+      if(!u.photo) { try { var lp = localStorage.getItem('skyteam_photo_'+u.ref); if(lp) u.photo = lp; } catch(e){} }
+    });
+    // Also get photos from sales ranking data (landing_profiles has photos)
+    salesData.forEach(function(u){
+      if(u.foto && u.ref) {
+        var k = u.ref.toLowerCase();
+        var found = top20.find(function(t){return t.ref===k;});
+        if(found && !found.photo) found.photo = u.foto;
+      }
+    });
     var container=document.getElementById('rk-combined-list');if(!container)return;
     if(!top20.length){container.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:48px;margin-bottom:8px;">\uD83C\uDFC6</div>Sin datos</div>';return;}
     var _waFlag=function(wa){if(!wa)return '';var f={'+57':'co','+52':'mx','+51':'pe','+56':'cl','+54':'ar','+58':'ve','+593':'ec','+507':'pa','+506':'cr','+504':'hn','+503':'sv','+502':'gt','+505':'ni','+1809':'do','+1':'us','+34':'es','+55':'br'};var codes=Object.keys(f).sort(function(a,b){return b.length-a.length;});for(var ci=0;ci<codes.length;ci++){if(wa.indexOf(codes[ci])===0)return '<img src="https://flagcdn.com/16x12/'+f[codes[ci]]+'.png" style="width:14px;height:10px;border-radius:1px;vertical-align:middle;margin-left:3px;">';}return '';};
