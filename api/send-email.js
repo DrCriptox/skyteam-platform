@@ -502,7 +502,7 @@ async function handleTriggers(req, res) {
       var _rkSlot = null;
       if (colHour === 7 && colMin >= 45 && colMin <= 55) _rkSlot = 'morning';
       else if (colHour === 13 && colMin >= 45 && colMin <= 55) _rkSlot = 'midday';
-      else if (colHour === 20 && colMin >= 45 && colMin <= 55) _rkSlot = 'evening';
+      else if (colHour === 20 && colMin >= 50 && colMin <= 59) _rkSlot = 'evening';
 
       if (_rkSlot) {
         // Fetch week boundaries
