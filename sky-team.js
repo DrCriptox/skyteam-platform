@@ -364,7 +364,34 @@ function _daysPillColor(days) {
   return { bg: 'rgba(201,168,76,0.12)', border: 'rgba(201,168,76,0.25)', color: '#C9A84C' };
 }
 
+// Global ranking scores cache (loaded once, used everywhere in Mi SkyTeam)
+var _globalScoresCache = {};
+var _globalScoresLoaded = false;
+function _loadGlobalScores(callback) {
+  if(_globalScoresLoaded) { if(callback) callback(); return; }
+  Promise.all([
+    fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:'monthly',ref:'',noPhoto:true})}).then(function(r){return r.json();}).catch(function(){return {ranking:[]};}),
+    fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'monthlyTop',noPhoto:true})}).then(function(r){return r.json();}).catch(function(){return {ranking:[]};}),
+    fetch('/api/leaderboard?action=prospectRanking&period=monthly&noPhoto=1').then(function(r){return r.json();}).catch(function(){return {ranking:[]};})
+  ]).then(function(results){
+    var sales=results[0].ranking||[], cierres=results[1].ranking||[], prospects=results[2].ranking||[];
+    sales.forEach(function(u){var k=(u.ref||'').toLowerCase();if(!k)return;if(!_globalScoresCache[k])_globalScoresCache[k]={sales:0,cierres:0,prospects:0};_globalScoresCache[k].sales=u.score||0;});
+    cierres.forEach(function(u){var k=(u.username||'').toLowerCase();if(!k)return;if(!_globalScoresCache[k])_globalScoresCache[k]={sales:0,cierres:0,prospects:0};_globalScoresCache[k].cierres=u.score||0;});
+    prospects.forEach(function(u){var k=(u.username||'').toLowerCase();if(!k)return;if(!_globalScoresCache[k])_globalScoresCache[k]={sales:0,cierres:0,prospects:0};_globalScoresCache[k].prospects=u.score||0;});
+    _globalScoresLoaded=true;
+    if(callback) callback();
+  }).catch(function(){ if(callback) callback(); });
+}
+function _getGlobalScore(username) {
+  var k = (username||'').toLowerCase();
+  var c = _globalScoresCache[k] || {sales:0,cierres:0,prospects:0};
+  return { sales:c.sales, cierres:c.cierres, prospects:c.prospects, total:c.sales+c.cierres+c.prospects };
+}
+
 function _scoreParts(m) {
+  // Use global ranking score if available
+  var gs = _getGlobalScore(m.username);
+  if(gs.total > 0) return { prospects: gs.prospects, sales: gs.sales, day: gs.cierres, total: gs.total };
   var p = (m.prospects_score || m.prospects || 0);
   var s = (m.sales_score || m.sales || 0);
   var d = (m.day_score || m.daily_streak || 0);
@@ -675,10 +702,14 @@ function renderSTDashboard() {
 
   html += '</div>';
 
-  // ── 2. Top 3 Directs ──
+  // ── 2. Top 3 Directs (using global ranking scores) ──
+  // Load global scores if not loaded yet
+  if(!_globalScoresLoaded) {
+    _loadGlobalScores(function(){ renderSkyTeam(); });
+  }
   var directs = members.filter(function(m) { return m.level === 1; });
   directs.sort(function(a, b) {
-    return (_scoreParts(b).total) - (_scoreParts(a).total);
+    return (_getGlobalScore(b.username).total) - (_getGlobalScore(a.username).total);
   });
   var top3 = directs.slice(0, 3);
 
@@ -688,17 +719,16 @@ function renderSTDashboard() {
 
     for (var i = 0; i < top3.length; i++) {
       var m = top3[i];
-      var sc = _scoreParts(m);
+      var gs = _getGlobalScore(m.username);
       var rk = _getRank(m.rank);
 
       html += '<div class="st-direct-card" onclick="openMemberDetail(\'' + _safe(m.username) + '\')">';
-      html += _avatarHTML(m.name || m.username, m.rank, 40);
+      html += _avatarHTML(m.name || m.username, m.rank, 40, m.photo || m.foto || '');
       html += '<div class="st-direct-info">';
       html += '<div class="st-direct-name">' + _safe(m.name || m.username) + '</div>';
       html += _rankBadgeHTML(m.rank, false);
-      html += _scoreBarHTML(m, 5);
       html += '</div>';
-      html += '<div class="st-direct-score">' + sc.total + '</div>';
+      html += '<div class="st-direct-score">' + gs.total + '<span style="font-size:8px;color:rgba(255,255,255,0.25);display:block;">PTS mes</span></div>';
       html += '</div>';
     }
 
