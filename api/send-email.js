@@ -494,6 +494,67 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('training_reminder: ' + e.message); }
 
+    // ── TRIGGER 7: Ranking motivacional — 1x al dia, 8:50 AM Colombia ──
+    try {
+      if (colHour === 8 && colMin >= 45 && colMin <= 55) {
+        // Fetch combined ranking (same as global ranking)
+        var _rkSales = await sb('landing_visits?select=ref&order=id').catch(function(){return [];});
+        // Simpler: fetch the 3 rankings via internal logic
+        var _wkBookings = await sb('bookings?select=username,status,created_at&status=in.(activa,completada,verificada)&created_at=gte.' + (() => { var n=new Date(now.getTime()-18000000); var d=n.getUTCDay(); var diff=d===0?6:d-1; var mon=new Date(n); mon.setUTCDate(n.getUTCDate()-diff); mon.setUTCHours(0,0,0,0); return new Date(mon.getTime()+18000000).toISOString(); })());
+        var _wkProspects = await sb('interacciones?select=username,tipo,created_at&created_at=gte.' + (() => { var n=new Date(now.getTime()-18000000); var d=n.getUTCDay(); var diff=d===0?6:d-1; var mon=new Date(n); mon.setUTCDate(n.getUTCDate()-diff); mon.setUTCHours(0,0,0,0); return new Date(mon.getTime()+18000000).toISOString(); })() + '&limit=5000');
+
+        // Build simple scores per user
+        var _rkScores = {};
+        (_wkBookings||[]).forEach(function(b){ if(!_rkScores[b.username]) _rkScores[b.username]={cierres:0,prospects:0}; _rkScores[b.username].cierres += b.status==='verificada'?35:10; });
+        (_wkProspects||[]).forEach(function(p){ if(!_rkScores[p.username]) _rkScores[p.username]={cierres:0,prospects:0}; _rkScores[p.username].prospects += 2; });
+
+        var _rkList = Object.keys(_rkScores).map(function(u){ return {username:u, score:_rkScores[u].cierres+_rkScores[u].prospects}; });
+        _rkList.sort(function(a,b){return b.score-a.score;});
+
+        // Get all users with push subscriptions
+        var _allPushUsers = await sb('push_subscriptions?select=username&order=username');
+        var _pushUsers = {};
+        (_allPushUsers||[]).forEach(function(p){ _pushUsers[p.username]=true; });
+
+        // Check today's ranking notification key
+        var _rkNotifKey = 'ranking_' + now.toISOString().slice(0,10);
+        var _sentCount = 0;
+
+        for (var _ri=0; _ri<_rkList.length && _ri<50; _ri++) {
+          var _ru = _rkList[_ri];
+          var _pos = _ri + 1;
+          if (!_pushUsers[_ru.username]) continue;
+
+          var _title, _body, _nav = '/?nav=ranking';
+          if (_pos === 1) {
+            _title = '\uD83C\uDFC6 \u00a1Eres #1 del ranking!';
+            _body = 'Nadie te alcanza esta semana. \u00a1Mant\u00e9n el ritmo y sigue liderando!';
+          } else if (_pos <= 3) {
+            _title = '\uD83E\uDD47 \u00a1Top 3! Est\u00e1s #' + _pos;
+            _body = 'Te la est\u00e1s rompiendo. \u00a1Hoy vas por el #1!';
+          } else if (_pos <= 10) {
+            var _ptsToTop3 = _rkList[2].score - _ru.score;
+            _title = '\uD83D\uDD25 Est\u00e1s #' + _pos + ' del ranking';
+            _body = 'A solo ' + _ptsToTop3 + ' pts del top 3. \u00a1Agenda una cita y sube!';
+          } else if (_pos <= 20) {
+            _title = '\u2B50 Top 20 - Est\u00e1s #' + _pos;
+            _body = '\u00a1Sigue as\u00ed! Una cita verificada te acerca al top 10.';
+          } else if (_pos <= 30) {
+            _title = '\uD83D\uDCAA Cerca del top 20 (#' + _pos + ')';
+            _body = '\u00a1Hoy puedes entrar! Agenda citas y gestiona prospectos.';
+          } else {
+            _title = '\uD83D\uDE80 \u00a1Activa tu ranking!';
+            _body = 'Tu equipo te necesita. Agenda una cita o mueve un prospecto.';
+          }
+
+          var _rPush = await pushToUser(_ru.username, _title, _body, _nav, _rkNotifKey + '-' + _ru.username);
+          _sentCount += _rPush.sent;
+        }
+        results.triggers.push({ type: 'ranking_motivation', sent: _sentCount, users: _rkList.length });
+        results.sent += _sentCount;
+      }
+    } catch (e) { results.errors.push('ranking_motivation: ' + e.message); }
+
     return res.status(200).json({ ok: true, ...results, checkedAt: now.toISOString() });
   } catch (error) {
     results.errors.push(error.message);
