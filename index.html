@@ -10796,25 +10796,55 @@ function renderAdminPruebas() {
   .then(function(r){ console.log('[ADMIN] Pruebas response status:', r.status); return r.json(); }).then(function(d){
     console.log('[ADMIN] Pruebas data:', d.ok, 'count:', d.proofs?d.proofs.length:0, 'error:', d.error||'none');
     if(!d.proofs || !d.proofs.length) { el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCCB</div>Sin pruebas registradas'+(d.error?' ('+d.error+')':'')+'</div>'; return; }
-    var html = '<h3 style="color:#C9A84C;font-size:16px;margin:0 0 16px;">\uD83D\uDD0D Pruebas de Cierre/Abono (' + d.proofs.length + ')</h3>';
+    window._adminProofs = d.proofs; // Store for filtering
+    window._adminProofFilter = window._adminProofFilter || 'all';
+    _renderProofTable(d.proofs);
+  }).catch(function(e){ el.innerHTML='<div style="padding:20px;color:#E24B4A;">Error: '+e.message+'</div>'; });
+}
+function _filterProofs(tipo) {
+  window._adminProofFilter = tipo;
+  var proofs = window._adminProofs || [];
+  var filtered = tipo === 'all' ? proofs : proofs.filter(function(p){ return p.tipo === tipo; });
+  _renderProofTable(filtered);
+}
+function _renderProofTable(proofs) {
+  var el = document.getElementById('admin-pruebas');
+  if(!el) return;
+  var f = window._adminProofFilter || 'all';
+  var total = (window._adminProofs||[]).length;
+  var _fbtn = function(t, label, color) {
+    var on = f === t;
+    return '<button onclick="_filterProofs(\''+t+'\')" style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(on?'1px solid '+color:'0.5px solid rgba(255,255,255,0.08)')+';background:'+(on?color+'20':'rgba(255,255,255,0.03)')+';color:'+(on?color:'rgba(255,255,255,0.4)')+';">'+label+'</button>';
+  };
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">';
+    html += '<h3 style="color:#C9A84C;font-size:16px;margin:0;">\uD83D\uDD0D Pruebas CRM (' + proofs.length + '/' + total + ')</h3>';
+    html += '<div style="display:flex;gap:4px;">';
+    html += _fbtn('all', 'Todas', '#C9A84C');
+    html += _fbtn('presentacion', 'Presentacion', '#7F77DD');
+    html += _fbtn('abono', 'Abono', '#1D9E75');
+    html += _fbtn('cierre', 'Cierre Pago', '#FFD700');
+    html += '</div></div>';
     html += '<div style="overflow-x:auto;"><table class="admin-table"><thead><tr>';
-    html += '<th>Socio</th><th>Prospecto</th><th>Tipo</th><th>Estado</th><th>Confianza</th><th>Monto</th><th>Factura</th><th>Paquete</th><th>Fecha</th><th>Imagen</th>';
+    html += '<th>Socio</th><th>Prospecto</th><th>Tipo</th><th>Estado</th><th>Conf.</th><th>Monto</th><th>Factura</th><th>Hash</th><th>Fecha</th><th>Imagen</th>';
     html += '</tr></thead><tbody>';
-    d.proofs.forEach(function(p){
+    proofs.forEach(function(p){
       var statusColor = p.ai_status==='approved' ? '#1D9E75' : '#FFA500';
-      var statusLabel = p.ai_status==='approved' ? '\u2705 Aprobada' : '\u23F3 Pendiente';
+      var statusLabel = p.ai_status==='approved' ? '\u2705 OK' : '\u23F3 Rev.';
       var fecha = p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      var tipoColors = {cierre:'#FFD700',abono:'#1D9E75',presentacion:'#7F77DD'};
+      var tipoBgs = {cierre:'rgba(255,215,0,0.12)',abono:'rgba(29,158,117,0.12)',presentacion:'rgba(127,119,221,0.12)'};
+      var hash8 = p.image_hash ? p.image_hash.substring(0,8) : '-';
       html += '<tr>';
-      html += '<td style="font-weight:700;">' + (p.username||'') + '</td>';
-      html += '<td>' + (p.prospecto_nombre||'') + '</td>';
-      html += '<td><span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:' + (p.tipo==='cierre'?'rgba(201,168,76,0.15)':'rgba(29,158,117,0.15)') + ';color:' + (p.tipo==='cierre'?'#C9A84C':'#1D9E75') + ';">' + (p.tipo||'').toUpperCase() + '</span></td>';
-      html += '<td style="color:'+statusColor+';font-weight:700;font-size:12px;">' + statusLabel + '</td>';
-      html += '<td style="text-align:center;">' + (p.ai_confidence||0) + '%</td>';
-      html += '<td style="color:#C9A84C;font-weight:700;">' + (p.ai_amount||'-') + '</td>';
-      html += '<td style="font-family:monospace;font-size:11px;">' + (p.ai_invoice||'-') + '</td>';
-      html += '<td style="font-size:11px;">' + (p.ai_package||'-') + '</td>';
-      html += '<td style="font-size:11px;color:rgba(255,255,255,0.4);">' + fecha + '</td>';
-      html += '<td><button onclick="_viewProofImage('+p.id+')" style="padding:4px 10px;border-radius:6px;background:rgba(127,119,221,0.12);border:0.5px solid rgba(127,119,221,0.25);color:#7F77DD;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">\uD83D\uDCF7 Ver</button></td>';
+      html += '<td style="font-weight:700;font-size:11px;">' + (p.username||'') + '</td>';
+      html += '<td style="font-size:11px;">' + (p.prospecto_nombre||'') + '</td>';
+      html += '<td><span style="padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;background:'+(tipoBgs[p.tipo]||'rgba(255,255,255,0.06)')+';color:'+(tipoColors[p.tipo]||'#fff')+';">' + (p.tipo||'').toUpperCase() + '</span></td>';
+      html += '<td style="color:'+statusColor+';font-weight:700;font-size:11px;">' + statusLabel + '</td>';
+      html += '<td style="text-align:center;font-size:11px;">' + (p.ai_confidence||0) + '%</td>';
+      html += '<td style="color:#C9A84C;font-weight:700;font-size:11px;">' + (p.ai_amount||'-') + '</td>';
+      html += '<td style="font-family:monospace;font-size:10px;">' + (p.ai_invoice||'-') + '</td>';
+      html += '<td style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);" title="'+(p.image_hash||'')+'">' + hash8 + '</td>';
+      html += '<td style="font-size:10px;color:rgba(255,255,255,0.4);">' + fecha + '</td>';
+      html += '<td><button onclick="_viewProofImage('+p.id+')" style="padding:3px 8px;border-radius:6px;background:rgba(127,119,221,0.12);border:0.5px solid rgba(127,119,221,0.25);color:#7F77DD;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">\uD83D\uDCF7</button></td>';
       html += '</tr>';
     });
     html += '</tbody></table></div>';
