@@ -609,16 +609,18 @@ async function handleTriggers(req, res) {
 // ✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
 
 async function handlePush(req, res) {
-  const { action, user, subscription, recipientUser, title, body, url, adminKey } = req.body;
+  const { action, user, subscription, recipientUser, title, body, url, adminKey } = req.body || {};
 
   if (action === 'subscribe') {
     if (!user || !subscription || !subscription.endpoint) return res.status(400).json({ error: 'Missing user or subscription' });
-    const existing = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=username');
-    if (!existing || existing.length === 0) {
-      await sb('users', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ username: user, name: user, email: null, password: null, sponsor: null, ref: user }) });
-    }
-    await sb('push_subscriptions', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ username: user, endpoint: subscription.endpoint, subscription: subscription, created_at: new Date().toISOString() }) });
-    return res.status(200).json({ ok: true, message: 'Subscription saved' });
+    try {
+      const existing = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=username');
+      if (!existing || existing.length === 0) {
+        await sb('users', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ username: user, name: user, email: null, password: null, sponsor: null, ref: user }) });
+      }
+      await sb('push_subscriptions', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ username: user, endpoint: subscription.endpoint, subscription: subscription, created_at: new Date().toISOString() }) });
+      return res.status(200).json({ ok: true, message: 'Subscription saved' });
+    } catch(e) { console.error('[PUSH] Subscribe error:', e.message); return res.status(500).json({ error: 'Subscribe failed: ' + e.message }); }
   }
 
   if (action === 'unsubscribe') {
@@ -679,7 +681,7 @@ export default async function handler(req, res) {
 
     // Push notification actions (routed from /api/push via rewrite)
     if (['subscribe', 'unsubscribe', 'send', 'broadcast', 'getPublicKey'].includes(action)) {
-      return handlePush(req, res);
+      try { return await handlePush(req, res); } catch(e) { console.error('[PUSH] Error:', e.message); return res.status(500).json({ error: 'Push error: ' + e.message }); }
     }
 
     // ✅✅ Email sending (original send-email logic) ✅✅
