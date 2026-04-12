@@ -5790,10 +5790,10 @@ function guardarAgendaConfig() {
   if(waInput) { var _v=waInput.value.replace(/[^0-9]/g,''); agendaConfig.whatsapp=_v?'+'+_v:''; }
   // Validate before saving
   if(typeof validarTodosLosDias==='function' && !validarTodosLosDias()){
-    showToast('⚠️ Corrige los horarios en rojo antes de guardar');
+    showToast('\u26A0\uFE0F Corrige los horarios en rojo antes de guardar');
     return;
   }
-  agendaConfig.nombre=CU?CU.name:'';
+  if(!agendaConfig.nombre) agendaConfig.nombre=CU?CU.name:'';
   agendaConfig.whatsapp=CU&&CU.whatsapp?CU.whatsapp:(localStorage.getItem('skyteam_ref_wa')||'');
   agendaConfig.timezone='America/Bogota';
   // Preserve foto if already set
@@ -8641,7 +8641,8 @@ function guardarWhatsAppSocio() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       var cfg = (d.ok && d.config) ? d.config : {};
-      cfg.whatsapp = wa;
+      // Only set WhatsApp if agenda doesn't have its own (independent WA)
+      if(!cfg.whatsapp) cfg.whatsapp = wa;
       cfg.nombre = cfg.nombre || (CU ? CU.name : '');
       return fetch('/api/agenda', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveConfig', user:userKey, config:cfg})});
     })
@@ -12510,10 +12511,11 @@ function guardarWhatsAppPerfil() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       var cfg = (d.ok && d.config) ? d.config : {};
-      cfg.whatsapp = wa;
+      // Only set WhatsApp if agenda doesn't have its own (independent WA)
+      if(!cfg.whatsapp) cfg.whatsapp = wa;
       cfg.nombre = cfg.nombre || (CU ? CU.name : '');
       return fetch('/api/agenda', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'saveConfig', user:userKey, config:cfg})});
-    }).then(function(){ showToast('✅ WhatsApp guardado y sincronizado'); })
+    }).then(function(){ showToast('\u2705 WhatsApp guardado y sincronizado'); })
     .catch(function(){ showToast('✅ WhatsApp guardado localmente'); });
   // Re-render both sections
   renderPerfil();
