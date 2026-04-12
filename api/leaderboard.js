@@ -105,7 +105,7 @@ module.exports = async (req, res) => {
           citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].verifiedPts,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes, ipFlags: userStats[u].ipFlags
         };
-      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
+      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 50);
 
       return res.status(200).json({ ok: true, period: 'weekly', from: mondayISO, to: sundayISO, ranking: ranking });
     }
@@ -173,7 +173,7 @@ module.exports = async (req, res) => {
         var score = (s.citas * 10) + (verifiedPts * 25) + (s.proofsFailed * 5) - (s.canceladas * 5) - (s.ipDupes * 10);
         if (score < 0) score = 0;
         return { username: u, name: usersMap[u] ? usersMap[u].name : u, photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '', citas: s.citas, verificadas: s.verificadas, proofs: verifiedPts, score: score, ipDupes: s.ipDupes };
-      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
+      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 50);
 
       return res.status(200).json({ ok: true, period: 'monthly', from: fromISO, to: toISO, ranking: ranking });
     }
@@ -241,7 +241,7 @@ module.exports = async (req, res) => {
           photo: usersMap[u] ? usersMap[u].photo || '' : '', whatsapp: usersMap[u] ? usersMap[u].whatsapp || '' : '',
           citas: userStats[u].citas, verificadas: userStats[u].verificadas, proofs: userStats[u].verifiedPts,
           score: userStats[u].score, ipDupes: userStats[u].ipDupes };
-      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 20);
+      }).sort(function(a, b) { return b.score - a.score; }).slice(0, 50);
 
       return res.status(200).json({ ok: true, period: 'daily', from: fromISO, to: toISO, ranking: ranking });
     }
