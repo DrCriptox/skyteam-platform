@@ -935,10 +935,9 @@ function _buildTreeHTML() {
 
   for (var i = 0; i < members.length; i++) {
     var m = members[i];
-    var parentRef = m.sponsor || m.parent || null;
+    var parentRef = (m.sponsor || m.parent || '').toLowerCase();
 
     if (m.level === 1 || !parentRef) {
-      // Level 1 members are roots — don't add them as children
       roots.push(m);
     } else {
       if (!childrenMap[parentRef]) childrenMap[parentRef] = [];
