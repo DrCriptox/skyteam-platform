@@ -494,64 +494,108 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('training_reminder: ' + e.message); }
 
-    // ── TRIGGER 7: Ranking motivacional — 1x al dia, 8:50 AM Colombia ──
+    // ── TRIGGER 7: Ranking motivacional — 3x al dia ──
+    // 8:50 AM: Ranking Global (empezar el dia motivado)
+    // 1:50 PM: Mejor ranking individual (Sales/Prospects/Journal)
+    // 8:50 PM: Ranking Global cierre del dia
     try {
-      if (colHour === 8 && colMin >= 45 && colMin <= 55) {
-        // Fetch combined ranking (same as global ranking)
-        var _rkSales = await sb('landing_visits?select=ref&order=id').catch(function(){return [];});
-        // Simpler: fetch the 3 rankings via internal logic
-        var _wkBookings = await sb('bookings?select=username,status,created_at&status=in.(activa,completada,verificada)&created_at=gte.' + (() => { var n=new Date(now.getTime()-18000000); var d=n.getUTCDay(); var diff=d===0?6:d-1; var mon=new Date(n); mon.setUTCDate(n.getUTCDate()-diff); mon.setUTCHours(0,0,0,0); return new Date(mon.getTime()+18000000).toISOString(); })());
-        var _wkProspects = await sb('interacciones?select=username,tipo,created_at&created_at=gte.' + (() => { var n=new Date(now.getTime()-18000000); var d=n.getUTCDay(); var diff=d===0?6:d-1; var mon=new Date(n); mon.setUTCDate(n.getUTCDate()-diff); mon.setUTCHours(0,0,0,0); return new Date(mon.getTime()+18000000).toISOString(); })() + '&limit=5000');
+      var _rkSlot = null;
+      if (colHour === 8 && colMin >= 45 && colMin <= 55) _rkSlot = 'morning';
+      else if (colHour === 13 && colMin >= 45 && colMin <= 55) _rkSlot = 'midday';
+      else if (colHour === 20 && colMin >= 45 && colMin <= 55) _rkSlot = 'evening';
 
-        // Build simple scores per user
-        var _rkScores = {};
-        (_wkBookings||[]).forEach(function(b){ if(!_rkScores[b.username]) _rkScores[b.username]={cierres:0,prospects:0}; _rkScores[b.username].cierres += b.status==='verificada'?35:10; });
-        (_wkProspects||[]).forEach(function(p){ if(!_rkScores[p.username]) _rkScores[p.username]={cierres:0,prospects:0}; _rkScores[p.username].prospects += 2; });
+      if (_rkSlot) {
+        // Fetch week boundaries
+        var _nCol = new Date(now.getTime()-18000000);
+        var _dw = _nCol.getUTCDay(); var _dd = _dw===0?6:_dw-1;
+        var _mon = new Date(_nCol); _mon.setUTCDate(_nCol.getUTCDate()-_dd); _mon.setUTCHours(0,0,0,0);
+        var _fromW = new Date(_mon.getTime()+18000000).toISOString();
 
-        var _rkList = Object.keys(_rkScores).map(function(u){ return {username:u, score:_rkScores[u].cierres+_rkScores[u].prospects}; });
-        _rkList.sort(function(a,b){return b.score-a.score;});
+        // Fetch data for all 3 rankings
+        var _bk = await sb('bookings?select=username,status,created_at&status=in.(activa,completada,verificada)&created_at=gte.' + _fromW).catch(function(){return [];});
+        var _ix = await sb('interacciones?select=username,tipo,contenido,created_at&created_at=gte.' + _fromW + '&limit=5000').catch(function(){return [];});
+        var _lv = await sb('landing_visits?select=ref,type&day=gte.' + _fromW.slice(0,10) + '&limit=5000').catch(function(){return [];});
 
-        // Get all users with push subscriptions
-        var _allPushUsers = await sb('push_subscriptions?select=username&order=username');
-        var _pushUsers = {};
-        (_allPushUsers||[]).forEach(function(p){ _pushUsers[p.username]=true; });
+        // Build per-user scores for each ranking
+        var _scores = {};
+        var _init = function(u){ if(!_scores[u]) _scores[u]={sales:0,prospects:0,cierres:0}; };
 
-        // Check today's ranking notification key
-        var _rkNotifKey = 'ranking_' + now.toISOString().slice(0,10);
-        var _sentCount = 0;
+        // Sky Sales IA (landing visits + conversions)
+        (_lv||[]).forEach(function(v){ if(!v.ref) return; _init(v.ref); _scores[v.ref].sales += v.type==='conversion'?20:1; });
+        // Sky Journal (bookings)
+        (_bk||[]).forEach(function(b){ _init(b.username); _scores[b.username].cierres += b.status==='verificada'?35:10; });
+        // Sky Prospects (interactions)
+        (_ix||[]).forEach(function(p){ _init(p.username); var c=p.contenido||''; _scores[p.username].prospects += c.indexOf('movido de')!==-1?2:(c.indexOf('mensaje generado')!==-1?2:1); });
 
-        for (var _ri=0; _ri<_rkList.length && _ri<50; _ri++) {
-          var _ru = _rkList[_ri];
-          var _pos = _ri + 1;
-          if (!_pushUsers[_ru.username]) continue;
+        // Build ranked lists
+        var _allUsers = Object.keys(_scores);
+        var _globalList = _allUsers.map(function(u){var s=_scores[u]; return {username:u,score:s.sales+s.prospects+s.cierres,sales:s.sales,prospects:s.prospects,cierres:s.cierres};}).sort(function(a,b){return b.score-a.score;});
+        var _salesList = _allUsers.map(function(u){return {username:u,score:_scores[u].sales};}).sort(function(a,b){return b.score-a.score;});
+        var _prospectList = _allUsers.map(function(u){return {username:u,score:_scores[u].prospects};}).sort(function(a,b){return b.score-a.score;});
+        var _cierresList = _allUsers.map(function(u){return {username:u,score:_scores[u].cierres};}).sort(function(a,b){return b.score-a.score;});
 
-          var _title, _body, _nav = '/?nav=ranking';
-          if (_pos === 1) {
-            _title = '\uD83C\uDFC6 \u00a1Eres #1 del ranking!';
-            _body = 'Nadie te alcanza esta semana. \u00a1Mant\u00e9n el ritmo y sigue liderando!';
-          } else if (_pos <= 3) {
-            _title = '\uD83E\uDD47 \u00a1Top 3! Est\u00e1s #' + _pos;
-            _body = 'Te la est\u00e1s rompiendo. \u00a1Hoy vas por el #1!';
-          } else if (_pos <= 10) {
-            var _ptsToTop3 = _rkList[2].score - _ru.score;
-            _title = '\uD83D\uDD25 Est\u00e1s #' + _pos + ' del ranking';
-            _body = 'A solo ' + _ptsToTop3 + ' pts del top 3. \u00a1Agenda una cita y sube!';
-          } else if (_pos <= 20) {
-            _title = '\u2B50 Top 20 - Est\u00e1s #' + _pos;
-            _body = '\u00a1Sigue as\u00ed! Una cita verificada te acerca al top 10.';
-          } else if (_pos <= 30) {
-            _title = '\uD83D\uDCAA Cerca del top 20 (#' + _pos + ')';
-            _body = '\u00a1Hoy puedes entrar! Agenda citas y gestiona prospectos.';
+        // Get push users
+        var _pUsers = {};
+        (await sb('push_subscriptions?select=username').catch(function(){return [];})||[]).forEach(function(p){_pUsers[p.username]=true;});
+
+        var _today = now.toISOString().slice(0,10);
+        var _sentC = 0;
+        var _rkNames = {sales:'Sky Sales IA',prospects:'Sky Prospects',cierres:'Sky Journal'};
+        var _rkNavs = {sales:'/?nav=skysales',prospects:'/?nav=prospectos',cierres:'/?nav=agenda'};
+
+        for (var _gi=0; _gi<_globalList.length && _gi<50; _gi++) {
+          var _gu = _globalList[_gi];
+          if (!_pUsers[_gu.username]) continue;
+          var _gPos = _gi+1;
+
+          var _title, _body, _nav;
+
+          if (_rkSlot === 'morning') {
+            // Morning: Global ranking + start the day
+            _nav = '/?nav=ranking';
+            if (_gPos===1) { _title='\u2600\uFE0F Buenos dias, #1!'; _body='Arrancas el dia liderando el ranking. \u00a1Mant\u00e9n ese ritmo!'; }
+            else if (_gPos<=3) { _title='\u2600\uFE0F Top 3 (#'+_gPos+') \u2014 \u00a1Buen dia!'; _body='Estas entre los mejores. \u00a1Hoy puedes llegar al #1!'; }
+            else if (_gPos<=10) { _title='\u2600\uFE0F #'+_gPos+' en el ranking'; _body='Buen dia! A '+ (_globalList[2].score-_gu.score) +' pts del top 3. \u00a1Hoy se puede!'; }
+            else if (_gPos<=20) { _title='\u2600\uFE0F Top 20 (#'+_gPos+')'; _body='Buenos dias! Una cita o un prospecto te acercan al top 10.'; }
+            else { _title='\u2600\uFE0F \u00a1Arranca tu dia!'; _body='Agenda una cita, mueve un prospecto. \u00a1Entra al ranking hoy!'; }
+
+          } else if (_rkSlot === 'midday') {
+            // Midday: Best individual ranking or one to activate
+            var _best = 'sales', _bestPos = 999;
+            var _lists = {sales:_salesList, prospects:_prospectList, cierres:_cierresList};
+            ['sales','prospects','cierres'].forEach(function(rk){
+              var pos = _lists[rk].findIndex(function(u){return u.username===_gu.username;});
+              if (pos!==-1 && pos<_bestPos) { _bestPos=pos; _best=rk; }
+            });
+            var _bPos = _bestPos+1;
+            _nav = _rkNavs[_best] || '/?nav=ranking';
+            if (_bPos<=3) { _title='\uD83D\uDD25 Top 3 en '+_rkNames[_best]+'!'; _body='\u00a1Vas #'+_bPos+'! Sigue asi, estas dominando.'; }
+            else if (_bPos<=10) { _title='\u26A1 #'+_bPos+' en '+_rkNames[_best]; _body='\u00a1Casi en el top 3! Una accion mas y subes.'; }
+            else if (_bPos<=20) { _title='\uD83D\uDCA1 #'+_bPos+' en '+_rkNames[_best]; _body='\u00a1Buen ritmo! Sigue sumando puntos esta tarde.'; }
+            else {
+              // Find which ranking to activate (lowest score)
+              var _worst = 'sales', _worstScore = Infinity;
+              ['sales','prospects','cierres'].forEach(function(rk){ if(_scores[_gu.username][rk]<_worstScore){_worstScore=_scores[_gu.username][rk];_worst=rk;} });
+              _nav = _rkNavs[_worst] || '/?nav=ranking';
+              _title='\uD83D\uDCAA Activa '+_rkNames[_worst]; _body='Aun no tienes puntos ahi. \u00a1Una accion te mete al ranking!';
+            }
+
           } else {
-            _title = '\uD83D\uDE80 \u00a1Activa tu ranking!';
-            _body = 'Tu equipo te necesita. Agenda una cita o mueve un prospecto.';
+            // Evening: Global ranking summary
+            _nav = '/?nav=ranking';
+            if (_gPos===1) { _title='\uD83C\uDF19 \u00a1Cierras el dia como #1!'; _body='Felicidades, nadie te alcanzo. \u00a1Manana a mantenerlo!'; }
+            else if (_gPos<=3) { _title='\uD83C\uDF19 Cierras en el top 3 (#'+_gPos+')'; _body='\u00a1Excelente dia! Manana vas por el #1.'; }
+            else if (_gPos<=10) { _title='\uD83C\uDF19 Hoy cerraste #'+_gPos; _body='Buen dia. Manana puedes subir al top 3, \u00a1tu puedes!'; }
+            else if (_gPos<=20) { _title='\uD83C\uDF19 Top 20 (#'+_gPos+') al cierre'; _body='Buen trabajo. Manana agenda temprano y sube al top 10.'; }
+            else { _title='\uD83C\uDF19 Cierre del dia'; _body='Manana es un nuevo dia. \u00a1Arranca temprano y entra al ranking!'; }
           }
 
-          var _rPush = await pushToUser(_ru.username, _title, _body, _nav, _rkNotifKey + '-' + _ru.username);
-          _sentCount += _rPush.sent;
+          var _tag = 'skyteam-rk-' + _rkSlot + '-' + _today + '-' + _gu.username;
+          var _rp = await pushToUser(_gu.username, _title, _body, _nav, _tag);
+          _sentC += _rp.sent;
         }
-        results.triggers.push({ type: 'ranking_motivation', sent: _sentCount, users: _rkList.length });
-        results.sent += _sentCount;
+        results.triggers.push({ type: 'ranking_' + _rkSlot, sent: _sentC, users: _globalList.length });
+        results.sent += _sentC;
       }
     } catch (e) { results.errors.push('ranking_motivation: ' + e.message); }
 
