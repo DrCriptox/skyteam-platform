@@ -273,7 +273,11 @@ function injectSkyTeamCSS() {
 
     // ── Responsive ──
     '@media(max-width:600px){',
-    '  .st-stats-grid{grid-template-columns:repeat(2,1fr);}',
+    '  .st-stats-grid{grid-template-columns:repeat(3,1fr);gap:6px;}',
+  '  .st-stat-card{padding:10px 6px;}',
+  '  .st-stat-val{font-size:20px !important;}',
+  '  .st-stat-label{font-size:8px !important;}',
+  '  .st-stat-icon{font-size:16px !important;}',
     '  .st-stat-val{font-size:22px;}',
     '  .st-podium-col{max-width:100px;}',
     '  .st-podium-avatar{width:36px;height:36px;font-size:14px;}',
@@ -1116,16 +1120,13 @@ function renderSTRanking() {
   var d = stState.data;
   if (!d) return _spinnerHTML();
 
-  var members = (d.members || []).slice();
+  // Only direct line (level 1)
+  var directs = (d.members || []).filter(function(m){ return m.level === 1; });
   var html = '';
 
-  // ── Period toggle ──
-  var periods = [
-    { id: 'weekly', label: 'Semanal' },
-    { id: 'monthly', label: 'Mensual' },
-    { id: 'all', label: 'Historico' }
-  ];
-
+  // Period tabs: Hoy / Semana / Mes
+  if(!stState.rankPeriod || stState.rankPeriod==='all') stState.rankPeriod='weekly';
+  var periods = [{id:'daily',label:'Hoy'},{id:'weekly',label:'Semana'},{id:'monthly',label:'Mes'}];
   html += '<div class="st-rank-toggle">';
   for (var p = 0; p < periods.length; p++) {
     var pr = periods[p];
@@ -1134,53 +1135,62 @@ function renderSTRanking() {
   }
   html += '</div>';
 
-  // Sort by sky_score
-  members.sort(function(a, b) {
-    var scoreA = a.sky_score != null ? a.sky_score : _scoreParts(a).total;
-    var scoreB = b.sky_score != null ? b.sky_score : _scoreParts(b).total;
-    return scoreB - scoreA;
-  });
+  // Loading container for combined ranking
+  html += '<div id="st-combined-ranking"><div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando ranking...</div></div>';
 
-  // ── Podium (top 3) ──
-  if (members.length >= 3) {
-    html += _renderPodium(members.slice(0, 3));
-  } else if (members.length > 0) {
-    html += _renderPodium(members.slice(0, members.length));
-  }
+  // Fetch combined ranking data after render
+  setTimeout(function(){
+    var period = stState.rankPeriod || 'weekly';
+    var salesAction = period;
+    var cierresAction = period==='daily'?'dailyTop':period==='weekly'?'weeklyTop':'monthlyTop';
+    Promise.all([
+      fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:''})}).then(function(r){return r.json();}),
+      fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:cierresAction,user:''})}).then(function(r){return r.json();}),
+      fetch('/api/leaderboard?action=prospectRanking&period='+period).then(function(r){return r.json();})
+    ]).then(function(results){
+      var salesData=results[0].ranking||[], cierresData=results[1].ranking||[], prospectsData=results[2].ranking||[];
+      // Build combined scores
+      var combined={};
+      salesData.forEach(function(u){var k=(u.ref||'').toLowerCase();if(!k)return;if(!combined[k])combined[k]={sales:0,cierres:0,prospects:0};combined[k].sales=u.score||0;});
+      cierresData.forEach(function(u){var k=(u.username||'').toLowerCase();if(!k)return;if(!combined[k])combined[k]={sales:0,cierres:0,prospects:0};combined[k].cierres=u.score||0;});
+      prospectsData.forEach(function(u){var k=(u.username||'').toLowerCase();if(!k)return;if(!combined[k])combined[k]={sales:0,cierres:0,prospects:0};combined[k].prospects=u.score||0;});
 
-  // ── Rank list (4+) ──
-  var cuUsername = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+      // Match with direct line members only
+      var ranked = directs.map(function(m){
+        var key = (m.username||'').toLowerCase();
+        var c = combined[key] || {sales:0,cierres:0,prospects:0};
+        return {username:m.username, name:m.name||m.username, photo:m.photo||m.foto||'', rank:m.rank, sales:c.sales, cierres:c.cierres, prospects:c.prospects, total:c.sales+c.cierres+c.prospects};
+      });
+      ranked.sort(function(a,b){return b.total-a.total;});
+      var top20 = ranked.slice(0,20);
 
-  if (members.length > 3) {
-    html += '<div class="st-rank-list">';
-    for (var i = 3; i < members.length; i++) {
-      var m = members[i];
-      var sc = m.sky_score != null ? m.sky_score : _scoreParts(m).total;
-      var rk = _getRank(m.rank);
-      var isMe = (m.username === cuUsername);
+      var container = document.getElementById('st-combined-ranking');
+      if(!container) return;
+      if(!top20.length){container.innerHTML='<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.2);">Sin datos de linea directa</div>';return;}
 
-      html += '<div class="st-rank-row' + (isMe ? ' is-me' : '') + '" onclick="openMemberDetail(\'' + _safe(m.username) + '\')">';
-      html += '<div class="st-rank-pos">#' + (i + 1) + '</div>';
-      html += _avatarHTML(m.name || m.username, m.rank, 34, m.photo || m.foto || _getMemberPhoto(m.username));
-      html += '<div class="st-rank-info">';
-      html += '<div class="st-rank-name">' + _safe(m.name || m.username) + ' ' + _rankBadgeHTML(m.rank, true) + '</div>';
-      html += '</div>';
-      html += '<div class="st-rank-score-col">';
-      html += '<div class="st-rank-score-val">' + sc + '</div>';
-      html += _miniScoreBar(m);
-      html += '</div>';
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-
-  // If no members
-  if (members.length === 0) {
-    html += '<div style="text-align:center;padding:40px 20px;color:rgba(240,237,230,0.3);font-size:14px;">';
-    html += '<div style="font-size:40px;margin-bottom:8px;">🏆</div>';
-    html += 'Aun no hay miembros en el ranking';
-    html += '</div>';
-  }
+      var rhtml='';
+      var cuUsername = (typeof CU!=='undefined'&&CU)?CU.username:'';
+      top20.forEach(function(u,i){
+        var isMe = u.username===cuUsername;
+        var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+        var foto=u.photo||'';
+        var rk=_getRank(u.rank);
+        rhtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:'+(isMe?'rgba(127,119,221,0.08)':'rgba(255,255,255,0.02)')+';border:'+(isMe?'1px solid rgba(127,119,221,0.25)':'none')+';cursor:pointer;" onclick="openMemberDetail(\''+_safe(u.username)+'\')">';
+        rhtml+='<div style="width:20px;font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);text-align:center;flex-shrink:0;">'+(i+1)+'</div>';
+        rhtml+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.06);">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
+        rhtml+='<div style="flex:1;min-width:0;">';
+        rhtml+='<div style="font-size:12px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_safe(u.name||'?')+'</div>';
+        rhtml+='<div style="font-size:8px;margin-top:1px;opacity:0.5;color:#C9A84C;">S:'+u.sales+' P:'+u.prospects+' C:'+u.cierres+'</div>';
+        rhtml+='</div>';
+        rhtml+='<div style="flex-shrink:0;text-align:right;"><span style="font-size:15px;font-weight:900;color:#C9A84C;">'+u.total+'</span><span style="font-size:7px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
+        rhtml+='</div>';
+      });
+      container.innerHTML=rhtml;
+    }).catch(function(){
+      var c=document.getElementById('st-combined-ranking');
+      if(c) c.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">Error cargando ranking</div>';
+    });
+  }, 100);
 
   return html;
 }
