@@ -10118,19 +10118,28 @@ function _loadCombinedRanking() {
   var salesAction = period;
   var cierresAction = period === 'daily' ? 'dailyTop' : period === 'weekly' ? 'weeklyTop' : 'monthlyTop';
   var prospectAction = period;
+  // Fetch with timeout (15s) to avoid hanging on slow connections
+  var _fetchT = function(url, opts) {
+    return Promise.race([
+      fetch(url, opts).then(function(r){return r.json();}),
+      new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'));},15000);})
+    ]).catch(function(){return {ranking:[]};}); // On error, return empty ranking
+  };
   Promise.all([
-    fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:CU?(CU.ref||CU.username):''})} ).then(function(r){return r.json();}),
-    fetch('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:cierresAction,user:CU?CU.username:''})}).then(function(r){return r.json();}),
-    fetch('/api/leaderboard?action=prospectRanking&period='+period).then(function(r){return r.json();})
+    _fetchT('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:salesAction,ref:CU?(CU.ref||CU.username):'',noPhoto:true})}),
+    _fetchT('/api/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:cierresAction,user:CU?CU.username:'',noPhoto:true})}),
+    _fetchT('/api/leaderboard?action=prospectRanking&period='+period+'&noPhoto=1',{})
   ]).then(function(results) {
     var salesData = results[0].ranking || [];
     var cierresData = results[1].ranking || [];
     var prospectsData = results[2].ranking || [];
     // Merge by username/ref
     var combined = {};
-    salesData.forEach(function(u){ var k=(u.ref||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.nombre||u.ref,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].sales=u.score||0; if(u.foto) combined[k].photo=u.foto; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
-    cierresData.forEach(function(u){ var k=(u.username||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.name||u.username,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].cierres=u.score||0; if(u.photo) combined[k].photo=u.photo; if(u.name) combined[k].name=u.name; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
-    prospectsData.forEach(function(u){ var k=(u.username||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.name||u.username,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].prospects=u.score||0; if(u.photo) combined[k].photo=u.photo; if(u.name) combined[k].name=u.name; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
+    // Use local USERS cache for photos (API sends noPhoto=true to save bandwidth)
+    var _getPhoto = function(key){ return (typeof USERS!=='undefined' && USERS[key] && USERS[key].photo) ? USERS[key].photo : ''; };
+    salesData.forEach(function(u){ var k=(u.ref||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.nombre||u.ref,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].sales=u.score||0; if(!combined[k].photo) combined[k].photo=_getPhoto(k); if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
+    cierresData.forEach(function(u){ var k=(u.username||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.name||u.username,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].cierres=u.score||0; if(!combined[k].photo) combined[k].photo=_getPhoto(k); if(u.name) combined[k].name=u.name; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
+    prospectsData.forEach(function(u){ var k=(u.username||'').toLowerCase(); if(!k)return; if(!combined[k]) combined[k]={name:u.name||u.username,photo:'',whatsapp:u.whatsapp||'',sales:0,cierres:0,prospects:0}; combined[k].prospects=u.score||0; if(!combined[k].photo) combined[k].photo=_getPhoto(k); if(u.name) combined[k].name=u.name; if(u.whatsapp) combined[k].whatsapp=u.whatsapp; });
     // Calculate total and sort
     var ranking = Object.keys(combined).map(function(k){ var c=combined[k]; c.ref=k; c.total=c.sales+c.cierres+c.prospects; return c; });
     ranking.sort(function(a,b){return b.total-a.total;});

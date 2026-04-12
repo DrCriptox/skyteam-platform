@@ -21,6 +21,7 @@ module.exports = async (req, res) => {
     const body = req.method === 'POST' ? req.body : {};
     const action = body.action || req.query?.action || '';
     const user = body.user || req.query?.user || '';
+    const noPhoto = body.noPhoto || req.query?.noPhoto || false;
 
     // ===== GET WEEKLY TOP 10 (with IP flags) =====
     if (action === 'weeklyTop') {
@@ -93,7 +94,7 @@ module.exports = async (req, res) => {
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
-        const users = await sb('users?select=username,name,ref,photo,whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        const users = await sb('users?select=username,name,ref,' + (noPhoto ? '' : 'photo,') + 'whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
@@ -161,7 +162,7 @@ module.exports = async (req, res) => {
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
-        const users = await sb('users?select=username,name,ref,photo,whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        const users = await sb('users?select=username,name,ref,' + (noPhoto ? '' : 'photo,') + 'whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
@@ -231,7 +232,7 @@ module.exports = async (req, res) => {
       const usernames = Object.keys(userStats);
       let usersMap = {};
       if (usernames.length > 0) {
-        const users = await sb('users?select=username,name,photo,whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
+        const users = await sb('users?select=username,name,' + (noPhoto ? '' : 'photo,') + 'whatsapp&username=in.(' + usernames.map(u => '"' + u + '"').join(',') + ')');
         (users || []).forEach(function(u) { usersMap[u.username] = u; });
       }
 
@@ -514,7 +515,7 @@ module.exports = async (req, res) => {
         sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&limit=5000'),
         sb('interacciones?select=username,tipo,contenido,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&limit=5000'),
         sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2 + '&limit=5000'),
-        sb('users?select=username,name,photo,whatsapp&limit=5000')
+        sb('users?select=username,name,' + (noPhoto ? '' : 'photo,') + 'whatsapp&limit=5000')
       ]);
       var allProspectos = results2[0] || [];
       var allInteracciones = results2[1] || [];

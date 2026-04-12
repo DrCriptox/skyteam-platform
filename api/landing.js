@@ -382,7 +382,7 @@ export default async function handler(req, res) {
           return {
             ref: ref, nombre: asesor.nombre || ref,
             visitas: visitas, uniqueVisitas: uniqueIps, duplicadas: duplicadas, conversiones: validConversions, score: score, efectividad: efectividad,
-            whatsapp: asesor.whatsapp || '', foto: asesor.foto || '',
+            whatsapp: asesor.whatsapp || '', foto: (req.body && req.body.noPhoto) ? '' : (asesor.foto || ''),
             newLanding: !!skyAsesores[ref]
           };
         })
