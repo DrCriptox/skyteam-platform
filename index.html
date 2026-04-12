@@ -5794,7 +5794,8 @@ function guardarAgendaConfig() {
     return;
   }
   if(!agendaConfig.nombre) agendaConfig.nombre=CU?CU.name:'';
-  agendaConfig.whatsapp=CU&&CU.whatsapp?CU.whatsapp:(localStorage.getItem('skyteam_ref_wa')||'');
+  // Only use profile WA as fallback if agenda WA is empty
+  if(!agendaConfig.whatsapp) agendaConfig.whatsapp=CU&&CU.whatsapp?CU.whatsapp:(localStorage.getItem('skyteam_ref_wa')||'');
   agendaConfig.timezone='America/Bogota';
   // Preserve foto if already set
   if(window._agendaFotoDataUrl) agendaConfig.foto = window._agendaFotoDataUrl;
@@ -5874,7 +5875,7 @@ function guardarForzado() {
   if(link) agendaConfig.linkReunion = link.value;
   if(msg) agendaConfig.mensaje = msg.value;
   if(waInput2) { var _v2=waInput2.value.replace(/[^0-9]/g,''); agendaConfig.whatsapp=_v2?'+'+_v2:''; }
-  agendaConfig.nombre = CU ? CU.name : '';
+  if(!agendaConfig.nombre) agendaConfig.nombre = CU ? CU.name : '';
   agendaConfig.timezone = 'America/Bogota';
   if(window._agendaFotoDataUrl) agendaConfig.foto = window._agendaFotoDataUrl;
   fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},
