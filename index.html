@@ -6009,7 +6009,7 @@ function startAgendaPoll() {
         }
         else { agendaBookings=d.bookings||[]; refreshNotifications(); }
       }).catch(function(){});
-  },15000);
+  },45000);
 }
 function stopAgendaPoll(){if(agendaPollInterval){clearInterval(agendaPollInterval);agendaPollInterval=null;}}
 
@@ -10402,7 +10402,7 @@ function startChatPolling() {
         }
       }
     });
-  }, 15000);
+  }, 30000);
 }
 
 function stopChatPolling() {
