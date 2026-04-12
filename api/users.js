@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,is_admin,email,whatsapp,birthday,bankcode,profession,income_goal,comm_style,instagram,created_at&limit=1000',
+      SUPABASE_URL + '/rest/v1/users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,is_admin,email,whatsapp,birthday,bankcode,profession,income_goal,comm_style,instagram,photo,created_at&limit=1000',
       { headers: HEADERS }
     );
     if (!r.ok) {
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         isAdmin: row.is_admin || false,
         innova_user: row.innova_user || null,
         birthday: row.birthday || null,
-        photo: null, // Photos excluded from list to save bandwidth (4MB -> ~50KB)
+        photo: row.photo || null,
         bankcode: row.bankcode || null,
         instagram: row.instagram || null
       };
