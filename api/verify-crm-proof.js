@@ -68,6 +68,14 @@ module.exports = async (req, res) => {
             + '- The innova logo (blue checkmark/infinity symbol) is a strong indicator '
             + 'If you see the innova interface with financial data, it is valid. '
             + 'REJECT if: casual photo, chat screenshot, handwritten note, or unrelated image.';
+        } else if (tipo === 'presentacion') {
+          promptText = 'Analyze this image FLEXIBLY. Does it show evidence of a BUSINESS PRESENTATION or PROSPECT INTEREST? Accept ANY of these: '
+            + '- A video call screen (Zoom, Google Meet, Teams) with 2+ participants — even blurry or from a phone camera '
+            + '- A chat/WhatsApp conversation where someone responds POSITIVELY to a business link (e.g. "I want more info", "I am interested", "I want to activate", "tell me more", "quiero activar", "me interesa", "quiero mas informacion") '
+            + '- A screenshot showing a landing page or presentation being shared '
+            + '- A photo of a screen showing a video call or presentation in progress '
+            + 'Be GENEROUS. If you see a video call with people OR a chat where someone shows interest in a business opportunity, accept it. '
+            + 'REJECT ONLY if the image is completely unrelated (food, selfie, random photo).';
         } else {
           promptText = 'Analyze this image FLEXIBLY. Does it show ANY evidence of a payment or money transfer? Accept ANY of these: '
             + '- Bank transfer screenshot or confirmation '
@@ -107,8 +115,8 @@ module.exports = async (req, res) => {
       }
 
       // 4) Save to proof_images table
-      // Cierre requires higher confidence (official invoice), abono is more flexible
-      var minConfidence = tipo === 'cierre' ? 60 : 35;
+      // Cierre: strict (official invoice), Abono: flexible (any payment), Presentacion: very flexible (zoom/chat)
+      var minConfidence = tipo === 'cierre' ? 60 : tipo === 'presentacion' ? 30 : 35;
       var proofStatus = aiResult.isPaymentProof && aiResult.confidence >= minConfidence ? 'approved' : 'pending_review';
       var proofData = {
         username: username,
