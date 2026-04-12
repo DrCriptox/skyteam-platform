@@ -500,7 +500,7 @@ async function handleTriggers(req, res) {
     // 8:50 PM: Ranking Global cierre del dia
     try {
       var _rkSlot = null;
-      if (colHour === 8 && colMin >= 45 && colMin <= 55) _rkSlot = 'morning';
+      if (colHour === 7 && colMin >= 45 && colMin <= 55) _rkSlot = 'morning';
       else if (colHour === 13 && colMin >= 45 && colMin <= 55) _rkSlot = 'midday';
       else if (colHour === 20 && colMin >= 45 && colMin <= 55) _rkSlot = 'evening';
 
@@ -551,13 +551,13 @@ async function handleTriggers(req, res) {
           var _title, _body, _nav;
 
           if (_rkSlot === 'morning') {
-            // Morning: Global ranking + start the day
+            // Morning: How you closed YESTERDAY + motivation for today
             _nav = '/?nav=ranking';
-            if (_gPos===1) { _title='\u2600\uFE0F Buenos dias, #1!'; _body='Arrancas el dia liderando el ranking. \u00a1Mant\u00e9n ese ritmo!'; }
-            else if (_gPos<=3) { _title='\u2600\uFE0F Top 3 (#'+_gPos+') \u2014 \u00a1Buen dia!'; _body='Estas entre los mejores. \u00a1Hoy puedes llegar al #1!'; }
-            else if (_gPos<=10) { _title='\u2600\uFE0F #'+_gPos+' en el ranking'; _body='Buen dia! A '+ (_globalList[2].score-_gu.score) +' pts del top 3. \u00a1Hoy se puede!'; }
-            else if (_gPos<=20) { _title='\u2600\uFE0F Top 20 (#'+_gPos+')'; _body='Buenos dias! Una cita o un prospecto te acercan al top 10.'; }
-            else { _title='\u2600\uFE0F \u00a1Arranca tu dia!'; _body='Agenda una cita, mueve un prospecto. \u00a1Entra al ranking hoy!'; }
+            if (_gPos===1) { _title='\u2600\uFE0F \u00a1Felicidades! Cerraste como #1'; _body='Ayer terminaste liderando el ranking. \u00a1Hoy a mantenerlo!'; }
+            else if (_gPos<=3) { _title='\u2600\uFE0F Cerraste en el top 3 (#'+_gPos+')'; _body='\u00a1Gran cierre ayer! Hoy puedes llegar al #1.'; }
+            else if (_gPos<=10) { _title='\u2600\uFE0F Ayer cerraste #'+_gPos; _body='A '+ (_globalList[2].score-_gu.score) +' pts del top 3. \u00a1Hoy arranca temprano!'; }
+            else if (_gPos<=20) { _title='\u2600\uFE0F Ayer cerraste #'+_gPos+' del top 20'; _body='Buen dia! Una cita temprana te acerca al top 10.'; }
+            else { _title='\u2600\uFE0F Buenos dias! Tu ranking te espera'; _body='Ayer no sumaste puntos. \u00a1Hoy agenda una cita y entra al top 20!'; }
 
           } else if (_rkSlot === 'midday') {
             // Midday: Best individual ranking or one to activate
@@ -581,13 +581,13 @@ async function handleTriggers(req, res) {
             }
 
           } else {
-            // Evening: Global ranking summary
+            // Evening: 3 hours left — urgency to close strong
             _nav = '/?nav=ranking';
-            if (_gPos===1) { _title='\uD83C\uDF19 \u00a1Cierras el dia como #1!'; _body='Felicidades, nadie te alcanzo. \u00a1Manana a mantenerlo!'; }
-            else if (_gPos<=3) { _title='\uD83C\uDF19 Cierras en el top 3 (#'+_gPos+')'; _body='\u00a1Excelente dia! Manana vas por el #1.'; }
-            else if (_gPos<=10) { _title='\uD83C\uDF19 Hoy cerraste #'+_gPos; _body='Buen dia. Manana puedes subir al top 3, \u00a1tu puedes!'; }
-            else if (_gPos<=20) { _title='\uD83C\uDF19 Top 20 (#'+_gPos+') al cierre'; _body='Buen trabajo. Manana agenda temprano y sube al top 10.'; }
-            else { _title='\uD83C\uDF19 Cierre del dia'; _body='Manana es un nuevo dia. \u00a1Arranca temprano y entra al ranking!'; }
+            if (_gPos===1) { _title='\uD83C\uDF19 \u00a1Vas #1! Faltan 3h para el cierre'; _body='Nadie te alcanza. \u00a1Cierra el dia como lider!'; }
+            else if (_gPos<=3) { _title='\uD83C\uDF19 #'+_gPos+' \u2014 Faltan 3h para el cierre'; _body='\u00a1Aun puedes subir al #1! Una accion mas y lo logras.'; }
+            else if (_gPos<=10) { _title='\uD83C\uDF19 #'+_gPos+' \u2014 3h para el cierre'; _body='A '+ (_globalList[2].score-_gu.score) +' pts del top 3. \u00a1Ultima oportunidad hoy!'; }
+            else if (_gPos<=20) { _title='\uD83C\uDF19 Quedan 3h \u2014 Estas #'+_gPos; _body='\u00a1Sube al top 10 antes del cierre! Mueve un prospecto.'; }
+            else { _title='\uD83C\uDF19 Quedan 3 horas'; _body='\u00a1Aun puedes entrar al ranking hoy! Agenda o gestiona.'; }
           }
 
           var _tag = 'skyteam-rk-' + _rkSlot + '-' + _today + '-' + _gu.username;
