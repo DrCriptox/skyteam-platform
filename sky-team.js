@@ -1180,7 +1180,11 @@ function renderSTRanking() {
         rhtml+='<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);overflow:hidden;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.06);">'+(foto?'<img src="'+foto+'" style="width:100%;height:100%;object-fit:cover;">':ini)+'</div>';
         rhtml+='<div style="flex:1;min-width:0;">';
         rhtml+='<div style="font-size:12px;font-weight:'+(isMe?'700':'600')+';color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_safe(u.name||'?')+'</div>';
-        rhtml+='<div style="font-size:8px;margin-top:1px;opacity:0.5;color:#C9A84C;">S:'+u.sales+' P:'+u.prospects+' C:'+u.cierres+'</div>';
+        rhtml+='<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">'
+          +'<span style="display:inline-flex;align-items:center;gap:1px;opacity:0.5;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span style="font-size:10px;font-weight:600;color:#C9A84C;">'+u.sales+'</span></span>'
+          +'<span style="display:inline-flex;align-items:center;gap:1px;opacity:0.5;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><circle cx="11" cy="9" r="2.5"/><path d="M7.5 15c0-2 1.5-3 3.5-3s3.5 1 3.5 3"/></svg><span style="font-size:10px;font-weight:600;color:#C9A84C;">'+u.prospects+'</span></span>'
+          +'<span style="display:inline-flex;align-items:center;gap:1px;opacity:0.5;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span style="font-size:10px;font-weight:600;color:#C9A84C;">'+u.cierres+'</span></span>'
+          +'</div>';
         rhtml+='</div>';
         rhtml+='<div style="flex-shrink:0;text-align:right;"><span style="font-size:15px;font-weight:900;color:#C9A84C;">'+u.total+'</span><span style="font-size:7px;color:rgba(255,255,255,0.2);margin-left:1px;">PTS</span></div>';
         rhtml+='</div>';
