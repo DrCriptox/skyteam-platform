@@ -1120,8 +1120,8 @@ function renderSTRanking() {
   var d = stState.data;
   if (!d) return _spinnerHTML();
 
-  // Only direct line (level 1)
-  var directs = (d.members || []).filter(function(m){ return m.level === 1; });
+  // All members from the network (all levels)
+  var directs = (d.members || []).slice();
   var html = '';
 
   // Period tabs: Hoy / Semana / Mes
