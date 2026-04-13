@@ -75,6 +75,22 @@ module.exports = async function handler(req, res) {
       var b = req.body;
       if (!b.username || !b.titulo || !b.fecha) return res.status(400).json({ error: 'titulo, fecha, username required' });
 
+      // Rank check: only NOVA 1500+ (rango >= 3) or admin can create events
+      var MIN_RANK = 3; // NOVA 1500
+      try {
+        var rkR = await SB('users?username=eq.' + encodeURIComponent(b.username) + '&select=rango,is_admin&limit=1');
+        var rkRows = await rkR.json();
+        if (Array.isArray(rkRows) && rkRows.length) {
+          var userRango = parseInt(rkRows[0].rango) || 0;
+          var isAdm = rkRows[0].is_admin;
+          if (userRango < MIN_RANK && !isAdm) {
+            return res.status(403).json({ error: 'Se requiere rango NOVA 1500 o superior para crear eventos' });
+          }
+        } else {
+          return res.status(403).json({ error: 'Usuario no encontrado' });
+        }
+      } catch(e) { return res.status(500).json({ error: 'Error verificando rango' }); }
+
       var slug = makeSlug(b.titulo, b.ciudad);
       var eventData = {
         created_by: b.username,
@@ -91,6 +107,8 @@ module.exports = async function handler(req, res) {
         capacidad: parseInt(b.capacidad) || 100,
         precio: b.precio || 'Gratis',
         whatsapp_pago: b.whatsapp_pago || '',
+        vsl_url: b.vsl_url || '',
+        testimonios: b.testimonios || null,
         status: 'draft',
         is_public: false,
         created_at: new Date().toISOString(),
@@ -259,7 +277,7 @@ module.exports = async function handler(req, res) {
 
       var updates = {};
       ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion',
-       'link_virtual', 'capacidad', 'precio', 'whatsapp_pago', 'status'].forEach(function(f) {
+       'link_virtual', 'capacidad', 'precio', 'whatsapp_pago', 'vsl_url', 'testimonios', 'status'].forEach(function(f) {
         if (b[f] !== undefined) updates[f] = b[f];
       });
       updates.updated_at = new Date().toISOString();
@@ -589,6 +607,13 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '.ev-ref-name{color:#d4af37;font-weight:600}'
     + '.ev-footer{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px}'
     + '.ev-footer a{color:rgba(212,175,55,0.6);text-decoration:none}'
+    + '.ev-vsl{max-width:700px;margin:0 auto;padding:40px 20px;text-align:center}'
+    + '.ev-vsl-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px;border:1px solid rgba(255,255,255,0.08);background:#000}'
+    + '.ev-vsl-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}'
+    + '.ev-testimonials{max-width:700px;margin:0 auto;padding:40px 20px}'
+    + '.ev-testimonial{padding:20px;margin-bottom:14px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}'
+    + '.ev-testimonial-text{color:rgba(255,255,255,0.75);font-style:italic;line-height:1.6;margin-bottom:8px;font-size:1rem}'
+    + '.ev-testimonial-author{color:#d4af37;font-weight:600;font-size:14px}'
     + '@media(max-width:600px){.ev-speaker{flex-direction:column;text-align:center}.ev-meta{flex-direction:column;align-items:center}}'
     + '</style></head><body>'
 
@@ -614,6 +639,9 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<div class="ev-about">' + (content.about || '') + '</div>'
     + '</section>'
 
+    // ── VSL VIDEO ──
+    + (ev.vsl_url ? '<section class="ev-vsl"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2><div class="ev-vsl-wrap"><iframe src="' + esc(_toEmbed(ev.vsl_url)) + '" allowfullscreen allow="autoplay;encrypted-media"></iframe></div></section>' : '')
+
     // ── BENEFITS ──
     + '<section class="ev-section"><h2>Lo que Obtendras</h2>'
     + '<ul class="ev-bullets">'
@@ -629,6 +657,9 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + (creator.rango ? '<div class="ev-speaker-role">' + esc(creator.rango) + '</div>' : '')
     + '<div class="ev-speaker-bio">' + esc(content.speaker_intro || '') + '</div>'
     + '</div></div></section>'
+
+    // ── TESTIMONIALS ──
+    + (Array.isArray(ev.testimonios) && ev.testimonios.length ? '<section class="ev-testimonials"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center">Lo que Dicen Nuestros Asistentes</h2>' + ev.testimonios.map(function(t) { return '<div class="ev-testimonial"><div class="ev-testimonial-text">"' + esc(t.texto || t.text || '') + '"</div><div class="ev-testimonial-author">— ' + esc(t.nombre || t.name || 'Anonimo') + '</div></div>'; }).join('') + '</section>' : '')
 
     // ── REGISTRATION FORM ──
     + '<section class="ev-form-section" id="ev-registro">'
@@ -707,3 +738,16 @@ function buildEventHTML(ev, content, creator, posterUrl) {
 }
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Convert YouTube/Vimeo URLs to embed format
+function _toEmbed(url) {
+  if (!url) return '';
+  // YouTube: various formats
+  var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0';
+  // Vimeo
+  var vmMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vmMatch) return 'https://player.vimeo.com/video/' + vmMatch[1];
+  // Already embed or other URL — return as-is
+  return url;
+}

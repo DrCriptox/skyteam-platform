@@ -2479,8 +2479,12 @@ function renderSTEventos() {
   }
   html += '</div>';
 
-  // Create button (always visible)
-  html += '<button onclick="openEventWizard()" style="width:100%;padding:14px;border-radius:14px;border:1px dashed ' + C.gold + ';background:rgba(201,168,76,0.05);color:' + C.gold + ';font-size:15px;font-weight:700;cursor:pointer;margin-bottom:20px;font-family:inherit">+ Crear Evento</button>';
+  // Create button (only NOVA 1500+ / rango >= 3)
+  var cuRango = (typeof CU !== 'undefined' && CU) ? (parseInt(CU.rango) || 0) : 0;
+  var cuIsAdmin = (typeof CU !== 'undefined' && CU) ? CU.is_admin : false;
+  if (cuRango >= 3 || cuIsAdmin) {
+    html += '<button onclick="openEventWizard()" style="width:100%;padding:14px;border-radius:14px;border:1px dashed ' + C.gold + ';background:rgba(201,168,76,0.05);color:' + C.gold + ';font-size:15px;font-weight:700;cursor:pointer;margin-bottom:20px;font-family:inherit">+ Crear Evento</button>';
+  }
 
   switch (stState.evtView) {
     case 'team': html += _renderEvtTeam(cuUser); break;
@@ -2751,7 +2755,8 @@ function openEventWizard() {
     titulo: '', descripcion: '', tipo: 'presencial',
     fecha: '', hora: '19:00', ciudad: '', lugar: '',
     direccion: '', link_virtual: '', capacidad: 100,
-    precio: 'Gratis', whatsapp_pago: ''
+    precio: 'Gratis', whatsapp_pago: '', vsl_url: '',
+    testimonios: [{ nombre: '', texto: '' }]
   };
   stState.evtWizardStep = 1;
   stState.evtCreating = true;
@@ -2799,7 +2804,28 @@ function _renderEvtWizard() {
     html += '<label style="display:block;margin-bottom:6px;font-size:12px;color:' + C.textSub + '">Descripcion breve</label>';
     html += '<textarea id="evtD_descripcion" rows="3" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit;resize:vertical;margin-bottom:16px" placeholder="Describe el evento en 2-3 lineas...">' + _esc(d.descripcion || '') + '</textarea>';
 
-    html += '<button onclick="evtWizardNext()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">Siguiente →</button>';
+    // VSL Video
+    html += '<div style="margin-top:8px;padding-top:16px;border-top:1px solid ' + C.border + '">';
+    html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">📹 Video (VSL)</div>';
+    html += _wizInput('URL de YouTube o Vimeo', 'evtD_vsl_url', d.vsl_url, 'https://youtube.com/watch?v=...');
+    html += '</div>';
+
+    // Testimonios
+    html += '<div style="margin-top:4px;padding-top:16px;border-top:1px solid ' + C.border + '">';
+    html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">💬 Testimonios (opcional)</div>';
+    var tList = d.testimonios || [{ nombre: '', texto: '' }];
+    for (var ti = 0; ti < tList.length; ti++) {
+      html += '<div style="display:flex;gap:8px;margin-bottom:8px">';
+      html += '<input id="evtD_tNombre_' + ti + '" value="' + _esc(tList[ti].nombre || '') + '" placeholder="Nombre" style="width:35%;padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit">';
+      html += '<input id="evtD_tTexto_' + ti + '" value="' + _esc(tList[ti].texto || '') + '" placeholder="Testimonio..." style="width:65%;padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit">';
+      html += '</div>';
+    }
+    if (tList.length < 5) {
+      html += '<button onclick="_addTestimonio()" style="padding:6px 12px;border-radius:8px;border:1px dashed ' + C.border + ';background:transparent;color:' + C.textSub + ';font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:16px">+ Agregar testimonio</button>';
+    }
+    html += '</div>';
+
+    html += '<button onclick="evtWizardNext()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-top:8px">Siguiente →</button>';
 
   } else if (step === 2) {
     // Step 2: Preview / Generate AI / Publish
@@ -2848,13 +2874,33 @@ function _wizSelect(label, id, value, options) {
   return html;
 }
 
+function _addTestimonio() {
+  _readWizardFields();
+  var d = stState.evtDraft || {};
+  if (!d.testimonios) d.testimonios = [];
+  if (d.testimonios.length < 5) d.testimonios.push({ nombre: '', texto: '' });
+  stState.evtDraft = d;
+  _renderEvtWizard();
+}
+window._addTestimonio = _addTestimonio;
+
 function _readWizardFields() {
   var d = stState.evtDraft || {};
-  var fields = ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion', 'link_virtual', 'whatsapp_pago', 'capacidad', 'precio'];
+  var fields = ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion', 'link_virtual', 'whatsapp_pago', 'capacidad', 'precio', 'vsl_url'];
   for (var i = 0; i < fields.length; i++) {
     var el = document.getElementById('evtD_' + fields[i]);
     if (el) d[fields[i]] = el.value;
   }
+  // Read testimonials
+  var tList = d.testimonios || [];
+  for (var ti = 0; ti < tList.length; ti++) {
+    var nEl = document.getElementById('evtD_tNombre_' + ti);
+    var tEl = document.getElementById('evtD_tTexto_' + ti);
+    if (nEl) tList[ti].nombre = nEl.value;
+    if (tEl) tList[ti].texto = tEl.value;
+  }
+  // Filter out empty testimonials
+  d.testimonios = tList.filter(function(t) { return (t.nombre || '').trim() || (t.texto || '').trim(); });
   stState.evtDraft = d;
 }
 
@@ -2897,7 +2943,8 @@ function _wizCreateAndGenerate() {
       titulo: d.titulo, descripcion: d.descripcion, tipo: d.tipo,
       fecha: d.fecha, hora: d.hora, ciudad: d.ciudad, lugar: d.lugar,
       direccion: d.direccion, link_virtual: d.link_virtual,
-      capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago
+      capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago,
+      vsl_url: d.vsl_url || '', testimonios: (d.testimonios && d.testimonios.length) ? d.testimonios : null
     })
   }).then(function(r) { return r.json(); }).then(function(createData) {
     if (!createData.ok) {
@@ -2947,7 +2994,8 @@ function _wizCreateOnly() {
       titulo: d.titulo, descripcion: d.descripcion, tipo: d.tipo,
       fecha: d.fecha, hora: d.hora, ciudad: d.ciudad, lugar: d.lugar,
       direccion: d.direccion, link_virtual: d.link_virtual,
-      capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago
+      capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago,
+      vsl_url: d.vsl_url || '', testimonios: (d.testimonios && d.testimonios.length) ? d.testimonios : null
     })
   }).then(function(r) { return r.json(); }).then(function(data) {
     closeEvtWizard();
