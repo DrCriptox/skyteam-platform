@@ -95,9 +95,24 @@ function formatDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-function formatTime(t) {
+// Convert time from Colombia (America/Bogota) to user's timezone
+var _userTZ = localStorage.getItem('skyteam_tz') || 'America/Bogota';
+function _convertColToLocal(fecha, hora) {
+  if (!hora) return '';
+  try {
+    // Build a Date in Colombia timezone
+    var colStr = (fecha || new Date().toISOString().split('T')[0]) + 'T' + hora.substring(0,5) + ':00';
+    // Create date as if it's UTC-5 (Colombia)
+    var colDate = new Date(colStr + '-05:00');
+    // Format in user's timezone
+    return colDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: _userTZ });
+  } catch(e) { return hora.substring(0,5); }
+}
+
+function formatTime(t, fecha) {
   if (!t) return '';
-  return t.substring(0,5);
+  if (_userTZ === 'America/Bogota') return t.substring(0,5);
+  return _convertColToLocal(fecha, t);
 }
 
 function isToday(d) {
@@ -116,13 +131,16 @@ function getCatClass(cat) {
 }
 
 // --- COUNTDOWN ---
+// Events are stored in Colombia time (UTC-5). Append offset so Date parses correctly.
+function _colDate(fecha, hora) {
+  return new Date((fecha || '2026-01-01') + 'T' + (hora || '00:00:00') + '-05:00');
+}
 function getUpcomingEvents() {
   var now = new Date();
   return skyTvState.eventos.filter(function(e) {
-    var dt = new Date(e.fecha + 'T' + (e.hora_inicio || '00:00:00'));
-    return dt > now;
+    return _colDate(e.fecha, e.hora_inicio) > now;
   }).sort(function(a, b) {
-    return new Date(a.fecha + 'T' + (a.hora_inicio||'00:00:00')) - new Date(b.fecha + 'T' + (b.hora_inicio||'00:00:00'));
+    return _colDate(a.fecha, a.hora_inicio) - _colDate(b.fecha, b.hora_inicio);
   });
 }
 function getNextEvent() {
@@ -173,7 +191,7 @@ function renderCountdown(container) {
     container.innerHTML = '';
     return;
   }
-  var dt = new Date(next.fecha + 'T' + (next.hora_inicio || '00:00:00'));
+  var dt = _colDate(next.fecha, next.hora_inicio);
   var now = new Date();
   var diff = dt - now;
   if (diff < 0) { container.innerHTML = ''; return; }
@@ -205,13 +223,13 @@ function renderCountdown(container) {
       grad.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,rgba(10,10,18,0.95));border-radius:0 0 16px 16px;';
       var info = document.createElement('div');
       info.style.cssText = 'position:absolute;bottom:12px;left:16px;right:16px;';
-      var heDt = new Date(he.fecha + 'T' + (he.hora_inicio||'00:00'));
+      var heDt = _colDate(he.fecha, he.hora_inicio);
       var heNow = new Date();
       var heDiff = Math.max(0, Math.floor((heDt - heNow)/60000));
-      var heTimeLabel = heDiff <= 5 ? '\uD83D\uDD34 EN VIVO' : heDiff <= 60 ? '\u23F0 En ' + heDiff + ' min' : heDiff <= 240 ? '\uD83D\uDD14 En ' + Math.floor(heDiff/60) + 'h' : formatTime(he.hora_inicio);
+      var heTimeLabel = heDiff <= 5 ? '\uD83D\uDD34 EN VIVO' : heDiff <= 60 ? '\u23F0 En ' + heDiff + ' min' : heDiff <= 240 ? '\uD83D\uDD14 En ' + Math.floor(heDiff/60) + 'h' : formatTime(he.hora_inicio, he.fecha);
       info.innerHTML = '<div style="font-size:16px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);">' + (he.titulo||'') + '</div>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
-        + '<span style="font-size:11px;color:rgba(255,255,255,0.7);">' + (he.fecha||'') + ' \u2022 ' + formatTime(he.hora_inicio) + '</span>'
+        + '<span style="font-size:11px;color:rgba(255,255,255,0.7);">' + (he.fecha||'') + ' \u2022 ' + formatTime(he.hora_inicio, he.fecha) + '</span>'
         + '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.5);color:' + (heDiff<=5?'#E24B4A':heDiff<=60?'#FFD700':'#C9A84C') + ';font-weight:800;">' + heTimeLabel + '</span></div>';
       slide.appendChild(img); slide.appendChild(grad); slide.appendChild(info);
       track.appendChild(slide);
@@ -297,7 +315,7 @@ function renderCountdown(container) {
   var fDate = new Date(next.fecha + 'T00:00:00');
   var meta2 = document.createElement('div');
   meta2.className = 'skytv-countdown-meta';
-  meta2.textContent = DIAS_ES[fDate.getDay()] + ' ' + fDate.getDate() + ' ' + MESES_ES[fDate.getMonth()] + ' a las ' + formatTime(next.hora_inicio) + ' \u2022 ' + (next.host_nombre || '');
+  meta2.textContent = DIAS_ES[fDate.getDay()] + ' ' + fDate.getDate() + ' ' + MESES_ES[fDate.getMonth()] + ' a las ' + formatTime(next.hora_inicio, next.fecha) + ' \u2022 ' + (next.host_nombre || '');
   info2.appendChild(label);
   info2.appendChild(title2);
   info2.appendChild(meta2);
@@ -484,7 +502,7 @@ function renderCartelera() {
         }
         var timeDiv = document.createElement('div');
         timeDiv.className = 'skytv-event-time';
-        timeDiv.textContent = (ev.en_vivo ? '\u25CF EN VIVO \u2022 ' : '') + formatTime(ev.hora_inicio) + (ev.hora_fin ? ' - ' + formatTime(ev.hora_fin) : '');
+        timeDiv.textContent = (ev.en_vivo ? '\u25CF EN VIVO \u2022 ' : '') + formatTime(ev.hora_inicio, ev.fecha) + (ev.hora_fin ? ' - ' + formatTime(ev.hora_fin, ev.fecha) : '');
         var titleDiv = document.createElement('div');
         titleDiv.className = 'skytv-event-title';
         titleDiv.textContent = ev.titulo;
@@ -512,7 +530,7 @@ function renderCartelera() {
     if (!timerEl) return;
     var nxt = getNextEvent();
     if (!nxt) return;
-    var d2 = new Date(nxt.fecha + 'T' + (nxt.hora_inicio || '00:00:00'));
+    var d2 = _colDate(nxt.fecha, nxt.hora_inicio);
     var diff2 = d2 - new Date();
     if (diff2 < 0) { renderCountdown(document.getElementById('skytv-countdown')); return; }
     var h2 = Math.floor(diff2 / 3600000);
@@ -575,7 +593,7 @@ function openEventDetail(ev) {
 
   var fields = [
     {label: 'Fecha', value: (function(){ var d=new Date(ev.fecha+'T00:00:00'); return DIAS_ES[d.getDay()]+' '+d.getDate()+' '+MESES_ES[d.getMonth()]+' '+d.getFullYear(); })()},
-    {label: 'Horario', value: formatTime(ev.hora_inicio) + (ev.hora_fin ? ' - ' + formatTime(ev.hora_fin) : '')},
+    {label: 'Horario', value: formatTime(ev.hora_inicio, ev.fecha) + (ev.hora_fin ? ' - ' + formatTime(ev.hora_fin, ev.fecha) : '')},
     {label: 'Categor\u00eda', value: ev.categoria || '-'},
     {label: 'Host', value: ev.host_nombre || '-'},
     {label: 'Descripci\u00f3n', value: ev.descripcion || '-'}
@@ -987,7 +1005,7 @@ function checkSkyTvNotifications() {
 
   skyTvState.eventos.forEach(function(ev) {
     if (!ev.fecha || !ev.hora_inicio) return;
-    var dt = new Date(ev.fecha + 'T' + ev.hora_inicio);
+    var dt = _colDate(ev.fecha, ev.hora_inicio);
     var diff = (dt - now) / 60000; // diff in minutes
     var evId = ev.id || ev.titulo;
     var cat = (ev.categoria || '').toLowerCase();
@@ -1006,7 +1024,7 @@ function checkSkyTvNotifications() {
       pushNotification({
         id: 'skytv_8h_'+evId, type: 'event', icon: '\uD83D\uDCC5',
         title: '\uD83D\uDCC5 Evento en 8 horas',
-        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
+        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio, ev.fecha),
         msg: 'Prep\u00e1rate para la sesi\u00f3n de hoy. \u00A1Agr\u00e9galo a tu calendario!',
         action: {label: '\uD83D\uDCC5 Agregar a calendario', url: _gcalUrl}
       });
@@ -1018,7 +1036,7 @@ function checkSkyTvNotifications() {
       pushNotification({
         id: 'skytv_4h_'+evId, type: 'event', icon: '\u23F0',
         title: '\u23F0 Evento en 4 horas',
-        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
+        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio, ev.fecha),
         msg: 'No olvides conectarte. \u00A1Agr\u00e9galo a tu calendario!',
         action: {label: '\uD83D\uDCC5 Agregar a calendario', url: _gcalUrl}
       });
@@ -1030,7 +1048,7 @@ function checkSkyTvNotifications() {
       pushNotification({
         id: 'skytv_1h_'+evId, type: 'event', icon: '\uD83D\uDCFA',
         title: '\uD83D\uDCFA \u00A1Evento en 1 hora!',
-        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio),
+        subtitle: ev.titulo + ' \u2014 ' + formatTime(ev.hora_inicio, ev.fecha),
         msg: (ev.host_nombre ? 'Con ' + ev.host_nombre + '. ' : '') + 'Prep\u00e1rate para conectarte.',
         action: {label: '\uD83D\uDCC5 Agregar a calendario', url: _gcalUrl}
       });
