@@ -653,7 +653,11 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<meta name="description" content="' + esc(content.subheadline || ev.titulo) + '">'
     + '<meta property="og:title" content="' + esc(ev.titulo) + '">'
     + '<meta property="og:description" content="' + esc(content.subheadline || '') + '">'
-    + (posterUrl ? '<meta property="og:image" content="' + esc(posterUrl) + '">' : '')
+    + '<meta property="og:image" content="' + esc(ev.flyer_url ? _driveImg(ev.flyer_url) : (posterUrl || '')) + '">'
+    + '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">'
+    + '<meta property="og:type" content="website">'
+    + '<meta name="twitter:card" content="summary_large_image">'
+    + '<meta name="twitter:image" content="' + esc(ev.flyer_url ? _driveImg(ev.flyer_url) : (posterUrl || '')) + '">'
     + '<link rel="preconnect" href="https://fonts.googleapis.com">'
     + '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">'
     + '<style>'
