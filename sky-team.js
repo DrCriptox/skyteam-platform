@@ -2587,7 +2587,7 @@ function _renderEventCard(e, link, cuUser, isCreator) {
   // Header
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
   html += '<div style="flex:1">';
-  html += '<div style="font-weight:700;color:#fff;font-size:15px;margin-bottom:4px">' + _esc(e.titulo) + '</div>';
+  html += '<div onclick="_openEvtDetail(\'' + e.id + '\',\'' + _esc(e.slug) + '\',\'' + _esc(link) + '\',' + (isCreator ? 'true' : 'false') + ')" style="font-weight:700;color:#fff;font-size:15px;margin-bottom:4px;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(255,255,255,0.15);text-underline-offset:3px">' + _esc(e.titulo) + '</div>';
   html += '<div style="font-size:12px;color:' + C.textSub + '">';
   html += '📅 ' + _esc(e.fecha || '') + (e.hora ? ' • ' + _esc(e.hora) : '');
   if (e.ciudad) html += ' • 📍 ' + _esc(e.ciudad);
@@ -2618,12 +2618,14 @@ function _renderEventCard(e, link, cuUser, isCreator) {
       // Preview draft (via query param)
       html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '?preview=1" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Preview</a>';
       if (e.ai_poster_url) html += '<button onclick="_openEvtEditor(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.15);color:#4ecdc4;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Editar</button>';
+      html += '<button onclick="_deleteEvent(\'' + e.id + '\')" style="padding:7px 12px;border-radius:10px;background:rgba(255,60,60,0.06);border:0.5px solid rgba(255,60,60,0.15);color:rgba(255,100,100,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">🗑</button>';
     }
     if (st === 'published') {
       html += '<button onclick="_viewEvtStats(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📊 Stats</button>';
       html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Ver Landing</a>';
       html += '<button onclick="_generateEventAI(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.15);color:rgba(127,119,221,0.7);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Regenerar</button>';
       if (e.ai_poster_url) html += '<button onclick="_openEvtEditor(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.15);color:#4ecdc4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Editar</button>';
+      html += '<button onclick="_deleteEvent(\'' + e.id + '\')" style="padding:7px 12px;border-radius:10px;background:rgba(255,60,60,0.06);border:0.5px solid rgba(255,60,60,0.15);color:rgba(255,100,100,0.5);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">🗑</button>';
     }
   } else {
     // Team member actions (referral)
@@ -2634,6 +2636,102 @@ function _renderEventCard(e, link, cuUser, isCreator) {
   html += '</div></div>';
   return html;
 }
+
+// ── Delete event ──
+function _deleteEvent(eventId) {
+  if (!confirm('Eliminar este evento? Esta accion no se puede deshacer.')) return;
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete', event_id: eventId, username: cuUser })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      if (typeof showToast === 'function') showToast('Evento eliminado');
+      stState.evtMyList = null;
+      renderSkyTeam();
+    } else {
+      if (typeof showToast === 'function') showToast('Error: ' + (d.error || ''));
+    }
+  });
+}
+window._deleteEvent = _deleteEvent;
+
+// ── Event detail overlay (click on title) ──
+function _openEvtDetail(eventId, slug, link, isCreator) {
+  var old = document.getElementById('evt-detail-overlay');
+  if (old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'evt-detail-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.85);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+
+  var html = '<div style="width:100%;max-width:500px;background:#12122a;border-radius:20px;border:1px solid ' + C.border + ';padding:20px;margin-top:20px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  html += '<div style="font-size:16px;font-weight:700;color:#fff">Detalle del Evento</div>';
+  html += '<button onclick="document.getElementById(\'evt-detail-overlay\').remove()" style="background:none;border:none;color:' + C.textSub + ';font-size:24px;cursor:pointer">✕</button>';
+  html += '</div>';
+
+  // My referral link
+  html += '<div style="margin-bottom:16px">';
+  html += '<div style="font-size:11px;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Tu Link de Referido</div>';
+  html += '<div style="display:flex;gap:8px;align-items:center">';
+  html += '<input readonly value="' + _esc(link) + '" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:12px;font-family:inherit" onclick="this.select()">';
+  html += '<button onclick="_copyEvtLink(\'' + _esc(link) + '\')" style="padding:10px 14px;border-radius:10px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copiar</button>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:8px">';
+  html += '<button onclick="_shareEvtWA(\'Evento\',\'' + _esc(link) + '\')" style="flex:1;padding:10px;border-radius:10px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.2);color:#25d366;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💬 Compartir WA</button>';
+  if (slug) html += '<a href="https://skyteam.global/evento/' + _esc(slug) + '" target="_blank" style="flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;font-family:inherit">👁 Ver Landing</a>';
+  html += '</div></div>';
+
+  // Ranking promotores section
+  html += '<div style="border-top:1px solid ' + C.border + ';padding-top:16px">';
+  html += '<div style="font-size:11px;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Ranking de Promotores</div>';
+  html += '<div id="evt-detail-ranking"><div style="text-align:center;color:rgba(255,255,255,0.2);font-size:12px;padding:20px">Cargando...</div></div>';
+  html += '</div>';
+
+  html += '</div>';
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+
+  // Load stats
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'stats', event_id: eventId })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    var container = document.getElementById('evt-detail-ranking');
+    if (!container || !d.ok) { if (container) container.innerHTML = '<div style="color:rgba(255,255,255,0.2);text-align:center;font-size:12px">Sin datos</div>'; return; }
+
+    var refs = d.byReferrer || {};
+    var keys = Object.keys(refs).sort(function(a, b) { return refs[b].registrations - refs[a].registrations; });
+    var medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+
+    var rhtml = '<div style="display:flex;gap:10px;margin-bottom:14px">';
+    rhtml += '<div style="flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid ' + C.border + ';text-align:center"><div style="font-size:20px;font-weight:700;color:#fff">' + (d.totalVisits || 0) + '</div><div style="font-size:10px;color:' + C.textSub + '">Visitas</div></div>';
+    rhtml += '<div style="flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid ' + C.border + ';text-align:center"><div style="font-size:20px;font-weight:700;color:' + C.gold + '">' + (d.totalRegistrations || 0) + '</div><div style="font-size:10px;color:' + C.textSub + '">Registros</div></div>';
+    rhtml += '</div>';
+
+    if (keys.length) {
+      rhtml += '<div style="max-height:250px;overflow-y:auto;border-radius:10px;border:1px solid ' + C.border + '">';
+      rhtml += '<div style="display:flex;padding:8px 10px;background:rgba(201,168,76,0.06);border-bottom:1px solid ' + C.border + ';font-size:10px;color:' + C.gold + ';font-weight:600"><div style="width:28px">#</div><div style="flex:1">Socio</div><div style="width:50px;text-align:center">Visitas</div><div style="width:50px;text-align:center">Regs</div></div>';
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var ref = refs[k];
+        rhtml += '<div style="display:flex;padding:8px 10px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px">';
+        rhtml += '<div style="width:28px;font-weight:700;color:' + (i < 3 ? C.gold : C.textSub) + '">' + (medals[i] || (i + 1)) + '</div>';
+        rhtml += '<div style="flex:1;color:#fff;font-weight:' + (i < 3 ? '600' : '400') + '">@' + _esc(k === 'direct' ? 'directo' : k) + '</div>';
+        rhtml += '<div style="width:50px;text-align:center;color:' + C.textSub + '">' + ref.visits + '</div>';
+        rhtml += '<div style="width:50px;text-align:center;color:#fff;font-weight:600">' + ref.registrations + '</div>';
+        rhtml += '</div>';
+      }
+      rhtml += '</div>';
+    } else {
+      rhtml += '<div style="text-align:center;color:rgba(255,255,255,0.2);font-size:12px;padding:20px">Aun no hay promotores</div>';
+    }
+
+    container.innerHTML = rhtml;
+  });
+}
+window._openEvtDetail = _openEvtDetail;
 
 // ── Copy link ──
 function _copyEvtLink(link) {

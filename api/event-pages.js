@@ -294,6 +294,24 @@ module.exports = async function handler(req, res) {
     // ═══════════════════════════════════════════════════
     //  UPDATE — Edit event data
     // ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════
+    //  DELETE — Remove event and all related data
+    // ═══════════════════════════════════════════════════
+    if (action === 'delete' && req.method === 'POST') {
+      var b = req.body;
+      if (!b.event_id || !b.username) return res.status(400).json({ error: 'event_id + username required' });
+      var evR = await SB('event_pages?id=eq.' + b.event_id + '&select=created_by&limit=1');
+      var evRows = await evR.json();
+      if (!Array.isArray(evRows) || !evRows.length) return res.status(404).json({ error: 'Not found' });
+      if (evRows[0].created_by !== b.username) return res.status(403).json({ error: 'Only creator can delete' });
+      // Delete related data first (FK cascade should handle this, but be explicit)
+      await SB('event_visits?event_id=eq.' + b.event_id, { method: 'DELETE' });
+      await SB('event_registrations?event_id=eq.' + b.event_id, { method: 'DELETE' });
+      await SB('event_pages?id=eq.' + b.event_id, { method: 'DELETE' });
+      console.log('[EVENT] Deleted:', b.event_id, 'by', b.username);
+      return res.status(200).json({ ok: true });
+    }
+
     if (action === 'update' && req.method === 'POST') {
       var b = req.body;
       if (!b.event_id || !b.username) return res.status(400).json({ error: 'event_id + username required' });
