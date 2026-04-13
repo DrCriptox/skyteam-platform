@@ -2615,12 +2615,13 @@ function _renderEventCard(e, link, cuUser, isCreator) {
     if (st === 'draft') {
       html += '<button onclick="_publishEvent(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit">🚀 Publicar</button>';
       html += '<button onclick="_generateEventAI(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(127,119,221,0.15);border:1px solid rgba(127,119,221,0.25);color:' + C.purple + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✨ Generar Landing</button>';
+      // Preview draft (via query param)
+      html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '?preview=1" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Preview</a>';
     }
     if (st === 'published') {
       html += '<button onclick="_viewEvtStats(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📊 Stats</button>';
-    }
-    if (st === 'published' || st === 'draft') {
       html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Ver Landing</a>';
+      html += '<button onclick="_generateEventAI(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.15);color:rgba(127,119,221,0.7);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Regenerar</button>';
     }
   } else {
     // Team member actions (referral)
@@ -2812,7 +2813,7 @@ function openEventWizard() {
     titulo: '', descripcion: '', tipo: 'presencial',
     fecha: '', hora: '19:00', ciudad: '', lugar: '',
     direccion: '', link_virtual: '', capacidad: 100,
-    precio: 'Gratis', whatsapp_pago: '', vsl_url: '',
+    precio: 'Gratis', whatsapp_pago: '', vsl_url: '', flyer_url: '',
     testimonios: [{ nombre: '', texto: '', tipo: 'escrito', foto_url: '', video_url: '' }]
   };
   stState.evtWizardStep = 1;
@@ -2863,6 +2864,11 @@ function _renderEvtWizard() {
 
     // VSL Video
     html += '<div style="margin-top:8px;padding-top:16px;border-top:1px solid ' + C.border + '">';
+    html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">🖼️ Flyer del Evento</div>';
+    html += _wizInput('URL de la imagen del flyer/cartelera', 'evtD_flyer_url', d.flyer_url, 'https://... (sube tu flyer a imgur, imgbb, etc)');
+    html += '</div>';
+
+    html += '<div style="margin-top:4px;padding-top:16px;border-top:1px solid ' + C.border + '">';
     html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">📹 Video (VSL)</div>';
     html += _wizInput('URL de YouTube o Vimeo', 'evtD_vsl_url', d.vsl_url, 'https://youtube.com/watch?v=...');
     html += '</div>';
@@ -2970,7 +2976,7 @@ window._toggleTestType = _toggleTestType;
 
 function _readWizardFields() {
   var d = stState.evtDraft || {};
-  var fields = ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion', 'link_virtual', 'whatsapp_pago', 'capacidad', 'precio', 'vsl_url'];
+  var fields = ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion', 'link_virtual', 'whatsapp_pago', 'capacidad', 'precio', 'vsl_url', 'flyer_url'];
   for (var i = 0; i < fields.length; i++) {
     var el = document.getElementById('evtD_' + fields[i]);
     if (el) d[fields[i]] = el.value;
@@ -3036,7 +3042,8 @@ function _wizCreateAndGenerate() {
       fecha: d.fecha, hora: d.hora, ciudad: d.ciudad, lugar: d.lugar,
       direccion: d.direccion, link_virtual: d.link_virtual,
       capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago,
-      vsl_url: d.vsl_url || '', testimonios: (d.testimonios && d.testimonios.length) ? d.testimonios : null
+      vsl_url: d.vsl_url || '', flyer_url: d.flyer_url || '',
+      testimonios: (d.testimonios && d.testimonios.length) ? d.testimonios : null
     })
   }).then(function(r) { return r.json(); }).then(function(createData) {
     if (!createData.ok) {
@@ -3087,7 +3094,8 @@ function _wizCreateOnly() {
       fecha: d.fecha, hora: d.hora, ciudad: d.ciudad, lugar: d.lugar,
       direccion: d.direccion, link_virtual: d.link_virtual,
       capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago,
-      vsl_url: d.vsl_url || '', testimonios: (d.testimonios && d.testimonios.length) ? d.testimonios : null
+      vsl_url: d.vsl_url || '', flyer_url: d.flyer_url || '',
+      testimonios: (d.testimonios && d.testimonios.length) ? d.testimonios : null
     })
   }).then(function(r) { return r.json(); }).then(function(data) {
     closeEvtWizard();

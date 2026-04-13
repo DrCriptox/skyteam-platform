@@ -108,6 +108,7 @@ module.exports = async function handler(req, res) {
         precio: b.precio || 'Gratis',
         whatsapp_pago: b.whatsapp_pago || '',
         vsl_url: b.vsl_url || '',
+        flyer_url: b.flyer_url || '',
         testimonios: b.testimonios || null,
         status: 'draft',
         is_public: false,
@@ -294,7 +295,7 @@ module.exports = async function handler(req, res) {
 
       var updates = {};
       ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion',
-       'link_virtual', 'capacidad', 'precio', 'whatsapp_pago', 'vsl_url', 'testimonios', 'status'].forEach(function(f) {
+       'link_virtual', 'capacidad', 'precio', 'whatsapp_pago', 'vsl_url', 'flyer_url', 'testimonios', 'status'].forEach(function(f) {
         if (b[f] !== undefined) updates[f] = b[f];
       });
       updates.updated_at = new Date().toISOString();
@@ -697,6 +698,9 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<div class="ev-cd" id="ev-countdown"></div>'
     + '<a href="#ev-registro" class="ev-cta">' + esc(content.cta_text || 'Reserva tu Cupo YA') + '</a>'
     + '</div></section>'
+
+    // ── FLYER (cartelera de cine) ──
+    + (ev.flyer_url ? '<section class="ev-s ev-reveal" style="text-align:center;padding:40px 20px"><img src="' + esc(ev.flyer_url) + '" alt="' + esc(ev.titulo) + '" style="max-width:100%;max-height:600px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:contain"></section>' : '')
 
     // ── HOOK ──
     + (content.hook ? '<section class="ev-hook ev-reveal"><p>' + esc(content.hook) + '</p></section>' : '')

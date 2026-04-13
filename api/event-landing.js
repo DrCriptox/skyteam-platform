@@ -34,8 +34,9 @@ module.exports = async function handler(req, res) {
     if (!Array.isArray(rows) || !rows.length) return res.status(404).send(errorPage('Evento no encontrado'));
     var ev = rows[0];
 
-    // Only serve published events
-    if (ev.status !== 'published' || !ev.is_public) {
+    // Only serve published events (or draft with ?preview=1)
+    var isPreview = req.query.preview === '1';
+    if (!isPreview && (ev.status !== 'published' || !ev.is_public)) {
       return res.status(404).send(errorPage('Este evento aun no esta disponible'));
     }
 
@@ -63,6 +64,12 @@ module.exports = async function handler(req, res) {
       }
       // Remove unused placeholder
       html = html.replace('<!--REF_BADGE-->', '');
+
+      // Add preview banner if draft
+      if (isPreview && ev.status !== 'published') {
+        var previewBar = '<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#ff6b00;color:#fff;text-align:center;padding:8px;font-family:sans-serif;font-size:13px;font-weight:600">⚠️ MODO PREVIEW — Esta landing aun no esta publicada</div>';
+        html = html.replace('<body>', '<body>' + previewBar);
+      }
 
       // Cache without ref personalization (base HTML)
       PAGE_CACHE[slug] = { html: ev.ai_html, ts: now };
