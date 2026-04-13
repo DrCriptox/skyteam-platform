@@ -49,23 +49,43 @@ module.exports = async function handler(req, res) {
     if (ev.ai_html) {
       var html = ev.ai_html;
 
-      // Personalize for referrer: inject photo + name + rank
+      // Personalize for referrer: use landing_profiles (same as Sky Sales IA landing)
       var ref = req.query.ref || '';
       if (ref) {
         try {
-          var refR = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(ref) + '&select=name,photo,rank,whatsapp&limit=1', { headers: SB_H });
-          var refRows = await refR.json();
-          if (Array.isArray(refRows) && refRows.length) {
-            var ru = refRows[0];
-            var rPhoto = (ru.photo && ru.photo.length > 500) ? ru.photo : '';
-            var rName = ru.name || ref;
-            var rRank = _rn(parseInt(ru.rank) || 0);
-            var badge = '<div class="ev-ref-card">'
-              + (rPhoto ? '<img class="ev-ref-photo" src="' + esc(rPhoto) + '" alt="">' : '<div class="ev-ref-photo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#d4af37;background:#1a1a2e">👤</div>')
-              + '<div class="ev-ref-info">Te invita<br><span class="ev-ref-name">' + esc(rName) + '</span><br>' + esc(rRank) + '</div></div>';
-            html = html.replace('<!--REF_BADGE-->', badge);
+          // First try landing_profiles (complete profile with custom photo, role, whatsapp)
+          var lpR = await fetch(SUPABASE_URL + '/rest/v1/landing_profiles?ref=eq.' + encodeURIComponent(ref) + '&select=nombre,foto,rol,whatsapp&limit=1', { headers: SB_H });
+          var lpRows = await lpR.json();
+          var rName = '', rPhoto = '', rRole = '', rWA = '';
+
+          if (Array.isArray(lpRows) && lpRows.length) {
+            var lp = lpRows[0];
+            rName = lp.nombre || ref;
+            rPhoto = lp.foto || '';
+            rRole = lp.rol || '';
+            rWA = lp.whatsapp || '';
           }
-        } catch(e) { /* ignore — badge just won't show */ }
+
+          // Fallback to users table if landing_profiles has no data
+          if (!rName || rName === ref) {
+            var uR = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(ref) + '&select=name,photo,rank,whatsapp&limit=1', { headers: SB_H });
+            var uRows = await uR.json();
+            if (Array.isArray(uRows) && uRows.length) {
+              var u = uRows[0];
+              if (!rName || rName === ref) rName = u.name || ref;
+              if (!rPhoto) rPhoto = (u.photo && u.photo.length > 500) ? u.photo : '';
+              if (!rRole) rRole = _rn(parseInt(u.rank) || 0);
+              if (!rWA) rWA = u.whatsapp || '';
+            }
+          }
+
+          var badge = '<div class="ev-ref-card">'
+            + (rPhoto ? '<img class="ev-ref-photo" src="' + esc(rPhoto) + '" alt="">' : '<div class="ev-ref-photo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#d4af37;background:#1a1a2e">👤</div>')
+            + '<div class="ev-ref-info">Te invita<br><span class="ev-ref-name">' + esc(rName) + '</span>'
+            + (rRole ? '<br><span style="font-size:11px;color:rgba(212,175,55,0.7)">' + esc(rRole) + '</span>' : '')
+            + '</div></div>';
+          html = html.replace('<!--REF_BADGE-->', badge);
+        } catch(e) { console.error('[EVENT-LANDING] Ref error:', e.message); }
       }
       // Remove unused placeholder
       html = html.replace('<!--REF_BADGE-->', '');

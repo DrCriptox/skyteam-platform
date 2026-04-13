@@ -533,16 +533,26 @@ module.exports = async function handler(req, res) {
         } catch(e) { console.error('[EVENT] Gamification error:', e.message); }
       }
 
-      // Lookup referrer's WhatsApp (so payment goes to the socio who shared the link)
+      // Lookup referrer's WhatsApp — try landing_profiles first (same as Sky Sales IA), then users
       var refWhatsapp = '';
       var refName = '';
       if (b.ref_username) {
         try {
-          var refR = await SB('users?username=eq.' + encodeURIComponent(b.ref_username) + '&select=whatsapp,name&limit=1');
-          var refRows = await refR.json();
-          if (Array.isArray(refRows) && refRows.length) {
-            refWhatsapp = refRows[0].whatsapp || '';
-            refName = refRows[0].name || b.ref_username;
+          // landing_profiles has the WhatsApp the socio configured for their personal landing
+          var lpR = await SB('landing_profiles?ref=eq.' + encodeURIComponent(b.ref_username) + '&select=whatsapp,nombre&limit=1');
+          var lpRows = await lpR.json();
+          if (Array.isArray(lpRows) && lpRows.length) {
+            refWhatsapp = lpRows[0].whatsapp || '';
+            refName = lpRows[0].nombre || b.ref_username;
+          }
+          // Fallback to users table
+          if (!refWhatsapp) {
+            var refR = await SB('users?username=eq.' + encodeURIComponent(b.ref_username) + '&select=whatsapp,name&limit=1');
+            var refRows = await refR.json();
+            if (Array.isArray(refRows) && refRows.length) {
+              if (!refWhatsapp) refWhatsapp = refRows[0].whatsapp || '';
+              if (!refName || refName === b.ref_username) refName = refRows[0].name || b.ref_username;
+            }
           }
         } catch(e) {}
       }
