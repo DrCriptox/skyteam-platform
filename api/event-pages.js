@@ -432,12 +432,30 @@ module.exports = async function handler(req, res) {
         } catch(e) { console.error('[EVENT] Gamification error:', e.message); }
       }
 
-      console.log('[EVENT] Registration:', b.nombre, 'for', ev.slug, 'ref:', b.ref_username || 'direct');
-      var result = { ok: true, registered: true };
-      if (ev.whatsapp_pago && ev.precio && ev.precio !== 'Gratis') {
-        result.whatsapp_pago = ev.whatsapp_pago;
-        result.precio = ev.precio;
+      // Lookup referrer's WhatsApp (so payment goes to the socio who shared the link)
+      var refWhatsapp = '';
+      var refName = '';
+      if (b.ref_username) {
+        try {
+          var refR = await SB('users?username=eq.' + encodeURIComponent(b.ref_username) + '&select=whatsapp,name&limit=1');
+          var refRows = await refR.json();
+          if (Array.isArray(refRows) && refRows.length) {
+            refWhatsapp = refRows[0].whatsapp || '';
+            refName = refRows[0].name || b.ref_username;
+          }
+        } catch(e) {}
       }
+
+      console.log('[EVENT] Registration:', b.nombre, 'for', ev.slug, 'ref:', b.ref_username || 'direct');
+      var result = { ok: true, registered: true, evento_titulo: ev.titulo };
+      // WhatsApp priority: referrer > event creator
+      var waTarget = refWhatsapp || ev.whatsapp_pago || '';
+      var waName = refWhatsapp ? refName : ev.created_by;
+      if (waTarget) {
+        result.whatsapp_target = waTarget;
+        result.whatsapp_name = waName;
+      }
+      if (ev.precio && ev.precio !== 'Gratis') result.precio = ev.precio;
       return res.status(201).json(result);
     }
 
@@ -674,10 +692,13 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'fetch("/api/event-pages?action=register",{method:"POST",headers:{"Content-Type":"application/json"},'
     + 'body:JSON.stringify({event_id:EVT_ID,nombre:nombre,whatsapp:wa,email:email,ciudad:ciudad,ref_username:REF||null})})'
     + '.then(function(r){return r.json()}).then(function(d){'
-    + 'if(d.ok){msg.innerHTML="<span style=\\"color:#4ecdc4\\">✅ Registro exitoso!</span>";btn.textContent="Registrado!";'
-    + 'if(d.whatsapp_pago&&EVT_PRECIO!=="Gratis"){setTimeout(function(){'
-    + 'var waMsg=encodeURIComponent("Hola! Me registre al evento "+EVT_SLUG+". Quiero realizar el pago de "+EVT_PRECIO+". Mi nombre: "+nombre);'
-    + 'window.open("https://wa.me/"+d.whatsapp_pago.replace(/[^0-9]/g,"")+"?text="+waMsg,"_blank");},1500);}'
+    + 'if(d.ok){msg.innerHTML="<span style=\\"color:#4ecdc4\\">✅ Registro exitoso! Redirigiendo a WhatsApp...</span>";btn.textContent="Registrado!";'
+    + 'if(d.whatsapp_target){setTimeout(function(){'
+    + 'var waName=d.whatsapp_name||"";'
+    + 'var waMsg=d.precio&&d.precio!=="Gratis"'
+    + '?encodeURIComponent("Hola"+( waName?" "+waName:"")+", quiero asistir al evento \\""+( d.evento_titulo||EVT_SLUG)+"\\". Mi nombre es "+nombre+". Quiero realizar el pago de "+d.precio+".")'
+    + ':encodeURIComponent("Hola"+(waName?" "+waName:"")+", quiero asistir al evento \\""+( d.evento_titulo||EVT_SLUG)+"\\". Mi nombre es "+nombre+". Ya quede registrado!");'
+    + 'window.open("https://wa.me/"+d.whatsapp_target.replace(/[^0-9]/g,"")+"?text="+waMsg,"_blank");},1500);}'
     + '}else{msg.innerHTML="<span style=\\"color:#ff6b6b\\">"+(d.error||"Error al registrar")+"</span>";btn.disabled=false;btn.textContent="Intentar de nuevo";}'
     + '}).catch(function(){msg.innerHTML="<span style=\\"color:#ff6b6b\\">Error de conexion</span>";btn.disabled=false;btn.textContent="Intentar de nuevo";});'
     + '}'
