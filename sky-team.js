@@ -2501,7 +2501,7 @@ function renderSTEventos() {
 
 // ── Load team events ──
 function _loadEvtTeam() {
-  _fetchT('/api/event-pages?action=list', 10000).then(function(d) {
+  _fetchT('/api/event-pages?action=list&_t=' + Date.now(), 10000).then(function(d) {
     if (d && d.ok) { stState.evtList = d.events || []; renderSkyTeam(); }
   }).catch(function() {});
 }
