@@ -374,10 +374,10 @@ export default async function handler(req, res) {
           const duplicadas = s.duplicadas || 0;
           const conversiones = s.conversionIps || s.conversions || 0;
 
-          // Score = visitas - (duplicadas x 1) + (conversiones_unicas x 20)
+          // Score = visitas - (duplicadas x 1) + (conversiones_unicas x 15)
           // Conversión única = max 1 por dispositivo (fingerprint)
           const validConversions = uniqueIps > 0 ? Math.min(conversiones, uniqueIps) : conversiones;
-          const score = Math.max(0, visitas - duplicadas + (validConversions * 20));
+          const score = Math.max(0, visitas - duplicadas + (validConversions * 15));
           const efectividad = uniqueIps > 0 ? Math.round((validConversions / uniqueIps) * 100) : 0;
           return {
             ref: ref, nombre: asesor.nombre || ref,
