@@ -12097,69 +12097,91 @@ function onSolImgChange(input) {
         if(d.found && d.expiry_ts) {
           input._expiryData = d;
 
-          // Auto-fill fields — ALL 4 must come from OCR (no manual override)
-          var uField = document.getElementById('sol-innova-user');
-          if(d.username && uField) {
-            uField.value = d.username.toUpperCase();
-            _solFieldEditable('sol-innova-user', false);
-          } else if(uField) {
-            uField.value = '';
-            _solFieldEditable('sol-innova-user', false);
-          }
-
-          var sField = document.getElementById('sol-sponsor');
-          if(d.sponsor && sField) {
-            sField.value = d.sponsor.toUpperCase();
-            _solFieldEditable('sol-sponsor', false);
-          } else if(sField) {
-            sField.value = '';
-            _solFieldEditable('sol-sponsor', false);
-          }
-
-          var cField = document.getElementById('sol-classification');
           var _rawClassif = d.classification ? d.classification.toUpperCase().trim() : '';
           var _invalidClassif = /PIONEER|EXPLORER|PACKAGE|PAQUETE/i.test(_rawClassif);
           var _validRanks = ['CLIENTE','INN 200','INN 500','INN','NOVA','NOVA 1500','NOVA 5K','NOVA 10K','NOVA DIAMOND','NOVA DIAMANTE','NOVA 25K','NOVA 50K','NOVA 100K','NO SE ALCANZO','NO SE ALCANZ'];
           var _isValidRank = _validRanks.some(function(r){ return _rawClassif.indexOf(r) !== -1; });
-          if(_rawClassif && !_invalidClassif && _isValidRank && cField) {
-            cField.value = _rawClassif;
-            _solFieldEditable('sol-classification', false);
-          } else if(cField) {
-            cField.value = '';
-            _solFieldEditable('sol-classification', false);
-            if(_invalidClassif) d.classification = null;
-          }
+          if(_invalidClassif) d.classification = null;
 
-          // Show auto-fill section
-          document.getElementById('sol-autofill-section').style.display = 'block';
+          var _detected = ((d.days_remaining || d.days_remaining === 0) ? 1 : 0) + (d.username ? 1 : 0) + ((d.classification && !_invalidClassif && _isValidRank) ? 1 : 0) + (d.sponsor ? 1 : 0);
 
-          // Show result summary
-          var lines = ['✅ <strong>' + d.days_remaining + ' días de acceso</strong> detectados'];
-          if(d.expiry_label)   lines.push('📅 Vencimiento: ' + d.expiry_label);
-          if(d.username)       lines.push('👤 Usuario: <strong style="color:#C9A84C;">' + d.username + '</strong>');
-          else                 lines.push('⚠️ <span style="color:#FFD700;">Usuario no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
-          if(d.classification) lines.push('🏆 Clasificación: <strong style="color:#85B7EB;">' + d.classification + '</strong>');
-          else                 lines.push('❌ <span style="color:#E24B4A;font-weight:800;">Clasificación/Rango NO detectado — <strong>sube una foto donde se vea tu rango</strong></span>');
-          if(d.sponsor)        lines.push('🤝 Patrocinador: <strong style="color:#4ade80;">' + d.sponsor + '</strong>');
-          else                 lines.push('⚠️ <span style="color:#FFD700;">Patrocinador no detectado — <strong>escríbelo en el campo amarillo</strong></span>');
-          // Show checklist summary
-          var _detected = ((d.days_remaining || d.days_remaining === 0) ? 1 : 0) + (d.username ? 1 : 0) + (d.classification ? 1 : 0) + (d.sponsor ? 1 : 0);
-          if(_detected >= 3) {
-            // 3 of 4 detected — allow manual fill for the missing one
-            if(!d.username) { _solFieldEditable('sol-innova-user', true); lines.push('<br><span style="color:#FFD700;font-size:11px;font-weight:700;">\u270F\uFE0F Escribe tu usuario de Innova en el campo amarillo de abajo</span>'); }
-            if(!d.classification) { _solFieldEditable('sol-classification', true); lines.push('<br><span style="color:#FFD700;font-size:11px;font-weight:700;">\u270F\uFE0F Escribe tu rango/clasificaci\u00f3n en el campo amarillo de abajo</span>'); }
-            if(!d.sponsor) { _solFieldEditable('sol-sponsor', true); lines.push('<br><span style="color:#FFD700;font-size:11px;font-weight:700;">\u270F\uFE0F Escribe tu patrocinador en el campo amarillo de abajo</span>'); }
-            if(!(d.days_remaining || d.days_remaining === 0)) { lines.push('<br><span style="color:#FFD700;font-size:11px;">D\u00edas no detectados \u2014 se asignar\u00e1n 7 d\u00edas de prueba</span>'); d.days_remaining = 7; d.expiry_ts = Date.now() + 7*86400000; input._expiryData = d; }
-          } else if(_detected < 3) {
+          if(_detected < 3) {
             // Less than 3 detected — reject
             input._expiryData = null;
-            lines.push('<br><span style="color:#E24B4A;font-size:12px;font-weight:800;">FOTO RECHAZADA. Se necesitan al menos 3 de 4 datos.</span>');
-            lines.push('<span style="color:#E24B4A;font-size:11px;">1. Dias restantes  2. Clasificacion/Rango  3. Tu usuario  4. Patrocinador</span>');
-            lines.push('<span style="color:#FFD700;font-size:11px;font-weight:700;">Sube una captura m\u00e1s completa del perfil de Innova.</span>');
+            preview.innerHTML = '<span style="color:#E24B4A;font-size:12px;font-weight:800;">FOTO RECHAZADA. Se necesitan al menos 3 de 4 datos.</span><br>'
+              + '<span style="color:#E24B4A;font-size:11px;">1. Dias restantes  2. Clasificacion/Rango  3. Tu usuario  4. Patrocinador</span><br>'
+              + '<span style="color:#FFD700;font-size:11px;font-weight:700;">Sube una captura mas completa donde se vean los datos claramente.</span>';
             preview.style.borderColor = 'rgba(248,113,113,0.3)';
             preview.style.background = 'rgba(248,113,113,0.06)';
+            return;
           }
-          preview.innerHTML = lines.join('<br>');
+
+          // ── CONFIRMATION STEP: Show detected data and ask user to confirm ──
+          preview.style.borderColor = 'rgba(201,168,76,0.4)';
+          preview.style.background = 'rgba(201,168,76,0.06)';
+          var _confirmHtml = '<div style="font-size:13px;font-weight:800;color:#C9A84C;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Datos Detectados</div>';
+          _confirmHtml += '<div style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);margin-bottom:12px;">';
+          _confirmHtml += '<div style="display:grid;gap:8px;">';
+          _confirmHtml += '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.5);">Dias</span><strong style="color:#fff;">' + (d.days_remaining || 0) + ' dias</strong></div>';
+          _confirmHtml += '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.5);">Tu Usuario</span><strong style="color:#C9A84C;">' + (d.username || 'No detectado') + '</strong></div>';
+          _confirmHtml += '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.5);">Clasificacion</span><strong style="color:#85B7EB;">' + (_isValidRank ? _rawClassif : (d.classification || 'No detectado')) + '</strong></div>';
+          _confirmHtml += '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:rgba(255,255,255,0.5);">Patrocinador</span><strong style="color:#4ade80;">' + (d.sponsor || 'No detectado') + '</strong></div>';
+          _confirmHtml += '</div></div>';
+          _confirmHtml += '<div style="font-size:12px;color:#FFD700;font-weight:600;margin-bottom:12px;text-align:center;">Estos datos son los que ves en tu imagen?</div>';
+          _confirmHtml += '<div style="display:flex;gap:8px;">';
+          _confirmHtml += '<button id="sol-confirm-yes" style="flex:1;padding:12px;border-radius:12px;background:linear-gradient(135deg,#25D366,#1da851);border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Si, son correctos</button>';
+          _confirmHtml += '<button id="sol-confirm-no" style="flex:1;padding:12px;border-radius:12px;background:rgba(226,75,74,0.15);border:1px solid rgba(226,75,74,0.3);color:#E24B4A;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">No, estan mal</button>';
+          _confirmHtml += '</div>';
+          preview.innerHTML = _confirmHtml;
+
+          // Store data for after confirmation
+          input._pendingOcrData = d;
+          input._pendingClassif = (_isValidRank && !_invalidClassif) ? _rawClassif : '';
+
+          document.getElementById('sol-confirm-yes').onclick = function() {
+            var pd = input._pendingOcrData;
+            var pc = input._pendingClassif;
+            // Auto-fill and lock fields
+            var uField = document.getElementById('sol-innova-user');
+            if(pd.username && uField) { uField.value = pd.username.toUpperCase(); _solFieldEditable('sol-innova-user', false); }
+            else if(uField) { uField.value = ''; _solFieldEditable('sol-innova-user', true); }
+            var sField = document.getElementById('sol-sponsor');
+            if(pd.sponsor && sField) { sField.value = pd.sponsor.toUpperCase(); _solFieldEditable('sol-sponsor', false); }
+            else if(sField) { sField.value = ''; _solFieldEditable('sol-sponsor', true); }
+            var cField = document.getElementById('sol-classification');
+            if(pc && cField) { cField.value = pc; _solFieldEditable('sol-classification', false); }
+            else if(cField) { cField.value = ''; _solFieldEditable('sol-classification', true); }
+            document.getElementById('sol-autofill-section').style.display = 'block';
+            // Success message
+            var lines2 = ['<span style="color:#25D366;font-weight:700;">Datos confirmados</span>'];
+            if(!pd.username) { _solFieldEditable('sol-innova-user', true); lines2.push('<span style="color:#FFD700;font-size:11px;">Escribe tu usuario en el campo amarillo</span>'); }
+            if(!pc) { _solFieldEditable('sol-classification', true); lines2.push('<span style="color:#FFD700;font-size:11px;">Escribe tu rango en el campo amarillo</span>'); }
+            if(!pd.sponsor) { _solFieldEditable('sol-sponsor', true); lines2.push('<span style="color:#FFD700;font-size:11px;">Escribe tu patrocinador en el campo amarillo</span>'); }
+            if(!(pd.days_remaining || pd.days_remaining === 0)) { pd.days_remaining = 7; pd.expiry_ts = Date.now() + 7*86400000; input._expiryData = pd; }
+            preview.innerHTML = lines2.join('<br>');
+            preview.style.borderColor = 'rgba(37,211,102,0.3)';
+            preview.style.background = 'rgba(37,211,102,0.06)';
+          };
+
+          document.getElementById('sol-confirm-no').onclick = function() {
+            input._expiryData = null;
+            input._pendingOcrData = null;
+            preview.innerHTML = '<div style="color:#E24B4A;font-weight:700;margin-bottom:8px;">Datos incorrectos</div>'
+              + '<div style="color:rgba(255,255,255,0.6);font-size:12px;line-height:1.6;">'
+              + 'La IA leyo mal tu imagen. Por favor:<br>'
+              + '1. Sube una foto mas <strong>recortada</strong> donde SOLO se vean:<br>'
+              + '&nbsp;&nbsp;• Tu usuario (debajo de tu nombre)<br>'
+              + '&nbsp;&nbsp;• Tu patrocinador<br>'
+              + '&nbsp;&nbsp;• Tu clasificacion<br>'
+              + '&nbsp;&nbsp;• Los dias restantes<br>'
+              + '2. Evita que se vea mucha informacion extra (menu, paquete, etc.)<br>'
+              + '3. Asegurate de que la imagen sea <strong>nitida y legible</strong></div>';
+            preview.style.borderColor = 'rgba(248,113,113,0.3)';
+            preview.style.background = 'rgba(248,113,113,0.06)';
+            // Reset file input so user can upload again
+            var fileInput = document.getElementById('sol-img');
+            if(fileInput) fileInput.value = '';
+          };
 
         } else {
           input._expiryData = null;
