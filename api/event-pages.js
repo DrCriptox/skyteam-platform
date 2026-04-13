@@ -78,10 +78,10 @@ module.exports = async function handler(req, res) {
       // Rank check: only NOVA 1500+ (rango >= 3) or admin can create events
       var MIN_RANK = 3; // NOVA 1500
       try {
-        var rkR = await SB('users?username=eq.' + encodeURIComponent(b.username) + '&select=rango,is_admin&limit=1');
+        var rkR = await SB('users?username=eq.' + encodeURIComponent(b.username) + '&select=rank,is_admin&limit=1');
         var rkRows = await rkR.json();
         if (Array.isArray(rkRows) && rkRows.length) {
-          var userRango = parseInt(rkRows[0].rango) || 0;
+          var userRango = parseInt(rkRows[0].rank) || 0;
           var isAdm = rkRows[0].is_admin;
           if (userRango < MIN_RANK && !isAdm) {
             return res.status(403).json({ error: 'Se requiere rango NOVA 1500 o superior para crear eventos' });
