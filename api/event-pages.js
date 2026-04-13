@@ -188,7 +188,7 @@ module.exports = async function handler(req, res) {
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
             body: JSON.stringify({ model: 'gpt-4o', max_tokens: 1200, temperature: 0.8,
               messages: [
-                { role: 'system', content: 'Eres el copywriter #1 del mundo en eventos de negocios y network marketing. Creas copy que LLENA eventos. Tu estilo combina a Tony Robbins, Russell Brunson y Grant Cardone. Usas formulas AIDA y PAS. Cada palabra genera urgencia y deseo. Contexto: SkyTeam Global es una franquicia digital que ensena a generar multiples fuentes de ingresos desde el celular. Los asistentes son emprendedores, lideres de equipo y personas que quieren libertad financiera.' },
+                { role: 'system', content: 'Eres el copywriter #1 del mundo en eventos de negocios y network marketing. Creas copy que LLENA estadios. Tu estilo combina a Tony Robbins, Russell Brunson, Grant Cardone y Robert Kiyosaki. REGLAS ESTRICTAS:\n- Headline: EXACTAMENTE 4-8 palabras, poderoso, genera curiosidad inmediata\n- Hook: usa formula PAS (Pain-Agitate-Solve) en EXACTAMENTE 2-3 frases cortas\n- About: usa <strong> para resaltar 2-3 frases clave por parrafo. Max 35 palabras por parrafo. Formato dolor→transformacion→diferenciador\n- Bullets: CADA uno empieza con emoji DIFERENTE y relevante. Son beneficios TRANSFORMADORES, no caracteristicas\n- CTA: verbo de ACCION urgente, max 4 palabras\n- Urgency: incluye numero de cupos especifico\n- Social proof: debe sonar REAL y especifico\n- Guarantee: promesa concreta y medible\n- FAQ: respuestas de MAX 20 palabras, directas y que eliminen objeciones\nContexto: SkyTeam Global es una franquicia digital que ensena a generar multiples fuentes de ingresos desde el celular. Los asistentes son emprendedores, lideres de equipo y personas que buscan libertad financiera. El evento es en ' + (ev.ciudad || 'Latinoamerica') + '.' },
                 { role: 'user', content: prompt }
               ] })
           });
@@ -315,6 +315,42 @@ module.exports = async function handler(req, res) {
     }
 
     // ═══════════════════════════════════════════════════
+    //  REBUILD — Rebuild HTML from edited ai_content
+    // ═══════════════════════════════════════════════════
+    if (action === 'rebuild' && req.method === 'POST') {
+      var b = req.body;
+      if (!b.event_id || !b.ai_content) return res.status(400).json({ error: 'event_id + ai_content required' });
+
+      var evR = await SB('event_pages?id=eq.' + b.event_id + '&select=*&limit=1');
+      var evRows = await evR.json();
+      if (!Array.isArray(evRows) || !evRows.length) return res.status(404).json({ error: 'Event not found' });
+      var ev = evRows[0];
+
+      // Fetch creator info
+      var creatorInfo = { name: ev.created_by, rango: '', photo: '' };
+      try {
+        var uR = await SB('users?username=eq.' + encodeURIComponent(ev.created_by) + '&select=name,rank,photo&limit=1');
+        var uRows = await uR.json();
+        if (Array.isArray(uRows) && uRows.length) {
+          creatorInfo.name = uRows[0].name || ev.created_by;
+          creatorInfo.rango = _rankName(parseInt(uRows[0].rank) || 0);
+          creatorInfo.photo = uRows[0].photo || '';
+        }
+      } catch(e) {}
+
+      // Rebuild HTML with edited content
+      var aiHtml = buildEventHTML(ev, b.ai_content, creatorInfo, ev.ai_poster_url || '');
+
+      await SB('event_pages?id=eq.' + b.event_id, {
+        method: 'PATCH',
+        body: JSON.stringify({ ai_html: aiHtml, ai_content: b.ai_content, updated_at: new Date().toISOString() })
+      });
+
+      console.log('[EVENT] Rebuilt landing for:', ev.slug);
+      return res.status(200).json({ ok: true });
+    }
+
+    // ═══════════════════════════════════════════════════
     //  LIST — Published events for the team
     // ═══════════════════════════════════════════════════
     if (action === 'list') {
@@ -366,14 +402,15 @@ module.exports = async function handler(req, res) {
     // ═══════════════════════════════════════════════════
     if (action === 'get') {
       var slug = (req.body && req.body.slug) || (req.query && req.query.slug);
-      if (!slug) return res.status(400).json({ error: 'slug required' });
-      var r = await SB('event_pages?slug=eq.' + encodeURIComponent(slug) + '&select=*&limit=1');
+      var eventId = (req.body && req.body.event_id) || (req.query && req.query.event_id);
+      if (!slug && !eventId) return res.status(400).json({ error: 'slug or event_id required' });
+      var query = eventId ? 'event_pages?id=eq.' + eventId : 'event_pages?slug=eq.' + encodeURIComponent(slug);
+      var r = await SB(query + '&select=*&limit=1');
       var rows = await r.json();
       if (!Array.isArray(rows) || !rows.length) return res.status(404).json({ error: 'Event not found' });
-      // Don't send ai_html in API response (too large), only in event-landing.js
       var ev = rows[0];
       delete ev.ai_html;
-      return res.status(200).json({ ok: true, event: ev });
+      return res.status(200).json(ev);
     }
 
     // ═══════════════════════════════════════════════════
@@ -710,7 +747,7 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '</div></section>'
 
     // ── FLYER (cartelera de cine) ──
-    + (ev.flyer_url ? '<section class="ev-s ev-reveal" style="text-align:center;padding:40px 20px"><img src="' + esc(ev.flyer_url) + '" alt="' + esc(ev.titulo) + '" style="max-width:100%;max-height:600px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:contain"></section>' : '')
+    + (ev.flyer_url ? '<section class="ev-s ev-reveal" style="text-align:center;padding:40px 20px"><img src="' + esc(_driveImg(ev.flyer_url)) + '" alt="' + esc(ev.titulo) + '" style="max-width:100%;max-height:600px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:contain"></section>' : '')
 
     // ── HOOK ──
     + (content.hook ? '<section class="ev-hook ev-reveal"><p>' + esc(content.hook) + '</p></section>' : '')
@@ -760,7 +797,7 @@ function buildEventHTML(ev, content, creator, posterUrl) {
       }
       var hasPhoto = t.foto_url && t.foto_url.trim();
       return '<div class="ev-testimonial"><div class="ev-testimonial-written">'
-        + (hasPhoto ? '<img class="ev-testimonial-photo" src="' + esc(t.foto_url) + '" alt="">' : '')
+        + (hasPhoto ? '<img class="ev-testimonial-photo" src="' + esc(_driveImg(t.foto_url)) + '" alt="">' : '')
         + '<div><div class="ev-testimonial-text">"' + esc(t.texto || t.text || '') + '"</div>'
         + '<div class="ev-testimonial-author">— ' + esc(t.nombre || t.name || 'Anonimo') + '</div></div></div></div>';
     }).join('') + '</section>' : '')
@@ -863,33 +900,37 @@ function buildEventHTML(ev, content, creator, posterUrl) {
       var vi = _extractVideoId(ev.vsl_url);
       if (vi.platform !== 'youtube') return '';
       return ''
+        + 'var _vslPlayer=null,_vslLastTime=0,_vslPlaying=false,_vslReady=false;'
         // Load YT API
-        + 'var _vslPlayer=null,_vslLastTime=0,_vslPlaying=false;'
         + 'var _ytTag=document.createElement("script");_ytTag.src="https://www.youtube.com/iframe_api";'
-        + 'var _ytFirst=document.getElementsByTagName("script")[0];_ytFirst.parentNode.insertBefore(_ytTag,_ytFirst);'
-        // Player ready callback
+        + 'document.head.appendChild(_ytTag);'
+        // Player ready callback (global, called by YouTube API)
         + 'function onYouTubeIframeAPIReady(){'
-        + '_vslPlayer=new YT.Player("ev-vsl-player",{'
+        + 'try{_vslPlayer=new YT.Player("ev-vsl-player",{'
         + 'videoId:"' + vi.id + '",'
         + 'width:"100%",height:"100%",'
         + 'playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,showinfo:0,fs:0,iv_load_policy:3,playsinline:1,origin:location.origin},'
-        + 'events:{onReady:function(e){console.log("[VSL] Player ready");},'
+        + 'events:{onReady:function(){_vslReady=true;},'
         + 'onStateChange:function(e){'
-        + 'if(e.data===1){_vslPlaying=true;}'  // 1 = PLAYING
-        + 'if(e.data===2&&_vslPlaying){setTimeout(function(){if(_vslPlayer&&_vslPlayer.getPlayerState&&_vslPlayer.getPlayerState()===2){_vslPlayer.playVideo();}},300);}'  // 2 = PAUSED → resume after 300ms
+        + 'if(e.data===1){_vslPlaying=true;}'
+        + 'if(e.data===2&&_vslPlaying){setTimeout(function(){if(_vslPlayer&&typeof _vslPlayer.getPlayerState==="function"&&_vslPlayer.getPlayerState()===2){_vslPlayer.playVideo();}},500);}'
         + '}}'
-        + '});'
+        + '});}catch(e){console.error("[VSL]",e);}'
         + '}'
         // Anti-seek timer
-        + 'setInterval(function(){if(_vslPlayer&&typeof _vslPlayer.getCurrentTime==="function"){'
+        + 'setInterval(function(){if(_vslReady&&_vslPlayer&&typeof _vslPlayer.getCurrentTime==="function"){'
         + 'var ct=_vslPlayer.getCurrentTime();'
         + 'if(_vslLastTime>0&&ct-_vslLastTime>3){_vslPlayer.seekTo(_vslLastTime,true);}'
         + 'else if(ct>_vslLastTime){_vslLastTime=ct;}'
         + '}},600);'
-        // Play button handler (global)
+        // Play button — with retry if API not ready yet
         + 'function _playVSL(){'
-        + 'if(_vslPlayer&&typeof _vslPlayer.playVideo==="function"){_vslPlayer.playVideo();}'
         + 'var pb=document.getElementById("ev-vsl-play");if(pb)pb.style.display="none";'
+        + 'if(_vslReady&&_vslPlayer&&typeof _vslPlayer.playVideo==="function"){_vslPlayer.playVideo();return;}'
+        + 'var _r=0;var _ri=setInterval(function(){_r++;'
+        + 'if(_vslReady&&_vslPlayer&&typeof _vslPlayer.playVideo==="function"){clearInterval(_ri);_vslPlayer.playVideo();}'
+        + 'else if(_r>20){clearInterval(_ri);var pb2=document.getElementById("ev-vsl-play");if(pb2){pb2.style.display="flex";pb2.innerHTML="Toca de nuevo";}}'
+        + '},300);'
         + '}window._playVSL=_playVSL;';
     })()
 
@@ -914,6 +955,9 @@ function _extractVideoId(url) {
   // Instagram reel/post
   var igMatch = url.match(/instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/);
   if (igMatch) return { platform: 'instagram', id: igMatch[1] };
+  // Google Drive
+  var driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) return { platform: 'drive', id: driveMatch[1] };
   return { platform: 'other', id: '' };
 }
 
@@ -923,5 +967,14 @@ function _toEmbed(url) {
   if (vi.platform === 'youtube') return 'https://www.youtube.com/embed/' + vi.id + '?rel=0';
   if (vi.platform === 'vimeo') return 'https://player.vimeo.com/video/' + vi.id;
   if (vi.platform === 'instagram') return 'https://www.instagram.com/reel/' + vi.id + '/embed/';
+  if (vi.platform === 'drive') return 'https://drive.google.com/file/d/' + vi.id + '/preview';
   return url || '';
+}
+
+// Convert Google Drive share URLs to direct image URLs
+function _driveImg(url) {
+  if (!url) return url;
+  var m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+  return url;
 }

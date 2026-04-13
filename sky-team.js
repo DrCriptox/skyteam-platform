@@ -2617,11 +2617,13 @@ function _renderEventCard(e, link, cuUser, isCreator) {
       html += '<button onclick="_generateEventAI(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(127,119,221,0.15);border:1px solid rgba(127,119,221,0.25);color:' + C.purple + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✨ Generar Landing</button>';
       // Preview draft (via query param)
       html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '?preview=1" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Preview</a>';
+      if (e.ai_poster_url) html += '<button onclick="_openEvtEditor(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.15);color:#4ecdc4;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Editar</button>';
     }
     if (st === 'published') {
       html += '<button onclick="_viewEvtStats(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📊 Stats</button>';
       html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Ver Landing</a>';
       html += '<button onclick="_generateEventAI(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.15);color:rgba(127,119,221,0.7);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Regenerar</button>';
+      if (e.ai_poster_url) html += '<button onclick="_openEvtEditor(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.15);color:#4ecdc4;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Editar</button>';
     }
   } else {
     // Team member actions (referral)
@@ -2864,7 +2866,14 @@ function _renderEvtWizard() {
     // VSL Video
     html += '<div style="margin-top:8px;padding-top:16px;border-top:1px solid ' + C.border + '">';
     html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">🖼️ Flyer del Evento</div>';
-    html += _wizInput('URL de la imagen del flyer/cartelera', 'evtD_flyer_url', d.flyer_url, 'https://... (sube tu flyer a imgur, imgbb, etc)');
+    html += '<input type="file" id="evtD_flyer_file" accept="image/*" style="display:none" onchange="_evtUploadFlyer(this)">';
+    if (d.flyer_url) {
+      html += '<div id="evtD_flyer_preview" style="margin-bottom:10px;text-align:center"><img src="' + _esc(d.flyer_url) + '" style="max-height:120px;border-radius:10px;border:1px solid ' + C.border + '"></div>';
+    } else {
+      html += '<div id="evtD_flyer_preview"></div>';
+    }
+    html += '<button onclick="document.getElementById(\'evtD_flyer_file\').click()" style="width:100%;padding:12px;border-radius:10px;border:1px dashed ' + C.border + ';background:rgba(255,255,255,0.03);color:' + C.textSub + ';font-size:13px;cursor:pointer;font-family:inherit">' + (d.flyer_url ? '🔄 Cambiar flyer' : '📸 Subir flyer del evento') + '</button>';
+    html += '<input type="hidden" id="evtD_flyer_url" value="' + _esc(d.flyer_url || '') + '">';
     html += '</div>';
 
     html += '<div style="margin-top:4px;padding-top:16px;border-top:1px solid ' + C.border + '">';
@@ -2927,6 +2936,56 @@ function _renderEvtWizard() {
       html += '<button onclick="stState.evtWizardStep=1;_renderEvtWizard()" style="width:100%;padding:10px;border-radius:14px;background:transparent;border:none;color:' + C.textSub + ';font-size:13px;cursor:pointer;font-family:inherit">← Volver</button>';
       html += '</div>';
     }
+  } else if (step === 3) {
+    // ── Step 3: Visual Editor ──
+    var ec = stState.evtEditContent || {};
+    var _ei = function(label, id, val, rows) {
+      if (rows) return '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + label + '</label><textarea id="' + id + '" rows="' + rows + '" style="width:100%;padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit;resize:vertical">' + _esc(val || '') + '</textarea></div>';
+      return '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + label + '</label><input id="' + id + '" value="' + _esc(val || '') + '" style="width:100%;padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:' + (id === 'evtE_headline' ? '18px;font-weight:700' : '13px') + ';font-family:inherit"></div>';
+    };
+
+    html += '<div style="font-size:10px;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Paso 3/3 — Editar Landing</div>';
+    html += '<div style="max-height:55vh;overflow-y:auto;padding-right:6px;margin-bottom:16px">';
+
+    html += _ei('Headline (titulo principal)', 'evtE_headline', ec.headline);
+    html += _ei('Subtitulo', 'evtE_subheadline', ec.subheadline);
+    html += _ei('Hook (gancho emocional)', 'evtE_hook', ec.hook, 2);
+    html += _ei('Sobre el evento (HTML)', 'evtE_about', ec.about, 4);
+
+    // Bullets
+    html += '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Beneficios</label>';
+    var bullets = ec.bullets || [];
+    for (var bi = 0; bi < 7; bi++) {
+      html += '<input id="evtE_bullet_' + bi + '" value="' + _esc(bullets[bi] || '') + '" placeholder="Beneficio ' + (bi + 1) + '" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit;margin-bottom:6px">';
+    }
+    html += '</div>';
+
+    html += _ei('Presentacion del anfitrion', 'evtE_speaker_intro', ec.speaker_intro, 2);
+    html += _ei('Texto del boton (CTA)', 'evtE_cta_text', ec.cta_text);
+    html += _ei('Texto de urgencia', 'evtE_urgency_text', ec.urgency_text);
+    html += _ei('Social proof', 'evtE_social_proof', ec.social_proof);
+    html += _ei('Garantia', 'evtE_guarantee', ec.guarantee);
+
+    // FAQ
+    var faq = ec.faq || [];
+    html += '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Preguntas Frecuentes</label>';
+    for (var fi = 0; fi < 3; fi++) {
+      var fItem = faq[fi] || {};
+      html += '<div style="display:flex;gap:6px;margin-bottom:6px">';
+      html += '<input id="evtE_faq_q_' + fi + '" value="' + _esc(fItem.q || '') + '" placeholder="Pregunta ' + (fi + 1) + '" style="flex:1;padding:8px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:12px;font-family:inherit">';
+      html += '<input id="evtE_faq_a_' + fi + '" value="' + _esc(fItem.a || '') + '" placeholder="Respuesta" style="flex:1;padding:8px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:12px;font-family:inherit">';
+      html += '</div>';
+    }
+    html += '</div>';
+    html += '</div>'; // close scrollable
+
+    // Action buttons
+    html += '<div style="display:flex;flex-direction:column;gap:8px">';
+    html += '<button onclick="_evtEditorPreview()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">👁 Preview Landing</button>';
+    html += '<button onclick="_evtEditorSave()" style="width:100%;padding:12px;border-radius:14px;background:rgba(127,119,221,0.15);border:1px solid rgba(127,119,221,0.3);color:#7F77DD;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">💾 Guardar Cambios</button>';
+    html += '<button onclick="_evtEditorPublish()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">🚀 Publicar Evento</button>';
+    html += '<button onclick="stState.evtWizardStep=2;_renderEvtWizard()" style="width:100%;padding:10px;border-radius:14px;background:transparent;border:none;color:' + C.textSub + ';font-size:13px;cursor:pointer;font-family:inherit">← Volver</button>';
+    html += '</div>';
   }
 
   html += '</div>';
@@ -3059,16 +3118,21 @@ function _wizCreateAndGenerate() {
       body: JSON.stringify({ action: 'generate', event_id: eventId })
     }).then(function(r) { return r.json(); }).then(function(genData) {
       stState.evtGenerating = false;
-      closeEvtWizard();
       stState.evtMyList = null;
       stState.evtList = null;
-      if (genData.ok) {
-        if (typeof showToast === 'function') showToast('Evento creado + landing generada! Ve a "Mis Eventos" para publicar.');
+      if (genData.ok && genData.aiContent) {
+        // Open editor (Step 3) with generated content
+        stState.evtEditContent = genData.aiContent;
+        stState.evtEditEventId = eventId;
+        stState.evtWizardStep = 3;
+        if (typeof showToast === 'function') showToast('Landing generada! Edita el contenido y publica.');
+        _renderEvtWizard();
       } else {
+        closeEvtWizard();
         if (typeof showToast === 'function') showToast('Evento creado pero la IA fallo. Puedes regenerar despues.');
+        stState.evtView = 'mine';
+        renderSkyTeam();
       }
-      stState.evtView = 'mine';
-      renderSkyTeam();
     });
   }).catch(function(e) {
     stState.evtGenerating = false;
@@ -3109,6 +3173,162 @@ function _wizCreateOnly() {
   }).catch(function() { if (typeof showToast === 'function') showToast('Error de conexion'); });
 }
 window._wizCreateOnly = _wizCreateOnly;
+
+// ── Upload helpers ──
+function _evtCompressAndUpload(file, folder, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var MAX = 1600;
+      var w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { var r = Math.min(MAX / w, MAX / h); w = Math.round(w * r); h = Math.round(h * r); }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var base64 = canvas.toDataURL('image/jpeg', 0.85);
+      fetch('/api/upload-event', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: base64, folder: folder, filename: file.name })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok && d.url) callback(null, d.url);
+        else callback(d.error || 'Upload failed');
+      }).catch(function(err) { callback(err.message || 'Error'); });
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function _evtUploadFlyer(input) {
+  if (!input.files || !input.files[0]) return;
+  var preview = document.getElementById('evtD_flyer_preview');
+  var hidden = document.getElementById('evtD_flyer_url');
+  if (preview) preview.innerHTML = '<div style="color:' + C.gold + ';font-size:12px;padding:10px;">Subiendo flyer...</div>';
+  _evtCompressAndUpload(input.files[0], 'flyers', function(err, url) {
+    if (err) { if (preview) preview.innerHTML = '<div style="color:#ff6b6b;font-size:12px;padding:10px;">Error: ' + err + '</div>'; return; }
+    if (hidden) hidden.value = url;
+    if (preview) preview.innerHTML = '<img src="' + url + '" style="max-height:120px;border-radius:10px;border:1px solid rgba(255,255,255,0.08)">';
+    stState.evtDraft.flyer_url = url;
+    if (typeof showToast === 'function') showToast('Flyer subido!');
+  });
+}
+window._evtUploadFlyer = _evtUploadFlyer;
+
+function _evtUploadTestPhoto(idx) {
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function() {
+    if (!input.files || !input.files[0]) return;
+    var el = document.getElementById('evtD_tFoto_' + idx);
+    if (el) el.value = 'Subiendo...';
+    _evtCompressAndUpload(input.files[0], 'testimonios', function(err, url) {
+      if (err) { if (el) el.value = 'Error: ' + err; return; }
+      if (el) el.value = url;
+      if (typeof showToast === 'function') showToast('Foto subida!');
+    });
+  };
+  input.click();
+}
+window._evtUploadTestPhoto = _evtUploadTestPhoto;
+
+// ── Editor Visual (Step 3) ──
+function _readEditorFields() {
+  var c = stState.evtEditContent || {};
+  var fields = ['headline', 'subheadline', 'hook', 'about', 'speaker_intro', 'cta_text', 'urgency_text', 'social_proof', 'guarantee'];
+  fields.forEach(function(f) {
+    var el = document.getElementById('evtE_' + f);
+    if (el) c[f] = el.value;
+  });
+  // Bullets
+  var bullets = [];
+  for (var i = 0; i < 7; i++) {
+    var bEl = document.getElementById('evtE_bullet_' + i);
+    if (bEl && bEl.value.trim()) bullets.push(bEl.value.trim());
+  }
+  c.bullets = bullets;
+  // FAQ
+  var faq = [];
+  for (var fi = 0; fi < 3; fi++) {
+    var qEl = document.getElementById('evtE_faq_q_' + fi);
+    var aEl = document.getElementById('evtE_faq_a_' + fi);
+    if (qEl && aEl && qEl.value.trim()) faq.push({ q: qEl.value.trim(), a: aEl.value.trim() });
+  }
+  c.faq = faq;
+  stState.evtEditContent = c;
+  return c;
+}
+
+function _evtEditorSave(callback) {
+  var c = _readEditorFields();
+  var eventId = stState.evtEditEventId;
+  if (!eventId) return;
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'rebuild', event_id: eventId, ai_content: c })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      if (typeof showToast === 'function') showToast('Landing actualizada!');
+      if (callback) callback();
+    } else {
+      if (typeof showToast === 'function') showToast('Error: ' + (d.error || ''));
+    }
+  }).catch(function() { if (typeof showToast === 'function') showToast('Error de conexion'); });
+}
+window._evtEditorSave = _evtEditorSave;
+
+function _evtEditorPreview() {
+  _evtEditorSave(function() {
+    var slug = stState.evtDraft ? stState.evtDraft.slug : '';
+    if (!slug && stState.evtEditEventId) {
+      // Find slug from existing events
+      var evts = stState.evtMyList || [];
+      var found = evts.find(function(e) { return e.id === stState.evtEditEventId; });
+      if (found) slug = found.slug;
+    }
+    if (slug) window.open('https://skyteam.global/evento/' + slug + '?preview=1', '_blank');
+  });
+}
+window._evtEditorPreview = _evtEditorPreview;
+
+function _evtEditorPublish() {
+  _evtEditorSave(function() {
+    var eventId = stState.evtEditEventId;
+    fetch('/api/event-pages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'publish', event_id: eventId, username: (typeof CU !== 'undefined' && CU) ? CU.username : '' })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ok) {
+        if (typeof showToast === 'function') showToast('Evento publicado!');
+        closeEvtWizard();
+        stState.evtMyList = null;
+        stState.evtView = 'mine';
+        renderSkyTeam();
+      }
+    });
+  });
+}
+window._evtEditorPublish = _evtEditorPublish;
+
+function _openEvtEditor(eventId) {
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'get', slug_or_id: eventId })
+  }).then(function(r) { return r.json(); }).then(function(ev) {
+    if (ev && ev.ai_content) {
+      stState.evtEditContent = ev.ai_content;
+      stState.evtEditEventId = ev.id || eventId;
+      stState.evtWizardStep = 3;
+      stState.evtCreating = true;
+      stState.evtDraft = stState.evtDraft || {};
+      stState.evtDraft.slug = ev.slug;
+      _renderEvtWizard();
+    } else {
+      if (typeof showToast === 'function') showToast('Este evento no tiene contenido IA para editar');
+    }
+  });
+}
+window._openEvtEditor = _openEvtEditor;
 
 function switchEvtView(v) {
   stState.evtView = v;
