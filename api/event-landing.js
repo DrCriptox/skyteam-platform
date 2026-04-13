@@ -39,12 +39,36 @@ module.exports = async function handler(req, res) {
       return res.status(404).send(errorPage('Este evento aun no esta disponible'));
     }
 
-    // If AI HTML exists, serve it
+    // If AI HTML exists, personalize and serve it
     if (ev.ai_html) {
+      var html = ev.ai_html;
+
+      // Personalize for referrer: inject photo + name + rank
+      var ref = req.query.ref || '';
+      if (ref) {
+        try {
+          var refR = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(ref) + '&select=name,photo,rank,whatsapp&limit=1', { headers: SB_H });
+          var refRows = await refR.json();
+          if (Array.isArray(refRows) && refRows.length) {
+            var ru = refRows[0];
+            var rPhoto = (ru.photo && ru.photo.length > 500) ? ru.photo : '';
+            var rName = ru.name || ref;
+            var rRank = _rn(parseInt(ru.rank) || 0);
+            var badge = '<div class="ev-ref-card">'
+              + (rPhoto ? '<img class="ev-ref-photo" src="' + esc(rPhoto) + '" alt="">' : '<div class="ev-ref-photo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#d4af37;background:#1a1a2e">👤</div>')
+              + '<div class="ev-ref-info">Te invita<br><span class="ev-ref-name">' + esc(rName) + '</span><br>' + esc(rRank) + '</div></div>';
+            html = html.replace('<!--REF_BADGE-->', badge);
+          }
+        } catch(e) { /* ignore — badge just won't show */ }
+      }
+      // Remove unused placeholder
+      html = html.replace('<!--REF_BADGE-->', '');
+
+      // Cache without ref personalization (base HTML)
       PAGE_CACHE[slug] = { html: ev.ai_html, ts: now };
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
-      return res.status(200).send(ev.ai_html);
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      return res.status(200).send(html);
     }
 
     // Fallback: minimal landing if no AI HTML generated yet
@@ -60,6 +84,7 @@ module.exports = async function handler(req, res) {
 };
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _rn(n) { var m = { 0:'Cliente',1:'INN 200',2:'INN 500',3:'NOVA 1500',4:'NOVA 5K',5:'NOVA 10K',6:'NOVA DIAMOND',7:'NOVA 50K',8:'NOVA 100K' }; return m[n] || 'Emprendedor'; }
 
 function errorPage(msg) {
   return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'

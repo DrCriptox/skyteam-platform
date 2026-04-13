@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
       if (!b.username || !b.titulo || !b.fecha) return res.status(400).json({ error: 'titulo, fecha, username required' });
 
       // Rank check: only NOVA 1500+ (rango >= 3) or admin can create events
-      var MIN_RANK = 3; // NOVA 1500
+      var MIN_RANK = 4; // NOVA 5K
       try {
         var rkR = await SB('users?username=eq.' + encodeURIComponent(b.username) + '&select=rank,is_admin&limit=1');
         var rkRows = await rkR.json();
@@ -84,7 +84,7 @@ module.exports = async function handler(req, res) {
           var userRango = parseInt(rkRows[0].rank) || 0;
           var isAdm = rkRows[0].is_admin;
           if (userRango < MIN_RANK && !isAdm) {
-            return res.status(403).json({ error: 'Se requiere rango NOVA 1500 o superior para crear eventos' });
+            return res.status(403).json({ error: 'Se requiere rango NOVA 5K o superior para crear eventos' });
           }
         } else {
           return res.status(403).json({ error: 'Usuario no encontrado' });
@@ -139,38 +139,47 @@ module.exports = async function handler(req, res) {
       // Fetch creator info for speaker section
       var creatorInfo = { name: ev.created_by, rango: '', photo: '' };
       try {
-        var uR = await SB('users?username=eq.' + encodeURIComponent(ev.created_by) + '&select=name,rango,photo&limit=1');
+        var uR = await SB('users?username=eq.' + encodeURIComponent(ev.created_by) + '&select=name,rank,photo&limit=1');
         var uRows = await uR.json();
         if (Array.isArray(uRows) && uRows.length) {
           creatorInfo.name = uRows[0].name || ev.created_by;
-          creatorInfo.rango = uRows[0].rango || '';
+          creatorInfo.rango = _rankName(parseInt(uRows[0].rank) || 0);
           creatorInfo.photo = uRows[0].photo || '';
         }
       } catch(e) {}
 
-      // ── Step 1: GPT-4o-mini generates content ──
+      // ── Step 1: GPT-4o generates PREMIUM copy ──
       var aiContent = null;
       if (OPENAI_KEY) {
-        var tipoLabel = ev.tipo === 'virtual' ? 'virtual (online)' : ev.tipo === 'hibrido' ? 'hibrido (presencial + online)' : 'presencial';
-        var prompt = 'Genera contenido en ESPANOL para la landing page de un evento de negocios/network marketing.\n'
-          + 'Evento: "' + ev.titulo + '"\n'
-          + 'Tipo: ' + tipoLabel + '\n'
-          + 'Fecha: ' + ev.fecha + (ev.hora ? ' a las ' + ev.hora : '') + '\n'
-          + (ev.ciudad ? 'Ciudad: ' + ev.ciudad + '\n' : '')
-          + (ev.descripcion ? 'Descripcion del organizador: ' + ev.descripcion + '\n' : '')
-          + (ev.precio && ev.precio !== 'Gratis' ? 'Precio: ' + ev.precio + '\n' : 'Entrada GRATUITA\n')
-          + '\nResponde SOLO JSON valido (sin markdown):\n'
-          + '{"headline":"titulo impactante corto","subheadline":"subtitulo motivacional","about":"3 parrafos HTML con <p> describiendo el evento y por que asistir",'
-          + '"bullets":["beneficio 1","beneficio 2","beneficio 3","beneficio 4","beneficio 5"],'
-          + '"speaker_intro":"presentacion breve del host/organizador",'
-          + '"cta_text":"texto del boton principal (ej: Reserva tu lugar)","urgency_text":"texto de urgencia (ej: Cupos limitados!)"}';
+        var tipoLabel = ev.tipo === 'virtual' ? 'virtual (online)' : ev.tipo === 'hibrido' ? 'hibrido' : 'presencial';
+        var prompt = 'Evento: "' + ev.titulo + '"\nTipo: ' + tipoLabel
+          + '\nFecha: ' + ev.fecha + (ev.hora ? ' a las ' + ev.hora : '')
+          + (ev.ciudad ? '\nCiudad: ' + ev.ciudad : '')
+          + (ev.descripcion ? '\nDescripcion: ' + ev.descripcion : '')
+          + '\n' + (ev.precio && ev.precio !== 'Gratis' ? 'Precio: ' + ev.precio : 'Entrada GRATUITA')
+          + '\nCapacidad: ' + (ev.capacidad || 100) + ' personas'
+          + '\n\nResponde UNICAMENTE JSON valido sin markdown ni backticks:\n'
+          + '{"headline":"maximo 8 palabras, poderoso, genera curiosidad",'
+          + '"subheadline":"frase que active el deseo de asistir, 15 palabras max",'
+          + '"hook":"1 parrafo corto que toque el dolor del lector y prometa la solucion (60 palabras)",'
+          + '"about":"HTML con 3 bloques <p>. Bloque 1: dolor (que le frustra al lector). Bloque 2: la transformacion que vivira en el evento. Bloque 3: por que este evento es diferente.",'
+          + '"bullets":["emoji beneficio 1","emoji beneficio 2","emoji beneficio 3","emoji beneficio 4","emoji beneficio 5","emoji beneficio 6","emoji beneficio 7"],'
+          + '"speaker_intro":"bio del anfitrion, 30 palabras, profesional y humano",'
+          + '"cta_text":"texto boton, max 5 palabras, urgente",'
+          + '"urgency_text":"frase escasez con numero de cupos",'
+          + '"social_proof":"frase tipo: Ya +X emprendedores confirmaron su asistencia",'
+          + '"guarantee":"frase de garantia o promesa del evento",'
+          + '"faq":[{"q":"pregunta frecuente 1","a":"respuesta corta"},{"q":"pregunta 2","a":"respuesta"},{"q":"pregunta 3","a":"respuesta"}]}';
 
         try {
           var aiR = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_KEY },
-            body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 600, temperature: 0.7,
-              messages: [{ role: 'user', content: prompt }] })
+            body: JSON.stringify({ model: 'gpt-4o', max_tokens: 1200, temperature: 0.8,
+              messages: [
+                { role: 'system', content: 'Eres el copywriter #1 del mundo en eventos de negocios y network marketing. Creas copy que LLENA eventos. Tu estilo combina a Tony Robbins, Russell Brunson y Grant Cardone. Usas formulas AIDA y PAS. Cada palabra genera urgencia y deseo. Contexto: SkyTeam Global es una franquicia digital que ensena a generar multiples fuentes de ingresos desde el celular. Los asistentes son emprendedores, lideres de equipo y personas que quieren libertad financiera.' },
+                { role: 'user', content: prompt }
+              ] })
           });
           if (aiR.ok) {
             var aiData = await aiR.json();
@@ -185,28 +194,36 @@ module.exports = async function handler(req, res) {
       if (!aiContent) {
         aiContent = {
           headline: ev.titulo,
-          subheadline: 'Un evento que transformara tu vision de los negocios',
-          about: '<p>Te invitamos a ' + ev.titulo + ', un evento exclusivo donde descubriras las mejores estrategias para hacer crecer tu negocio digital.</p><p>Conecta con emprendedores exitosos y aprende de los mejores en la industria.</p><p>No te pierdas esta oportunidad unica de transformar tu futuro financiero.</p>',
-          bullets: ['Estrategias probadas de crecimiento', 'Networking con emprendedores exitosos', 'Herramientas digitales de ultima generacion', 'Mentorias personalizadas', 'Comunidad de apoyo continuo'],
-          speaker_intro: 'Lider y emprendedor digital con amplia experiencia en el sector.',
-          cta_text: 'Reserva tu Lugar',
-          urgency_text: 'Cupos limitados — No te quedes fuera!'
+          subheadline: 'El evento que va a transformar tu forma de generar ingresos',
+          hook: 'Si estas cansado de trabajar mas y ganar menos, este evento es para ti. Descubre el sistema que esta cambiando la vida de miles de emprendedores en todo el continente.',
+          about: '<p>Muchos emprendedores trabajan 12 horas al dia sin ver resultados reales. El sistema tradicional no funciona — y lo sabes.</p><p>En este evento exclusivo descubriras un modelo de negocio digital que ya esta generando resultados para personas como tu, sin importar tu experiencia previa.</p><p>Este no es otro seminario motivacional. Es un evento practico donde saldras con un plan de accion claro para los proximos 90 dias.</p>',
+          bullets: ['🚀 Sistema probado para generar ingresos desde tu celular', '💰 Modelo de franquicia digital sin inversion millonaria', '🤝 Networking con lideres que ya generan resultados', '📱 Herramientas digitales que automatizan tu negocio', '🧠 Mentorias con emprendedores de alto nivel', '🔥 Plan de accion de 90 dias personalizado', '🎯 Acceso a comunidad exclusiva de soporte'],
+          speaker_intro: 'Lider y emprendedor digital con amplia experiencia transformando vidas a traves de la franquicia digital.',
+          cta_text: 'Reserva tu Cupo YA',
+          urgency_text: 'Solo ' + (ev.capacidad || 100) + ' cupos disponibles — Se agotan rapido!',
+          social_proof: 'Ya +50 emprendedores confirmaron su asistencia',
+          guarantee: 'Si no sales con al menos 3 estrategias nuevas para generar ingresos, te devolvemos tu tiempo.',
+          faq: [{ q: 'Necesito experiencia previa?', a: 'No. El evento esta disenado para principiantes y expertos por igual.' }, { q: 'Que necesito llevar?', a: 'Solo tu celular y muchas ganas de aprender. Todo el material se entrega digital.' }, { q: 'Puedo llevar invitados?', a: 'Si, pero cada persona debe registrarse por separado. Los cupos son limitados.' }]
         };
       }
 
-      // ── Step 2: FAL.ai generates poster ──
+      // ── Step 2: FAL.ai generates CINEMA poster ──
       var posterUrl = '';
       if (FAL_KEY) {
-        var imgPrompt = 'Professional modern event poster for a business networking event called "' + ev.titulo + '"'
-          + (ev.ciudad ? ' in ' + ev.ciudad : '') + '. '
-          + 'Elegant dark blue and gold color scheme, abstract geometric shapes, premium corporate feel, '
-          + 'soft glowing lights, no text, no faces, no people, clean minimalist design, '
-          + 'suitable as hero background for a landing page.';
+        var imgPrompt = 'Cinematic movie poster style, dramatic lighting from below, '
+          + 'dark navy blue and gold color palette, epic scale, '
+          + 'abstract luxurious geometric shapes, bokeh light particles, '
+          + 'volumetric fog, golden rim lighting, lens flares, '
+          + 'premium exclusive VIP event atmosphere, '
+          + 'no text, no letters, no words, no people, no faces, '
+          + 'ultra-high quality, 8K, photorealistic rendering, '
+          + 'suitable as a Hollywood movie poster background for a business event'
+          + (ev.ciudad ? ' in ' + ev.ciudad : '') + '.';
         try {
           var imgR = await fetch('https://fal.run/fal-ai/flux/schnell', {
             method: 'POST',
             headers: { 'Authorization': 'Key ' + FAL_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: imgPrompt, image_size: { width: 1344, height: 768 }, num_images: 1, num_inference_steps: 4, enable_safety_checker: false })
+            body: JSON.stringify({ prompt: imgPrompt, image_size: { width: 1024, height: 1536 }, num_images: 1, num_inference_steps: 8, enable_safety_checker: false })
           });
           if (imgR.ok) {
             var imgData = await imgR.json();
@@ -547,13 +564,12 @@ function buildEventHTML(ev, content, creator, posterUrl) {
   var hora = ev.hora || '';
   var ciudad = ev.ciudad || '';
   var lugar = ev.lugar || '';
-  var direccion = ev.direccion || '';
   var tipo = ev.tipo || 'presencial';
   var precio = ev.precio || 'Gratis';
   var capacidad = ev.capacidad || 100;
-
   var heroImg = posterUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&q=80';
   var creatorPhoto = creator.photo && creator.photo.length < 500 ? '' : (creator.photo || '');
+  var faq = content.faq || [];
 
   return '<!DOCTYPE html><html lang="es"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -565,55 +581,53 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<link rel="preconnect" href="https://fonts.googleapis.com">'
     + '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">'
     + '<style>'
-    + '*{margin:0;padding:0;box-sizing:border-box}'
-    + 'body{font-family:"Outfit",sans-serif;background:#0a0a1a;color:#e0e0e0;overflow-x:hidden}'
-    + '.ev-hero{position:relative;min-height:90vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px 20px}'
-    + '.ev-hero-bg{position:absolute;inset:0;background:url("' + esc(heroImg) + '") center/cover no-repeat;filter:brightness(0.3)}'
-    + '.ev-hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,26,0.6) 0%,rgba(10,10,26,0.95) 100%)}'
-    + '.ev-hero-content{position:relative;z-index:2;max-width:700px}'
-    + '.ev-badge{display:inline-block;padding:6px 18px;border-radius:20px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);color:#d4af37;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px}'
-    + '.ev-h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;color:#fff;line-height:1.15;margin-bottom:16px;background:linear-gradient(135deg,#fff 30%,#d4af37);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}'
-    + '.ev-sub{font-size:clamp(1rem,3vw,1.3rem);color:rgba(255,255,255,0.75);font-weight:300;margin-bottom:30px}'
-    + '.ev-meta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:30px}'
-    + '.ev-meta-item{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);font-size:14px;color:rgba(255,255,255,0.8)}'
-    + '.ev-meta-icon{font-size:18px}'
-    + '.ev-cta-btn{display:inline-block;padding:16px 40px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#0a0a1a;font-size:18px;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 20px rgba(212,175,55,0.3)}'
-    + '.ev-cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(212,175,55,0.4)}'
-    + '.ev-countdown{display:flex;gap:12px;justify-content:center;margin:24px 0}'
-    + '.ev-cd-item{text-align:center;min-width:64px}'
-    + '.ev-cd-num{font-size:2rem;font-weight:700;color:#d4af37}'
-    + '.ev-cd-label{font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px}'
-    + '.ev-section{max-width:700px;margin:0 auto;padding:60px 20px}'
-    + '.ev-section h2{font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center}'
+    + '*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Outfit",sans-serif;background:#06061a;color:#e0e0e0;overflow-x:hidden}'
+    + '.ev-hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:60px 20px 40px}'
+    + '.ev-hero-bg{position:absolute;inset:0;background:url("' + esc(heroImg) + '") center/cover no-repeat;filter:brightness(0.2) saturate(0.8)}'
+    + '.ev-hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,26,0.5) 0%,rgba(6,6,26,0.7) 40%,rgba(6,6,26,0.97) 100%)}'
+    + '.ev-hero-content{position:relative;z-index:2;max-width:720px;animation:evFadeUp .8s ease}'
+    + '@keyframes evFadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}'
+    + '.ev-live{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;background:rgba(255,59,48,0.15);border:1px solid rgba(255,59,48,0.3);color:#ff3b30;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px}'
+    + '.ev-live-dot{width:8px;height:8px;border-radius:50%;background:#ff3b30;animation:evPulse 1.5s infinite}'
+    + '@keyframes evPulse{0%,100%{opacity:1}50%{opacity:0.3}}'
+    + '.ev-badge{display:inline-block;padding:6px 18px;border-radius:20px;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.25);color:#d4af37;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px}'
+    + '.ev-h1{font-size:clamp(2.2rem,7vw,4rem);font-weight:800;color:#fff;line-height:1.1;margin-bottom:16px;text-shadow:0 4px 40px rgba(212,175,55,0.15)}'
+    + '.ev-sub{font-size:clamp(1rem,3vw,1.25rem);color:rgba(255,255,255,0.7);font-weight:300;margin-bottom:24px;line-height:1.5}'
+    + '.ev-social{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:20px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.2);color:#4ecdc4;font-size:13px;font-weight:600;margin-bottom:24px}'
+    + '.ev-meta{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:24px}'
+    + '.ev-meta-item{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.06);font-size:13px;color:rgba(255,255,255,0.8)}'
+    + '.ev-cd{display:flex;gap:10px;justify-content:center;margin:20px 0 28px}'
+    + '.ev-cd-box{padding:12px 16px;border-radius:12px;background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.08);text-align:center;min-width:64px}'
+    + '.ev-cd-num{font-size:1.8rem;font-weight:700;color:#d4af37;line-height:1}'
+    + '.ev-cd-label{font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-top:4px}'
+    + '.ev-cta{display:inline-block;padding:16px 44px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#0a0a1a;font-size:17px;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:all .25s;box-shadow:0 4px 24px rgba(212,175,55,0.3)}'
+    + '.ev-cta:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(212,175,55,0.45)}'
+    // Sections
+    + '.ev-s{max-width:700px;margin:0 auto;padding:60px 20px}'
+    + '.ev-s h2{font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center}'
+    + '.ev-hook{max-width:700px;margin:0 auto;padding:40px 20px;text-align:center}'
+    + '.ev-hook p{font-size:clamp(1.05rem,2.5vw,1.2rem);color:rgba(255,255,255,0.7);line-height:1.7;max-width:600px;margin:0 auto}'
     + '.ev-about p{color:rgba(255,255,255,0.7);line-height:1.8;margin-bottom:16px;font-size:1.05rem}'
-    + '.ev-bullets{list-style:none;padding:0}'
-    + '.ev-bullets li{padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:flex-start;gap:12px;color:rgba(255,255,255,0.8);font-size:1.05rem}'
-    + '.ev-bullet-icon{color:#d4af37;font-size:20px;flex-shrink:0;margin-top:2px}'
-    + '.ev-speaker{display:flex;align-items:center;gap:20px;padding:24px;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)}'
-    + '.ev-speaker-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.3);background:#1a1a2e}'
-    + '.ev-speaker-name{font-size:1.2rem;font-weight:600;color:#fff}'
-    + '.ev-speaker-role{color:#d4af37;font-size:14px;margin-top:4px}'
-    + '.ev-speaker-bio{color:rgba(255,255,255,0.6);font-size:14px;margin-top:8px}'
-    + '.ev-form-section{background:linear-gradient(180deg,rgba(212,175,55,0.05),rgba(10,10,26,0));padding:60px 20px}'
-    + '.ev-form{max-width:500px;margin:0 auto;padding:32px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)}'
-    + '.ev-form h2{text-align:center;color:#fff;margin-bottom:24px}'
-    + '.ev-form input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;font-size:15px;font-family:inherit;margin-bottom:12px;outline:none;transition:border 0.2s}'
-    + '.ev-form input:focus{border-color:rgba(212,175,55,0.5)}'
-    + '.ev-form input::placeholder{color:rgba(255,255,255,0.35)}'
-    + '.ev-form-submit{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#0a0a1a;font-size:17px;font-weight:700;border:none;cursor:pointer;margin-top:8px}'
-    + '.ev-form-msg{text-align:center;margin-top:12px;font-size:14px}'
-    + '.ev-urgency{text-align:center;color:#d4af37;font-size:14px;margin-top:16px;font-weight:600}'
-    + '.ev-ref-badge{text-align:center;padding:12px;margin-top:16px;border-radius:12px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.15);font-size:13px;color:rgba(255,255,255,0.6)}'
-    + '.ev-ref-name{color:#d4af37;font-weight:600}'
-    + '.ev-footer{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px}'
-    + '.ev-footer a{color:rgba(212,175,55,0.6);text-decoration:none}'
+    + '.ev-about strong{color:#d4af37}'
+    // Benefits
+    + '.ev-bullets{list-style:none;padding:0;display:grid;gap:10px}'
+    + '.ev-bullets li{padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.85);font-size:1.05rem;line-height:1.4;transition:border .2s}'
+    + '.ev-bullets li:hover{border-color:rgba(212,175,55,0.2)}'
+    // Speaker
+    + '.ev-speaker{display:flex;align-items:center;gap:20px;padding:28px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}'
+    + '.ev-speaker-photo{width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid rgba(212,175,55,0.4);background:#1a1a2e;flex-shrink:0}'
+    + '.ev-speaker-name{font-size:1.2rem;font-weight:700;color:#fff}'
+    + '.ev-speaker-rank{display:inline-block;padding:3px 10px;border-radius:8px;background:rgba(212,175,55,0.12);color:#d4af37;font-size:11px;font-weight:600;margin-top:4px}'
+    + '.ev-speaker-bio{color:rgba(255,255,255,0.6);font-size:14px;margin-top:8px;line-height:1.5}'
+    // VSL
     + '.ev-vsl{max-width:700px;margin:0 auto;padding:40px 20px;text-align:center}'
     + '.ev-vsl-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px;border:1px solid rgba(255,255,255,0.08);background:#000}'
     + '.ev-vsl-wrap iframe,.ev-vsl-wrap>div{position:absolute;top:0;left:0;width:100%;height:100%;border:0}'
     + '.ev-vsl-overlay{position:absolute;inset:0;z-index:2;cursor:default}'
-    + '.ev-vsl-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;width:72px;height:72px;border-radius:50%;background:rgba(212,175,55,0.9);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(212,175,55,0.4);transition:transform 0.2s}'
+    + '.ev-vsl-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;width:80px;height:80px;border-radius:50%;background:rgba(212,175,55,0.9);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 30px rgba(212,175,55,0.4);transition:transform 0.2s}'
     + '.ev-vsl-play:hover{transform:translate(-50%,-50%) scale(1.1)}'
-    + '.ev-vsl-play svg{width:28px;height:28px;margin-left:3px}'
+    + '.ev-vsl-play svg{width:30px;height:30px;margin-left:4px}'
+    // Testimonials
     + '.ev-testimonials{max-width:700px;margin:0 auto;padding:40px 20px}'
     + '.ev-testimonial{padding:20px;margin-bottom:14px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}'
     + '.ev-testimonial-written{display:flex;gap:14px;align-items:flex-start}'
@@ -622,99 +636,150 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '.ev-testimonial-author{color:#d4af37;font-weight:600;font-size:14px}'
     + '.ev-testimonial-vid{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin-bottom:8px}'
     + '.ev-testimonial-vid iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}'
-    + '.ev-wa-btn{display:block;width:100%;padding:18px;margin-top:16px;border-radius:14px;background:#25D366;color:#fff;font-size:18px;font-weight:700;text-align:center;text-decoration:none;box-shadow:0 4px 15px rgba(37,211,102,0.4);transition:transform 0.2s}'
+    // FAQ
+    + '.ev-faq{max-width:700px;margin:0 auto;padding:40px 20px}'
+    + '.ev-faq-item{border-bottom:1px solid rgba(255,255,255,0.06);padding:16px 0}'
+    + '.ev-faq-q{color:#fff;font-weight:600;font-size:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center}'
+    + '.ev-faq-q::after{content:"+";color:#d4af37;font-size:1.3rem;transition:transform .2s}'
+    + '.ev-faq-q.open::after{transform:rotate(45deg)}'
+    + '.ev-faq-a{color:rgba(255,255,255,0.6);font-size:14px;line-height:1.6;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s}'
+    + '.ev-faq-a.open{max-height:200px;padding-top:10px}'
+    // Form
+    + '.ev-form-section{background:linear-gradient(180deg,rgba(212,175,55,0.04),rgba(6,6,26,0));padding:60px 20px}'
+    + '.ev-form{max-width:480px;margin:0 auto;padding:32px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}'
+    + '.ev-form h2{text-align:center;color:#fff;margin-bottom:20px;font-size:1.4rem}'
+    + '.ev-form input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#fff;font-size:15px;font-family:inherit;margin-bottom:12px;outline:none;transition:border .2s}'
+    + '.ev-form input:focus{border-color:rgba(212,175,55,0.5)}'
+    + '.ev-form input::placeholder{color:rgba(255,255,255,0.3)}'
+    + '.ev-form-submit{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#0a0a1a;font-size:17px;font-weight:700;border:none;cursor:pointer;margin-top:4px;transition:all .2s}'
+    + '.ev-form-submit:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,175,55,0.3)}'
+    + '.ev-form-msg{text-align:center;margin-top:12px;font-size:14px}'
+    + '.ev-urgency{text-align:center;padding:10px;margin-top:14px;border-radius:10px;background:rgba(255,59,48,0.08);border:1px solid rgba(255,59,48,0.15);color:#ff6b6b;font-size:13px;font-weight:600}'
+    + '.ev-ref-card{display:flex;align-items:center;gap:12px;padding:14px;margin-bottom:20px;border-radius:12px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.12)}'
+    + '.ev-ref-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.3);flex-shrink:0}'
+    + '.ev-ref-info{font-size:13px;color:rgba(255,255,255,0.6)}'
+    + '.ev-ref-name{color:#fff;font-weight:600;font-size:14px}'
+    // WA btn
+    + '.ev-wa-btn{display:block;width:100%;padding:18px;margin-top:16px;border-radius:14px;background:#25D366;color:#fff;font-size:18px;font-weight:700;text-align:center;text-decoration:none;box-shadow:0 4px 15px rgba(37,211,102,0.4);transition:transform .2s}'
     + '.ev-wa-btn:hover{transform:translateY(-2px)}'
+    // Guarantee + footer
+    + '.ev-guarantee{max-width:700px;margin:0 auto;padding:30px 20px;text-align:center}'
+    + '.ev-guarantee-box{padding:20px;border-radius:14px;background:rgba(78,205,196,0.05);border:1px solid rgba(78,205,196,0.1);color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6}'
+    + '.ev-footer{text-align:center;padding:40px 20px 100px;color:rgba(255,255,255,0.25);font-size:12px}'
+    + '.ev-footer a{color:rgba(212,175,55,0.5);text-decoration:none}'
+    // Sticky CTA mobile
+    + '.ev-sticky{position:fixed;bottom:0;left:0;right:0;z-index:100;padding:12px 16px;background:rgba(6,6,26,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(212,175,55,0.15);transform:translateY(100%);transition:transform .3s;display:flex;gap:10px;align-items:center}'
+    + '.ev-sticky.show{transform:translateY(0)}'
+    + '.ev-sticky-text{flex:1;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.3}'
+    + '.ev-sticky-text strong{color:#ff6b6b;display:block;font-size:13px}'
+    + '.ev-sticky a{padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#0a0a1a;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0}'
+    // Scroll animations
+    + '.ev-reveal{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s}.ev-reveal.visible{opacity:1;transform:translateY(0)}'
     + '@media(max-width:600px){.ev-speaker{flex-direction:column;text-align:center}.ev-meta{flex-direction:column;align-items:center}}'
     + '</style></head><body>'
 
-    // ── HERO ──
+    // ── HERO (full-screen cinema) ──
     + '<section class="ev-hero">'
     + '<div class="ev-hero-bg"></div>'
     + '<div class="ev-hero-overlay"></div>'
     + '<div class="ev-hero-content">'
-    + '<div class="ev-badge">' + (tipo === 'virtual' ? '💻 Evento Virtual' : tipo === 'hibrido' ? '🌐 Evento Hibrido' : '📍 Evento Presencial') + '</div>'
+    + '<div class="ev-live"><span class="ev-live-dot"></span>' + (tipo === 'virtual' ? 'EVENTO VIRTUAL' : 'EVENTO EXCLUSIVO') + '</div><br>'
+    + '<div class="ev-badge">' + (tipo === 'virtual' ? '💻 Online' : '📍 ' + esc(ciudad || 'Presencial')) + ' • ' + esc(fecha) + '</div>'
     + '<h1 class="ev-h1">' + esc(content.headline || ev.titulo) + '</h1>'
     + '<p class="ev-sub">' + esc(content.subheadline || '') + '</p>'
+    + (content.social_proof ? '<div class="ev-social">🔥 ' + esc(content.social_proof) + '</div><br>' : '')
     + '<div class="ev-meta">'
-    + '<div class="ev-meta-item"><span class="ev-meta-icon">📅</span>' + esc(fecha) + (hora ? ' • ' + esc(hora) : '') + '</div>'
-    + (ciudad ? '<div class="ev-meta-item"><span class="ev-meta-icon">📍</span>' + esc(ciudad) + (lugar ? ' — ' + esc(lugar) : '') + '</div>' : '')
-    + '<div class="ev-meta-item"><span class="ev-meta-icon">💰</span>' + esc(precio) + '</div>'
+    + '<div class="ev-meta-item">📅 ' + esc(fecha) + (hora ? ' • ' + esc(hora) : '') + '</div>'
+    + (ciudad ? '<div class="ev-meta-item">📍 ' + esc(ciudad) + (lugar ? ' — ' + esc(lugar) : '') + '</div>' : '')
+    + '<div class="ev-meta-item">💰 ' + esc(precio) + '</div>'
+    + '<div class="ev-meta-item">👥 ' + capacidad + ' cupos</div>'
     + '</div>'
-    + '<div class="ev-countdown" id="ev-countdown"></div>'
-    + '<a href="#ev-registro" class="ev-cta-btn">' + esc(content.cta_text || 'Reserva tu Lugar') + '</a>'
+    + '<div class="ev-cd" id="ev-countdown"></div>'
+    + '<a href="#ev-registro" class="ev-cta">' + esc(content.cta_text || 'Reserva tu Cupo YA') + '</a>'
     + '</div></section>'
 
-    // ── ABOUT ──
-    + '<section class="ev-section"><h2>Sobre el Evento</h2>'
-    + '<div class="ev-about">' + (content.about || '') + '</div>'
-    + '</section>'
+    // ── HOOK ──
+    + (content.hook ? '<section class="ev-hook ev-reveal"><p>' + esc(content.hook) + '</p></section>' : '')
 
     // ── VSL VIDEO (anti-skip) ──
     + (function() {
       if (!ev.vsl_url) return '';
       var vi = _extractVideoId(ev.vsl_url);
       if (vi.platform === 'youtube') {
-        return '<section class="ev-vsl"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2>'
+        return '<section class="ev-vsl ev-reveal"><h2 style="font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video Antes de que lo Quiten</h2>'
           + '<div class="ev-vsl-wrap"><div id="ev-vsl-player"></div>'
           + '<div class="ev-vsl-overlay" id="ev-vsl-overlay"></div>'
           + '<div class="ev-vsl-play" id="ev-vsl-play" onclick="_playVSL()"><svg viewBox="0 0 24 24" fill="#0a0a1a"><polygon points="5,3 19,12 5,21"/></svg></div>'
           + '</div></section>';
       }
-      // Vimeo or other: simple embed, no skip controls
-      return '<section class="ev-vsl"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2>'
+      return '<section class="ev-vsl ev-reveal"><h2 style="font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2>'
         + '<div class="ev-vsl-wrap"><iframe src="' + esc(_toEmbed(ev.vsl_url)) + '" allowfullscreen></iframe></div></section>';
     })()
 
+    // ── ABOUT (pain → desire → bridge) ──
+    + '<section class="ev-s ev-reveal"><h2>Lo que vas a Descubrir</h2>'
+    + '<div class="ev-about">' + (content.about || '') + '</div>'
+    + '</section>'
+
     // ── BENEFITS ──
-    + '<section class="ev-section"><h2>Lo que Obtendras</h2>'
+    + '<section class="ev-s ev-reveal"><h2>Esto es lo que Obtendras</h2>'
     + '<ul class="ev-bullets">'
-    + (content.bullets || []).map(function(b) { return '<li><span class="ev-bullet-icon">✦</span>' + esc(b) + '</li>'; }).join('')
+    + (content.bullets || []).map(function(b) { return '<li>' + esc(b) + '</li>'; }).join('')
     + '</ul></section>'
 
     // ── SPEAKER ──
-    + '<section class="ev-section"><h2>Tu Anfitrion</h2>'
+    + '<section class="ev-s ev-reveal"><h2>Tu Anfitrion</h2>'
     + '<div class="ev-speaker">'
-    + (creatorPhoto ? '<img class="ev-speaker-photo" src="' + esc(creatorPhoto) + '" alt="">' : '<div class="ev-speaker-photo" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#d4af37">👤</div>')
+    + (creatorPhoto ? '<img class="ev-speaker-photo" src="' + esc(creatorPhoto) + '" alt="">' : '<div class="ev-speaker-photo" style="display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:#d4af37">👤</div>')
     + '<div>'
     + '<div class="ev-speaker-name">' + esc(creator.name) + '</div>'
-    + (creator.rango ? '<div class="ev-speaker-role">' + esc(creator.rango) + '</div>' : '')
+    + (creator.rango ? '<span class="ev-speaker-rank">' + esc(creator.rango) + '</span>' : '')
     + '<div class="ev-speaker-bio">' + esc(content.speaker_intro || '') + '</div>'
     + '</div></div></section>'
 
     // ── TESTIMONIALS ──
-    + (Array.isArray(ev.testimonios) && ev.testimonios.length ? '<section class="ev-testimonials"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center">Lo que Dicen Nuestros Asistentes</h2>' + ev.testimonios.map(function(t) {
-      var tipo = t.tipo || 'escrito';
-      if (tipo === 'video' && t.video_url) {
+    + (Array.isArray(ev.testimonios) && ev.testimonios.length ? '<section class="ev-testimonials ev-reveal"><h2 style="font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center">Lo que Dicen Quienes Ya Asistieron</h2>' + ev.testimonios.map(function(t) {
+      var tt = t.tipo || 'escrito';
+      if (tt === 'video' && t.video_url) {
         return '<div class="ev-testimonial"><div class="ev-testimonial-vid"><iframe src="' + esc(_toEmbed(t.video_url)) + '" allowfullscreen></iframe></div>'
           + '<div class="ev-testimonial-author">— ' + esc(t.nombre || 'Anonimo') + '</div></div>';
       }
-      // Escrito (con foto opcional)
       var hasPhoto = t.foto_url && t.foto_url.trim();
-      return '<div class="ev-testimonial">'
-        + '<div class="ev-testimonial-written">'
-        + (hasPhoto ? '<img class="ev-testimonial-photo" src="' + esc(t.foto_url) + '" alt="' + esc(t.nombre || '') + '">' : '')
+      return '<div class="ev-testimonial"><div class="ev-testimonial-written">'
+        + (hasPhoto ? '<img class="ev-testimonial-photo" src="' + esc(t.foto_url) + '" alt="">' : '')
         + '<div><div class="ev-testimonial-text">"' + esc(t.texto || t.text || '') + '"</div>'
         + '<div class="ev-testimonial-author">— ' + esc(t.nombre || t.name || 'Anonimo') + '</div></div></div></div>';
     }).join('') + '</section>' : '')
 
-    // ── REGISTRATION FORM ──
+    // ── FAQ ──
+    + (faq.length ? '<section class="ev-faq ev-reveal"><h2 style="font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center">Preguntas Frecuentes</h2>'
+      + faq.map(function(f, i) { return '<div class="ev-faq-item"><div class="ev-faq-q" onclick="this.classList.toggle(\'open\');this.nextElementSibling.classList.toggle(\'open\')">' + esc(f.q || '') + '</div><div class="ev-faq-a">' + esc(f.a || '') + '</div></div>'; }).join('')
+      + '</section>' : '')
+
+    // ── REGISTRATION FORM + PROMOTER BADGE ──
     + '<section class="ev-form-section" id="ev-registro">'
     + '<div class="ev-form">'
-    + '<h2>' + esc(content.cta_text || 'Reserva tu Lugar') + '</h2>'
+    + '<!--REF_BADGE-->'
+    + '<h2>' + esc(content.cta_text || 'Reserva tu Cupo') + '</h2>'
     + '<input type="text" id="ev-reg-nombre" placeholder="Tu nombre completo" required>'
     + '<input type="tel" id="ev-reg-wa" placeholder="WhatsApp (con codigo de pais)" required>'
     + '<input type="email" id="ev-reg-email" placeholder="Email (opcional)">'
-    + '<input type="text" id="ev-reg-ciudad" placeholder="Ciudad">'
-    + '<button class="ev-form-submit" id="ev-reg-btn" onclick="submitEventReg()">' + esc(content.cta_text || 'Reserva tu Lugar') + '</button>'
+    + '<input type="text" id="ev-reg-ciudad" placeholder="Tu ciudad">'
+    + '<button class="ev-form-submit" id="ev-reg-btn" onclick="submitEventReg()">' + esc(content.cta_text || 'Reserva tu Cupo YA') + ' →</button>'
     + '<div class="ev-form-msg" id="ev-reg-msg"></div>'
-    + '<div class="ev-urgency">' + esc(content.urgency_text || 'Cupos limitados!') + '</div>'
-    + '<div class="ev-ref-badge" id="ev-ref-badge" style="display:none"></div>'
+    + '<div class="ev-urgency">' + esc(content.urgency_text || 'Solo ' + capacidad + ' cupos — Se agotan rapido!') + '</div>'
     + '</div></section>'
+
+    // ── GUARANTEE ──
+    + (content.guarantee ? '<section class="ev-guarantee ev-reveal"><div class="ev-guarantee-box">✅ ' + esc(content.guarantee) + '</div></section>' : '')
 
     // ── FOOTER ──
     + '<footer class="ev-footer">'
     + '<p>Organizado con <a href="https://skyteam.global">SkyTeam Global</a></p>'
     + '</footer>'
+
+    // ── STICKY CTA (mobile) ──
+    + '<div class="ev-sticky" id="ev-sticky"><div class="ev-sticky-text"><strong>Cupos limitados</strong>' + esc(content.urgency_text || '') + '</div><a href="#ev-registro">' + esc(content.cta_text || 'Reservar') + '</a></div>'
 
     // ── SCRIPTS ──
     + '<script>'
@@ -726,26 +791,29 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'var EVT_PRECIO="' + esc(precio) + '";'
     + 'var REF=new URLSearchParams(location.search).get("ref")||"";'
 
-    // Show referrer badge
-    + 'if(REF){var rb=document.getElementById("ev-ref-badge");if(rb){rb.style.display="block";rb.innerHTML="Invitado por <span class=\\"ev-ref-name\\">"+REF+"</span>";}}'
-
     // Track visit
     + 'try{var fp=screen.width+"x"+screen.height+"."+screen.colorDepth+"."+Intl.DateTimeFormat().resolvedOptions().timeZone+"."+navigator.language;'
     + 'var dv=window.innerWidth<768?"mobile":"desktop";'
     + 'fetch("/api/event-pages?action=track",{method:"POST",headers:{"Content-Type":"application/json"},'
     + 'body:JSON.stringify({event_id:EVT_ID,ref_username:REF||null,fingerprint:fp,device:dv})}).catch(function(){});}catch(e){}'
 
-    // Countdown
+    // Countdown (glassmorphism boxes)
     + 'function updateCD(){'
     + 'var t=EVT_DATE;if(EVT_TIME)t+="T"+EVT_TIME+":00";var end=new Date(t).getTime();if(isNaN(end))return;'
     + 'var now=Date.now();var d=end-now;if(d<=0){document.getElementById("ev-countdown").innerHTML="<div style=\\"color:#d4af37;font-size:1.2rem\\">El evento ya inicio!</div>";return;}'
     + 'var days=Math.floor(d/86400000);var hrs=Math.floor((d%86400000)/3600000);var mins=Math.floor((d%3600000)/60000);var secs=Math.floor((d%60000)/1000);'
     + 'document.getElementById("ev-countdown").innerHTML='
-    + '"<div class=\\"ev-cd-item\\"><div class=\\"ev-cd-num\\">"+days+"</div><div class=\\"ev-cd-label\\">Dias</div></div>"'
-    + '+"<div class=\\"ev-cd-item\\"><div class=\\"ev-cd-num\\">"+hrs+"</div><div class=\\"ev-cd-label\\">Horas</div></div>"'
-    + '+"<div class=\\"ev-cd-item\\"><div class=\\"ev-cd-num\\">"+mins+"</div><div class=\\"ev-cd-label\\">Min</div></div>"'
-    + '+"<div class=\\"ev-cd-item\\"><div class=\\"ev-cd-num\\">"+secs+"</div><div class=\\"ev-cd-label\\">Seg</div></div>";'
+    + '"<div class=\\"ev-cd-box\\"><div class=\\"ev-cd-num\\">"+days+"</div><div class=\\"ev-cd-label\\">Dias</div></div>"'
+    + '+"<div class=\\"ev-cd-box\\"><div class=\\"ev-cd-num\\">"+hrs+"</div><div class=\\"ev-cd-label\\">Horas</div></div>"'
+    + '+"<div class=\\"ev-cd-box\\"><div class=\\"ev-cd-num\\">"+mins+"</div><div class=\\"ev-cd-label\\">Min</div></div>"'
+    + '+"<div class=\\"ev-cd-box\\"><div class=\\"ev-cd-num\\">"+secs+"</div><div class=\\"ev-cd-label\\">Seg</div></div>";'
     + '}updateCD();setInterval(updateCD,1000);'
+    // Scroll reveal animations
+    + 'var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add("visible");});},{threshold:0.1});'
+    + 'document.querySelectorAll(".ev-reveal").forEach(function(el){obs.observe(el);});'
+    // Sticky CTA on scroll
+    + 'var sticky=document.getElementById("ev-sticky");'
+    + 'window.addEventListener("scroll",function(){if(window.scrollY>600){sticky.classList.add("show");}else{sticky.classList.remove("show");}});'
 
     // Submit registration — shows WA button instead of window.open (fixes mobile popup blocker)
     + 'function submitEventReg(){'
@@ -801,6 +869,12 @@ function buildEventHTML(ev, content, creator, posterUrl) {
 }
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Rank number to display name
+function _rankName(n) {
+  var names = { 0: 'Cliente', 1: 'INN 200', 2: 'INN 500', 3: 'NOVA 1500', 4: 'NOVA 5K', 5: 'NOVA 10K', 6: 'NOVA DIAMOND', 7: 'NOVA 50K', 8: 'NOVA 100K', 99: 'Admin' };
+  return names[n] || 'Emprendedor';
+}
 
 // Extract video platform + ID
 function _extractVideoId(url) {

@@ -2482,7 +2482,7 @@ function renderSTEventos() {
   // Create button (only NOVA 1500+ / rango >= 3)
   var cuRango = (typeof CU !== 'undefined' && CU) ? (parseInt(CU.rank) || 0) : 0;
   var cuIsAdmin = (typeof CU !== 'undefined' && CU) ? CU.isAdmin : false;
-  if (cuRango >= 3 || cuIsAdmin) {
+  if (cuRango >= 4 || cuIsAdmin) {
     html += '<button onclick="openEventWizard()" style="width:100%;padding:14px;border-radius:14px;border:1px dashed ' + C.gold + ';background:rgba(201,168,76,0.05);color:' + C.gold + ';font-size:15px;font-weight:700;cursor:pointer;margin-bottom:20px;font-family:inherit">+ Crear Evento</button>';
   }
 
