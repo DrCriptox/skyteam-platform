@@ -3313,7 +3313,7 @@ window._evtEditorPublish = _evtEditorPublish;
 function _openEvtEditor(eventId) {
   fetch('/api/event-pages', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'get', slug_or_id: eventId })
+    body: JSON.stringify({ action: 'get', event_id: eventId })
   }).then(function(r) { return r.json(); }).then(function(ev) {
     if (ev && ev.ai_content) {
       stState.evtEditContent = ev.ai_content;
