@@ -4597,45 +4597,51 @@ function renderAgendaCitasUI() {
     var fechaLabel = (isHoy ? 'Hoy' : DIAS_FULL[d.getDay()].charAt(0).toUpperCase()+DIAS_FULL[d.getDay()].slice(1)) + ' ' + d.getDate() + ' de ' + MESES_FULL[d.getMonth()] + ' · ' + hStr;
     var waNum = cita.whatsapp.replace(/[^0-9]/g,'');
     var linkR = agendaConfig&&agendaConfig.linkReunion||'';
-    html += '<div class="card" style="margin-bottom:10px;padding:14px;">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-    html += '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:15px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cita.nombre + ' <span style="font-size:11px;color:rgba(255,255,255,0.3);font-weight:500;">\uD83D\uDCF1 ' + cita.whatsapp + '</span></p></div>';
-    html += '<div style="flex-shrink:0;text-align:right;margin-left:10px;">';
-    html += '<span style="font-size:12px;font-weight:700;color:#C9A84C;">\uD83D\uDCC5 ' + fechaLabel + '</span> ' + badge;
+    html += '<div class="card" style="margin-bottom:6px;padding:10px 12px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+    html += '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:13px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cita.nombre + ' <span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:500;">' + cita.whatsapp + '</span></p></div>';
+    html += '<div style="flex-shrink:0;text-align:right;margin-left:8px;">';
+    html += '<span style="font-size:11px;font-weight:700;color:#C9A84C;">' + fechaLabel + '</span> ' + badge;
     html += '</div></div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+    // Reminder buttons (only for future citas)
     if(!isPast) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">';
       var m2h = encodeURIComponent('Hola ' + cita.nombre + '! ⏰ Recordatorio: en 2 horas tenemos nuestra reunión.  ' + (linkR?'Link: '+linkR:''));
       var m30 = encodeURIComponent('Hola ' + cita.nombre + '! ⏰ Quedan 30 minutos para nuestra reunión. ¡Nos vemos pronto!');
       var mOpen = linkR ? encodeURIComponent('Hola ' + cita.nombre + '! 🚀 ¡La sala está abierta! Únete: ' + linkR) : '';
-      html += '<a href="https://wa.me/'+waNum+'?text='+m2h+'" target="_blank" class="reminder-btn">\u23F0 2h antes</a>';
-      html += '<a href="https://wa.me/'+waNum+'?text='+m30+'" target="_blank" class="reminder-btn">\u23F0 30 min</a>';
-      if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">\uD83D\uDE80 Sala abierta</a>';
+      html += '<a href="https://wa.me/'+waNum+'?text='+m2h+'" target="_blank" class="reminder-btn" style="padding:4px 10px;font-size:10px;">\u23F0 2h</a>';
+      html += '<a href="https://wa.me/'+waNum+'?text='+m30+'" target="_blank" class="reminder-btn" style="padding:4px 10px;font-size:10px;">\u23F0 30m</a>';
+      if(linkR) html += '<a href="https://wa.me/'+waNum+'?text='+mOpen+'" target="_blank" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;display:inline-block;">\uD83D\uDE80 Sala</a>';
+      html += '</div>';
     }
-    html += '</div>';
-    // Bottom row: Photo proof + Cancel button
+    // Bottom row: Photo proof + Cancel/Delete button
     var hasProof = cita.proof_url || cita.proof;
+    var isVerificada = hasProof || cita.status === 'verificada' || cita.status === 'completada';
     var _citaTime = new Date(cita.fechaISO || cita.fecha_iso).getTime();
     var _nowMs = Date.now();
-    var _canUpload = !hasProof && _nowMs >= (_citaTime - 30*60000) && _nowMs <= (_citaTime + 2*3600000);
+    var _canUpload = !hasProof && _nowMs >= (_citaTime - 30*60000) && _nowMs <= (_citaTime + 5*3600000);
     var _tooEarly = !hasProof && _nowMs < (_citaTime - 30*60000);
-    var _tooLate = !hasProof && _nowMs > (_citaTime + 2*3600000);
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,0.04);">';
-    if(hasProof) {
-      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Foto verificada</span>';
+    var _tooLate = !hasProof && _nowMs > (_citaTime + 5*3600000);
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.04);">';
+    if(isVerificada) {
+      html += '<span style="font-size:10px;color:#1D9E75;font-weight:700;">\u2705 Confirmada</span>';
     } else if(_canUpload) {
-      html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border-radius:8px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);font-size:11px;font-weight:700;color:#1D9E75;font-family:Outfit,Nunito,sans-serif;">';
-      html += '\uD83D\uDCF7 Verificar con foto';
+      html += '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 10px;border-radius:8px;background:rgba(29,158,117,0.08);border:0.5px solid rgba(29,158,117,0.20);font-size:10px;font-weight:700;color:#1D9E75;font-family:Outfit,Nunito,sans-serif;">';
+      html += '\uD83D\uDCF7 Verificar';
       html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
       html += '</label>';
-      html += '<span style="font-size:9px;color:rgba(255,255,255,0.25);">+25 pts \u00b7 +5 parcial</span>';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.2);">+25 pts</span>';
     } else if(_tooEarly) {
-      html += '<span style="font-size:10px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 Verificar desde 30 min antes</span>';
+      html += '<span style="font-size:10px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 Desde 30 min antes</span>';
     } else if(_tooLate) {
-      html += '<span style="font-size:10px;color:rgba(255,100,100,0.5);">\u23F0 Ventana cerrada</span>';
+      html += '<span style="font-size:10px;color:rgba(255,100,100,0.5);">\u23F0 Sin confirmar</span>';
     }
-    // Cancel button at the right end of this row
-    html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;flex-shrink:0;">\u2715 Cancelar</button>';
+    // Cancel (future) or Delete (past)
+    if(!isPast) {
+      html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,60,60,0.08);border:0.5px solid rgba(255,60,60,0.2);color:rgba(255,100,100,0.7);border-radius:7px;padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;flex-shrink:0;">\u2715 Cancelar</button>';
+    } else {
+      html += '<button onclick="cancelarCitaAgenda(\'' + cita.id + '\')" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);border-radius:7px;padding:4px 8px;font-size:9px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;margin-left:auto;flex-shrink:0;">\uD83D\uDDD1 Borrar</button>';
+    }
     html += '</div>';
     html += '</div>';
   });
