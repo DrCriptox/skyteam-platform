@@ -186,8 +186,8 @@ export default async function handler(req, res) {
 <div class="sky-wa-bar" id="sky-wa-bar">
 <a class="sky-wa-btn sky-wa-btn-green" id="sky-wa-cta1" href="#" target="_blank">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg>
-Quiero saber m\u00e1s</a>
-<a class="sky-wa-btn sky-wa-btn-gold" id="sky-wa-cta2" href="#" target="_blank">\uD83D\uDE80 Activar franquicia</a>
+Agendar llamada</a>
+<a class="sky-wa-btn sky-wa-btn-gold" id="sky-wa-cta2" href="#" target="_blank">\uD83D\uDE80 Activar ahora</a>
 </div>
 <a class="sky-wa-float" id="sky-wa-float" href="#" target="_blank">
 <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.7 14.9L2 22l5.2-1.3A10 10 0 1012 2zm5.2 14.2c-.2.6-1.2 1.2-1.7 1.3-.5 0-.9.2-3.1-.7-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c0 .1-.1.4-.2.5-.1.2-.2.3-.4.5-.2.2-.4.4-.2.7.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.5 1.5.3.1.5.1.7-.1s.8-1 1-1.3c.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.1.5.2.6.3.1.1.1.7-.1 1.3z"/></svg>
@@ -215,9 +215,9 @@ Quiero saber m\u00e1s</a>
   if(!wa) return;
   var nombre = a.nombre || '';
 
-  // Pre-built WhatsApp links
-  var msgSaber = encodeURIComponent('Hola ' + nombre + ', vi tu pagina y me interesa saber mas sobre la franquicia digital. Me puedes dar informacion?');
-  var msgActivar = encodeURIComponent('Hola ' + nombre + ', quiero activar mi franquicia digital!');
+  // Pre-built WhatsApp links — messages that commit the person to action
+  var msgSaber = encodeURIComponent('Hola ' + nombre + ', ya vi la informacion y quiero agendar una llamada para resolver mis dudas antes de activar. Cuando tienes disponibilidad?');
+  var msgActivar = encodeURIComponent('Hola ' + nombre + ', estoy listo para activar. Cual es el paso a seguir?');
   var linkSaber = 'https://wa.me/' + wa + '?text=' + msgSaber;
   var linkActivar = 'https://wa.me/' + wa + '?text=' + msgActivar;
 
@@ -254,15 +254,9 @@ Quiero saber m\u00e1s</a>
     var endCta = document.querySelector('.end-cta');
     _hijackBtn(endCta, linkSaber);
 
-    // ALL "Quiero activar mi franquicia" inline CTAs (post-VSL + mid-page)
-    // These are <a> tags with onclick that scroll to #form
+    // ALL CTA buttons — override every javascript:void(0) link to go to WhatsApp
     document.querySelectorAll('a[href="javascript:void(0)"]').forEach(function(el) {
-      var txt = (el.textContent || '').toLowerCase();
-      if (txt.indexOf('activar') > -1 || txt.indexOf('franquicia') > -1) {
-        _hijackBtn(el, linkActivar);
-      } else if (txt.indexOf('hablar') > -1 || txt.indexOf('equipo') > -1) {
-        _hijackBtn(el, linkSaber);
-      }
+      _hijackBtn(el, linkActivar);
     });
 
     // Override the form's enviarWhatsApp() to use this asesor's number
