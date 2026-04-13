@@ -10836,8 +10836,27 @@ function _renderProofTable(proofs) {
     var on = f === t;
     return '<button onclick="_filterProofs(\''+t+'\')" style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(on?'1px solid '+color:'0.5px solid rgba(255,255,255,0.08)')+';background:'+(on?color+'20':'rgba(255,255,255,0.03)')+';color:'+(on?color:'rgba(255,255,255,0.4)')+';">'+label+'</button>';
   };
-    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">';
-    html += '<h3 style="color:#C9A84C;font-size:16px;margin:0;">\uD83D\uDD0D Pruebas CRM (' + proofs.length + '/' + total + ')</h3>';
+    // Sub-tab selector: CRM vs Agenda
+    var _proofView = window._adminProofView || 'crm';
+    var _stab = function(id, label, icon) {
+      var on = _proofView === id;
+      return '<button onclick="window._adminProofView=\''+id+'\';'+( id==='crm'?'_renderProofTable(window._adminProofs||[])':'_loadAgendaProofs()')+';" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(on?'1px solid #C9A84C':'0.5px solid rgba(255,255,255,0.08)')+';background:'+(on?'rgba(201,168,76,0.1)':'rgba(255,255,255,0.03)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.4)')+';">'+icon+' '+label+'</button>';
+    };
+    var html = '<div style="display:flex;gap:8px;margin-bottom:14px;">';
+    html += _stab('crm', 'Pruebas CRM', '\uD83D\uDCCB');
+    html += _stab('agenda', 'Pruebas Agenda', '\uD83D\uDCC5');
+    html += '</div>';
+
+    if (_proofView === 'agenda') {
+      // Will be loaded by _loadAgendaProofs()
+      html += '<div id="admin-agenda-proofs"><div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">Cargando...</div></div>';
+      el.innerHTML = html;
+      _loadAgendaProofs();
+      return;
+    }
+
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">';
+    html += '<h3 style="color:#C9A84C;font-size:14px;margin:0;">\uD83D\uDD0D CRM (' + proofs.length + '/' + total + ')</h3>';
     html += '<div style="display:flex;gap:4px;">';
     html += _fbtn('all', 'Todas', '#C9A84C');
     html += _fbtn('presentacion', 'Presentacion', '#7F77DD');
@@ -10883,6 +10902,48 @@ function _viewProofImage(proofId) {
       modal.innerHTML = '<img src="' + d.image + '" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);" onclick="event.stopPropagation();" />';
     } else { modal.innerHTML = '<div style="color:#E24B4A;font-size:16px;">Imagen no encontrada</div>'; }
   }).catch(function(){ modal.innerHTML = '<div style="color:#E24B4A;">Error cargando imagen</div>'; });
+}
+
+function _loadAgendaProofs() {
+  var container = document.getElementById('admin-agenda-proofs');
+  if (!container) { var el2 = document.getElementById('admin-pruebas'); if (el2) { el2.innerHTML += '<div id="admin-agenda-proofs"></div>'; container = document.getElementById('admin-agenda-proofs'); } }
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando pruebas de agenda...</div>';
+  // Fetch booking_proofs + bookings in parallel
+  var SB_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+  var SB_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
+  var headers = { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+  Promise.all([
+    fetch(SB_URL + '/rest/v1/booking_proofs?select=id,username,booking_id,status,created_at,notes&order=created_at.desc&limit=100', { headers: headers }).then(function(r) { return r.json(); }),
+    fetch(SB_URL + '/rest/v1/bookings?select=id,nombre,fecha_iso,whatsapp,username&limit=500', { headers: headers }).then(function(r) { return r.json(); })
+  ]).then(function(results) {
+    var proofs = results[0] || [];
+    var bookings = results[1] || [];
+    var bMap = {};
+    bookings.forEach(function(b) { bMap[b.id] = b; });
+    if (!proofs.length) { container.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCC5</div>Sin pruebas de agenda</div>'; return; }
+    var html = '<h3 style="color:#C9A84C;font-size:14px;margin:0 0 12px;">\uD83D\uDCC5 Pruebas Agenda (' + proofs.length + ')</h3>';
+    html += '<div style="overflow-x:auto;"><table class="admin-table"><thead><tr>';
+    html += '<th>Socio</th><th>Nombre Cita</th><th>Fecha Cita</th><th>Estado</th><th>Notas IA</th><th>Fecha Prueba</th>';
+    html += '</tr></thead><tbody>';
+    proofs.forEach(function(p) {
+      var b = bMap[p.booking_id] || {};
+      var stColor = p.status === 'approved' ? '#1D9E75' : p.status === 'failed' ? '#E24B4A' : '#FFA500';
+      var stLabel = p.status === 'approved' ? '\u2705 Verificada' : p.status === 'failed' ? '\u274C Rechazada' : '\u23F3 Pendiente';
+      var citaFecha = b.fecha_iso ? new Date(b.fecha_iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+      var proofFecha = p.created_at ? new Date(p.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+      html += '<tr>';
+      html += '<td style="font-weight:700;font-size:11px;">' + (p.username || '') + '</td>';
+      html += '<td style="font-size:11px;">' + (b.nombre || '-') + '</td>';
+      html += '<td style="font-size:10px;color:rgba(255,255,255,0.4);">' + citaFecha + '</td>';
+      html += '<td style="color:' + stColor + ';font-weight:700;font-size:11px;">' + stLabel + '</td>';
+      html += '<td style="font-size:10px;color:rgba(255,255,255,0.4);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.notes || '-') + '</td>';
+      html += '<td style="font-size:10px;color:rgba(255,255,255,0.4);">' + proofFecha + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  }).catch(function(e) { container.innerHTML = '<div style="color:#E24B4A;padding:20px;">Error: ' + e.message + '</div>'; });
 }
 
 function renderSolicitudes() {
