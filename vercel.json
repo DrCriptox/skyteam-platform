@@ -1,4 +1,22 @@
 {
+  "functions": {
+    "api/landing-page.js": {
+      "memory": 256,
+      "maxDuration": 15
+    },
+    "api/landing.js": {
+      "memory": 256,
+      "maxDuration": 25
+    },
+    "api/event-pages.js": {
+      "memory": 256,
+      "maxDuration": 25
+    },
+    "api/event-landing.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
   "headers": [
     {
       "source": "/index.html",
@@ -37,6 +55,10 @@
     {
       "source": "/landing",
       "destination": "/api/landing-page"
+    },
+    {
+      "source": "/evento/:path*",
+      "destination": "/api/event-landing?slug=:path*"
     },
     {
       "source": "/api/push",

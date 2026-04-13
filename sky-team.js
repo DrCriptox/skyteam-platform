@@ -29,7 +29,17 @@ var C = {
   glow: 'rgba(255,255,255,0.08)'
 };
 
-// ── State ──
+// ── Helpers ──
+function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function _fetchT(url, ms) {
+  return new Promise(function(resolve, reject) {
+    var ctrl = new AbortController();
+    var t = setTimeout(function() { ctrl.abort(); reject(new Error('timeout')); }, ms || 10000);
+    fetch(url, { signal: ctrl.signal }).then(function(r) { clearTimeout(t); return r.json(); }).then(resolve).catch(function(e) { clearTimeout(t); reject(e); });
+  });
+}
+
+// ── State ─���
 var stState = {
   tab: 'dashboard',
   data: null,
@@ -50,7 +60,16 @@ var stState = {
   mentorChat: [],
   loading: false,
   cache: null,
-  cacheTime: 0
+  cacheTime: 0,
+  // Events
+  evtView: 'team',   // team | mine | impact
+  evtList: null,
+  evtMyList: null,
+  evtStats: null,
+  evtCreating: false,
+  evtWizardStep: 0,
+  evtDraft: null,
+  evtGenerating: false
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -603,6 +622,7 @@ function renderSkyTeam() {
     { id: 'socios',    icon: '👥', label: 'Socios' },
     { id: 'ranking',   icon: '🏆', label: 'Ranking' },
     { id: 'alertas',   icon: '🔔', label: 'Alertas' },
+    { id: 'eventos',   icon: '🎪', label: 'Sky Events' },
     { id: 'mentor',    icon: '🧠', label: 'Mentor IA' }
   ];
 
@@ -628,6 +648,7 @@ function renderSkyTeam() {
     case 'socios':    html += renderSTSocios();    break;
     case 'ranking':   html += renderSTRanking();   break;
     case 'alertas':   html += renderSTAlertas();   break;
+    case 'eventos':   html += renderSTEventos();   break;
     case 'mentor':    html += renderSTMentor();    break;
     default:          html += renderSTDashboard();
   }
@@ -2435,6 +2456,520 @@ function _closeMemberDetail() {
   }
 }
 window._closeMemberDetail = _closeMemberDetail;
+
+
+// ═══════════════════════════════════════════════════════════════
+//  EVENTOS — Event Management System
+// ═══════════════════════════════════════════════════════════════
+
+function renderSTEventos() {
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  var html = '';
+
+  // Sub-tab bar
+  var views = [
+    { id: 'team', label: 'Eventos del Equipo' },
+    { id: 'mine', label: 'Mis Eventos' },
+    { id: 'impact', label: 'Mi Impacto' }
+  ];
+  html += '<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
+  for (var v = 0; v < views.length; v++) {
+    var isOn = stState.evtView === views[v].id;
+    html += '<button onclick="switchEvtView(\'' + views[v].id + '\')" style="padding:8px 18px;border-radius:10px;border:1px solid ' + (isOn ? C.gold : C.border) + ';background:' + (isOn ? 'rgba(201,168,76,0.15)' : 'transparent') + ';color:' + (isOn ? C.gold : C.textSub) + ';font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + views[v].label + '</button>';
+  }
+  html += '</div>';
+
+  // Create button (always visible)
+  html += '<button onclick="openEventWizard()" style="width:100%;padding:14px;border-radius:14px;border:1px dashed ' + C.gold + ';background:rgba(201,168,76,0.05);color:' + C.gold + ';font-size:15px;font-weight:700;cursor:pointer;margin-bottom:20px;font-family:inherit">+ Crear Evento</button>';
+
+  switch (stState.evtView) {
+    case 'team': html += _renderEvtTeam(cuUser); break;
+    case 'mine': html += _renderEvtMine(cuUser); break;
+    case 'impact': html += _renderEvtImpact(cuUser); break;
+  }
+
+  // Load data on first render
+  if (!stState.evtList && !stState.loading) _loadEvtTeam();
+  if (stState.evtView === 'mine' && !stState.evtMyList && !stState.loading) _loadEvtMine(cuUser);
+
+  return html;
+}
+
+// ── Load team events ──
+function _loadEvtTeam() {
+  _fetchT('/api/event-pages?action=list', 10000).then(function(d) {
+    if (d && d.ok) { stState.evtList = d.events || []; renderSkyTeam(); }
+  }).catch(function() {});
+}
+
+function _loadEvtMine(username) {
+  if (!username) return;
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'myEvents', username: username })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.ok) { stState.evtMyList = d.events || []; renderSkyTeam(); }
+  }).catch(function() {});
+}
+
+// ── Render: Team Events ──
+function _renderEvtTeam(cuUser) {
+  var evts = stState.evtList;
+  if (!evts) return '<div style="text-align:center;padding:40px 0;color:' + C.textSub + '">Cargando eventos...</div>';
+  if (!evts.length) return '<div style="text-align:center;padding:40px 0;color:' + C.textSub + '">No hay eventos publicados todavia.<br>Se el primero en crear uno!</div>';
+
+  var html = '';
+  for (var i = 0; i < evts.length; i++) {
+    var e = evts[i];
+    var link = 'https://skyteam.global/evento/' + e.slug + '?ref=' + cuUser;
+    html += _renderEventCard(e, link, cuUser, false);
+  }
+  return html;
+}
+
+// ── Render: My Events ──
+function _renderEvtMine(cuUser) {
+  var evts = stState.evtMyList;
+  if (!evts) return '<div style="text-align:center;padding:40px 0;color:' + C.textSub + '">Cargando mis eventos...</div>';
+  if (!evts.length) return '<div style="text-align:center;padding:40px 0;color:' + C.textSub + '">Aun no has creado ningun evento.<br>Toca "+ Crear Evento" para empezar!</div>';
+
+  var html = '';
+  for (var i = 0; i < evts.length; i++) {
+    var e = evts[i];
+    var link = 'https://skyteam.global/evento/' + e.slug;
+    html += _renderEventCard(e, link, cuUser, true);
+  }
+  return html;
+}
+
+// ── Render: Impact (referral stats) ──
+function _renderEvtImpact(cuUser) {
+  if (!stState.evtList) return '<div style="text-align:center;padding:40px 0;color:' + C.textSub + '">Cargando...</div>';
+
+  var html = '<div style="text-align:center;padding:20px 0">';
+  html += '<div style="font-size:13px;color:' + C.textSub + ';margin-bottom:16px">Comparte links de eventos para ver tus estadisticas aqui</div>';
+
+  // Show referral links for each team event
+  var evts = stState.evtList || [];
+  if (!evts.length) {
+    html += '<div style="color:' + C.textSub + '">No hay eventos disponibles</div>';
+  } else {
+    html += '<div style="text-align:left">';
+    for (var i = 0; i < evts.length; i++) {
+      var e = evts[i];
+      var link = 'https://skyteam.global/evento/' + e.slug + '?ref=' + cuUser;
+      html += '<div style="padding:14px;margin-bottom:10px;border-radius:14px;background:' + C.bgCard + ';border:1px solid ' + C.border + '">';
+      html += '<div style="font-weight:600;color:#fff;font-size:14px;margin-bottom:6px">' + _esc(e.titulo) + '</div>';
+      html += '<div style="font-size:12px;color:' + C.textSub + ';margin-bottom:8px">' + _esc(e.fecha || '') + ' • ' + _esc(e.ciudad || '') + '</div>';
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+      html += '<button onclick="_copyEvtLink(\'' + _esc(link) + '\')" style="padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar link</button>';
+      html += '<button onclick="_shareEvtWA(\'' + _esc(e.titulo) + '\',\'' + _esc(link) + '\')" style="padding:6px 14px;border-radius:8px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.2);color:#25d366;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💬 WhatsApp</button>';
+      html += '</div></div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// ── Render single event card ──
+function _renderEventCard(e, link, cuUser, isCreator) {
+  var statusColors = { draft: '#888', published: C.green, cancelled: C.red, completed: C.purple };
+  var statusLabel = { draft: 'Borrador', published: 'Publicado', cancelled: 'Cancelado', completed: 'Finalizado' };
+  var st = e.status || 'draft';
+
+  var html = '<div style="padding:16px;margin-bottom:12px;border-radius:16px;background:' + C.bgCard + ';border:1px solid ' + C.border + '">';
+
+  // Header
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+  html += '<div style="flex:1">';
+  html += '<div style="font-weight:700;color:#fff;font-size:15px;margin-bottom:4px">' + _esc(e.titulo) + '</div>';
+  html += '<div style="font-size:12px;color:' + C.textSub + '">';
+  html += '📅 ' + _esc(e.fecha || '') + (e.hora ? ' • ' + _esc(e.hora) : '');
+  if (e.ciudad) html += ' • 📍 ' + _esc(e.ciudad);
+  html += '</div></div>';
+
+  // Status badge
+  html += '<span style="padding:4px 10px;border-radius:8px;background:' + (statusColors[st] || '#888') + '22;color:' + (statusColors[st] || '#888') + ';font-size:11px;font-weight:600">' + (statusLabel[st] || st) + '</span>';
+  html += '</div>';
+
+  // Stats row
+  if (e.registrations_count !== undefined) {
+    html += '<div style="font-size:12px;color:' + C.textSub + ';margin-bottom:10px">👥 ' + e.registrations_count + ' registrados' + (e.capacidad ? ' / ' + e.capacidad + ' cupos' : '') + '</div>';
+  }
+
+  // Poster thumbnail
+  if (e.ai_poster_url) {
+    html += '<div style="margin-bottom:12px;border-radius:12px;overflow:hidden;max-height:140px"><img src="' + _esc(e.ai_poster_url) + '" style="width:100%;object-fit:cover;border-radius:12px" alt=""></div>';
+  }
+
+  // Action buttons
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+
+  if (isCreator) {
+    // Creator actions
+    if (st === 'draft') {
+      html += '<button onclick="_publishEvent(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit">🚀 Publicar</button>';
+      html += '<button onclick="_generateEventAI(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(127,119,221,0.15);border:1px solid rgba(127,119,221,0.25);color:' + C.purple + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✨ Generar Landing</button>';
+    }
+    if (st === 'published') {
+      html += '<button onclick="_viewEvtStats(\'' + e.id + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📊 Stats</button>';
+    }
+    if (st === 'published' || st === 'draft') {
+      html += '<a href="https://skyteam.global/evento/' + _esc(e.slug) + '" target="_blank" style="padding:7px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit">👁 Ver Landing</a>';
+    }
+  } else {
+    // Team member actions (referral)
+    html += '<button onclick="_copyEvtLink(\'' + _esc(link) + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar mi link</button>';
+    html += '<button onclick="_shareEvtWA(\'' + _esc(e.titulo) + '\',\'' + _esc(link) + '\')" style="padding:7px 16px;border-radius:10px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.2);color:#25d366;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💬 Compartir WA</button>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+// ── Copy link ──
+function _copyEvtLink(link) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(function() {
+      if (typeof showToast === 'function') showToast('Link copiado!');
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = link;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (typeof showToast === 'function') showToast('Link copiado!');
+  }
+}
+window._copyEvtLink = _copyEvtLink;
+
+// ── Share via WhatsApp ──
+function _shareEvtWA(titulo, link) {
+  var msg = encodeURIComponent('Te invito a ' + titulo + '! Registrate aqui: ' + link);
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+window._shareEvtWA = _shareEvtWA;
+
+// ── Publish event ──
+function _publishEvent(eventId) {
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  if (!cuUser) return;
+
+  // Check if AI landing was generated
+  var evt = (stState.evtMyList || []).find(function(e) { return e.id === eventId; });
+  if (evt && !evt.ai_poster_url) {
+    if (!confirm('No has generado la landing con IA. Publicar con landing basica?')) return;
+  }
+
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'publish', event_id: eventId, username: cuUser })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      if (typeof showToast === 'function') showToast('Evento publicado! Slug: ' + d.slug);
+      stState.evtMyList = null;
+      stState.evtList = null;
+      renderSkyTeam();
+    } else {
+      if (typeof showToast === 'function') showToast('Error: ' + (d.error || ''));
+    }
+  }).catch(function() { if (typeof showToast === 'function') showToast('Error de conexion'); });
+}
+window._publishEvent = _publishEvent;
+
+// ── Generate AI Landing ──
+function _generateEventAI(eventId) {
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  if (!cuUser) return;
+  if (stState.evtGenerating) { if (typeof showToast === 'function') showToast('Ya se esta generando...'); return; }
+
+  stState.evtGenerating = true;
+  if (typeof showToast === 'function') showToast('Generando landing con IA... (15-20 seg)');
+  renderSkyTeam();
+
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'generate', event_id: eventId, username: cuUser })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    stState.evtGenerating = false;
+    if (d.ok) {
+      if (typeof showToast === 'function') showToast('Landing generada! Poster: ' + (d.posterUrl ? 'Si' : 'No'));
+      stState.evtMyList = null;
+      renderSkyTeam();
+    } else {
+      if (typeof showToast === 'function') showToast('Error generando: ' + (d.error || ''));
+      renderSkyTeam();
+    }
+  }).catch(function() {
+    stState.evtGenerating = false;
+    if (typeof showToast === 'function') showToast('Error de conexion');
+    renderSkyTeam();
+  });
+}
+window._generateEventAI = _generateEventAI;
+
+// ── View event stats ──
+function _viewEvtStats(eventId) {
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'stats', event_id: eventId })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (!d.ok) return;
+    var msg = '📊 Estadisticas:\n'
+      + '👁 Visitas: ' + d.totalVisits + '\n'
+      + '✅ Registros: ' + d.totalRegistrations + '\n\n';
+
+    var refs = d.byReferrer || {};
+    var keys = Object.keys(refs).sort(function(a, b) { return refs[b].registrations - refs[a].registrations; });
+    if (keys.length) {
+      msg += 'Por referidor:\n';
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        msg += '• ' + k + ': ' + refs[k].visits + ' visitas, ' + refs[k].registrations + ' registros\n';
+      }
+    }
+
+    if (d.registrations && d.registrations.length) {
+      msg += '\nUltimos registros:\n';
+      for (var j = 0; j < Math.min(d.registrations.length, 10); j++) {
+        var r = d.registrations[j];
+        msg += '• ' + r.nombre + ' (' + r.whatsapp + ')' + (r.ref_username ? ' via ' + r.ref_username : ' directo') + '\n';
+      }
+    }
+
+    alert(msg);
+  }).catch(function() { if (typeof showToast === 'function') showToast('Error cargando stats'); });
+}
+window._viewEvtStats = _viewEvtStats;
+
+// ── Event Creation Wizard ──
+function openEventWizard() {
+  stState.evtDraft = {
+    titulo: '', descripcion: '', tipo: 'presencial',
+    fecha: '', hora: '19:00', ciudad: '', lugar: '',
+    direccion: '', link_virtual: '', capacidad: 100,
+    precio: 'Gratis', whatsapp_pago: ''
+  };
+  stState.evtWizardStep = 1;
+  stState.evtCreating = true;
+  _renderEvtWizard();
+}
+window.openEventWizard = openEventWizard;
+
+function _renderEvtWizard() {
+  // Create overlay
+  var existing = document.getElementById('evt-wizard-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'evt-wizard-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+
+  var d = stState.evtDraft || {};
+  var step = stState.evtWizardStep;
+
+  var html = '<div style="background:#0f0f1f;border-radius:20px;border:1px solid rgba(201,168,76,0.15);max-width:500px;width:100%;padding:28px;max-height:90vh;overflow-y:auto">';
+
+  // Header
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">';
+  html += '<div style="font-size:18px;font-weight:700;color:#fff">Crear Evento <span style="color:' + C.gold + '">(Paso ' + step + '/2)</span></div>';
+  html += '<button onclick="closeEvtWizard()" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer">✕</button>';
+  html += '</div>';
+
+  if (step === 1) {
+    // Step 1: Basic data
+    html += _wizInput('Titulo del evento *', 'evtD_titulo', d.titulo, 'Ej: Gran Evento Medellin 2026');
+    html += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+    html += _wizSelect('Tipo', 'evtD_tipo', d.tipo, [['presencial', 'Presencial'], ['virtual', 'Virtual'], ['hibrido', 'Hibrido']]);
+    html += _wizInput('Precio', 'evtD_precio', d.precio, 'Gratis o $50.000');
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+    html += _wizInput('Fecha *', 'evtD_fecha', d.fecha, '', 'date');
+    html += _wizInput('Hora', 'evtD_hora', d.hora, '19:00', 'time');
+    html += '</div>';
+    html += _wizInput('Ciudad', 'evtD_ciudad', d.ciudad, 'Ej: Medellin, Colombia');
+    html += _wizInput('Lugar / Venue', 'evtD_lugar', d.lugar, 'Ej: Hotel Intercontinental');
+    html += _wizInput('Direccion (presencial)', 'evtD_direccion', d.direccion, 'Calle 10 #43A-27');
+    html += _wizInput('Link virtual (Zoom/Meet)', 'evtD_link_virtual', d.link_virtual, 'https://zoom.us/j/...');
+    html += _wizInput('WhatsApp pagos', 'evtD_whatsapp_pago', d.whatsapp_pago, '573001234567');
+    html += _wizInput('Capacidad', 'evtD_capacidad', d.capacidad, '100', 'number');
+    html += '<label style="display:block;margin-bottom:6px;font-size:12px;color:' + C.textSub + '">Descripcion breve</label>';
+    html += '<textarea id="evtD_descripcion" rows="3" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit;resize:vertical;margin-bottom:16px" placeholder="Describe el evento en 2-3 lineas...">' + _esc(d.descripcion || '') + '</textarea>';
+
+    html += '<button onclick="evtWizardNext()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">Siguiente →</button>';
+
+  } else if (step === 2) {
+    // Step 2: Preview / Generate AI / Publish
+    html += '<div style="text-align:center;margin-bottom:16px">';
+    html += '<div style="font-weight:600;color:#fff;font-size:16px;margin-bottom:4px">' + _esc(d.titulo) + '</div>';
+    html += '<div style="color:' + C.textSub + ';font-size:13px">📅 ' + _esc(d.fecha) + ' ' + _esc(d.hora || '') + '</div>';
+    if (d.ciudad) html += '<div style="color:' + C.textSub + ';font-size:13px">📍 ' + _esc(d.ciudad) + (d.lugar ? ' — ' + _esc(d.lugar) : '') + '</div>';
+    html += '<div style="color:' + C.textSub + ';font-size:13px">💰 ' + _esc(d.precio || 'Gratis') + ' | 👥 ' + (d.capacidad || 100) + ' cupos</div>';
+    html += '</div>';
+
+    if (stState.evtGenerating) {
+      html += '<div style="text-align:center;padding:30px 0;color:' + C.gold + '">';
+      html += '<div style="font-size:2rem;margin-bottom:10px;animation:pulse 1.5s infinite">✨</div>';
+      html += '<div>Generando landing con IA...</div>';
+      html += '<div style="color:' + C.textSub + ';font-size:12px;margin-top:6px">Contenido + poster (15-20 seg)</div>';
+      html += '</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column;gap:10px">';
+      html += '<button onclick="_wizCreateAndGenerate()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,#7F77DD,#5c4fc9);color:#fff;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit">✨ Crear + Generar Landing con IA</button>';
+      html += '<button onclick="_wizCreateOnly()" style="width:100%;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Crear sin IA (landing basica)</button>';
+      html += '<button onclick="stState.evtWizardStep=1;_renderEvtWizard()" style="width:100%;padding:10px;border-radius:14px;background:transparent;border:none;color:' + C.textSub + ';font-size:13px;cursor:pointer;font-family:inherit">← Volver</button>';
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+function _wizInput(label, id, value, placeholder, type) {
+  return '<div style="flex:1;margin-bottom:14px">'
+    + '<label style="display:block;margin-bottom:6px;font-size:12px;color:' + C.textSub + '">' + label + '</label>'
+    + '<input id="' + id + '" type="' + (type || 'text') + '" value="' + _esc(value || '') + '" placeholder="' + _esc(placeholder || '') + '" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit">'
+    + '</div>';
+}
+
+function _wizSelect(label, id, value, options) {
+  var html = '<div style="flex:1;margin-bottom:14px">'
+    + '<label style="display:block;margin-bottom:6px;font-size:12px;color:' + C.textSub + '">' + label + '</label>'
+    + '<select id="' + id + '" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit">';
+  for (var i = 0; i < options.length; i++) {
+    html += '<option value="' + options[i][0] + '"' + (value === options[i][0] ? ' selected' : '') + '>' + options[i][1] + '</option>';
+  }
+  html += '</select></div>';
+  return html;
+}
+
+function _readWizardFields() {
+  var d = stState.evtDraft || {};
+  var fields = ['titulo', 'descripcion', 'tipo', 'fecha', 'hora', 'ciudad', 'lugar', 'direccion', 'link_virtual', 'whatsapp_pago', 'capacidad', 'precio'];
+  for (var i = 0; i < fields.length; i++) {
+    var el = document.getElementById('evtD_' + fields[i]);
+    if (el) d[fields[i]] = el.value;
+  }
+  stState.evtDraft = d;
+}
+
+function evtWizardNext() {
+  _readWizardFields();
+  var d = stState.evtDraft;
+  if (!d.titulo || !d.fecha) {
+    if (typeof showToast === 'function') showToast('Titulo y fecha son obligatorios');
+    return;
+  }
+  stState.evtWizardStep = 2;
+  _renderEvtWizard();
+}
+window.evtWizardNext = evtWizardNext;
+
+function closeEvtWizard() {
+  stState.evtCreating = false;
+  stState.evtDraft = null;
+  stState.evtWizardStep = 0;
+  var overlay = document.getElementById('evt-wizard-overlay');
+  if (overlay) overlay.remove();
+}
+window.closeEvtWizard = closeEvtWizard;
+
+// ── Create + Generate with AI ──
+function _wizCreateAndGenerate() {
+  _readWizardFields();
+  var d = stState.evtDraft;
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  if (!cuUser || !d.titulo || !d.fecha) return;
+
+  stState.evtGenerating = true;
+  _renderEvtWizard();
+
+  // Step 1: Create the event
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create', username: cuUser,
+      titulo: d.titulo, descripcion: d.descripcion, tipo: d.tipo,
+      fecha: d.fecha, hora: d.hora, ciudad: d.ciudad, lugar: d.lugar,
+      direccion: d.direccion, link_virtual: d.link_virtual,
+      capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago
+    })
+  }).then(function(r) { return r.json(); }).then(function(createData) {
+    if (!createData.ok) {
+      stState.evtGenerating = false;
+      if (typeof showToast === 'function') showToast('Error: ' + (createData.error || ''));
+      _renderEvtWizard();
+      return;
+    }
+
+    // Step 2: Generate AI landing
+    var eventId = createData.event.id;
+    return fetch('/api/event-pages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generate', event_id: eventId })
+    }).then(function(r) { return r.json(); }).then(function(genData) {
+      stState.evtGenerating = false;
+      closeEvtWizard();
+      stState.evtMyList = null;
+      stState.evtList = null;
+      if (genData.ok) {
+        if (typeof showToast === 'function') showToast('Evento creado + landing generada! Ve a "Mis Eventos" para publicar.');
+      } else {
+        if (typeof showToast === 'function') showToast('Evento creado pero la IA fallo. Puedes regenerar despues.');
+      }
+      stState.evtView = 'mine';
+      renderSkyTeam();
+    });
+  }).catch(function(e) {
+    stState.evtGenerating = false;
+    if (typeof showToast === 'function') showToast('Error de conexion');
+    _renderEvtWizard();
+  });
+}
+window._wizCreateAndGenerate = _wizCreateAndGenerate;
+
+// ── Create without AI ──
+function _wizCreateOnly() {
+  _readWizardFields();
+  var d = stState.evtDraft;
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  if (!cuUser || !d.titulo || !d.fecha) return;
+
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create', username: cuUser,
+      titulo: d.titulo, descripcion: d.descripcion, tipo: d.tipo,
+      fecha: d.fecha, hora: d.hora, ciudad: d.ciudad, lugar: d.lugar,
+      direccion: d.direccion, link_virtual: d.link_virtual,
+      capacidad: d.capacidad, precio: d.precio, whatsapp_pago: d.whatsapp_pago
+    })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    closeEvtWizard();
+    if (data.ok) {
+      if (typeof showToast === 'function') showToast('Evento creado! Slug: ' + data.slug);
+      stState.evtMyList = null;
+      stState.evtView = 'mine';
+      renderSkyTeam();
+    } else {
+      if (typeof showToast === 'function') showToast('Error: ' + (data.error || ''));
+    }
+  }).catch(function() { if (typeof showToast === 'function') showToast('Error de conexion'); });
+}
+window._wizCreateOnly = _wizCreateOnly;
+
+function switchEvtView(v) {
+  stState.evtView = v;
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  if (v === 'mine' && !stState.evtMyList) _loadEvtMine(cuUser);
+  renderSkyTeam();
+}
+window.switchEvtView = switchEvtView;
 
 
 // ═══════════════════════════════════════════════════════════════
