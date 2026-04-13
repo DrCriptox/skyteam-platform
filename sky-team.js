@@ -2525,7 +2525,7 @@ function _renderEvtTeam(cuUser) {
   var html = '';
   for (var i = 0; i < evts.length; i++) {
     var e = evts[i];
-    var link = 'https://skyteam.global/evento/' + e.slug + '?ref=' + cuUser;
+    var link = 'https://skyteam.global/evento/' + e.slug + '?ref=' + cuUser + '&v=' + Math.floor(Date.now()/86400000);
     html += _renderEventCard(e, link, cuUser, false);
   }
   return html;
@@ -2561,7 +2561,7 @@ function _renderEvtImpact(cuUser) {
     html += '<div style="text-align:left">';
     for (var i = 0; i < evts.length; i++) {
       var e = evts[i];
-      var link = 'https://skyteam.global/evento/' + e.slug + '?ref=' + cuUser;
+      var link = 'https://skyteam.global/evento/' + e.slug + '?ref=' + cuUser + '&v=' + Math.floor(Date.now()/86400000);
       html += '<div style="padding:14px;margin-bottom:10px;border-radius:14px;background:' + C.bgCard + ';border:1px solid ' + C.border + '">';
       html += '<div style="font-weight:600;color:#fff;font-size:14px;margin-bottom:6px">' + _esc(e.titulo) + '</div>';
       html += '<div style="font-size:12px;color:' + C.textSub + ';margin-bottom:8px">' + _esc(e.fecha || '') + ' • ' + _esc(e.ciudad || '') + '</div>';
