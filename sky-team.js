@@ -2857,7 +2857,6 @@ function _renderEvtWizard() {
     html += _wizInput('Lugar / Venue', 'evtD_lugar', d.lugar, 'Ej: Hotel Intercontinental');
     html += _wizInput('Direccion (presencial)', 'evtD_direccion', d.direccion, 'Calle 10 #43A-27');
     html += _wizInput('Link virtual (Zoom/Meet)', 'evtD_link_virtual', d.link_virtual, 'https://zoom.us/j/...');
-    html += _wizInput('WhatsApp pagos', 'evtD_whatsapp_pago', d.whatsapp_pago, '573001234567');
     html += _wizInput('Capacidad', 'evtD_capacidad', d.capacidad, '100', 'number');
     html += '<label style="display:block;margin-bottom:6px;font-size:12px;color:' + C.textSub + '">Descripcion breve</label>';
     html += '<textarea id="evtD_descripcion" rows="3" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit;resize:vertical;margin-bottom:16px" placeholder="Describe el evento en 2-3 lineas...">' + _esc(d.descripcion || '') + '</textarea>';

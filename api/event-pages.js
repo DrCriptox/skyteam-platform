@@ -106,7 +106,7 @@ module.exports = async function handler(req, res) {
         link_virtual: b.link_virtual || '',
         capacidad: parseInt(b.capacidad) || 100,
         precio: b.precio || 'Gratis',
-        whatsapp_pago: b.whatsapp_pago || '',
+        whatsapp_pago: '',
         vsl_url: b.vsl_url || '',
         flyer_url: b.flyer_url || '',
         testimonios: b.testimonios || null,
@@ -115,6 +115,15 @@ module.exports = async function handler(req, res) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      // Auto-fill WhatsApp from creator's profile
+      try {
+        var waR = await SB('users?username=eq.' + encodeURIComponent(b.username) + '&select=whatsapp&limit=1');
+        var waRows = await waR.json();
+        if (Array.isArray(waRows) && waRows.length && waRows[0].whatsapp) {
+          eventData.whatsapp_pago = waRows[0].whatsapp;
+        }
+      } catch(e) {}
 
       var r = await SB('event_pages', { method: 'POST', body: JSON.stringify(eventData) });
       if (!r.ok) { var err = await r.text(); return res.status(500).json({ error: 'Save failed: ' + err.substring(0, 200) }); }
@@ -154,6 +163,7 @@ module.exports = async function handler(req, res) {
       if (OPENAI_KEY) {
         var tipoLabel = ev.tipo === 'virtual' ? 'virtual (online)' : ev.tipo === 'hibrido' ? 'hibrido' : 'presencial';
         var prompt = 'Evento: "' + ev.titulo + '"\nTipo: ' + tipoLabel
+          + '\nAnfitrion: ' + creatorInfo.name + (creatorInfo.rango ? ' (' + creatorInfo.rango + ')' : '')
           + '\nFecha: ' + ev.fecha + (ev.hora ? ' a las ' + ev.hora : '')
           + (ev.ciudad ? '\nCiudad: ' + ev.ciudad : '')
           + (ev.descripcion ? '\nDescripcion: ' + ev.descripcion : '')
@@ -165,7 +175,7 @@ module.exports = async function handler(req, res) {
           + '"hook":"1 parrafo corto que toque el dolor del lector y prometa la solucion (60 palabras)",'
           + '"about":"HTML con 3 bloques <p>. Bloque 1: dolor (que le frustra al lector). Bloque 2: la transformacion que vivira en el evento. Bloque 3: por que este evento es diferente.",'
           + '"bullets":["emoji beneficio 1","emoji beneficio 2","emoji beneficio 3","emoji beneficio 4","emoji beneficio 5","emoji beneficio 6","emoji beneficio 7"],'
-          + '"speaker_intro":"bio del anfitrion, 30 palabras, profesional y humano",'
+          + '"speaker_intro":"bio de ' + (creatorInfo.name || 'el anfitrion') + ' en 30 palabras, USA SU NOMBRE REAL, profesional y humano",'
           + '"cta_text":"texto boton, max 5 palabras, urgente",'
           + '"urgency_text":"frase escasez con numero de cupos",'
           + '"social_proof":"frase tipo: Ya +X emprendedores confirmaron su asistencia",'
@@ -768,7 +778,6 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<input type="text" id="ev-reg-nombre" placeholder="Tu nombre completo" required>'
     + '<input type="tel" id="ev-reg-wa" placeholder="WhatsApp (con codigo de pais)" required>'
     + '<input type="email" id="ev-reg-email" placeholder="Email (opcional)">'
-    + '<input type="text" id="ev-reg-ciudad" placeholder="Tu ciudad">'
     + '<button class="ev-form-submit" id="ev-reg-btn" onclick="submitEventReg()">' + esc(content.cta_text || 'Reserva tu Cupo YA') + ' →</button>'
     + '<div class="ev-form-msg" id="ev-reg-msg"></div>'
     + '<div class="ev-urgency">' + esc(content.urgency_text || 'Solo ' + capacidad + ' cupos — Se agotan rapido!') + '</div>'
@@ -825,11 +834,10 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'var nombre=document.getElementById("ev-reg-nombre").value.trim();'
     + 'var wa=document.getElementById("ev-reg-wa").value.trim();'
     + 'var email=document.getElementById("ev-reg-email").value.trim();'
-    + 'var ciudad=document.getElementById("ev-reg-ciudad").value.trim();'
     + 'if(!nombre||!wa){msg.innerHTML="<span style=\\"color:#ff6b6b\\">Nombre y WhatsApp son obligatorios</span>";return;}'
     + 'btn.disabled=true;btn.textContent="Registrando...";'
     + 'fetch("/api/event-pages?action=register",{method:"POST",headers:{"Content-Type":"application/json"},'
-    + 'body:JSON.stringify({event_id:EVT_ID,nombre:nombre,whatsapp:wa,email:email,ciudad:ciudad,ref_username:REF||null})})'
+    + 'body:JSON.stringify({event_id:EVT_ID,nombre:nombre,whatsapp:wa,email:email,ref_username:REF||null})})'
     + '.then(function(r){return r.json()}).then(function(d){'
     + 'if(d.ok){'
     + 'var waName=d.whatsapp_name||"";'
@@ -854,19 +862,35 @@ function buildEventHTML(ev, content, creator, posterUrl) {
       if (!ev.vsl_url) return '';
       var vi = _extractVideoId(ev.vsl_url);
       if (vi.platform !== 'youtube') return '';
-      return 'var _vslPlayer=null,_vslLastTime=0,_vslPlaying=false;'
-        + 'var tag=document.createElement("script");tag.src="https://www.youtube.com/iframe_api";document.head.appendChild(tag);'
-        + 'window.onYouTubeIframeAPIReady=function(){_vslPlayer=new YT.Player("ev-vsl-player",{videoId:"' + vi.id + '",'
-        + 'playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,showinfo:0,fs:0,iv_load_policy:3,playsinline:1},'
-        + 'events:{onStateChange:function(e){if(e.data===YT.PlayerState.PLAYING){_vslPlaying=true;}'
-        + 'if(e.data===YT.PlayerState.PAUSED&&_vslPlaying){_vslPlayer.playVideo();}'
-        + '}}});};'
-        + 'setInterval(function(){if(_vslPlayer&&_vslPlayer.getCurrentTime){var ct=_vslPlayer.getCurrentTime();'
-        + 'if(ct-_vslLastTime>2&&_vslLastTime>0){_vslPlayer.seekTo(_vslLastTime,true);}'
-        + 'else if(ct>_vslLastTime){_vslLastTime=ct;}}},500);'
-        + 'function _playVSL(){if(_vslPlayer&&_vslPlayer.playVideo){_vslPlayer.playVideo();}'
+      return ''
+        // Load YT API
+        + 'var _vslPlayer=null,_vslLastTime=0,_vslPlaying=false;'
+        + 'var _ytTag=document.createElement("script");_ytTag.src="https://www.youtube.com/iframe_api";'
+        + 'var _ytFirst=document.getElementsByTagName("script")[0];_ytFirst.parentNode.insertBefore(_ytTag,_ytFirst);'
+        // Player ready callback
+        + 'function onYouTubeIframeAPIReady(){'
+        + '_vslPlayer=new YT.Player("ev-vsl-player",{'
+        + 'videoId:"' + vi.id + '",'
+        + 'width:"100%",height:"100%",'
+        + 'playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,showinfo:0,fs:0,iv_load_policy:3,playsinline:1,origin:location.origin},'
+        + 'events:{onReady:function(e){console.log("[VSL] Player ready");},'
+        + 'onStateChange:function(e){'
+        + 'if(e.data===1){_vslPlaying=true;}'  // 1 = PLAYING
+        + 'if(e.data===2&&_vslPlaying){setTimeout(function(){if(_vslPlayer&&_vslPlayer.getPlayerState&&_vslPlayer.getPlayerState()===2){_vslPlayer.playVideo();}},300);}'  // 2 = PAUSED → resume after 300ms
+        + '}}'
+        + '});'
+        + '}'
+        // Anti-seek timer
+        + 'setInterval(function(){if(_vslPlayer&&typeof _vslPlayer.getCurrentTime==="function"){'
+        + 'var ct=_vslPlayer.getCurrentTime();'
+        + 'if(_vslLastTime>0&&ct-_vslLastTime>3){_vslPlayer.seekTo(_vslLastTime,true);}'
+        + 'else if(ct>_vslLastTime){_vslLastTime=ct;}'
+        + '}},600);'
+        // Play button handler (global)
+        + 'function _playVSL(){'
+        + 'if(_vslPlayer&&typeof _vslPlayer.playVideo==="function"){_vslPlayer.playVideo();}'
         + 'var pb=document.getElementById("ev-vsl-play");if(pb)pb.style.display="none";'
-        + 'var ov=document.getElementById("ev-vsl-overlay");if(ov)ov.style.pointerEvents="all";}window._playVSL=_playVSL;';
+        + '}window._playVSL=_playVSL;';
     })()
 
     + '</script></body></html>';
@@ -887,13 +911,17 @@ function _extractVideoId(url) {
   if (ytMatch) return { platform: 'youtube', id: ytMatch[1] };
   var vmMatch = url.match(/vimeo\.com\/(\d+)/);
   if (vmMatch) return { platform: 'vimeo', id: vmMatch[1] };
+  // Instagram reel/post
+  var igMatch = url.match(/instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/);
+  if (igMatch) return { platform: 'instagram', id: igMatch[1] };
   return { platform: 'other', id: '' };
 }
 
-// Convert YouTube/Vimeo URLs to embed format
+// Convert YouTube/Vimeo/Instagram URLs to embed format
 function _toEmbed(url) {
   var vi = _extractVideoId(url);
   if (vi.platform === 'youtube') return 'https://www.youtube.com/embed/' + vi.id + '?rel=0';
   if (vi.platform === 'vimeo') return 'https://player.vimeo.com/video/' + vi.id;
+  if (vi.platform === 'instagram') return 'https://www.instagram.com/reel/' + vi.id + '/embed/';
   return url || '';
 }
