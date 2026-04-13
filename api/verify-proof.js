@@ -13,6 +13,28 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
+    // Admin action: list all proofs
+    if (req.body && req.body.action === 'listProofs') {
+      var proofsR = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?select=id,username,booking_id,status,created_at,notes&order=created_at.desc&limit=100', { headers: SB_HEADERS });
+      var proofs = await proofsR.json();
+      if (!Array.isArray(proofs)) proofs = [];
+      // Fetch booking details for each proof
+      var bookingIds = proofs.map(function(p) { return p.booking_id; }).filter(Boolean);
+      var bookingsMap = {};
+      if (bookingIds.length) {
+        var bR = await fetch(SUPABASE_URL + '/rest/v1/bookings?id=in.(' + bookingIds.map(function(id) { return '"' + id + '"'; }).join(',') + ')&select=id,nombre,fecha_iso', { headers: SB_HEADERS });
+        var bookings = await bR.json();
+        if (Array.isArray(bookings)) bookings.forEach(function(b) { bookingsMap[b.id] = b; });
+      }
+      // Merge booking info into proofs
+      proofs.forEach(function(p) {
+        var b = bookingsMap[p.booking_id] || {};
+        p.booking_nombre = b.nombre || '';
+        p.booking_fecha = b.fecha_iso || '';
+      });
+      return res.status(200).json({ ok: true, proofs: proofs });
+    }
+
     const { bookingId, username, imageBase64, attempt } = req.body;
     if (!bookingId || !username || !imageBase64) return res.status(400).json({ error: 'Missing bookingId, username or imageBase64' });
 
