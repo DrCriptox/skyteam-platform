@@ -10796,7 +10796,11 @@ function renderAdminDuplicadas() {
 function switchAdminTab(tab) {
   ['solicitudes','usuarios','contenido','anuncios-admin','config','duplicadas','pruebas'].forEach(t=>{
     var panel = document.getElementById('admin-'+t);
-    if(panel) panel.style.display = t===tab?'block':'none';
+    if(panel) {
+      panel.style.display = t===tab?'block':'none';
+      // Clear heavy tabs when leaving to free DOM
+      if(t!==tab && t==='pruebas') panel.innerHTML = '';
+    }
     var btnId = t === 'anuncios-admin' ? 'atab-anuncios' : 'atab-'+t;
     var tabBtn = document.getElementById(btnId);
     if(tabBtn) tabBtn.classList.toggle('active', t===tab);
@@ -10839,7 +10843,7 @@ function _renderProofTable(proofs) {
     var _proofView = window._adminProofView || 'crm';
     var _stab = function(id, label, icon) {
       var on = _proofView === id;
-      return '<button onclick="window._adminProofView=\''+id+'\';'+( id==='crm'?'_renderProofTable(window._adminProofs||[])':'_loadAgendaProofs()')+';" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(on?'1px solid #C9A84C':'0.5px solid rgba(255,255,255,0.08)')+';background:'+(on?'rgba(201,168,76,0.1)':'rgba(255,255,255,0.03)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.4)')+';">'+icon+' '+label+'</button>';
+      return '<button onclick="window._adminProofView=\''+id+'\';_renderProofTable(window._adminProofs||[]);" style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(on?'1px solid #C9A84C':'0.5px solid rgba(255,255,255,0.08)')+';background:'+(on?'rgba(201,168,76,0.1)':'rgba(255,255,255,0.03)')+';color:'+(on?'#C9A84C':'rgba(255,255,255,0.4)')+';">'+icon+' '+label+'</button>';
     };
     var html = '<div style="display:flex;gap:8px;margin-bottom:14px;">';
     html += _stab('crm', 'Pruebas CRM', '\uD83D\uDCCB');
