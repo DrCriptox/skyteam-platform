@@ -15445,19 +15445,21 @@ crmCard=function(p){
   return html;
 };
 
-/* --- Patch crmRenderList: WA+IG use AI --- */
+/* --- Patch crmRenderList: WA+IG use AI with official icons --- */
 var _origCrmRenderList=crmRenderList;
 crmRenderList=function(){
   _origCrmRenderList();
   var tb=document.getElementById('crm-list-tbody');if(!tb)return;
+  var _waIco='<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#25D366"/><path d="M9.5 9.2c.2-.4.4-.4.6-.4h.4c.2 0 .4 0 .5.4l.7 1.7c.1.1 0 .4-.1.5-.1.2-.2.3-.3.4-.2.1-.3.3-.2.5.3.5.8 1.1 1.4 1.5.7.5 1.2.6 1.4.7.2.1.3 0 .5-.1l.5-.7c.2-.2.3-.2.5-.1l1.5.7c.2.1.3.2.4.3 0 .2 0 .6-.2 1-.2.5-.9.9-1.4.9-1.8.1-4-.9-5.5-3.5-.9-1.5-1-2.5-.7-3.3z" fill="#fff"/></svg>';
+  var _igIco='<svg width="16" height="16" viewBox="0 0 24 24"><defs><linearGradient id="igl" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#feda75"/><stop offset="25%" stop-color="#fa7e1e"/><stop offset="50%" stop-color="#d62976"/><stop offset="75%" stop-color="#962fbf"/><stop offset="100%" stop-color="#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="url(#igl)"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="#fff"/></svg>';
   tb.querySelectorAll('a[href*="wa.me"]').forEach(function(a){
     var row=a.closest('tr');if(!row)return;
     var oc=row.getAttribute('onclick')||'';
     var m=oc.match(/crmOpenDetail\('([^']+)'\)/);if(!m)return;
     var pid=m[1];var btn=document.createElement('button');
     btn.onclick=function(e){e.stopPropagation();crmQuickWA(pid);};
-    btn.style.cssText='background:rgba(37,211,102,0.15);border:0.5px solid rgba(37,211,102,0.3);color:#25D366;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;';
-    btn.innerHTML='\uD83D\uDCAC';btn.title='WhatsApp con IA';
+    btn.style.cssText='background:rgba(37,211,102,0.12);border:0.5px solid rgba(37,211,102,0.25);border-radius:8px;padding:4px 8px;cursor:pointer;display:inline-flex;align-items:center;';
+    btn.innerHTML=_waIco;btn.title='WhatsApp con IA';
     a.parentNode.replaceChild(btn,a);
   });
   tb.querySelectorAll('a[href*="instagram.com"]').forEach(function(a){
@@ -15466,8 +15468,8 @@ crmRenderList=function(){
     var m=oc.match(/crmOpenDetail\('([^']+)'\)/);if(!m)return;
     var pid=m[1];var btn=document.createElement('button');
     btn.onclick=function(e){e.stopPropagation();crmQuickIG(pid);};
-    btn.style.cssText='background:rgba(225,48,108,0.1);border:0.5px solid rgba(225,48,108,0.25);color:#E1306C;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;';
-    btn.innerHTML='\uD83D\uDCF7';btn.title='Instagram con IA';
+    btn.style.cssText='background:rgba(225,48,108,0.08);border:0.5px solid rgba(225,48,108,0.2);border-radius:8px;padding:4px 8px;cursor:pointer;display:inline-flex;align-items:center;';
+    btn.innerHTML=_igIco;btn.title='Instagram con IA';
     a.parentNode.replaceChild(btn,a);
   });
 };
