@@ -285,8 +285,9 @@ Quiero saber m\u00e1s</a>
   }
   function _fireFBEvent(name) {
     var eid = 'skywa_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: name, currency: 'USD', value: 100 }, { eventID: eid });
-    if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('Lead', eid, { currency: 'USD', value: 100 });
+    // WhatsApp clicks fire InitiateCheckout (campaign optimizes for this)
+    if (typeof fbq === 'function') fbq('track', 'InitiateCheckout', { content_name: name, currency: 'USD', value: 550 }, { eventID: eid });
+    if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('InitiateCheckout', eid, { currency: 'USD', value: 550 });
   }
 
   // Track clicks on our injected buttons
