@@ -2722,32 +2722,89 @@ function _viewEvtStats(eventId) {
     body: JSON.stringify({ action: 'stats', event_id: eventId })
   }).then(function(r) { return r.json(); }).then(function(d) {
     if (!d.ok) return;
-    var msg = '📊 Estadisticas:\n'
-      + '👁 Visitas: ' + d.totalVisits + '\n'
-      + '✅ Registros: ' + d.totalRegistrations + '\n\n';
 
     var refs = d.byReferrer || {};
     var keys = Object.keys(refs).sort(function(a, b) { return refs[b].registrations - refs[a].registrations; });
+    var medals = ['🥇', '🥈', '🥉'];
+
+    var html = '<div style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.85);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">';
+    html += '<div style="width:100%;max-width:500px;background:#12122a;border-radius:20px;border:1px solid ' + C.border + ';padding:20px;margin-top:20px">';
+
+    // Header
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">';
+    html += '<div style="font-size:18px;font-weight:700;color:#fff">📊 Ranking de Promotores</div>';
+    html += '<button onclick="_closeEvtStats()" style="background:none;border:none;color:' + C.textSub + ';font-size:24px;cursor:pointer;padding:4px 8px">✕</button>';
+    html += '</div>';
+
+    // Summary cards
+    html += '<div style="display:flex;gap:10px;margin-bottom:20px">';
+    html += '<div style="flex:1;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';text-align:center">';
+    html += '<div style="font-size:24px;font-weight:700;color:#fff">' + (d.totalVisits || 0) + '</div>';
+    html += '<div style="font-size:11px;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px">Visitas</div></div>';
+    html += '<div style="flex:1;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';text-align:center">';
+    html += '<div style="font-size:24px;font-weight:700;color:' + C.gold + '">' + (d.totalRegistrations || 0) + '</div>';
+    html += '<div style="font-size:11px;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px">Registros</div></div>';
+    html += '<div style="flex:1;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';text-align:center">';
+    var convRate = d.totalVisits ? ((d.totalRegistrations / d.totalVisits) * 100).toFixed(1) : '0.0';
+    html += '<div style="font-size:24px;font-weight:700;color:#4ecdc4">' + convRate + '%</div>';
+    html += '<div style="font-size:11px;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px">Conversion</div></div>';
+    html += '</div>';
+
+    // Ranking table
     if (keys.length) {
-      msg += 'Por referidor:\n';
+      html += '<div style="font-size:13px;font-weight:600;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Promotores</div>';
+      html += '<div style="max-height:280px;overflow-y:auto;border-radius:12px;border:1px solid ' + C.border + '">';
+      // Header row
+      html += '<div style="display:flex;padding:10px 12px;background:rgba(201,168,76,0.08);border-bottom:1px solid ' + C.border + ';font-size:11px;color:' + C.gold + ';font-weight:600;text-transform:uppercase;letter-spacing:0.5px">';
+      html += '<div style="width:36px">#</div><div style="flex:1">Socio</div><div style="width:60px;text-align:center">Visitas</div><div style="width:60px;text-align:center">Regs</div><div style="width:56px;text-align:center">Conv%</div>';
+      html += '</div>';
       for (var i = 0; i < keys.length; i++) {
         var k = keys[i];
-        msg += '• ' + k + ': ' + refs[k].visits + ' visitas, ' + refs[k].registrations + ' registros\n';
+        var ref = refs[k];
+        var conv = ref.visits ? ((ref.registrations / ref.visits) * 100).toFixed(0) : '0';
+        var bgRow = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+        html += '<div style="display:flex;padding:10px 12px;align-items:center;background:' + bgRow + ';border-bottom:1px solid rgba(255,255,255,0.03)">';
+        html += '<div style="width:36px;font-weight:700;color:' + (i < 3 ? C.gold : C.textSub) + '">' + (medals[i] || (i + 1)) + '</div>';
+        html += '<div style="flex:1;color:#fff;font-weight:' + (i < 3 ? '600' : '400') + '">@' + _esc(k === 'direct' ? 'directo' : k) + '</div>';
+        html += '<div style="width:60px;text-align:center;color:' + C.textSub + '">' + ref.visits + '</div>';
+        html += '<div style="width:60px;text-align:center;color:#fff;font-weight:600">' + ref.registrations + '</div>';
+        html += '<div style="width:56px;text-align:center;color:#4ecdc4">' + conv + '%</div>';
+        html += '</div>';
       }
+      html += '</div>';
     }
 
+    // Latest registrations
     if (d.registrations && d.registrations.length) {
-      msg += '\nUltimos registros:\n';
+      html += '<div style="font-size:13px;font-weight:600;color:' + C.textSub + ';text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 10px">Ultimos Registros</div>';
       for (var j = 0; j < Math.min(d.registrations.length, 10); j++) {
-        var r = d.registrations[j];
-        msg += '• ' + r.nombre + ' (' + r.whatsapp + ')' + (r.ref_username ? ' via ' + r.ref_username : ' directo') + '\n';
+        var reg = d.registrations[j];
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+        html += '<div><span style="color:#fff;font-weight:500">' + _esc(reg.nombre) + '</span>';
+        html += ' <span style="color:' + C.textSub + ';font-size:12px">' + (reg.ref_username ? 'via @' + _esc(reg.ref_username) : 'directo') + '</span></div>';
+        html += '<div style="color:' + C.textSub + ';font-size:11px">' + (reg.created_at ? new Date(reg.created_at).toLocaleDateString('es', { day: '2-digit', month: 'short' }) : '') + '</div>';
+        html += '</div>';
       }
     }
 
-    alert(msg);
+    html += '</div></div>';
+
+    // Remove existing
+    var old = document.getElementById('evt-stats-overlay');
+    if (old) old.remove();
+    var div = document.createElement('div');
+    div.id = 'evt-stats-overlay';
+    div.innerHTML = html;
+    document.body.appendChild(div);
   }).catch(function() { if (typeof showToast === 'function') showToast('Error cargando stats'); });
 }
 window._viewEvtStats = _viewEvtStats;
+
+function _closeEvtStats() {
+  var el = document.getElementById('evt-stats-overlay');
+  if (el) el.remove();
+}
+window._closeEvtStats = _closeEvtStats;
 
 // ── Event Creation Wizard ──
 function openEventWizard() {
@@ -2756,7 +2813,7 @@ function openEventWizard() {
     fecha: '', hora: '19:00', ciudad: '', lugar: '',
     direccion: '', link_virtual: '', capacidad: 100,
     precio: 'Gratis', whatsapp_pago: '', vsl_url: '',
-    testimonios: [{ nombre: '', texto: '' }]
+    testimonios: [{ nombre: '', texto: '', tipo: 'escrito', foto_url: '', video_url: '' }]
   };
   stState.evtWizardStep = 1;
   stState.evtCreating = true;
@@ -2813,11 +2870,27 @@ function _renderEvtWizard() {
     // Testimonios
     html += '<div style="margin-top:4px;padding-top:16px;border-top:1px solid ' + C.border + '">';
     html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">💬 Testimonios (opcional)</div>';
-    var tList = d.testimonios || [{ nombre: '', texto: '' }];
+    var tList = d.testimonios || [{ nombre: '', texto: '', tipo: 'escrito', foto_url: '', video_url: '' }];
+    var _si = 'padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit;width:100%';
     for (var ti = 0; ti < tList.length; ti++) {
+      var tTipo = tList[ti].tipo || 'escrito';
+      html += '<div style="padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.02);margin-bottom:10px">';
       html += '<div style="display:flex;gap:8px;margin-bottom:8px">';
-      html += '<input id="evtD_tNombre_' + ti + '" value="' + _esc(tList[ti].nombre || '') + '" placeholder="Nombre" style="width:35%;padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit">';
-      html += '<input id="evtD_tTexto_' + ti + '" value="' + _esc(tList[ti].texto || '') + '" placeholder="Testimonio..." style="width:65%;padding:10px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:13px;font-family:inherit">';
+      html += '<select id="evtD_tTipo_' + ti + '" onchange="_toggleTestType(' + ti + ')" style="padding:8px;border-radius:8px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:12px;font-family:inherit">';
+      html += '<option value="escrito"' + (tTipo === 'escrito' ? ' selected' : '') + '>📝 Escrito</option>';
+      html += '<option value="video"' + (tTipo === 'video' ? ' selected' : '') + '>🎥 Video</option>';
+      html += '</select>';
+      html += '<input id="evtD_tNombre_' + ti + '" value="' + _esc(tList[ti].nombre || '') + '" placeholder="Nombre de la persona" style="flex:1;' + _si + '">';
+      html += '</div>';
+      // Campos escrito
+      html += '<div id="evtD_tEscrito_' + ti + '" style="display:' + (tTipo === 'escrito' ? 'block' : 'none') + '">';
+      html += '<input id="evtD_tTexto_' + ti + '" value="' + _esc(tList[ti].texto || '') + '" placeholder="Testimonio escrito..." style="' + _si + ';margin-bottom:6px">';
+      html += '<input id="evtD_tFoto_' + ti + '" value="' + _esc(tList[ti].foto_url || '') + '" placeholder="URL foto (opcional)" style="' + _si + '">';
+      html += '</div>';
+      // Campos video
+      html += '<div id="evtD_tVideo_' + ti + '" style="display:' + (tTipo === 'video' ? 'block' : 'none') + '">';
+      html += '<input id="evtD_tVideoUrl_' + ti + '" value="' + _esc(tList[ti].video_url || '') + '" placeholder="URL YouTube o Vimeo del testimonio" style="' + _si + '">';
+      html += '</div>';
       html += '</div>';
     }
     if (tList.length < 5) {
@@ -2878,11 +2951,22 @@ function _addTestimonio() {
   _readWizardFields();
   var d = stState.evtDraft || {};
   if (!d.testimonios) d.testimonios = [];
-  if (d.testimonios.length < 5) d.testimonios.push({ nombre: '', texto: '' });
+  if (d.testimonios.length < 5) d.testimonios.push({ nombre: '', texto: '', tipo: 'escrito', foto_url: '', video_url: '' });
   stState.evtDraft = d;
   _renderEvtWizard();
 }
 window._addTestimonio = _addTestimonio;
+
+function _toggleTestType(idx) {
+  var sel = document.getElementById('evtD_tTipo_' + idx);
+  if (!sel) return;
+  var tipo = sel.value;
+  var escDiv = document.getElementById('evtD_tEscrito_' + idx);
+  var vidDiv = document.getElementById('evtD_tVideo_' + idx);
+  if (escDiv) escDiv.style.display = tipo === 'escrito' ? 'block' : 'none';
+  if (vidDiv) vidDiv.style.display = tipo === 'video' ? 'block' : 'none';
+}
+window._toggleTestType = _toggleTestType;
 
 function _readWizardFields() {
   var d = stState.evtDraft || {};
@@ -2896,11 +2980,19 @@ function _readWizardFields() {
   for (var ti = 0; ti < tList.length; ti++) {
     var nEl = document.getElementById('evtD_tNombre_' + ti);
     var tEl = document.getElementById('evtD_tTexto_' + ti);
+    var tipoEl = document.getElementById('evtD_tTipo_' + ti);
+    var fotoEl = document.getElementById('evtD_tFoto_' + ti);
+    var vidEl = document.getElementById('evtD_tVideoUrl_' + ti);
     if (nEl) tList[ti].nombre = nEl.value;
     if (tEl) tList[ti].texto = tEl.value;
+    if (tipoEl) tList[ti].tipo = tipoEl.value;
+    if (fotoEl) tList[ti].foto_url = fotoEl.value;
+    if (vidEl) tList[ti].video_url = vidEl.value;
   }
   // Filter out empty testimonials
-  d.testimonios = tList.filter(function(t) { return (t.nombre || '').trim() || (t.texto || '').trim(); });
+  d.testimonios = tList.filter(function(t) {
+    return (t.nombre || '').trim() || (t.texto || '').trim() || (t.video_url || '').trim();
+  });
   stState.evtDraft = d;
 }
 

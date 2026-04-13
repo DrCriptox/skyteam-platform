@@ -609,11 +609,21 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '.ev-footer a{color:rgba(212,175,55,0.6);text-decoration:none}'
     + '.ev-vsl{max-width:700px;margin:0 auto;padding:40px 20px;text-align:center}'
     + '.ev-vsl-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px;border:1px solid rgba(255,255,255,0.08);background:#000}'
-    + '.ev-vsl-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}'
+    + '.ev-vsl-wrap iframe,.ev-vsl-wrap>div{position:absolute;top:0;left:0;width:100%;height:100%;border:0}'
+    + '.ev-vsl-overlay{position:absolute;inset:0;z-index:2;cursor:default}'
+    + '.ev-vsl-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;width:72px;height:72px;border-radius:50%;background:rgba(212,175,55,0.9);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(212,175,55,0.4);transition:transform 0.2s}'
+    + '.ev-vsl-play:hover{transform:translate(-50%,-50%) scale(1.1)}'
+    + '.ev-vsl-play svg{width:28px;height:28px;margin-left:3px}'
     + '.ev-testimonials{max-width:700px;margin:0 auto;padding:40px 20px}'
     + '.ev-testimonial{padding:20px;margin-bottom:14px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}'
+    + '.ev-testimonial-written{display:flex;gap:14px;align-items:flex-start}'
+    + '.ev-testimonial-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.3);flex-shrink:0}'
     + '.ev-testimonial-text{color:rgba(255,255,255,0.75);font-style:italic;line-height:1.6;margin-bottom:8px;font-size:1rem}'
     + '.ev-testimonial-author{color:#d4af37;font-weight:600;font-size:14px}'
+    + '.ev-testimonial-vid{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin-bottom:8px}'
+    + '.ev-testimonial-vid iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}'
+    + '.ev-wa-btn{display:block;width:100%;padding:18px;margin-top:16px;border-radius:14px;background:#25D366;color:#fff;font-size:18px;font-weight:700;text-align:center;text-decoration:none;box-shadow:0 4px 15px rgba(37,211,102,0.4);transition:transform 0.2s}'
+    + '.ev-wa-btn:hover{transform:translateY(-2px)}'
     + '@media(max-width:600px){.ev-speaker{flex-direction:column;text-align:center}.ev-meta{flex-direction:column;align-items:center}}'
     + '</style></head><body>'
 
@@ -639,8 +649,21 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<div class="ev-about">' + (content.about || '') + '</div>'
     + '</section>'
 
-    // ── VSL VIDEO ──
-    + (ev.vsl_url ? '<section class="ev-vsl"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2><div class="ev-vsl-wrap"><iframe src="' + esc(_toEmbed(ev.vsl_url)) + '" allowfullscreen allow="autoplay;encrypted-media"></iframe></div></section>' : '')
+    // ── VSL VIDEO (anti-skip) ──
+    + (function() {
+      if (!ev.vsl_url) return '';
+      var vi = _extractVideoId(ev.vsl_url);
+      if (vi.platform === 'youtube') {
+        return '<section class="ev-vsl"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2>'
+          + '<div class="ev-vsl-wrap"><div id="ev-vsl-player"></div>'
+          + '<div class="ev-vsl-overlay" id="ev-vsl-overlay"></div>'
+          + '<div class="ev-vsl-play" id="ev-vsl-play" onclick="_playVSL()"><svg viewBox="0 0 24 24" fill="#0a0a1a"><polygon points="5,3 19,12 5,21"/></svg></div>'
+          + '</div></section>';
+      }
+      // Vimeo or other: simple embed, no skip controls
+      return '<section class="ev-vsl"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px">Mira este Video</h2>'
+        + '<div class="ev-vsl-wrap"><iframe src="' + esc(_toEmbed(ev.vsl_url)) + '" allowfullscreen></iframe></div></section>';
+    })()
 
     // ── BENEFITS ──
     + '<section class="ev-section"><h2>Lo que Obtendras</h2>'
@@ -659,7 +682,20 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '</div></div></section>'
 
     // ── TESTIMONIALS ──
-    + (Array.isArray(ev.testimonios) && ev.testimonios.length ? '<section class="ev-testimonials"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center">Lo que Dicen Nuestros Asistentes</h2>' + ev.testimonios.map(function(t) { return '<div class="ev-testimonial"><div class="ev-testimonial-text">"' + esc(t.texto || t.text || '') + '"</div><div class="ev-testimonial-author">— ' + esc(t.nombre || t.name || 'Anonimo') + '</div></div>'; }).join('') + '</section>' : '')
+    + (Array.isArray(ev.testimonios) && ev.testimonios.length ? '<section class="ev-testimonials"><h2 style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:20px;text-align:center">Lo que Dicen Nuestros Asistentes</h2>' + ev.testimonios.map(function(t) {
+      var tipo = t.tipo || 'escrito';
+      if (tipo === 'video' && t.video_url) {
+        return '<div class="ev-testimonial"><div class="ev-testimonial-vid"><iframe src="' + esc(_toEmbed(t.video_url)) + '" allowfullscreen></iframe></div>'
+          + '<div class="ev-testimonial-author">— ' + esc(t.nombre || 'Anonimo') + '</div></div>';
+      }
+      // Escrito (con foto opcional)
+      var hasPhoto = t.foto_url && t.foto_url.trim();
+      return '<div class="ev-testimonial">'
+        + '<div class="ev-testimonial-written">'
+        + (hasPhoto ? '<img class="ev-testimonial-photo" src="' + esc(t.foto_url) + '" alt="' + esc(t.nombre || '') + '">' : '')
+        + '<div><div class="ev-testimonial-text">"' + esc(t.texto || t.text || '') + '"</div>'
+        + '<div class="ev-testimonial-author">— ' + esc(t.nombre || t.name || 'Anonimo') + '</div></div></div></div>';
+    }).join('') + '</section>' : '')
 
     // ── REGISTRATION FORM ──
     + '<section class="ev-form-section" id="ev-registro">'
@@ -711,7 +747,7 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '+"<div class=\\"ev-cd-item\\"><div class=\\"ev-cd-num\\">"+secs+"</div><div class=\\"ev-cd-label\\">Seg</div></div>";'
     + '}updateCD();setInterval(updateCD,1000);'
 
-    // Submit registration
+    // Submit registration — shows WA button instead of window.open (fixes mobile popup blocker)
     + 'function submitEventReg(){'
     + 'var btn=document.getElementById("ev-reg-btn");var msg=document.getElementById("ev-reg-msg");'
     + 'var nombre=document.getElementById("ev-reg-nombre").value.trim();'
@@ -723,31 +759,63 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'fetch("/api/event-pages?action=register",{method:"POST",headers:{"Content-Type":"application/json"},'
     + 'body:JSON.stringify({event_id:EVT_ID,nombre:nombre,whatsapp:wa,email:email,ciudad:ciudad,ref_username:REF||null})})'
     + '.then(function(r){return r.json()}).then(function(d){'
-    + 'if(d.ok){msg.innerHTML="<span style=\\"color:#4ecdc4\\">✅ Registro exitoso! Redirigiendo a WhatsApp...</span>";btn.textContent="Registrado!";'
-    + 'if(d.whatsapp_target){setTimeout(function(){'
+    + 'if(d.ok){'
     + 'var waName=d.whatsapp_name||"";'
     + 'var waMsg=d.precio&&d.precio!=="Gratis"'
-    + '?encodeURIComponent("Hola"+( waName?" "+waName:"")+", quiero asistir al evento \\""+( d.evento_titulo||EVT_SLUG)+"\\". Mi nombre es "+nombre+". Quiero realizar el pago de "+d.precio+".")'
-    + ':encodeURIComponent("Hola"+(waName?" "+waName:"")+", quiero asistir al evento \\""+( d.evento_titulo||EVT_SLUG)+"\\". Mi nombre es "+nombre+". Ya quede registrado!");'
-    + 'window.open("https://wa.me/"+d.whatsapp_target.replace(/[^0-9]/g,"")+"?text="+waMsg,"_blank");},1500);}'
+    + '?encodeURIComponent("Hola"+(waName?" "+waName:"")+", quiero asistir al evento "+(d.evento_titulo||EVT_SLUG)+". Mi nombre es "+nombre+". Quiero realizar el pago de "+d.precio+".")'
+    + ':encodeURIComponent("Hola"+(waName?" "+waName:"")+", quiero asistir al evento "+(d.evento_titulo||EVT_SLUG)+". Mi nombre es "+nombre+". Ya quede registrado!");'
+    + 'var waUrl=d.whatsapp_target?"https://wa.me/"+d.whatsapp_target.replace(/[^0-9]/g,"")+"?text="+waMsg:"";'
+    // Hide form inputs, show success + WA button
+    + 'var inputs=document.querySelectorAll(".ev-form input,.ev-form select,.ev-form textarea");'
+    + 'for(var i=0;i<inputs.length;i++)inputs[i].style.display="none";'
+    + 'btn.style.display="none";'
+    + 'msg.innerHTML="<div style=\\"text-align:center;padding:10px 0\\"><div style=\\"font-size:48px;margin-bottom:12px\\">🎉</div>"'
+    + '+"<div style=\\"color:#4ecdc4;font-size:20px;font-weight:700;margin-bottom:8px\\">Registro Exitoso!</div>"'
+    + '+"<div style=\\"color:rgba(255,255,255,0.6);font-size:14px;margin-bottom:16px\\">Te esperamos en el evento</div>"'
+    + '+(waUrl?"<a href=\\""+waUrl+"\\" target=\\"_blank\\" rel=\\"noopener\\" class=\\"ev-wa-btn\\">💬 Ir a WhatsApp</a>":"")+"</div>";'
     + '}else{msg.innerHTML="<span style=\\"color:#ff6b6b\\">"+(d.error||"Error al registrar")+"</span>";btn.disabled=false;btn.textContent="Intentar de nuevo";}'
     + '}).catch(function(){msg.innerHTML="<span style=\\"color:#ff6b6b\\">Error de conexion</span>";btn.disabled=false;btn.textContent="Intentar de nuevo";});'
     + '}'
+
+    // YouTube IFrame API anti-skip (only if YouTube VSL)
+    + (function() {
+      if (!ev.vsl_url) return '';
+      var vi = _extractVideoId(ev.vsl_url);
+      if (vi.platform !== 'youtube') return '';
+      return 'var _vslPlayer=null,_vslLastTime=0,_vslPlaying=false;'
+        + 'var tag=document.createElement("script");tag.src="https://www.youtube.com/iframe_api";document.head.appendChild(tag);'
+        + 'window.onYouTubeIframeAPIReady=function(){_vslPlayer=new YT.Player("ev-vsl-player",{videoId:"' + vi.id + '",'
+        + 'playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,showinfo:0,fs:0,iv_load_policy:3,playsinline:1},'
+        + 'events:{onStateChange:function(e){if(e.data===YT.PlayerState.PLAYING){_vslPlaying=true;}'
+        + 'if(e.data===YT.PlayerState.PAUSED&&_vslPlaying){_vslPlayer.playVideo();}'
+        + '}}});};'
+        + 'setInterval(function(){if(_vslPlayer&&_vslPlayer.getCurrentTime){var ct=_vslPlayer.getCurrentTime();'
+        + 'if(ct-_vslLastTime>2&&_vslLastTime>0){_vslPlayer.seekTo(_vslLastTime,true);}'
+        + 'else if(ct>_vslLastTime){_vslLastTime=ct;}}},500);'
+        + 'function _playVSL(){if(_vslPlayer&&_vslPlayer.playVideo){_vslPlayer.playVideo();}'
+        + 'var pb=document.getElementById("ev-vsl-play");if(pb)pb.style.display="none";'
+        + 'var ov=document.getElementById("ev-vsl-overlay");if(ov)ov.style.pointerEvents="all";}window._playVSL=_playVSL;';
+    })()
 
     + '</script></body></html>';
 }
 
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// Extract video platform + ID
+function _extractVideoId(url) {
+  if (!url) return { platform: '', id: '' };
+  var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return { platform: 'youtube', id: ytMatch[1] };
+  var vmMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vmMatch) return { platform: 'vimeo', id: vmMatch[1] };
+  return { platform: 'other', id: '' };
+}
+
 // Convert YouTube/Vimeo URLs to embed format
 function _toEmbed(url) {
-  if (!url) return '';
-  // YouTube: various formats
-  var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0';
-  // Vimeo
-  var vmMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vmMatch) return 'https://player.vimeo.com/video/' + vmMatch[1];
-  // Already embed or other URL — return as-is
-  return url;
+  var vi = _extractVideoId(url);
+  if (vi.platform === 'youtube') return 'https://www.youtube.com/embed/' + vi.id + '?rel=0';
+  if (vi.platform === 'vimeo') return 'https://player.vimeo.com/video/' + vi.id;
+  return url || '';
 }
