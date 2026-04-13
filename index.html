@@ -14067,6 +14067,7 @@ if(dv) crmSwitchView(dv);
 
 var crmRatingAnswers = {
   calif_positivo: 0,
+  calif_social: 0,
   calif_emprendedor: 0,
   calif_dinero: 0,
   calif_lider: 0
@@ -14365,6 +14366,7 @@ function crmInjectRatingCSS() {
 
 function crmUpdateStarsDisplay() {
   var count = (crmRatingAnswers.calif_positivo || 0) +
+    (crmRatingAnswers.calif_social || 0) +
     (crmRatingAnswers.calif_emprendedor || 0) + (crmRatingAnswers.calif_dinero || 0) +
     (crmRatingAnswers.calif_lider || 0);
   var display = document.querySelector('#crm-stars-display');
@@ -15120,7 +15122,11 @@ async function crmSaveProspect(e){
     }
     closeCrmModalAdd();crmLoadData();}
   else{res=await crmApi("add",data);if(res&&res.ok){crmToast("Prospecto agregado!","success");
-    closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){crmLoadData();var _alreadyRated=crmRatingAnswers&&(crmRatingAnswers.calif_positivo!==undefined);if(!_alreadyRated){crmStartRatingWizard(newId);}else{crmApi('update',{id:newId,updates:crmRatingAnswers});}}else crmLoadData();}
+    closeCrmModalAdd();var newId=res.prospecto&&res.prospecto.id;if(newId){
+      // Check if user actually answered rating questions (any value > 0)
+      var _hasRating=crmRatingAnswers&&(crmRatingAnswers.calif_positivo>0||crmRatingAnswers.calif_social>0||crmRatingAnswers.calif_emprendedor>0||crmRatingAnswers.calif_dinero>0||crmRatingAnswers.calif_lider>0);
+      if(_hasRating){crmApi('update',{id:newId,updates:crmRatingAnswers}).then(function(){crmLoadData();});}
+      else{crmStartRatingWizard(newId);}}else crmLoadData();}
     else{closeCrmModalAdd();crmLoadData();}}}
 
 function crmStartRatingWizard(prospectoId,onComplete){
