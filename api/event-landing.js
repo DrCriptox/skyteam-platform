@@ -4,9 +4,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SB_H = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
 
-// Simple cache: slug → { html, ts }
+// Simple cache: slug → { html, ts, status }
 var PAGE_CACHE = {};
-var CACHE_TTL = 120000; // 2 min
+var CACHE_TTL = 60000; // 1 min (reduced to avoid stale draft cache)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,11 +18,12 @@ module.exports = async function handler(req, res) {
     slug = slug.replace(/^\/+/, '').replace(/\/+$/, '').split('?')[0];
     if (!slug) return res.status(400).send(errorPage('Evento no encontrado'));
 
-    // Check cache
+    // Check cache (only use if no ref param — ref-personalized pages are never cached)
+    var hasRef = req.query.ref || '';
     var now = Date.now();
-    if (PAGE_CACHE[slug] && (now - PAGE_CACHE[slug].ts) < CACHE_TTL) {
+    if (!hasRef && PAGE_CACHE[slug] && PAGE_CACHE[slug].status === 'published' && (now - PAGE_CACHE[slug].ts) < CACHE_TTL) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
       return res.status(200).send(PAGE_CACHE[slug].html);
     }
 
@@ -31,12 +32,16 @@ module.exports = async function handler(req, res) {
     if (!r.ok) return res.status(500).send(errorPage('Error cargando evento'));
     var rows = await r.json();
 
-    if (!Array.isArray(rows) || !rows.length) return res.status(404).send(errorPage('Evento no encontrado'));
+    if (!Array.isArray(rows) || !rows.length) {
+      console.log('[EVENT-LANDING] Not found slug:', slug, 'query:', JSON.stringify(req.query));
+      return res.status(404).send(errorPage('Evento no encontrado'));
+    }
     var ev = rows[0];
 
     // Only serve published events (or draft with ?preview=1)
     var isPreview = req.query.preview === '1';
     if (!isPreview && (ev.status !== 'published' || !ev.is_public)) {
+      console.log('[EVENT-LANDING] Blocked:', slug, 'status:', ev.status, 'is_public:', ev.is_public);
       return res.status(404).send(errorPage('Este evento aun no esta disponible'));
     }
 
@@ -71,8 +76,8 @@ module.exports = async function handler(req, res) {
         html = html.replace('<body>', '<body>' + previewBar);
       }
 
-      // Cache without ref personalization (base HTML)
-      PAGE_CACHE[slug] = { html: ev.ai_html, ts: now };
+      // Cache base HTML (only published, never drafts)
+      if (ev.status === 'published') PAGE_CACHE[slug] = { html: ev.ai_html, ts: now, status: 'published' };
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
       return res.status(200).send(html);
