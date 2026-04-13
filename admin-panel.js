@@ -959,10 +959,12 @@
                          document.querySelector('[data-admin-content]');
     if (!adminContent) return;
 
-    // Remove existing content divs
+    // Remove existing content divs (including admin-pruebas which doesn't end in -content)
     adminContent.querySelectorAll('[id^="admin-"][id$="-content"]').forEach(el => {
       el.style.display = 'none';
     });
+    var pruDiv = document.getElementById('admin-pruebas');
+    if (pruDiv && tab !== 'pruebas') pruDiv.style.display = 'none';
 
     if (tab === 'comunidad') {
       let comunidadDiv = document.getElementById('admin-comunidad-content');

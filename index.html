@@ -10809,7 +10809,6 @@ function switchAdminTab(tab) {
 function renderAdminPruebas() {
   var el = document.getElementById('admin-pruebas');
   if(!el) return;
-  el.style.display = 'block'; // Force show (admin-panel.js may hide it)
   el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando pruebas...</div>';
   console.log('[ADMIN] Loading pruebas for user:', CU?CU.username:'NO CU');
   fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'list', adminUser:CU?CU.username:'admin'}) })
