@@ -532,10 +532,12 @@ module.exports = async (req, res) => {
       var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgPresentacion:0,imgAbono:0,imgPago:0,score:0}; };
       var stats2 = {};
       // Count new prospects in period
+      var fromTs = new Date(fromISO2).getTime(); // Use timestamp comparison (not string)
       allProspectos.forEach(function(p) {
         if (!stats2[p.username]) stats2[p.username] = _defStats();
         var s = stats2[p.username];
-        if (p.created_at >= fromISO2) {
+        var pTs = new Date(p.created_at).getTime();
+        if (pTs >= fromTs) {
           s.contactos++;
           if (p.telefono && p.telefono.length >= 8) s.conWa++;
           if (p.instagram && p.instagram.length >= 2) s.conIg++;
@@ -590,9 +592,11 @@ module.exports = async (req, res) => {
         s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgPresentacion * 10) + (s.imgAbono * 20) + (s.imgPago * 60);
         var usr = userMap2[u] || {};
         return { username: u, name: usr.name || u, photo: usr.photo || null, whatsapp: usr.whatsapp || null, score: s.score, contactos: s.contactos, avances: s.avances, msgIA: s.msgIA, actualizaciones: s.actualizaciones, abonos: s.imgAbono, pagos: s.imgPago };
-      }).filter(function(r){ return r.score > 0; }).sort(function(a,b){ return b.score - a.score; });
+      }).sort(function(a,b){ return b.score - a.score; });
 
-      return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), period: period });
+      // Include total users count so frontend can show real position
+      var totalUsersR = allUsers.length || 0;
+      return res.status(200).json({ ok: true, ranking: ranking2.slice(0, 50), totalUsers: totalUsersR, period: period });
     }
 
     return res.status(400).json({ ok: false, error: 'Unknown action: ' + action });

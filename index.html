@@ -14227,7 +14227,7 @@ function _renderCrmRankingTab() {
     if(!meInTop && CU) {
       var myIdx = fullRanking.findIndex(function(m){return m.username===CU.username;});
       var myData = myIdx>=0 ? fullRanking[myIdx] : null;
-      var myPos = myIdx>=0 ? myIdx+1 : fullRanking.length+1;
+      var myPos = myIdx>=0 ? myIdx+1 : (d.totalUsers || fullRanking.length+1);
       var myIni = (CU.name||CU.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
       var myFoto = CU.photo||'';
       rhtml += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.06);">';
