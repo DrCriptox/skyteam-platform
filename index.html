@@ -2879,6 +2879,10 @@ document.addEventListener('DOMContentLoaded',function(){
           </div>
         </div>
       </div>
+      <div class="crm-detail-section" id="crm-detail-plan-section" style="display:none">
+        <h3 class="crm-detail-section-title">🎯 Plan de Cierre</h3>
+        <div id="crm-detail-plan-container"></div>
+      </div>
       <div class="crm-detail-section">
         <h3 class="crm-detail-section-title">📝 Notas</h3>
         <div id="crm-detail-notas" class="crm-detail-notes"></div>
@@ -13582,6 +13586,122 @@ function crmCompleteReminder(id) {
   }).catch(function(){ showToast('\u274C Error de conexi\u00f3n'); });
 }
 
+// ═══════════════════════════════════════════════════════════
+// PLAN DE CIERRE — Divide días restantes en acciones concretas
+// ═══════════════════════════════════════════════════════════
+function crmPlanCierre(prospect) {
+  if (!prospect || !prospect.fecha_cierre_estimada || prospect.fecha_cierre_estimada === 'null') return null;
+  var hoy = new Date(); hoy.setHours(0,0,0,0);
+  var cierre = new Date(prospect.fecha_cierre_estimada); cierre.setHours(0,0,0,0);
+  var diasRest = Math.ceil((cierre.getTime() - hoy.getTime()) / 86400000);
+  if (diasRest < -3) return null; // muy vencido, no mostrar
+  var etapa = (prospect.etapa || 'nuevo').toLowerCase();
+  var nombre = (prospect.nombre || 'Prospecto').split(' ')[0];
+
+  // Acciones por etapa (lo que falta hacer)
+  var pasos = [];
+  if (etapa === 'nuevo') pasos = [
+    'Saludar a ' + nombre + ' y romper el hielo',
+    'Calificarlo (positivo, social, emprendedor, dinero, lider)',
+    'Generar curiosidad sobre la oportunidad',
+    'Enviarle el video corto / landing',
+    'Agendar la presentacion completa',
+    'Hacer la presentacion en zoom',
+    'Cerrar la inscripcion + recibir pago'
+  ];
+  else if (etapa === 'contactado') pasos = [
+    'Generar curiosidad sobre la oportunidad',
+    'Enviarle video corto / landing personal',
+    'Hacer seguimiento al video (¿que le parecio?)',
+    'Agendar presentacion completa',
+    'Presentacion en zoom',
+    'Resolver objeciones',
+    'Cerrar inscripcion'
+  ];
+  else if (etapa === 'interesado') pasos = [
+    'Confirmar interes y agendar presentacion',
+    'Enviar info adicional (paquetes, beneficios)',
+    'Presentacion completa en zoom',
+    'Resolver objeciones',
+    'Hablar de paquetes y precios',
+    'Cerrar inscripcion + pago'
+  ];
+  else if (etapa === 'presentacion' || etapa === 'confirmado_cierre') pasos = [
+    'Confirmar asistencia a la presentacion',
+    'Hacer la presentacion completa',
+    'Resolver objeciones',
+    'Mostrar paquetes y plan de retorno',
+    'Cerrar inscripcion + pago'
+  ];
+  else if (etapa === 'seguimiento') pasos = [
+    'Enviar mensaje de seguimiento',
+    'Resolver dudas pendientes',
+    'Reagendar llamada de cierre',
+    'Cerrar inscripcion + pago'
+  ];
+  else if (etapa === 'pendiente_pago') pasos = [
+    'Confirmar metodo de pago',
+    'Enviar instrucciones de pago',
+    'Verificar comprobante',
+    'Inscribir en la plataforma'
+  ];
+  else if (etapa === 'abonado') pasos = [
+    'Confirmar abono recibido',
+    'Coordinar pago restante',
+    'Inscripcion completa'
+  ];
+  else return null;
+
+  // Distribuir pasos en los dias disponibles
+  var diasParaDistribuir = Math.max(1, diasRest);
+  var pasosPorDia = Math.ceil(pasos.length / diasParaDistribuir);
+  var planDias = [];
+  for (var d = 0; d < diasParaDistribuir; d++) {
+    var fecha = new Date(hoy.getTime() + d * 86400000);
+    var label = d === 0 ? 'HOY' : d === 1 ? 'MAÑANA' : 'En ' + d + ' dias';
+    var inicio = d * pasosPorDia;
+    var pasosDelDia = pasos.slice(inicio, inicio + pasosPorDia);
+    if (pasosDelDia.length > 0) {
+      planDias.push({ dia: d, label: label, fecha: fecha, pasos: pasosDelDia });
+    }
+  }
+
+  return {
+    prospecto: prospect,
+    diasRestantes: diasRest,
+    vencido: diasRest < 0,
+    diaCierre: cierre,
+    etapa: etapa,
+    plan: planDias
+  };
+}
+
+// Edit fecha cierre inline
+function _crmEditFechaCierre(prospectId) {
+  var p = (crmProspectos || []).find(function(x) { return x.id === prospectId; });
+  if (!p) return;
+  var actual = (p.fecha_cierre_estimada && p.fecha_cierre_estimada !== 'null') ? p.fecha_cierre_estimada : '';
+  var nueva = prompt('Fecha de cierre estimada (YYYY-MM-DD):\n(Deja vacio para quitar)', actual);
+  if (nueva === null) return;
+  nueva = nueva.trim();
+  if (nueva && !nueva.match(/^\d{4}-\d{2}-\d{2}$/)) { alert('Formato invalido. Usa YYYY-MM-DD'); return; }
+  // Update via API
+  fetch('/api/prospectos', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'update', user: CU.username, id: prospectId, updates: { fecha_cierre_estimada: nueva || null } })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      p.fecha_cierre_estimada = nueva || null;
+      if (typeof crmToast === 'function') crmToast('Fecha actualizada', 'success');
+      // Re-render detail
+      openCrmDetail(prospectId);
+    } else {
+      alert('Error: ' + (d.error || ''));
+    }
+  });
+}
+window._crmEditFechaCierre = _crmEditFechaCierre;
+
 function crmCalcStars(p) {
   var f = ['calif_positivo','calif_social','calif_emprendedor','calif_dinero','calif_lider'];
   var count = 0;
@@ -14807,6 +14927,35 @@ function openCrmDetail(id) {
 
   var valorDisplay = modal.querySelector('#crm-detail-valor');
   if (valorDisplay) valorDisplay.textContent = prospect.valor_estimado ? '$' + prospect.valor_estimado : 'N/A';
+
+  // ── PLAN DE CIERRE ──
+  var planSection = modal.querySelector('#crm-detail-plan-section');
+  var planContainer = modal.querySelector('#crm-detail-plan-container');
+  var plan = crmPlanCierre(prospect);
+  if (plan && planSection && planContainer) {
+    planSection.style.display = 'block';
+    var dColor = plan.vencido ? '#E24B4A' : plan.diasRestantes <= 1 ? '#FF8C00' : plan.diasRestantes <= 3 ? '#FFD700' : '#1D9E75';
+    var dLabel = plan.vencido ? 'VENCIDO hace ' + Math.abs(plan.diasRestantes) + 'd' : plan.diasRestantes === 0 ? 'CIERRA HOY' : plan.diasRestantes === 1 ? 'CIERRA MAÑANA' : 'Faltan ' + plan.diasRestantes + ' días';
+    var planHtml = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(' + (plan.vencido ? '226,75,74' : plan.diasRestantes <= 1 ? '255,140,0' : '255,215,0') + ',0.08);border:1px solid rgba(' + (plan.vencido ? '226,75,74' : plan.diasRestantes <= 1 ? '255,140,0' : '255,215,0') + ',0.25);margin-bottom:10px">';
+    planHtml += '<div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Fecha de cierre</div><div style="font-size:14px;font-weight:700;color:' + dColor + '">' + dLabel + '</div></div>';
+    planHtml += '<button onclick="_crmEditFechaCierre(\'' + prospect.id + '\')" style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📅 Editar</button>';
+    planHtml += '</div>';
+    // Pasos por dia
+    plan.plan.forEach(function(d) {
+      var isToday = d.dia === 0;
+      planHtml += '<div style="padding:10px 12px;margin-bottom:6px;border-radius:8px;background:' + (isToday ? 'rgba(212,175,55,0.06)' : 'rgba(255,255,255,0.02)') + ';border-left:2px solid ' + (isToday ? '#C9A84C' : 'rgba(255,255,255,0.1)') + '">';
+      planHtml += '<div style="font-size:10px;font-weight:800;color:' + (isToday ? '#C9A84C' : 'rgba(255,255,255,0.4)') + ';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">' + d.label + '</div>';
+      d.pasos.forEach(function(p) {
+        planHtml += '<div style="font-size:12px;color:rgba(255,255,255,0.75);padding:3px 0;display:flex;align-items:flex-start;gap:6px"><span style="color:' + (isToday ? '#C9A84C' : 'rgba(255,255,255,0.3)') + ';flex-shrink:0">' + (isToday ? '▶' : '○') + '</span><span>' + p + '</span></div>';
+      });
+      planHtml += '</div>';
+    });
+    planContainer.innerHTML = planHtml;
+  } else if (planSection) {
+    // Sin fecha de cierre: mostrar botón para agregar
+    planSection.style.display = 'block';
+    planContainer.innerHTML = '<div style="text-align:center;padding:14px;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.08);border-radius:10px"><div style="color:rgba(255,255,255,0.4);font-size:12px;margin-bottom:8px">Sin fecha de cierre programada</div><button onclick="_crmEditFechaCierre(\'' + prospect.id + '\')" style="background:rgba(212,175,55,0.12);border:0.5px solid rgba(212,175,55,0.25);color:#C9A84C;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📅 Agregar fecha de cierre</button></div>';
+  }
 
   // Temperature slider with dynamic colors
   var tempSlider = modal.querySelector('#crm-detail-temp-slider');

@@ -1516,6 +1516,14 @@ function renderSTMentor() {
       if (calientes.length > 0) chips.push('🔥 Tengo '+calientes.length+' prospectos calientes');
       var sinContacto = crmProspectos.filter(function(p){var d2=p.updated_at?Math.ceil((Date.now()-new Date(p.updated_at).getTime())/86400000):999;return d2>=5 && p.etapa!=='cerrado_ganado' && p.etapa!=='cerrado_perdido';});
       if (sinContacto.length > 0) chips.push('Prospectos sin seguimiento');
+      // Prospectos con cierre proximo
+      var cierreProx = crmProspectos.filter(function(p){
+        if (!p.fecha_cierre_estimada || p.fecha_cierre_estimada === 'null') return false;
+        if (p.etapa === 'cerrado_ganado' || p.etapa === 'cerrado_perdido') return false;
+        var dr = Math.ceil((new Date(p.fecha_cierre_estimada).getTime() - Date.now()) / 86400000);
+        return dr >= -3 && dr <= 7;
+      });
+      if (cierreProx.length > 0) chips.push('🎯 Plan para mis ' + cierreProx.length + ' cierres proximos');
     }
     if (typeof agendaBookings !== 'undefined' && agendaBookings) {
       var hoy = agendaBookings.filter(function(b){if(!b.fecha_iso)return false;var h=(new Date(b.fecha_iso).getTime()-Date.now())/3600000;return h>0&&h<=24;});
@@ -2085,6 +2093,25 @@ window.mentorSendChat = function(presetText) {
     var activos = crmProspectos.filter(function(p){return p.etapa!=='cerrado_ganado'&&p.etapa!=='cerrado_perdido';});
     var calientes = activos.filter(function(p){return (p.temperatura||0)>=70;});
     context += 'CRM: ' + crmProspectos.length + ' prospectos (' + activos.length + ' activos, ' + calientes.length + ' calientes).\n';
+    // Prospectos con fecha de cierre proxima (proximos 7 dias)
+    var ahora = Date.now();
+    var cerrarPronto = activos.filter(function(p) {
+      if (!p.fecha_cierre_estimada || p.fecha_cierre_estimada === 'null') return false;
+      var d = new Date(p.fecha_cierre_estimada).getTime();
+      var diasRest = Math.ceil((d - ahora) / 86400000);
+      return diasRest >= -3 && diasRest <= 7;
+    }).sort(function(a, b) {
+      return new Date(a.fecha_cierre_estimada).getTime() - new Date(b.fecha_cierre_estimada).getTime();
+    });
+    if (cerrarPronto.length > 0) {
+      context += 'PROSPECTOS PROXIMOS A CIERRE:\n';
+      cerrarPronto.slice(0, 8).forEach(function(p) {
+        var d = new Date(p.fecha_cierre_estimada);
+        var diasRest = Math.ceil((d.getTime() - ahora) / 86400000);
+        var label = diasRest < 0 ? 'VENCIDO ' + Math.abs(diasRest) + 'd' : diasRest === 0 ? 'CIERRA HOY' : diasRest === 1 ? 'CIERRA MAÑANA' : 'En ' + diasRest + ' dias';
+        context += '- ' + p.nombre + ' (etapa: ' + (p.etapa || 'nuevo') + ', temp: ' + (p.temperatura || 0) + '%) → ' + label + '\n';
+      });
+    }
   }
   if (CU) context += 'LIDER: ' + CU.name + ', rango ' + CU.rank + ', usuario ' + CU.username + '.\n';
 
@@ -2115,6 +2142,16 @@ window.mentorSendChat = function(presetText) {
     + '- Si cumpleaños pronto: recordar al lider que lo celebre\n'
     + '- CLIENTES (rango 0): educacion y rutas de aprendizaje\n'
     + '- Membresia por vencer: renovar URGENTE\n\n'
+    + 'PROSPECTOS PROXIMOS A CIERRE (PRIORIDAD ALTA):\n'
+    + '- Si hay seccion "PROSPECTOS PROXIMOS A CIERRE" en el contexto: enfocate ahi PRIMERO\n'
+    + '- Para cada prospecto con cierre cercano, el lider necesita ACCIONES ESPECIFICAS por dia\n'
+    + '- Ejemplo: si Maria cierra en 3 dias y esta en etapa "interesado", divide los 3 dias en pasos:\n'
+    + '  HOY: confirmar interes + agendar presentacion\n'
+    + '  MAÑANA: hacer la presentacion completa\n'
+    + '  DIA 3 (cierre): resolver objeciones + cerrar inscripcion\n'
+    + '- Si esta vencido: urgente reprogramar la fecha o cerrar YA\n'
+    + '- Si cierra hoy: dale 1-2 acciones URGENTES para hoy mismo\n'
+    + '- Sugiere editar la fecha si el plan no es realista\n\n'
     + 'GUIA PARA USUARIOS NUEVOS / SIN EQUIPO:\n'
     + '- Si el lider tiene rango 0-2 (Cliente, INN 200, INN 500) o 0 directos: es PRINCIPIANTE\n'
     + '- Para principiantes da pasos CONCRETOS y SIMPLES, no analisis complejos\n'
