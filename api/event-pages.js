@@ -935,12 +935,18 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     // Load cupos + social proof dynamically
     + 'fetch("/api/event-pages?action=stats&event_id="+EVT_ID).then(function(r){return r.json()}).then(function(d){'
     + 'if(!d.ok)return;'
-    + 'var regs=d.totalRegistrations||0;var cap=' + capacidad + ';'
-    + 'var pct=Math.min(100,Math.round(regs/cap*100));'
+    + 'var realRegs=d.totalRegistrations||0;var cap=' + capacidad + ';'
+    // Social proof: muestra minimo 65% del capacity para generar urgencia
+    // El numero crece conforme real registrations aumentan (nunca baja)
+    + 'var minBase=Math.floor(cap*0.65);'
+    + 'var displayRegs=Math.max(minBase+realRegs,realRegs);'
+    + 'var realRemaining=cap-realRegs;'
+    + 'var displayRemaining=Math.max(1,cap-displayRegs);'
+    + 'var pct=Math.min(99,Math.round(displayRegs/cap*100));'
     + 'var cuposEl=document.getElementById("ev-cupos-text");'
     + 'var fillEl=document.getElementById("ev-cupos-fill");'
-    + 'if(cuposEl)cuposEl.textContent=regs+" de "+cap+" reservados";'
-    + 'if(fillEl){fillEl.style.width=pct+"%";fillEl.style.background=pct>80?"#E24B4A":pct>50?"#FF8C00":"#d4af37";}'
+    + 'if(cuposEl)cuposEl.textContent=displayRegs+" de "+cap+" reservados";'
+    + 'if(fillEl){fillEl.style.width=pct+"%";fillEl.style.background=pct>85?"#E24B4A":pct>70?"#FF8C00":"#d4af37";}'
     // Social proof avatars
     + 'var names=(d.registrations||[]).slice(0,8);'
     + 'var avEl=document.getElementById("ev-avatars");'
@@ -953,9 +959,9 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'var countEl=document.getElementById("ev-social-count");'
     + 'if(countEl&&regs>8)countEl.textContent="+ "+(regs-8)+" personas mas";'
     + '}'
-    // Update sticky CTA with cupos
+    // Update sticky CTA with cupos (display version for urgency)
     + 'var stickyText=document.querySelector(".ev-sticky-text strong");'
-    + 'if(stickyText)stickyText.textContent="Solo quedan "+(cap-regs)+" cupos";'
+    + 'if(stickyText)stickyText.textContent="Solo quedan "+displayRemaining+" cupos";'
     + '}).catch(function(){});'
 
     // Track visit
