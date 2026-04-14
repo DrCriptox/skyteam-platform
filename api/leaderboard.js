@@ -529,7 +529,7 @@ module.exports = async (req, res) => {
       // Interaccion/historial: +1 (max 1/prospecto/dia)
       // Recordatorio: +1 (max 1/prospecto/dia)
       // Img abono: +20 | Img pago completo: +60
-      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgPresentacion:0,imgAbono:0,imgPago:0,score:0}; };
+      var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgPresentacion:0,imgAbono:0,imgPago:0,cierreMovidos:0,cierreFotoPts:0,score:0}; };
       var stats2 = {};
       // Count new prospects in period
       var fromTs = new Date(fromISO2).getTime(); // Use timestamp comparison (not string)
@@ -544,6 +544,32 @@ module.exports = async (req, res) => {
           if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
         }
       });
+      // Load verified proof_images for cierre points by amount
+      var allProofImages = [];
+      try {
+        var piR = await sb('proof_images?tipo=eq.cierre&ai_status=eq.approved&select=username,ai_amount,created_at&created_at=gte.' + fromISO2);
+        allProofImages = piR || [];
+      } catch(e) {}
+      // Points by invoice amount
+      var _amountPts = function(amtStr) {
+        if (!amtStr) return 30; // default if amount not detected
+        var num = parseFloat((amtStr + '').replace(/[^0-9.]/g, '')) || 0;
+        if (num >= 2299) return 100;
+        if (num >= 1899) return 90;
+        if (num >= 1499) return 80;
+        if (num >= 1199) return 70;
+        if (num >= 999) return 60;
+        if (num >= 799) return 50;
+        if (num >= 549) return 40;
+        if (num >= 229) return 30;
+        return 30;
+      };
+      allProofImages.forEach(function(pi) {
+        if (!stats2[pi.username]) stats2[pi.username] = _defStats();
+        stats2[pi.username].cierreFotoPts += _amountPts(pi.ai_amount);
+        stats2[pi.username].imgPago++;
+      });
+
       // Count interactions in period
       allInteracciones.forEach(function(i) {
         if (!stats2[i.username]) stats2[i.username] = _defStats();
@@ -562,9 +588,9 @@ module.exports = async (req, res) => {
         if (contenido.indexOf('comprobante de abono') > -1) {
           s.imgAbono++;
         }
-        // Cierre con factura: +60
+        // Cierre (mover tarjeta): +2 pts only (foto verificada da mas)
         if (tipo === 'cierre') {
-          s.imgPago++;
+          s.cierreMovidos++;
         }
         // Mensaje IA: +2
         if (tipo === 'nota' && contenido.indexOf('mensaje generado con ia') > -1) {
@@ -589,7 +615,8 @@ module.exports = async (req, res) => {
       // Calculate scores
       var ranking2 = Object.entries(stats2).map(function(e) {
         var u = e[0], s = e[1];
-        s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgPresentacion * 10) + (s.imgAbono * 20) + (s.imgPago * 60);
+        // Cierre: mover tarjeta=2pts, foto verificada=30-100pts segun monto
+        s.score = (s.contactos * 2) + (s.conWa * 1) + (s.conIg * 1) + (s.calificados * 1) + (s.avances * 2) + (s.msgIA * 2) + (s.actualizaciones * 1) + (s.recordatorios * 1) + (s.imgPresentacion * 10) + (s.imgAbono * 20) + (s.cierreMovidos * 2) + s.cierreFotoPts;
         var usr = userMap2[u] || {};
         return { username: u, name: usr.name || u, photo: usr.photo || null, whatsapp: usr.whatsapp || null, score: s.score, contactos: s.contactos, avances: s.avances, msgIA: s.msgIA, actualizaciones: s.actualizaciones, abonos: s.imgAbono, pagos: s.imgPago };
       }).sort(function(a,b){ return b.score - a.score; });
