@@ -10867,7 +10867,7 @@ function _renderProofTable(proofs) {
     html += _fbtn('cierre', 'Cierre Pago', '#FFD700');
     html += '</div></div>';
     html += '<div style="overflow-x:auto;"><table class="admin-table"><thead><tr>';
-    html += '<th>Socio</th><th>Prospecto</th><th>Tipo</th><th>Estado</th><th>Conf.</th><th>Monto</th><th>Factura</th><th>Hash</th><th>Fecha</th><th>Imagen</th>';
+    html += '<th>Socio</th><th>Prospecto</th><th>Tipo</th><th>Estado</th><th>Conf.</th><th>Monto</th><th>Fecha</th><th>Imagen</th><th>Accion</th>';
     html += '</tr></thead><tbody>';
     proofs.forEach(function(p){
       var statusColor = p.ai_status==='approved' ? '#1D9E75' : '#FFA500';
@@ -10883,14 +10883,36 @@ function _renderProofTable(proofs) {
       html += '<td style="color:'+statusColor+';font-weight:700;font-size:11px;">' + statusLabel + '</td>';
       html += '<td style="text-align:center;font-size:11px;">' + (p.ai_confidence||0) + '%</td>';
       html += '<td style="color:#C9A84C;font-weight:700;font-size:11px;">' + (p.ai_amount||'-') + '</td>';
-      html += '<td style="font-family:monospace;font-size:10px;">' + (p.ai_invoice||'-') + '</td>';
-      html += '<td style="font-family:monospace;font-size:9px;color:rgba(255,255,255,0.3);" title="'+(p.image_hash||'')+'">' + hash8 + '</td>';
       html += '<td style="font-size:10px;color:rgba(255,255,255,0.4);">' + fecha + '</td>';
       html += '<td><button onclick="_viewProofImage('+p.id+')" style="padding:3px 8px;border-radius:6px;background:rgba(127,119,221,0.12);border:0.5px solid rgba(127,119,221,0.25);color:#7F77DD;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">\uD83D\uDCF7</button></td>';
+      html += '<td style="white-space:nowrap">';
+      if (p.ai_status === 'approved') {
+        html += '<button onclick="_adminProofAction('+p.id+',\'rejected\')" style="padding:3px 8px;border-radius:6px;background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">\u274C Rechazar</button>';
+      } else {
+        html += '<button onclick="_adminProofAction('+p.id+',\'approved\')" style="padding:3px 8px;border-radius:6px;background:rgba(37,211,102,0.1);border:0.5px solid rgba(37,211,102,0.25);color:#25D366;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">\u2705 Aprobar</button>';
+        html += ' <button onclick="_adminProofAction('+p.id+',\'rejected\')" style="padding:3px 8px;border-radius:6px;background:rgba(255,60,60,0.1);border:0.5px solid rgba(255,60,60,0.25);color:#ff6b6b;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">\u274C</button>';
+      }
+      html += '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div>';
     el.innerHTML = html;
+}
+
+function _adminProofAction(proofId, newStatus) {
+  var label = newStatus === 'approved' ? 'aprobar' : 'rechazar';
+  if (!confirm('Seguro que quieres ' + label + ' esta prueba?')) return;
+  fetch('/api/verify-crm-proof', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'adminAction', adminUser: CU ? CU.username : '', proofId: proofId, newStatus: newStatus })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      if (typeof showToast === 'function') showToast('Prueba ' + (newStatus === 'approved' ? 'aprobada' : 'rechazada'));
+      renderAdminPruebas(); // Reload
+    } else {
+      if (typeof showToast === 'function') showToast('Error: ' + (d.error || ''));
+    }
+  });
 }
 
 function _viewProofImage(proofId) {

@@ -153,6 +153,26 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, verified: proofStatus === 'approved', aiResult: aiResult, saved: true, hash: imgHash.substring(0, 8) });
     }
 
+    // ── ADMIN ACTION: approve or reject a proof ──
+    if (req.method === 'POST' && action === 'adminAction') {
+      const { adminUser, proofId, newStatus } = req.body;
+      if (!adminUser || !proofId || !newStatus) return res.status(400).json({ error: 'Missing fields' });
+      // Verify admin
+      try {
+        var adCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser) + '&select=is_admin', { headers: SB_H });
+        var adRows = await adCheck.json();
+        if (!Array.isArray(adRows) || !adRows.length || !adRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+      } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
+      // Update proof status
+      var upR = await fetch(SUPABASE_URL + '/rest/v1/proof_images?id=eq.' + proofId, {
+        method: 'PATCH', headers: { ...SB_H, Prefer: 'return=minimal' },
+        body: JSON.stringify({ ai_status: newStatus, ai_reason: 'Admin ' + (newStatus === 'approved' ? 'aprobado' : 'rechazado') + ' por ' + adminUser })
+      });
+      if (!upR.ok) return res.status(500).json({ error: 'Update failed' });
+      console.log('[CRM-PROOF] Admin', adminUser, newStatus, 'proof', proofId);
+      return res.status(200).json({ ok: true });
+    }
+
     // ── LIST proofs for admin review ──
     if (req.method === 'POST' && action === 'list') {
       // Admin check: verify user is admin

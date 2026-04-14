@@ -555,7 +555,7 @@ module.exports = async (req, res) => {
         if (!amtStr) return 30; // default if amount not detected
         var num = parseFloat((amtStr + '').replace(/[^0-9.]/g, '')) || 0;
         if (num >= 2299) return 100;
-        if (num >= 1899) return 90;
+        if (num >= 1799) return 90;
         if (num >= 1499) return 80;
         if (num >= 1199) return 70;
         if (num >= 999) return 60;
