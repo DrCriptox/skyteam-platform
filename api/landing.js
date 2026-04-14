@@ -258,6 +258,54 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, stats: data });
     }
 
+    // ── DEBUG: analizar conversiones de un ref ──
+    if (action === 'debugConv') {
+      var dRef = (req.body || {}).ref || 'admin';
+      var SBU = process.env.SUPABASE_URL;
+      var SBK = process.env.SUPABASE_SERVICE_KEY;
+      var dHdr = { apikey: SBK, Authorization: 'Bearer ' + SBK };
+      // Get all visits for this ref
+      var allR = await fetch(SBU + '/rest/v1/landing_visits?ref=eq.' + encodeURIComponent(dRef) + '&select=ip,type,day,created_at&order=created_at.desc&limit=2000', { headers: dHdr });
+      var allV = await allR.json();
+      if (!Array.isArray(allV)) return res.status(200).json({ error: 'fetch failed' });
+      var conv = allV.filter(function(v) { return v.type === 'conversion'; });
+      var visits = allV.filter(function(v) { return v.type !== 'conversion'; });
+      // Count uniqueness
+      var convByIp = {};
+      conv.forEach(function(v) { convByIp[v.ip] = (convByIp[v.ip] || 0) + 1; });
+      var uniqueConvIps = Object.keys(convByIp);
+      var dupConvIps = uniqueConvIps.filter(function(ip) { return convByIp[ip] > 1; });
+      var ipsRepetidos = dupConvIps.map(function(ip) { return { ip: ip.substring(0, 20), count: convByIp[ip] }; }).sort(function(a, b) { return b.count - a.count; }).slice(0, 20);
+      // Conversions by day
+      var byDay = {};
+      conv.forEach(function(v) { var d = (v.day || (v.created_at || '').slice(0, 10)); byDay[d] = (byDay[d] || 0) + 1; });
+      var byDayArr = Object.entries(byDay).sort(function(a, b) { return b[0].localeCompare(a[0]); }).slice(0, 14);
+      // Suspicious: IPs without prior visit
+      var ipsWithVisit = {};
+      visits.forEach(function(v) { ipsWithVisit[v.ip] = true; });
+      var convSinVisita = uniqueConvIps.filter(function(ip) { return !ipsWithVisit[ip]; });
+      // Suspicious: IPs that look like fingerprints starting with fp_
+      var fpConvs = uniqueConvIps.filter(function(ip) { return ip.indexOf('fp_') === 0; });
+      var realIpConvs = uniqueConvIps.filter(function(ip) { return ip.indexOf('fp_') !== 0; });
+      return res.status(200).json({
+        ref: dRef,
+        totalVisits: visits.length,
+        totalConversions: conv.length,
+        uniqueConvIps: uniqueConvIps.length,
+        duplicatedConvRows: conv.length - uniqueConvIps.length,
+        ipsConDuplicados: dupConvIps.length,
+        topRepetidos: ipsRepetidos,
+        convPorFingerprint: fpConvs.length,
+        convPorIpReal: realIpConvs.length,
+        convSinVisitaPrevia: convSinVisita.length,
+        porDia: byDayArr.map(function(d) { return { dia: d[0], conv: d[1] }; }),
+        sospechosos: {
+          sinVisita: convSinVisita.length + ' conv. sin visita previa (probablemente bots o tracking errors)',
+          duplicados: dupConvIps.length + ' IPs con multiples conv (problema actual de hash)'
+        }
+      });
+    }
+
     // ── GET RANKING: merge both asesor files + stats, filter by period ──
     // Uses cached GitHub reads (60s TTL) — 3 files read in parallel
     if (action === 'getRanking') {
