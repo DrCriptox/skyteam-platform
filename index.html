@@ -15372,17 +15372,70 @@ function _crmBuildInsightsHTML(res){
   }
   // Tip
   if(res.tip){
-    html += '<div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;margin-bottom:8px;">';
+    html += '<div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;margin-bottom:0;">';
     html += '<div style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:1.5px;margin-bottom:3px;">💡 SI RESPONDE...</div>';
     html += '<div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.4;">'+crmEsc(res.tip)+'</div>';
     html += '</div>';
   }
-  // Razón de detección
-  if(res.razon){
-    html += '<div style="font-size:10px;color:rgba(255,255,255,0.35);text-align:center;padding-top:4px;border-top:0.5px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:8px;">🧠 '+crmEsc(res.razon)+'</div>';
+  // Toque picker: allow manual selection if mode has more than 1 touch
+  if(res.modo && res.modo !== 'DIRECTO' && res.toque && res.toque.total > 1){
+    var total = res.toque.total;
+    var current = res.toque.actual;
+    html += '<div style="border-top:0.5px solid rgba(255,255,255,0.08);padding-top:10px;margin-top:10px;">';
+    html += '<div style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:1.5px;margin-bottom:6px;text-align:center;">GENERAR OTRO TOQUE</div>';
+    html += '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">';
+    var nombresFase = { admiracion:'Admiración', interes:'Interés', valor:'Valor', reconexion:'Reconexión', invitacion:'Invitación', invitacion_sutil:'Invitación', invitacion_elite:'Invitación' };
+    var fasesPorModo = {
+      BALANCEADO: ['reconexion','invitacion'],
+      RELACIONAL: ['admiracion','interes','invitacion_sutil'],
+      ALTO_PERFIL: ['admiracion','conversacion','valor','invitacion_elite']
+    };
+    var faseMap = fasesPorModo[res.modo] || [];
+    faseMap[1] = (res.modo === 'ALTO_PERFIL') ? 'conversacion' : faseMap[1];
+    var nombresFasePorModo = {
+      conversacion: 'Interés'
+    };
+    for(var i = 1; i <= total; i++){
+      var fKey = faseMap[i-1] || '';
+      var fLabel = nombresFasePorModo[fKey] || nombresFase[fKey] || ('Toque '+i);
+      var isActive = (i === current);
+      var bg = isActive ? m.color : 'rgba(255,255,255,0.04)';
+      var col = isActive ? '#0a0a12' : '#F0EDE6';
+      var weight = isActive ? '900' : '600';
+      html += '<button onclick="_crmRegenForToque('+i+')" style="background:'+bg+';border:0.5px solid '+(isActive?m.color:'rgba(255,255,255,0.12)')+';color:'+col+';border-radius:10px;padding:6px 10px;font-size:11px;font-weight:'+weight+';cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">'+i+'. '+fLabel+'</button>';
+    }
+    html += '</div></div>';
   }
   html += '</div>';
   return html;
+}
+
+// Regenerate message for a specific touch (user can override auto-detection)
+async function _crmRegenForToque(toqueNum){
+  var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
+  if(!p) return;
+  // Detect which modal is open (WA or IG) to pick correct context/insights targets
+  var waModal = document.getElementById('crm-modal-wa');
+  var igModal = document.getElementById('crm-modal-ig');
+  var isIg = igModal && igModal.style.display === 'flex';
+  var ctxId = isIg ? 'crm-ig-context' : 'crm-wa-context';
+  var insId = isIg ? 'crm-ig-insights' : 'crm-wa-insights';
+  var ctx = document.getElementById(ctxId);
+  var ins = document.getElementById(insId);
+  crmToast('Generando toque '+toqueNum+'...', 'info');
+  var res = await crmApi('generarMensajeWA', {
+    prospecto_id: crmDetailId,
+    contexto: '',
+    forceToque: toqueNum,
+    nombre: p.nombre, etapa: p.etapa, temperatura: p.temperatura
+  });
+  if(res && res.mensaje){
+    if(ctx) ctx.value = res.mensaje;
+    if(ins){ var h = _crmBuildInsightsHTML(res); if(h){ ins.innerHTML = h; ins.style.display='block'; } }
+    crmToast('Toque '+toqueNum+' generado', 'success');
+  } else {
+    crmToast('No se pudo generar', 'error');
+  }
 }
 
 async function crmGenerateWaMessage() {

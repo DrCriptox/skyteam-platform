@@ -249,12 +249,27 @@ export default async function handler(req, res) {
       const starFields = ['calif_positivo','calif_social','calif_emprendedor','calif_dinero','calif_lider'];
       const stars = starFields.reduce((n, k) => n + ((prospecto[k] && prospecto[k] > 0) ? 1 : 0), 0);
 
-      // -- 3. Count previous messages sent --
+      // -- 3. Count previous REAL interactions (not just IA-generated messages) --
+      // Exclude automatic "Mensaje generado con IA" entries — those are just
+      // internal tracking when the user copied/sent a preview, not an actual
+      // conversation with the prospect. We want to count REAL conversation events:
+      // - explicit whatsapp/instagram/llamada/reunion interaction types
+      // - notes describing real responses ("respondió", "contestó", "confirmó", "dijo")
       const interacciones = await sb('interacciones?prospecto_id=eq.' + encodeURIComponent(prospecto_id) + '&order=created_at.asc&limit=30');
       const mensajesPrevios = (interacciones || []).filter(function(i) {
         const c = ((i.contenido || '') + '').toLowerCase();
         const t = ((i.tipo || '') + '').toLowerCase();
-        return t === 'whatsapp' || t === 'instagram' || c.indexOf('mensaje') !== -1;
+        // Exclude IA-generated tracking entries (internal, not real conversation)
+        if (c.indexOf('generado con ia') !== -1) return false;
+        if (c.indexOf('mensaje generado') !== -1) return false;
+        // Count real conversation types
+        if (t === 'whatsapp' || t === 'instagram' || t === 'llamada' || t === 'reunion' || t === 'email') return true;
+        // Count notes that describe a real response from the prospect
+        if (c.indexOf('respondió') !== -1 || c.indexOf('respondio') !== -1) return true;
+        if (c.indexOf('contestó') !== -1 || c.indexOf('contesto') !== -1) return true;
+        if (c.indexOf('confirmó') !== -1 || c.indexOf('confirmo') !== -1) return true;
+        if (c.indexOf('me dijo') !== -1 || c.indexOf('me escribió') !== -1 || c.indexOf('me escribio') !== -1) return true;
+        return false;
       }).length;
 
       // -- 4. Detect "cold" prospect (>30 days since creation, no interactions) --
