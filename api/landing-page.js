@@ -162,6 +162,38 @@ export default async function handler(req, res) {
   // Inject the fetch override right after <head>
   html = html.replace('<head>', '<head>' + injectScript);
 
+  // Fix YouTube video for in-app browsers (Instagram/TikTok/Facebook)
+  // These browsers block YT.Player API. Replace with static iframe.
+  var inAppVideoFix = `<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  var isInApp = /Instagram|FBAN|FBAV|FB_IAB|TikTok|Musical|BytedanceWebview|Line\\/|Snapchat|Twitter|Pinterest/i.test(ua);
+  if (!isInApp) return;
+  // Wait for DOM
+  setTimeout(function(){
+    var container = document.getElementById('vslContainer') || document.getElementById('ytPlayer');
+    if (!container) return;
+    var parent = container.closest('.vsl-frame') || container.parentElement;
+    if (!parent) return;
+    // Find video ID from existing script
+    var videoId = 'iqvEqCgNOMk'; // default VSL
+    var scripts = document.querySelectorAll('script');
+    for (var i = 0; i < scripts.length; i++) {
+      var m = scripts[i].textContent.match(/videoId\\s*[:=]\\s*['"]([a-zA-Z0-9_-]{11})['"]/);
+      if (m) { videoId = m[1]; break; }
+    }
+    // Kill the YT API script to prevent conflicts
+    window.onYouTubeIframeAPIReady = function(){};
+    // Replace with static iframe (works in all browsers)
+    parent.innerHTML = '<iframe src="https://www.youtube.com/embed/' + videoId + '?rel=0&modestbranding=1&playsinline=1&autoplay=0" style="width:100%;height:100%;position:absolute;top:0;left:0;border:0" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share"></iframe>';
+    // Remove shield overlay that blocks clicks
+    var shield = document.querySelector('.yt-shield');
+    if (shield) shield.remove();
+  }, 300);
+})();
+</script>`;
+  html = html.replace('</head>', inAppVideoFix + '</head>');
+
   // Fix innovaia.app references
   html = html.replace(/https?:\/\/(www\.)?innovaia\.app/g, 'https://skyteam.global/landing');
 
