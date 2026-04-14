@@ -7287,6 +7287,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '</div>';
     html += '<input type="tel" id="pb-wa" placeholder="300 123 4567" style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;" />';
     html += '</div>';
+    html += '<input type="email" id="pb-email" placeholder="Tu correo electrónico" style="width:100%;max-width:100%;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:14px;padding:12px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:10px;" />';
     html += '<button onclick="pbConfirmar(\''+username+'\')" style="width:100%;max-width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;font-size:14px;font-weight:900;border:none;cursor:pointer;font-family:inherit;transition:all 0.15s;box-sizing:border-box;">✅ Confirmar reunión</button>';
     html += '</div>';
 
@@ -7893,9 +7894,10 @@ function pbConfirmar(username) {
   var waNum=(document.getElementById('pb-wa').value||'').trim().replace(/[^0-9]/g,'');
   var waCode=(document.getElementById('pb-wa-code')||{}).value||'57';
   var wa='+'+waCode+waNum;
+  var email=(document.getElementById('pb-email').value||'').trim();
   if(!nombre){alert('Ingresa tu nombre');return;} if(!waNum){alert('Ingresa tu número de WhatsApp');return;} if(!_pbSlotISO){alert('Selecciona un horario');return;}
   if(_pbCountdownInterval) clearInterval(_pbCountdownInterval);
-  var booking={id:String(Date.now()),nombre:nombre,whatsapp:wa,fechaISO:_pbSlotISO,status:'confirmada',creadaEn:new Date().toISOString()};
+  var booking={id:String(Date.now()),nombre:nombre,whatsapp:wa,email:email||null,fechaISO:_pbSlotISO,status:'confirmada',creadaEn:new Date().toISOString()};
   fetch('/api/agenda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveBooking',user:username,booking:booking})})
     .then(function(r){return r.json();})
     .then(function(d){
