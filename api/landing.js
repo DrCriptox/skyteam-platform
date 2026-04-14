@@ -258,6 +258,49 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, stats: data });
     }
 
+    // ── DEBUG temporal: comparar ranking vs realidad ──
+    if (action === 'debugConv2') {
+      var dRef = (req.body || {}).ref || 'admin';
+      var dPeriod = (req.body || {}).period || 'weekly';
+      var SBU = process.env.SUPABASE_URL;
+      var SBK = process.env.SUPABASE_SERVICE_KEY;
+      var dHdr = { apikey: SBK, Authorization: 'Bearer ' + SBK };
+      // Calcular dateFrom igual que el ranking
+      var nowC = new Date(Date.now() - 18000000);
+      var df = null;
+      if (dPeriod === 'daily') df = nowC.toISOString().split('T')[0];
+      else if (dPeriod === 'weekly') {
+        var dy = nowC.getUTCDay(); var diff = dy === 0 ? 6 : dy - 1;
+        var mon = new Date(nowC.getTime()); mon.setUTCDate(nowC.getUTCDate() - diff);
+        df = mon.toISOString().split('T')[0];
+      }
+      // Get conv del periodo, paginado
+      var allConv = []; var pg = 0;
+      while (pg < 20) {
+        var fr = pg * 1000; var tt = fr + 999;
+        var rR = await fetch(SBU + '/rest/v1/landing_visits?ref=eq.' + encodeURIComponent(dRef) + '&type=eq.conversion&select=ip,day,created_at&day=gte.' + df + '&order=id.asc', {
+          headers: { apikey: SBK, Authorization: 'Bearer ' + SBK, 'Range': fr + '-' + tt }
+        });
+        var rJ = await rR.json();
+        if (Array.isArray(rJ) && rJ.length > 0) { allConv = allConv.concat(rJ); pg++; if (rJ.length < 1000) break; } else break;
+      }
+      var ips = {};
+      allConv.forEach(function(v) { ips[v.ip] = (ips[v.ip] || 0) + 1; });
+      var uniq = Object.keys(ips).length;
+      var dups = Object.keys(ips).filter(function(k) { return ips[k] > 1; }).length;
+      var topRep = Object.entries(ips).filter(function(e) { return e[1] > 1; }).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
+      var byDay = {};
+      allConv.forEach(function(v) { var d = (v.day || (v.created_at || '').slice(0, 10)); byDay[d] = (byDay[d] || 0) + 1; });
+      return res.status(200).json({
+        ref: dRef, period: dPeriod, dateFrom: df,
+        totalRowsConv: allConv.length,
+        uniqueIps: uniq,
+        ipsConDuplicados: dups,
+        topRepetidos: topRep.map(function(e) { return { ip: e[0].substring(0, 30), count: e[1] }; }),
+        porDia: byDay
+      });
+    }
+
     // ── GET RANKING: merge both asesor files + stats, filter by period ──
     // Uses cached GitHub reads (60s TTL) — 3 files read in parallel
     if (action === 'getRanking') {
