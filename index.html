@@ -9568,6 +9568,26 @@ function saveProgress(data) {
   if(!CU) return;
   var key = 'skyteam_progress_' + CU.username;
   localStorage.setItem(key, JSON.stringify(data));
+  // Sync total academy % to Supabase (so leaders can see it)
+  try {
+    var totalPct = _calcAcademyPct(data, 'liderazgo');
+    fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'syncAcademy', user: CU.username, academy_pct: totalPct })
+    }).catch(function(){});
+  } catch(e) {}
+}
+function _calcAcademyPct(prog, academyId) {
+  var mods = (typeof MODULES_DATA !== 'undefined' && MODULES_DATA[academyId]) ? MODULES_DATA[academyId] : [];
+  if (!mods.length) return 0;
+  var totalVids = 0, watched = 0;
+  mods.forEach(function(mod) {
+    (mod.videos || []).forEach(function(v) {
+      totalVids++;
+      var pct = (prog[academyId] && prog[academyId][mod.id] && prog[academyId][mod.id][v.id]) || 0;
+      if (pct >= 80) watched++;
+    });
+  });
+  return totalVids > 0 ? Math.round((watched / totalVids) * 100) : 0;
 }
 
 /* Mark video as watched (called when >80% watched) */

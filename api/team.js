@@ -100,7 +100,7 @@ async function handleDashboard(req, res, user, ref) {
   if (!ref) return res.status(400).json({ error: 'Missing ref' });
 
   // 1. Fetch ALL users (include whatsapp for contact)
-  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,whatsapp,bankcode,instagram&limit=5000');
+  var allUsers = await sb('users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,created_at,whatsapp,bankcode,instagram,academy_pct&limit=5000');
 
   console.log('[Team API] User:', user, 'Ref:', ref, 'Total users:', allUsers.length);
   // Debug: show sponsor relationships for this user
@@ -216,10 +216,12 @@ async function handleDashboard(req, res, user, ref) {
     if (m.status === 'new') {
       alerts.push({ type: 'new_member', category: 'positivo', username: m.username, name: (m.name || m.username || 'Socio'), message: 'Nuevo socio: ' + (m.name || m.username || 'Socio') + ' (hace ' + (m.days_since_registration || 0) + ' dias)', action: 'profile' });
     }
-    if (m.onboarding_day <= 1 && m.onboarding_started) {
-      var daysSinceStart = Math.ceil((now - new Date(m.onboarding_started).getTime()) / 86400000);
-      if (daysSinceStart > 7) {
-        alerts.push({ type: 'no_onboarding', category: 'atencion', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' no ha avanzado en el onboarding', action: 'profile' });
+    // Academia de liderazgo: alerta si tiene menos de 20% y lleva mas de 7 dias
+    var acadPct = m.academy_pct || 0;
+    if (acadPct < 20 && m.created_at) {
+      var daysSinceReg3 = Math.ceil((now - new Date(m.created_at).getTime()) / 86400000);
+      if (daysSinceReg3 > 7) {
+        alerts.push({ type: 'low_academy', category: 'atencion', username: m.username, name: (m.name || m.username || 'Socio'), message: (m.name || m.username || 'Socio') + ' - Academia de Liderazgo: ' + acadPct + '%', action: 'profile' });
       }
     }
     if (m.prospectos_count === 0) {
@@ -371,6 +373,17 @@ export default async function handler(req, res) {
   try {
     const { action, user, ref } = req.body || {};
     if (!action || !user) return res.status(400).json({ error: 'Missing action or user' });
+
+    // Sync academy progress % to user record
+    if (action === 'syncAcademy') {
+      var pct = parseInt(req.body.academy_pct) || 0;
+      await sb('users?username=eq.' + encodeURIComponent(user), {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ academy_pct: Math.min(100, Math.max(0, pct)) })
+      });
+      return res.status(200).json({ ok: true });
+    }
 
     if (action === 'dashboard') {
       return handleDashboard(req, res, user, ref);

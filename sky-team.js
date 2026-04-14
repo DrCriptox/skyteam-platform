@@ -2293,16 +2293,21 @@ function openMemberDetail(username) {
   html += '</div>';
   html += '</div>';
 
-  // Onboarding
+  // Academia de Liderazgo progress
+  var acadPct = m.academy_pct || 0;
+  var acadColor = acadPct >= 80 ? '#1D9E75' : acadPct >= 40 ? '#C9A84C' : 'rgba(255,255,255,0.3)';
   html += '<div class="st-detail-progress">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-  html += '<div style="font-size:13px;font-weight:600;">Onboarding</div>';
-  html += '<div style="font-size:12px;color:rgba(240,237,230,0.5);">Dia ' + onbDay + ' de 7</div>';
+  html += '<div style="font-size:13px;font-weight:600;">Academia de Liderazgo</div>';
+  html += '<div style="font-size:12px;color:' + acadColor + ';font-weight:700;">' + acadPct + '%</div>';
   html += '</div>';
   html += '<div class="st-detail-progress-bar">';
-  html += '<div class="st-detail-progress-fill" style="width:' + onbPct + '%;"></div>';
+  html += '<div class="st-detail-progress-fill" style="width:' + acadPct + '%;' + (acadPct >= 80 ? 'background:linear-gradient(90deg,#1D9E75,#C9A84C);' : '') + '"></div>';
   html += '</div>';
   html += '</div>';
+
+  // Ver perfil button
+  html += '<button onclick="window.open(\'/?viewprofile=' + _esc(m.username || username) + '\',\'_blank\')" style="width:100%;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px">👁 Ver perfil como lo ve el socio</button>';
 
   // Stats grid
   html += '<div class="st-detail-stats-grid">';
