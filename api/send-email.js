@@ -436,7 +436,8 @@ async function handleTriggers(req, res) {
     // ── TRIGGER 10: Evening recap (10-10:15pm Colombia) ──
     try {
       const colombiaHour4 = (now.getUTCHours() - 5 + 24) % 24;
-      if (colombiaHour4 === 22 && colMin <= 15) {
+      var colMin4 = now.getUTCMinutes();
+      if (colombiaHour4 === 22 && colMin4 <= 15) {
         const todayDate4 = now.toISOString().slice(0, 10);
         const allSubs4 = await sb('push_subscriptions?select=username&order=username');
         if (allSubs4 && allSubs4.length > 0) {
