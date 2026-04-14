@@ -15324,6 +15324,11 @@ function openCrmModalWa() {
 }
 
 function closeCrmModalWa() {
+  // If a message was generated but never copied/sent, save as negative feedback
+  if (window._crmLastGenerated && !window._crmLastGenerated.feedbackSent) {
+    _crmSendFeedbackForLast('negative');
+  }
+  window._crmLastGenerated = null;
   var modal = document.getElementById('crm-modal-wa');
   if (modal) modal.style.display = 'none';
 }
@@ -15414,6 +15419,10 @@ function _crmBuildInsightsHTML(res){
 async function _crmRegenForToque(toqueNum){
   var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
   if(!p) return;
+  // If a message existed and wasn't copied/sent, mark as negative (user discarded it)
+  if (window._crmLastGenerated && !window._crmLastGenerated.feedbackSent) {
+    _crmSendFeedbackForLast('negative');
+  }
   // Detect which modal is open (WA or IG) to pick correct context/insights targets
   var waModal = document.getElementById('crm-modal-wa');
   var igModal = document.getElementById('crm-modal-ig');
@@ -15431,6 +15440,13 @@ async function _crmRegenForToque(toqueNum){
   });
   if(res && res.mensaje){
     if(ctx) ctx.value = res.mensaje;
+    window._crmLastGenerated = {
+      prospectoId: crmDetailId, mensaje: res.mensaje,
+      modo: res.modo || '',
+      toque: (res.toque && res.toque.actual) || toqueNum,
+      fase: (res.toque && res.toque.fase) || '',
+      feedbackSent: false
+    };
     if(ins){ var h = _crmBuildInsightsHTML(res); if(h){ ins.innerHTML = h; ins.style.display='block'; } }
     crmToast('Toque '+toqueNum+' generado', 'success');
   } else {
@@ -15438,11 +15454,39 @@ async function _crmRegenForToque(toqueNum){
   }
 }
 
+// Send feedback for the LAST generated message (positive = liked, negative = disliked).
+// Called on: copy, send WA/IG (positive); regenerate, close unused (negative).
+function _crmSendFeedbackForLast(tipo_feedback) {
+  try {
+    var last = window._crmLastGenerated;
+    if (!last || !last.mensaje || !last.prospectoId) return;
+    if (last.feedbackSent) return; // Only once per generated message
+    last.feedbackSent = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/prospectos', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({
+      action: 'feedbackMensajeIA',
+      user: (CU && CU.username) || '',
+      prospecto_id: last.prospectoId,
+      mensaje: last.mensaje,
+      tipo_feedback: tipo_feedback,
+      modo: last.modo || '',
+      toque: last.toque || 0,
+      fase: last.fase || ''
+    }));
+  } catch(e) {}
+}
+
 async function crmGenerateWaMessage() {
   var p = crmProspectos.find(function(x) { return x.id === crmDetailId; });
   if (!p) { crmToast('Selecciona un prospecto primero', 'error'); return; }
   var ctx = document.getElementById('crm-wa-context');
   var ins = document.getElementById('crm-wa-insights');
+  // If regenerating (there was a previous message not copied/sent), mark old as negative
+  if (window._crmLastGenerated && !window._crmLastGenerated.feedbackSent) {
+    _crmSendFeedbackForLast('negative');
+  }
   crmToast('Generando mensaje con IA...', 'info');
   var res = await crmApi('generarMensajeWA', {
     prospecto_id: crmDetailId,
@@ -15454,6 +15498,14 @@ async function crmGenerateWaMessage() {
   if (res && res.mensaje) {
     if (ctx) ctx.value = res.mensaje;
     window._crmIaGenerated = crmDetailId; // Flag: IA generated for this prospect
+    window._crmLastGenerated = {
+      prospectoId: crmDetailId,
+      mensaje: res.mensaje,
+      modo: res.modo || '',
+      toque: (res.toque && res.toque.actual) || 1,
+      fase: (res.toque && res.toque.fase) || '',
+      feedbackSent: false
+    };
     if (ins) {
       var h = _crmBuildInsightsHTML(res);
       if(h){ ins.innerHTML = h; ins.style.display='block'; }
@@ -15487,6 +15539,7 @@ function copyCrmWaMessage() {
   navigator.clipboard.writeText(ctx.value).then(function() {
     crmToast('Mensaje copiado al portapapeles', 'success');
     _trackIaMessageUsed(crmDetailId);
+    _crmSendFeedbackForLast('positive');
   });
 }
 
@@ -15534,6 +15587,7 @@ function sendViaCrmWhatsapp() {
   var ctx = document.getElementById('crm-wa-context');
   var msg = ctx ? encodeURIComponent(ctx.value) : '';
   var phone = p.telefono.replace(/\D/g, '');
+  _crmSendFeedbackForLast('positive');
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
   _trackIaMessageUsed(crmDetailId);
   closeCrmModalWa();
@@ -15720,6 +15774,11 @@ function _crmOpenInstagramDM(){
 }
 
 function closeCrmModalIg(){
+  // If a message was generated but never copied/sent, save as negative feedback
+  if (window._crmLastGenerated && !window._crmLastGenerated.feedbackSent) {
+    _crmSendFeedbackForLast('negative');
+  }
+  window._crmLastGenerated = null;
   var modal = document.getElementById('crm-modal-ig');
   if(modal) modal.style.display = 'none';
 }
@@ -15729,6 +15788,10 @@ async function crmGenerateIgMessage(){
   if(!p){ crmToast('Selecciona un prospecto primero','error'); return; }
   var ctx = document.getElementById('crm-ig-context');
   var ins = document.getElementById('crm-ig-insights');
+  // Mark previous unused message as negative
+  if (window._crmLastGenerated && !window._crmLastGenerated.feedbackSent) {
+    _crmSendFeedbackForLast('negative');
+  }
   crmToast('Generando mensaje para Instagram...','info');
   var res = await crmApi('generarMensajeWA', {
     prospecto_id: crmDetailId,
@@ -15740,6 +15803,13 @@ async function crmGenerateIgMessage(){
   if(res && res.mensaje){
     if(ctx) ctx.value = res.mensaje;
     window._crmIaGenerated = crmDetailId;
+    window._crmLastGenerated = {
+      prospectoId: crmDetailId, mensaje: res.mensaje,
+      modo: res.modo || '',
+      toque: (res.toque && res.toque.actual) || 1,
+      fase: (res.toque && res.toque.fase) || '',
+      feedbackSent: false
+    };
     if(ins){
       var h = _crmBuildInsightsHTML(res);
       if(h){ ins.innerHTML = h; ins.style.display='block'; }
@@ -15759,11 +15829,13 @@ function copyCrmIgMessage(){
   navigator.clipboard.writeText(ctx.value).then(function(){
     crmToast('\u2705 Mensaje copiado al portapapeles','success');
     _trackIaMessageUsed(crmDetailId);
+    _crmSendFeedbackForLast('positive');
   }).catch(function(){
     var ta = document.createElement('textarea'); ta.value = ctx.value;
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     crmToast('\u2705 Mensaje copiado','success');
     _trackIaMessageUsed(crmDetailId);
+    _crmSendFeedbackForLast('positive');
   });
 }
 
@@ -15779,6 +15851,7 @@ function sendViaCrmInstagram(){
     });
     crmToast('\u2705 Mensaje copiado \u2014 p\u00e9galo en el DM','success');
     _trackIaMessageUsed(crmDetailId);
+    _crmSendFeedbackForLast('positive');
   }
   setTimeout(function(){
     window.open('https://ig.me/m/' + igUser, '_blank');

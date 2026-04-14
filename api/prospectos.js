@@ -214,6 +214,31 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // -- FEEDBACK: save whether the socio approved/rejected a generated message --
+    // tipo_feedback: 'positive' (copied/sent) | 'negative' (regenerated/closed unused)
+    // Stored in `interacciones` with tipo='ia_feedback_positive' or 'ia_feedback_negative'
+    // Content format: meta_json + '|||' + message_text (first 500 chars)
+    // This data trains future generations to match the socio's preferred writing style.
+    if (action === 'feedbackMensajeIA') {
+      const { prospecto_id, mensaje, tipo_feedback, modo, toque, fase } = req.body;
+      if (!prospecto_id || !mensaje || !tipo_feedback) return res.status(400).json({ error: 'Missing fields' });
+      if (tipo_feedback !== 'positive' && tipo_feedback !== 'negative') return res.status(400).json({ error: 'Invalid tipo_feedback' });
+      try {
+        const meta = JSON.stringify({ modo: modo || '', toque: toque || 0, fase: fase || '' });
+        const shortMsg = (mensaje + '').substring(0, 500);
+        await sb('interacciones', {
+          method: 'POST',
+          body: JSON.stringify({
+            prospecto_id: prospecto_id,
+            username: user,
+            tipo: 'ia_feedback_' + tipo_feedback,
+            contenido: meta + '|||' + shortMsg
+          })
+        });
+        return res.status(200).json({ ok: true });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+
     // -- GENERATE WHATSAPP MESSAGE WITH AI (smart multi-touch strategy) --
     // Auto-detects the appropriate mode based on: socio rank + prospect stars + notes + history
     //   DIRECTO      (1 touch)  - new socio + known low-profile prospect
@@ -232,17 +257,38 @@ export default async function handler(req, res) {
       let userProfile = '';
       let socioRank = 0;
       let socioName = '';
+      let socioBankcode = '';
       try {
         const userData = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=bankcode,comm_style,profession,rank,name&limit=1');
         if (userData && userData[0]) {
           const u = userData[0];
           socioRank = parseInt(u.rank) || 0;
           socioName = u.name || '';
+          socioBankcode = u.bankcode || '';
           if (u.bankcode) userProfile += 'BANKCODE del vendedor: ' + u.bankcode + '. ';
           if (u.comm_style) userProfile += 'Estilo: ' + u.comm_style + '. ';
           if (u.profession) userProfile += 'Profesion: ' + u.profession + '. ';
-          if (userProfile) userProfile = 'ADAPTA el tono al estilo del vendedor: ' + userProfile;
+          if (userProfile) userProfile = 'ADAPTA el tono al estilo personal del vendedor: ' + userProfile;
         }
+      } catch(e) {}
+
+      // -- 1b. Fetch prior feedback from THIS socio to learn their preferred style --
+      // Positive feedback = messages they copied/sent (liked)
+      // Negative feedback = messages they regenerated/closed unused (disliked)
+      // Used as few-shot examples in the prompt.
+      let positiveSamples = [];
+      let negativeSamples = [];
+      try {
+        const posArr = await sb('interacciones?username=eq.' + encodeURIComponent(user) + '&tipo=eq.ia_feedback_positive&order=created_at.desc&limit=8');
+        positiveSamples = (posArr || []).map(function(f) {
+          var parts = ((f.contenido || '') + '').split('|||');
+          return (parts[1] || '').trim();
+        }).filter(function(x) { return x && x.length > 20; }).slice(0, 5);
+        const negArr = await sb('interacciones?username=eq.' + encodeURIComponent(user) + '&tipo=eq.ia_feedback_negative&order=created_at.desc&limit=4');
+        negativeSamples = (negArr || []).map(function(f) {
+          var parts = ((f.contenido || '') + '').split('|||');
+          return (parts[1] || '').trim();
+        }).filter(function(x) { return x && x.length > 20; }).slice(0, 3);
       } catch(e) {}
 
       // -- 2. Calculate prospect stars (0-5) --
@@ -358,6 +404,16 @@ export default async function handler(req, res) {
       };
 
       // -- 11. Build the prompt --
+      let styleLearning = '';
+      if (positiveSamples.length > 0) {
+        styleLearning += '\n\n══════════════════════════════════════════\nESTILO PREFERIDO DE ESTE SOCIO (mensajes que aprobó/envió en el pasado — REPLICA este tono, estructura, longitud y forma de hablar):\n';
+        positiveSamples.forEach(function(s, i) { styleLearning += '\nEJEMPLO POSITIVO ' + (i+1) + ':\n' + s + '\n'; });
+      }
+      if (negativeSamples.length > 0) {
+        styleLearning += '\n\nESTILO QUE ESTE SOCIO RECHAZA (mensajes que descartó — NO uses este tono):\n';
+        negativeSamples.forEach(function(s, i) { styleLearning += '\nEJEMPLO NEGATIVO ' + (i+1) + ':\n' + s + '\n'; });
+      }
+
       const systemPrompt =
         'Eres un networker de alto nivel entrenado en los principios de Dale Carnegie (relaciones humanas) y Robert Cialdini (persuasión ética). ' +
         'Generas mensajes de prospección basados en CONSTRUCCIÓN DE RELACIÓN, no en venta agresiva. ' +
@@ -367,9 +423,21 @@ export default async function handler(req, res) {
         '(1) NUNCA menciones SKYTEAM, Innova, Innova IA ni ningún nombre de empresa. Usa "franquicia digital", "sistema digital", "oportunidad digital" SOLO si la fase es de invitación. ' +
         '(2) NUNCA uses clichés de network: "te va a encantar", "tengo algo increíble", "quiero mostrarte un proyecto", "cambió mi vida", "no te vas a arrepentir". ' +
         '(3) Español latino natural, de persona a persona. Emojis moderados (1-2 máximo, o ninguno si es élite). ' +
-        '(4) Personaliza con lo que sabes del prospecto (usa las notas). ' +
+        '(4) Personaliza con lo que sabes del prospecto (usa las notas e historial real). ' +
         '(5) SOLO devuelve el mensaje listo para copiar. Sin encabezados, sin comillas, sin explicaciones. ' +
-        userProfile;
+        '\n\n══════════════════════════════════════════\n' +
+        'ESTILO DE ESCRITURA HUMANA (MUY IMPORTANTE — evita sonar robot): ' +
+        '(a) Los mensajes de WhatsApp/Instagram reales casi NO tienen puntuación excesiva. Una persona no escribe con puntos finales perfectos en cada oración. ' +
+        '(b) Usa MÁXIMO 1 signo de exclamación y 1 signo de interrogación por mensaje. NUNCA "!!!" ni "???". ' +
+        '(c) Separa ideas con saltos de línea en vez de abusar de puntos y comas. Un mensaje de 3 ideas = 3 líneas cortas. ' +
+        '(d) Es aceptable (a veces) omitir tildes no críticas para sonar natural (ej: "tu" en vez de "tú" en saludo casual). PERO nunca cometas errores ortográficos reales. ' +
+        '(e) Puedes usar minúscula después de punto si suena más conversacional (sin abusar). ' +
+        '(f) Conecta con "y", "pero", "entonces" en vez de siempre punto-mayúscula. ' +
+        '(g) Suena como una persona real escribiendo desde el celular, con cierto ritmo relajado, NO como un copywriter perfeccionista. ' +
+        '(h) Los mensajes PERFECTAMENTE puntuados generan desconfianza: parecen plantillas de venta. Los mensajes naturales generan respuesta. ' +
+        userProfile + ' ' +
+        (socioBankcode ? 'El BANKCODE "' + socioBankcode + '" debe guiar el tono: aplica la cadencia y vocabulario típico de ese perfil al escribir. ' : '') +
+        styleLearning;
 
       // Build real-history summary (exclude IA-generated tracking entries)
       var realHistoryLines = (interacciones || []).filter(function(i) {
