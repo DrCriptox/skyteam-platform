@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
     // -- GET ALL --
     if (action === 'getAll') {
-      const prospectos = await sb('prospectos?username=eq.' + encodeURIComponent(user) + '&order=created_at.desc&limit=200');
+      const prospectos = await sb('prospectos?username=eq.' + encodeURIComponent(user) + '&order=created_at.desc', { headers: { Range: '0-1999', Prefer: 'count=exact' } });
       const recordatorios = await sb('recordatorios?username=eq.' + encodeURIComponent(user) + '&completado=eq.false&fecha_recordatorio=lte.' + new Date(Date.now() + 86400000 * 2).toISOString() + '&order=fecha_recordatorio.asc');
 
       // Compute metrics
