@@ -246,11 +246,27 @@ export default async function handler(req, res) {
     //   RELACIONAL   (3 touches) - high stars or cold prospect (>30d no movement)
     //   ALTO_PERFIL  (4 touches) - rank INN500+ with 4-5 stars, OR elite keywords in notes
     if (action === 'generarMensajeWA') {
-      const { prospecto_id, contexto, forceToque, forceModo, ultimoMensajeEnviado, respuestaProspecto, canal } = req.body;
+      const { prospecto_id, contexto, forceToque, forceModo, ultimoMensajeEnviado, respuestaProspecto, canal, ajusteEstilo } = req.body;
       if (!prospecto_id) return res.status(400).json({ error: 'Missing prospecto_id' });
       const canalTipo = (canal === 'instagram') ? 'Instagram DM' : 'WhatsApp';
       const hayConversacionPrevia = !!(ultimoMensajeEnviado && ultimoMensajeEnviado.length > 5);
       const dejadoEnVisto = hayConversacionPrevia && (!respuestaProspecto || respuestaProspecto.length < 2);
+
+      // Detect intention in the prospect's response (simple heuristic, IA will refine)
+      const respLower = ((respuestaProspecto || '') + '').toLowerCase();
+      const aceptaciones = ['si ','sí ','si,','sí,','si.','sí.','claro','dale','por supuesto','de una','va','ok','okay','bueno','perfecto','me interesa','cuéntame','cuentame','cuando','a qué hora','a que hora','hablamos','agendemos','agenda','me gustaría','me gustaria','cuadr','coordi','escúchame','escuchame'];
+      const objeciones = ['no tengo tiempo','no me interesa','estoy ocupad','luego','después','despues','otro día','otro dia','no puedo','no gracias','no por ahora'];
+      const dudas = ['qué es','que es','de qué','de que','cómo así','como asi','en qué consiste','en que consiste','explícame','explicame','y eso','y esto'];
+      const detectoAceptacion = respuestaProspecto && aceptaciones.some(function(k) { return respLower.indexOf(k) !== -1; });
+      const detectoObjecion = respuestaProspecto && objeciones.some(function(k) { return respLower.indexOf(k) !== -1; });
+      const detectoDuda = respuestaProspecto && dudas.some(function(k) { return respLower.indexOf(k) !== -1; });
+      const ajustesValidos = {
+        mas_corto: 'ACORTA el mensaje drásticamente. MÁXIMO 2 líneas (15 palabras). Elimina todo lo accesorio y deja solo lo esencial con gancho.',
+        mas_casual: 'Hazlo MÁS CASUAL y relajado. Tono de amigo. Usa muletillas naturales ("oye", "pues", "la verdad"). Reduce formalidad. Puedes incluir un emoji sutil.',
+        mas_directo: 'Hazlo MÁS DIRECTO y al grano. Sin rodeos, sin preámbulos largos. Ve directo al punto con respeto pero sin dar vueltas.',
+        mas_formal: 'Hazlo MÁS FORMAL y profesional. Trato de usted o de tú profesional. Sin emojis. Lenguaje pulido, sin perder calidez.'
+      };
+      const instruccionAjuste = (ajusteEstilo && ajustesValidos[ajusteEstilo]) ? ajustesValidos[ajusteEstilo] : '';
 
       const prospectoArr = await sb('prospectos?id=eq.' + encodeURIComponent(prospecto_id) + '&select=*');
       const prospecto = prospectoArr && prospectoArr[0] ? prospectoArr[0] : null;
@@ -417,12 +433,37 @@ export default async function handler(req, res) {
         negativeSamples.forEach(function(s, i) { styleLearning += '\nEJEMPLO NEGATIVO ' + (i+1) + ':\n' + s + '\n'; });
       }
 
-      // Special phase override if prospect left the last message on read
+      // Fetch socio's agenda link (for auto-schedule mode)
+      let agendaLink = '';
+      try {
+        const cfgArr = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
+        if (cfgArr && cfgArr[0] && cfgArr[0].config) {
+          const cfg = cfgArr[0].config;
+          if (cfg.activa) {
+            agendaLink = 'https://skyteam.global/agenda/' + user;
+          }
+        }
+      } catch(e) {}
+
+      // Special phase override if prospect left the last message on read OR accepted
       let faseEffective = fase;
       let instruccionFase = instruccionesPorFase[fase];
       if (dejadoEnVisto) {
         faseEffective = 'seguimiento_visto';
         instruccionFase = 'OBJETIVO: SEGUIMIENTO DESPUÉS DE DEJARTE EN VISTO. El prospecto leyó tu mensaje anterior pero no respondió — probablemente porque fue demasiado largo, intrusivo, o no hubo gancho claro. Genera un mensaje MUY CORTO (MÁXIMO 2 líneas, ~20 palabras total), ligero, sin presión, con gancho de curiosidad o humor sutil. NO repitas lo que dijiste antes. NO te disculpes por insistir. NO invites de nuevo directamente. Un simple "oye te mando esto rápido" o "olvida el mensaje anterior, te pregunto solo una cosa" funciona mejor que un texto elaborado. El objetivo es reactivar, NO cerrar.';
+      } else if (detectoAceptacion) {
+        faseEffective = 'agendar';
+        instruccionFase = 'OBJETIVO: EL PROSPECTO ACEPTÓ. Genera un mensaje de AGENDAMIENTO CORTO. ' +
+          (agendaLink ? 'INCLUYE este link exactamente: ' + agendaLink + ' para que elija el horario que más le convenga. ' : 'Propón 2 opciones de día/hora específicas esta semana para que elija. ') +
+          'Confirma con entusiasmo pero sin efusividad. Máximo 3 líneas. ' +
+          (agendaLink ? 'Ejemplo: "Genial [nombre], aquí puedes elegir el horario que mejor te funcione esta semana: [link]. Dura 20 min, sin compromiso." ' : 'Ejemplo: "Genial [nombre], tengo disponible el [día] a las [hora] o el [día] a las [hora]. ¿Cuál te acomoda mejor?" ') +
+          'NO agregues párrafos extra sobre la oportunidad — ya aceptó, no hay que vender más.';
+      } else if (detectoObjecion) {
+        faseEffective = 'manejar_objecion';
+        instruccionFase = 'OBJETIVO: MANEJAR OBJECIÓN CON EMPATÍA. El prospecto puso una objeción (tiempo, interés, ocupación, etc). Responde validando su situación SIN discutir. Ofrece alternativa menos comprometedora: un mensaje de audio, un video grabado, o simplemente dejar la puerta abierta para otro momento. Máximo 3 líneas. NO insistas. NO trates de convencer. Un "entiendo totalmente, no te preocupes" vale más que 10 argumentos.';
+      } else if (detectoDuda) {
+        faseEffective = 'resolver_duda';
+        instruccionFase = 'OBJETIVO: EL PROSPECTO PREGUNTÓ "¿QUÉ ES?" O "¿DE QUÉ SE TRATA?". NO expliques todo por texto (eso aburre y pierde). Responde con intriga generada: "Mira es más fácil que te lo muestre en 15 min que que intente explicarlo por texto" o similar. Mueve hacia una llamada corta. Máximo 3 líneas.';
       }
 
       // Length rule based on channel — WhatsApp/Instagram demand brevity
@@ -440,6 +481,7 @@ export default async function handler(req, res) {
         'Generas mensajes de prospección para ' + canalTipo + ' basados en CONSTRUCCIÓN DE RELACIÓN, no en venta agresiva. ' +
         'Modo actual: ' + modo + ' | Toque ' + toqueActual + ' de ' + totalToques + ' | Fase: ' + faseEffective.toUpperCase() + '. ' +
         instruccionFase + ' ' +
+        (instruccionAjuste ? '\n\n══════════════════════════════════════════\nAJUSTE SOLICITADO POR EL USUARIO (PRIORIDAD ALTA): ' + instruccionAjuste + '\n\n' : '') +
         'REGLAS ESTRICTAS: ' +
         '(1) NUNCA menciones SKYTEAM, Innova, Innova IA ni ningún nombre de empresa. Usa "franquicia digital", "sistema digital", "oportunidad digital" SOLO si la fase es de invitación. ' +
         '(2) NUNCA uses clichés de network: "te va a encantar", "tengo algo increíble", "quiero mostrarte un proyecto", "cambió mi vida", "no te vas a arrepentir". ' +
