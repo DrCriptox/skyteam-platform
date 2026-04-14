@@ -269,7 +269,7 @@ export default async function handler(req, res) {
     //   RELACIONAL   (3 touches) - high stars or cold prospect (>30d no movement)
     //   ALTO_PERFIL  (4 touches) - rank INN500+ with 4-5 stars, OR elite keywords in notes
     if (action === 'generarMensajeWA') {
-      const { prospecto_id, contexto, forceToque, forceModo, ultimoMensajeEnviado, respuestaProspecto, canal, ajusteEstilo } = req.body;
+      const { prospecto_id, contexto, forceToque, forceModo, ultimoMensajeEnviado, respuestaProspecto, canal, ajusteEstilo, flujoPaso, flujoHora } = req.body;
       if (!prospecto_id) return res.status(400).json({ error: 'Missing prospecto_id' });
       const canalTipo = (canal === 'instagram') ? 'Instagram DM' : 'WhatsApp';
       const hayConversacionPrevia = !!(ultimoMensajeEnviado && ultimoMensajeEnviado.length > 5);
@@ -456,8 +456,9 @@ export default async function handler(req, res) {
         negativeSamples.forEach(function(s, i) { styleLearning += '\nEJEMPLO NEGATIVO ' + (i+1) + ':\n' + s + '\n'; });
       }
 
-      // Fetch socio's agenda link (for auto-schedule mode)
+      // Fetch socio's agenda link (for auto-schedule mode) + landing link
       let agendaLink = '';
+      let landingLink = 'https://skyteam.global/landing/' + user;
       try {
         const cfgArr = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
         if (cfgArr && cfgArr[0] && cfgArr[0].config) {
@@ -469,22 +470,70 @@ export default async function handler(req, res) {
       } catch(e) {}
 
       // Special phase override if prospect left the last message on read OR accepted
+      // OR if the socio is following a specific sales flow step (flujoPaso)
       let faseEffective = fase;
       let instruccionFase = instruccionesPorFase[fase];
-      if (dejadoEnVisto) {
+
+      // === FLUJO GUIADO DE VENTA (5 pasos) ===
+      // Sobrescribe cualquier otra fase si el socio eligió un paso específico del flujo.
+      // Estos corresponden al proceso estandarizado: preparar → enviar landing → seguimiento →
+      // pregunta qué le gustó → proponer reunión con agenda.
+      if (flujoPaso === 'enviar_info_ahora') {
+        faseEffective = 'flujo_enviar_info_ahora';
+        instruccionFase = 'OBJETIVO: CONFIRMAR ENVÍO INMEDIATO DE LA INFORMACIÓN. El prospecto aceptó verla ahora. ' +
+          'Genera un mensaje MUY CORTO (máx 3 líneas) que: ' +
+          '(1) Confirme con entusiasmo moderado que le vas a enviar el link ahora, ' +
+          '(2) Mencione que la información dura ~25 minutos para verla completa, ' +
+          '(3) Diga que en 30 minutos vuelves a escribir para comentar. ' +
+          'INCLUYE al final el link: ' + landingLink + '. ' +
+          'Tono casual, como amigo. Ejemplo: "Perfecto [nombre], te mando el link aquí 👇\\n' + landingLink + '\\nDura unos 25 min. En media hora te escribo para saber qué te pareció."';
+      } else if (flujoPaso === 'enviar_info_despues') {
+        faseEffective = 'flujo_enviar_info_despues';
+        var horaTxt = flujoHora ? ('a las ' + flujoHora) : 'cuando estés disponible';
+        instruccionFase = 'OBJETIVO: CONFIRMAR ENVÍO AGENDADO DE LA INFORMACIÓN. El prospecto dijo que prefiere verlo más tarde ' + horaTxt + '. ' +
+          'Genera un mensaje CORTO (máx 3 líneas) que: ' +
+          '(1) Confirme que le enviarás el link ' + horaTxt + ', ' +
+          '(2) Mencione que dura 25 min, ' +
+          '(3) Diga que después hablan sobre sus impresiones. ' +
+          'NO incluyas el link aún — se enviará después. Ejemplo: "Perfecto [nombre], te lo envío ' + horaTxt + '. Son 25 min bien explicados y después hablamos para que me comentes qué te pareció."';
+      } else if (flujoPaso === 'seguimiento_35min') {
+        faseEffective = 'flujo_seguimiento_35min';
+        instruccionFase = 'OBJETIVO: SEGUIMIENTO DESPUÉS DE ENVIAR LA INFORMACIÓN. Ya pasaron unos 30-35 minutos desde que le enviaste el link de la landing. ' +
+          'Genera un mensaje CORTO (máx 2 líneas) que pregunte de forma ligera si pudo ver la información. ' +
+          'NO presiones. NO preguntes "qué te pareció" todavía (eso viene después si responde que sí). ' +
+          'Ejemplos: "Hola [nombre], ¿ya pudiste darle una mirada?" o "Qué tal [nombre], ¿tuviste chance de verlo?"';
+      } else if (flujoPaso === 'pregunta_que_gusto') {
+        faseEffective = 'flujo_pregunta_que_gusto';
+        instruccionFase = 'OBJETIVO: EL PROSPECTO YA VIO LA INFORMACIÓN. Ahora pregunta qué le gustó más. ' +
+          'Genera un mensaje CORTO (máx 2 líneas) que pregunte específicamente QUÉ LE GUSTÓ MÁS de la información. ' +
+          'Es CLAVE usar "qué te gustó más" (presupone que algo le gustó — principio de asunción positiva). ' +
+          'NO preguntes "qué te pareció" (abre la puerta a respuestas tibias). ' +
+          'Ejemplo: "Genial [nombre]. ¿Qué fue lo que más te gustó o te llamó la atención?"';
+      } else if (flujoPaso === 'proponer_reunion') {
+        faseEffective = 'flujo_proponer_reunion';
+        instruccionFase = 'OBJETIVO: PROPONER LA REUNIÓN DE 20 MIN. El prospecto te contó qué le gustó. Ahora propones una llamada de 20 min para mostrar los beneficios específicos. ' +
+          'Genera un mensaje (máx 4 líneas) que: ' +
+          '(1) Valide/reconozca brevemente lo que dijo que le gustó (usa respuestaProspecto), ' +
+          '(2) Proponga una reunión de 20 minutos para mostrarle los beneficios disponibles ESTA SEMANA específicamente, ' +
+          '(3) ' + (agendaLink ? 'Incluya el link de tu agenda: ' + agendaLink + ' para que elija horario.' : 'Proponga 2-3 opciones específicas de día/hora para elegir.') + ' ' +
+          'Tono colaborativo, entre iguales. Sin presión. Ejemplo: "Qué bueno que te llamó la atención eso. Te propongo una llamada corta de 20 min para mostrarte los beneficios que tenemos activos esta semana — son por tiempo limitado y vale la pena que los aproveches. ' + (agendaLink ? 'Aquí escoges cuando te acomode:\\n' + agendaLink : '¿Te sirve el jueves a las 10am o el viernes a las 4pm?') + '"';
+      }
+
+      // Fallback states (dejado en visto, aceptó, objetó, dudó) si NO hay flujoPaso específico
+      if (!flujoPaso && dejadoEnVisto) {
         faseEffective = 'seguimiento_visto';
         instruccionFase = 'OBJETIVO: SEGUIMIENTO DESPUÉS DE DEJARTE EN VISTO. El prospecto leyó tu mensaje anterior pero no respondió — probablemente porque fue demasiado largo, intrusivo, o no hubo gancho claro. Genera un mensaje MUY CORTO (MÁXIMO 2 líneas, ~20 palabras total), ligero, sin presión, con gancho de curiosidad o humor sutil. NO repitas lo que dijiste antes. NO te disculpes por insistir. NO invites de nuevo directamente. Un simple "oye te mando esto rápido" o "olvida el mensaje anterior, te pregunto solo una cosa" funciona mejor que un texto elaborado. El objetivo es reactivar, NO cerrar.';
-      } else if (detectoAceptacion) {
+      } else if (!flujoPaso && detectoAceptacion) {
         faseEffective = 'agendar';
         instruccionFase = 'OBJETIVO: EL PROSPECTO ACEPTÓ. Genera un mensaje de AGENDAMIENTO CORTO. ' +
           (agendaLink ? 'INCLUYE este link exactamente: ' + agendaLink + ' para que elija el horario que más le convenga. ' : 'Propón 2 opciones de día/hora específicas esta semana para que elija. ') +
           'Confirma con entusiasmo pero sin efusividad. Máximo 3 líneas. ' +
           (agendaLink ? 'Ejemplo: "Genial [nombre], aquí puedes elegir el horario que mejor te funcione esta semana: [link]. Dura 20 min, sin compromiso." ' : 'Ejemplo: "Genial [nombre], tengo disponible el [día] a las [hora] o el [día] a las [hora]. ¿Cuál te acomoda mejor?" ') +
           'NO agregues párrafos extra sobre la oportunidad — ya aceptó, no hay que vender más.';
-      } else if (detectoObjecion) {
+      } else if (!flujoPaso && detectoObjecion) {
         faseEffective = 'manejar_objecion';
         instruccionFase = 'OBJETIVO: MANEJAR OBJECIÓN CON EMPATÍA. El prospecto puso una objeción (tiempo, interés, ocupación, etc). Responde validando su situación SIN discutir. Ofrece alternativa menos comprometedora: un mensaje de audio, un video grabado, o simplemente dejar la puerta abierta para otro momento. Máximo 3 líneas. NO insistas. NO trates de convencer. Un "entiendo totalmente, no te preocupes" vale más que 10 argumentos.';
-      } else if (detectoDuda) {
+      } else if (!flujoPaso && detectoDuda) {
         faseEffective = 'resolver_duda';
         instruccionFase = 'OBJETIVO: EL PROSPECTO PREGUNTÓ "¿QUÉ ES?" O "¿DE QUÉ SE TRATA?". NO expliques todo por texto (eso aburre y pierde). Responde con intriga generada: "Mira es más fácil que te lo muestre en 15 min que que intente explicarlo por texto" o similar. Mueve hacia una llamada corta. Máximo 3 líneas.';
       }
@@ -583,13 +632,16 @@ export default async function handler(req, res) {
         ok: true,
         mensaje: mensaje || 'No se pudo generar el mensaje.',
         modo: modo,
-        toque: { actual: toqueActual, total: totalToques, fase: fase },
+        toque: { actual: toqueActual, total: totalToques, fase: faseEffective },
         timing: timingPorFase[fase] || '',
         tip: tipsPorFase[fase] || '',
         razon: razonParts.join(' · '),
         stars: stars,
         esElite: esElite,
-        esFrio: esFrio
+        esFrio: esFrio,
+        flujoPaso: flujoPaso || null,
+        // Flag for frontend: auto-create a 35min reminder after user copies/sends
+        requiereRecordatorio35min: flujoPaso === 'enviar_info_ahora' || flujoPaso === 'enviar_info_despues'
       });
     }
 
