@@ -307,6 +307,59 @@ module.exports = async function handler(req, res) {
     // ═══════════════════════════════════════════════════
     //  BROADCAST EMAIL — Send email to all users (admin)
     // ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════
+    //  SEND TICKET — Email ticket image to guest
+    // ═══════════════════════════════════════════════════
+    if (action === 'sendTicket' && req.method === 'POST') {
+      var b = req.body;
+      if (!b.email || !b.image) return res.status(400).json({ error: 'email + image required' });
+      if (!RESEND_KEY) return res.status(500).json({ error: 'RESEND_KEY not configured' });
+      // Get event info
+      var evInfo = { titulo: 'Evento SkyTeam', fecha: '', ciudad: '' };
+      if (b.event_id) {
+        try {
+          var evR = await SB('event_pages?id=eq.' + b.event_id + '&select=titulo,fecha,hora,ciudad,lugar&limit=1');
+          var evRows = await evR.json();
+          if (Array.isArray(evRows) && evRows.length) evInfo = evRows[0];
+        } catch(e) {}
+      }
+      // Strip data URI prefix
+      var imgData = b.image;
+      if (imgData.indexOf(',') > -1) imgData = imgData.split(',')[1];
+      // Build email with attached ticket
+      try {
+        var emailR = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'SkyTeam Events <lideres@skyteam.global>',
+            to: [b.email],
+            subject: '🎫 Tu entrada para ' + evInfo.titulo,
+            html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a1a;color:#fff;padding:30px;border-radius:16px">'
+              + '<h1 style="color:#d4af37;font-size:22px;margin:0 0 10px">🎫 ¡Tu entrada esta lista!</h1>'
+              + '<p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6">Hola <strong>' + (b.nombre || 'Invitado') + '</strong>,</p>'
+              + '<p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6">Te esperamos en <strong>' + evInfo.titulo + '</strong>.</p>'
+              + '<p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6">📅 ' + (evInfo.fecha || '') + (evInfo.hora ? ' — ' + evInfo.hora : '') + '</p>'
+              + (evInfo.ciudad ? '<p style="color:rgba(255,255,255,0.7);font-size:14px">📍 ' + evInfo.ciudad + (evInfo.lugar ? ' — ' + evInfo.lugar : '') + '</p>' : '')
+              + '<p style="color:rgba(255,255,255,0.7);font-size:14px;margin-top:20px">Tu entrada esta adjunta a este correo. Guardala bien, la necesitaras al ingresar.</p>'
+              + (b.ticketCode ? '<p style="color:#d4af37;font-size:12px;font-family:monospace;margin-top:14px;padding:10px;background:rgba(212,175,55,0.1);border-radius:8px;text-align:center">Codigo: ' + b.ticketCode + '</p>' : '')
+              + '<p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:24px;text-align:center">SkyTeam Global</p>'
+              + '</div>',
+            attachments: [{ filename: 'entrada_' + (b.nombre || 'invitado').replace(/\s+/g, '_') + '.png', content: imgData }]
+          })
+        });
+        if (!emailR.ok) {
+          var errT = await emailR.text();
+          console.error('[TICKET] Send failed:', emailR.status, errT.substring(0, 200));
+          return res.status(500).json({ error: 'Email failed' });
+        }
+        return res.status(200).json({ ok: true, sent: true });
+      } catch(e) {
+        console.error('[TICKET] Error:', e.message);
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     if (action === 'broadcastEmail' && req.method === 'POST') {
       var b = req.body;
       if (!b.subject || !b.html) return res.status(400).json({ error: 'subject + html required' });
@@ -705,7 +758,14 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<link rel="preconnect" href="https://fonts.googleapis.com">'
     + '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">'
     + '<style>'
-    + '*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Outfit",sans-serif;background:#06061a;color:#e0e0e0;overflow-x:hidden}'
+    + '*{margin:0;padding:0;box-sizing:border-box}'
+    + 'body{font-family:"Outfit",sans-serif;color:#e0e0e0;overflow-x:hidden;background:#06061a;background-image:radial-gradient(ellipse at 20% 10%, rgba(212,175,55,0.06) 0%, transparent 50%),radial-gradient(ellipse at 80% 60%, rgba(127,119,221,0.04) 0%, transparent 50%),radial-gradient(ellipse at 40% 90%, rgba(212,175,55,0.04) 0%, transparent 50%);background-attachment:fixed}'
+    // Decorative orbs
+    + 'body::before{content:"";position:fixed;top:30%;right:-150px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,0.08) 0%,transparent 70%);pointer-events:none;z-index:0}'
+    + 'body::after{content:"";position:fixed;bottom:20%;left:-150px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(127,119,221,0.06) 0%,transparent 70%);pointer-events:none;z-index:0}'
+    + '.ev-hero,.ev-s,.ev-hook,.ev-vsl,.ev-testimonials,.ev-faq,.ev-form-section,.ev-guarantee-premium,.ev-social-proof,.ev-footer{position:relative;z-index:1}'
+    // Section divider with gold gradient line
+    + '.ev-section-divider{max-width:600px;margin:20px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.3),transparent)}'
     + '.ev-hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:60px 20px 40px}'
     + '.ev-hero-bg{position:absolute;inset:0;background:url("' + esc(heroImg) + '") center/cover no-repeat;filter:brightness(0.2) saturate(0.8)}'
     + '.ev-hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,26,0.5) 0%,rgba(6,6,26,0.7) 40%,rgba(6,6,26,0.97) 100%)}'

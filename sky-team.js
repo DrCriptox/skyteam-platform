@@ -2611,6 +2611,7 @@ function _renderEvtImpact(cuUser) {
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
       html += '<button onclick="_copyEvtLink(\'' + _esc(link) + '\')" style="padding:6px 14px;border-radius:8px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);color:' + C.gold + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar link</button>';
       html += '<button onclick="_shareEvtWA(\'' + _esc(e.titulo) + '\',\'' + _esc(link) + '\')" style="padding:6px 14px;border-radius:8px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.2);color:#25d366;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💬 WhatsApp</button>';
+      html += '<button onclick="_openTicketGenerator(\'' + e.id + '\',\'' + _esc(e.titulo) + '\',\'' + _esc(e.fecha || '') + '\',\'' + _esc(e.hora || '') + '\',\'' + _esc(e.ciudad || '') + '\',\'' + _esc(e.lugar || '') + '\')" style="padding:6px 14px;border-radius:8px;background:rgba(127,119,221,0.12);border:1px solid rgba(127,119,221,0.25);color:#7F77DD;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎫 Crear Entrada</button>';
       html += '</div></div>';
     }
     html += '</div>';
@@ -3026,6 +3027,248 @@ function _viewSocioProfile(username) {
   document.body.appendChild(div.firstChild);
 }
 window._viewSocioProfile = _viewSocioProfile;
+
+// ═══════════════════════════════════════════════════════════
+// TICKET GENERATOR — Genera entrada tipo concierto con Canvas
+// ═══════════════════════════════════════════════════════════
+function _openTicketGenerator(eventId, titulo, fecha, hora, ciudad, lugar) {
+  var old = document.getElementById('ticket-gen-overlay');
+  if (old) old.remove();
+
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  var cuName = (typeof CU !== 'undefined' && CU) ? CU.name : '';
+
+  var html = '<div id="ticket-gen-overlay" style="position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.85);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">';
+  html += '<div style="width:100%;max-width:500px;background:#12122a;border-radius:20px;border:1px solid ' + C.border + ';padding:24px;margin-top:20px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  html += '<div style="font-size:16px;font-weight:700;color:#fff">🎫 Generar Entrada</div>';
+  html += '<button onclick="document.getElementById(\'ticket-gen-overlay\').remove()" style="background:none;border:none;color:' + C.textSub + ';font-size:20px;cursor:pointer">✕</button>';
+  html += '</div>';
+
+  html += '<div style="background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.2);border-radius:12px;padding:12px;margin-bottom:16px">';
+  html += '<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px">' + _esc(titulo) + '</div>';
+  html += '<div style="font-size:11px;color:' + C.textSub + '">📅 ' + _esc(fecha) + (hora ? ' • ' + _esc(hora) : '') + '</div>';
+  if (ciudad) html += '<div style="font-size:11px;color:' + C.textSub + '">📍 ' + _esc(ciudad) + (lugar ? ' — ' + _esc(lugar) : '') + '</div>';
+  html += '</div>';
+
+  html += '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Nombre y apellido del invitado</label><input id="tk-nombre" type="text" placeholder="Ej: Juan Pérez" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit"></div>';
+  html += '<div style="margin-bottom:12px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Número de cupos</label><input id="tk-cupos" type="number" value="1" min="1" max="20" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit"></div>';
+  html += '<div style="margin-bottom:16px"><label style="display:block;font-size:11px;color:' + C.textSub + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Email (opcional — para enviar por correo)</label><input id="tk-email" type="email" placeholder="invitado@email.com" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + C.border + ';background:rgba(255,255,255,0.04);color:#fff;font-size:14px;font-family:inherit"></div>';
+
+  // Canvas preview
+  html += '<div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:10px;margin-bottom:16px;text-align:center"><canvas id="tk-canvas" width="1200" height="600" style="max-width:100%;height:auto;border-radius:8px"></canvas></div>';
+
+  html += '<div style="display:flex;flex-direction:column;gap:8px">';
+  html += '<button onclick="_generateTicketPreview(\'' + _esc(titulo) + '\',\'' + _esc(fecha) + '\',\'' + _esc(hora) + '\',\'' + _esc(ciudad) + '\',\'' + _esc(lugar) + '\',\'' + _esc(cuName) + '\')" style="width:100%;padding:12px;border-radius:12px;background:rgba(127,119,221,0.15);border:1px solid rgba(127,119,221,0.3);color:#7F77DD;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">👁 Generar Preview</button>';
+  html += '<button onclick="_downloadTicket()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,' + C.gold + ',#b8860b);color:#0a0a1a;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit">⬇️ Descargar Entrada</button>';
+  html += '<button onclick="_emailTicket(\'' + eventId + '\')" style="width:100%;padding:12px;border-radius:12px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);color:#25D366;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✉️ Enviar por Correo</button>';
+  html += '</div>';
+
+  html += '</div></div>';
+
+  var div = document.createElement('div');
+  div.innerHTML = html;
+  document.body.appendChild(div.firstChild);
+
+  // Initial preview
+  setTimeout(function() {
+    _generateTicketPreview(titulo, fecha, hora, ciudad, lugar, cuName);
+  }, 100);
+}
+window._openTicketGenerator = _openTicketGenerator;
+
+function _generateTicketPreview(titulo, fecha, hora, ciudad, lugar, invitadoPor) {
+  var canvas = document.getElementById('tk-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = 1200, H = 600;
+  var nombreEl = document.getElementById('tk-nombre');
+  var cuposEl = document.getElementById('tk-cupos');
+  var nombre = (nombreEl ? nombreEl.value : '').trim() || 'NOMBRE DEL INVITADO';
+  var cupos = parseInt(cuposEl ? cuposEl.value : '1') || 1;
+
+  // Background gradient (dark premium)
+  var bgGrad = ctx.createLinearGradient(0, 0, W, H);
+  bgGrad.addColorStop(0, '#0a0a1a');
+  bgGrad.addColorStop(0.5, '#1a1a3e');
+  bgGrad.addColorStop(1, '#0a0a1a');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Gold accent top bar
+  var goldGrad = ctx.createLinearGradient(0, 0, W, 0);
+  goldGrad.addColorStop(0, '#d4af37');
+  goldGrad.addColorStop(0.5, '#f4d06f');
+  goldGrad.addColorStop(1, '#d4af37');
+  ctx.fillStyle = goldGrad;
+  ctx.fillRect(0, 0, W, 8);
+  ctx.fillRect(0, H - 8, W, 8);
+
+  // Left section — event info (65% width)
+  var leftW = Math.floor(W * 0.65);
+
+  // Glowing orbs (decorative)
+  ctx.fillStyle = 'rgba(212, 175, 55, 0.08)';
+  ctx.beginPath(); ctx.arc(100, 100, 150, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = 'rgba(127, 119, 221, 0.06)';
+  ctx.beginPath(); ctx.arc(leftW - 50, H - 100, 120, 0, 2 * Math.PI); ctx.fill();
+
+  // Event title section
+  ctx.font = 'bold 20px Outfit, Arial, sans-serif';
+  ctx.fillStyle = '#d4af37';
+  ctx.fillText('🎫 ADMIT ONE', 40, 60);
+
+  // Main title
+  ctx.font = 'bold 54px Outfit, Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  var tituloUp = (titulo || 'EVENTO').toUpperCase();
+  // Wrap long titles
+  var maxTitleWidth = leftW - 80;
+  var words = tituloUp.split(' ');
+  var lines = [], currentLine = '';
+  words.forEach(function(w) {
+    var testLine = currentLine ? currentLine + ' ' + w : w;
+    if (ctx.measureText(testLine).width > maxTitleWidth && currentLine) { lines.push(currentLine); currentLine = w; }
+    else currentLine = testLine;
+  });
+  if (currentLine) lines.push(currentLine);
+  lines.slice(0, 2).forEach(function(l, i) { ctx.fillText(l, 40, 130 + i * 55); });
+
+  // Separator
+  ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, 260); ctx.lineTo(leftW - 40, 260); ctx.stroke();
+
+  // Date/Time
+  ctx.font = 'bold 14px Outfit, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.fillText('FECHA', 40, 290);
+  ctx.font = 'bold 26px Outfit, Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText((fecha || '') + (hora ? '  •  ' + hora : ''), 40, 325);
+
+  // Location
+  if (ciudad) {
+    ctx.font = 'bold 14px Outfit, Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('UBICACION', 40, 370);
+    ctx.font = 'bold 22px Outfit, Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    var loc = ciudad + (lugar ? ' — ' + lugar : '');
+    if (ctx.measureText(loc).width > leftW - 80) loc = loc.substring(0, 40) + '...';
+    ctx.fillText(loc, 40, 400);
+  }
+
+  // Guest name (BIG — hero of the ticket)
+  ctx.font = 'bold 14px Outfit, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(212, 175, 55, 0.8)';
+  ctx.fillText('INVITADO ESPECIAL', 40, 455);
+  ctx.font = 'bold 38px Outfit, Arial, sans-serif';
+  ctx.fillStyle = '#d4af37';
+  var guestUp = (nombre || '').toUpperCase();
+  if (ctx.measureText(guestUp).width > leftW - 80) { ctx.font = 'bold 30px Outfit, Arial, sans-serif'; }
+  ctx.fillText(guestUp, 40, 495);
+
+  // Invited by
+  ctx.font = '14px Outfit, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.fillText('Invitado por ' + (invitadoPor || ''), 40, 535);
+
+  // Right section — divider + ticket stub
+  var stubX = leftW;
+  // Dashed vertical line
+  ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath(); ctx.moveTo(stubX, 30); ctx.lineTo(stubX, H - 30); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Perforated circles
+  for (var ci = 40; ci < H - 30; ci += 20) {
+    ctx.fillStyle = '#0a0a1a';
+    ctx.beginPath(); ctx.arc(stubX, ci, 4, 0, 2 * Math.PI); ctx.fill();
+  }
+
+  // Stub background
+  var stubW = W - stubX;
+  var stubGrad = ctx.createLinearGradient(stubX, 0, W, 0);
+  stubGrad.addColorStop(0, 'rgba(212, 175, 55, 0.05)');
+  stubGrad.addColorStop(1, 'rgba(212, 175, 55, 0.1)');
+  ctx.fillStyle = stubGrad;
+  ctx.fillRect(stubX + 10, 30, stubW - 10, H - 60);
+
+  // Stub text — CUPOS
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 16px Outfit, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(212, 175, 55, 0.7)';
+  ctx.fillText('CUPOS', stubX + stubW / 2, 100);
+
+  // Big cupos number
+  ctx.font = 'bold 160px Outfit, Arial, sans-serif';
+  ctx.fillStyle = '#d4af37';
+  ctx.fillText('' + cupos, stubX + stubW / 2, 250);
+
+  ctx.font = 'bold 20px Outfit, Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(cupos > 1 ? 'personas' : 'persona', stubX + stubW / 2, 290);
+
+  // Ticket code (bottom)
+  var tkCode = 'SKY-' + (eventIdShort()) + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.fillText(tkCode, stubX + stubW / 2, 430);
+
+  // SkyTeam branding
+  ctx.font = 'bold 14px Outfit, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(212, 175, 55, 0.6)';
+  ctx.fillText('SKYTEAM', stubX + stubW / 2, 500);
+  ctx.font = '10px Outfit, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.fillText('G L O B A L', stubX + stubW / 2, 520);
+  ctx.textAlign = 'left';
+
+  // Store for download
+  window._ticketCanvas = canvas;
+  window._ticketName = nombre;
+  window._ticketCode = tkCode;
+}
+window._generateTicketPreview = _generateTicketPreview;
+
+function eventIdShort() {
+  return Math.random().toString(36).substring(2, 6).toUpperCase();
+}
+
+function _downloadTicket() {
+  var canvas = window._ticketCanvas;
+  if (!canvas) { if (typeof showToast === 'function') showToast('Genera el preview primero'); return; }
+  var link = document.createElement('a');
+  var name = (window._ticketName || 'invitado').replace(/\s+/g, '_');
+  link.download = 'entrada_' + name + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  if (typeof showToast === 'function') showToast('Entrada descargada!');
+}
+window._downloadTicket = _downloadTicket;
+
+function _emailTicket(eventId) {
+  var emailEl = document.getElementById('tk-email');
+  var email = emailEl ? emailEl.value.trim() : '';
+  if (!email || email.indexOf('@') === -1) { if (typeof showToast === 'function') showToast('Ingresa un email valido'); return; }
+  var canvas = window._ticketCanvas;
+  if (!canvas) { if (typeof showToast === 'function') showToast('Genera el preview primero'); return; }
+  var nombreEl = document.getElementById('tk-nombre');
+  var nombre = nombreEl ? nombreEl.value.trim() : 'Invitado';
+  var imageBase64 = canvas.toDataURL('image/png');
+  if (typeof showToast === 'function') showToast('Enviando email...');
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'sendTicket', event_id: eventId, email: email, nombre: nombre, image: imageBase64, ticketCode: window._ticketCode || '' })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) { if (typeof showToast === 'function') showToast('Entrada enviada a ' + email); }
+    else { if (typeof showToast === 'function') showToast('Error: ' + (d.error || '')); }
+  }).catch(function() { if (typeof showToast === 'function') showToast('Error de conexion'); });
+}
+window._emailTicket = _emailTicket;
 
 // ── Event Creation Wizard ──
 function openEventWizard() {
