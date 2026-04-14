@@ -318,24 +318,21 @@ module.exports = async function handler(req, res) {
       var emails = users.map(function(u) { return u.email; }).filter(function(e) { return e && e.indexOf('@') > 0; });
       // Send in batches of 50 (Resend limit)
       var sent = 0, errors = 0;
-      // Send individually (Resend BCC requires 'to' and has limits)
-      for (var i = 0; i < emails.length; i++) {
+      // Use Resend Batch API: up to 100 emails per call
+      for (var i = 0; i < emails.length; i += 100) {
+        var batch = emails.slice(i, i + 100);
+        var batchBody = batch.map(function(email) {
+          return { from: 'SkyTeam Global <lideres@skyteam.global>', to: [email], subject: b.subject, html: b.html };
+        });
         try {
-          var eR = await fetch('https://api.resend.com/emails', {
+          var eR = await fetch('https://api.resend.com/emails/batch', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              from: 'SkyTeam Global <lideres@skyteam.global>',
-              to: [emails[i]],
-              subject: b.subject,
-              html: b.html
-            })
+            body: JSON.stringify(batchBody)
           });
-          if (eR.ok) sent++;
-          else { errors++; if (errors <= 3) { var eTxt = await eR.text(); console.error('[BROADCAST] Email error:', eR.status, eTxt.substring(0, 200)); } }
-          // Rate limit: max 10/sec (Resend Pro)
-          if (i % 8 === 7) await new Promise(function(r) { setTimeout(r, 1000); });
-        } catch(e) { errors++; }
+          if (eR.ok) { sent += batch.length; }
+          else { var eTxt = await eR.text(); errors += batch.length; console.error('[BROADCAST] Batch error:', eR.status, eTxt.substring(0, 300)); }
+        } catch(e) { errors += batch.length; console.error('[BROADCAST] Batch exception:', e.message); }
       }
       console.log('[BROADCAST] Sent email to', sent, 'users');
       return res.status(200).json({ ok: true, sent: sent });
