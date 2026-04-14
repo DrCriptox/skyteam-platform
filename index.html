@@ -13414,6 +13414,9 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
     function crmRenderRemindersBar(){
   var el=document.getElementById('crm-reminders-bar');if(!el)return;
   var now=new Date();var activos=(crmRecordatorios||[]).filter(function(r){return !r.completado;});
+  // Enrich with prospecto name from local data
+  var pMap={};(crmProspectos||[]).forEach(function(p){pMap[p.id]=p;});
+  activos.forEach(function(r){if(r.prospecto_id&&pMap[r.prospecto_id]){r.prospectos=pMap[r.prospecto_id];}});
   if(activos.length===0){el.style.display='none';return;}
   activos.sort(function(a,b){return new Date(a.fecha_recordatorio)-new Date(b.fecha_recordatorio);});
   var visibles = activos.slice(0, 2); // Solo los 2 más próximos
@@ -13422,21 +13425,20 @@ function crmFecha(d){if(!d)return '';var f=new Date(d);if(isNaN(f))return d;var 
   visibles.forEach(function(r){
     var fecha=new Date(r.fecha_recordatorio);var diff=fecha-now;
     var urgente=diff<0;var pronto=diff<3600000&&diff>=0;
-    var nombre=r.prospectos?r.prospectos.nombre:'Prospecto';
-    var primerNombre=(nombre||'').split(' ')[0];
+    var nombre=r.prospectos?r.prospectos.nombre:(r.prospecto_nombre||'Prospecto');
+    var prospId=r.prospecto_id||'';
     var mensaje=(r.mensaje||'Seguimiento').length>30?(r.mensaje||'').substring(0,30)+'...':r.mensaje||'Seguimiento';
     // Format time
     var hh=fecha.getHours(),mn=fecha.getMinutes().toString().padStart(2,'0'),ap=hh>=12?'pm':'am',h12=hh%12||12;
     var horaStr=h12+':'+mn+ap;
     var esHoy=fecha.toDateString()===now.toDateString();
-    // Always show the time, add "vencido" label if past
     var timeLabel = esHoy ? horaStr : crmFecha(fecha) + ' ' + horaStr;
     if(urgente) timeLabel += ' (vencido)';
     var dotColor=urgente?'#E24B4A':pronto?'#FFA500':'#C9A84C';
     var wa=(r.prospectos&&r.prospectos.telefono)?r.prospectos.telefono.replace(/[^0-9]/g,''):'';
     html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-bottom:4px;border-radius:8px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.04);">'
       +'<div style="width:6px;height:6px;border-radius:50%;background:'+dotColor+';flex-shrink:0;"></div>'
-      +'<span style="font-size:11px;font-weight:700;color:#F0EDE6;white-space:nowrap;">'+crmEsc(primerNombre)+'</span>'
+      +(prospId?'<span onclick="crmOpenDetail(\''+prospId+'\')" style="font-size:11px;font-weight:700;color:#C9A84C;white-space:nowrap;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(201,168,76,0.3);text-underline-offset:2px">'+crmEsc(nombre)+'</span>':'<span style="font-size:11px;font-weight:700;color:#F0EDE6;white-space:nowrap;">'+crmEsc(nombre)+'</span>')
       +'<span style="font-size:10px;color:rgba(255,255,255,0.3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+crmEsc(mensaje)+'</span>'
       +'<span style="font-size:9px;color:'+dotColor+';font-weight:700;white-space:nowrap;">'+timeLabel+'</span>'
       +(wa?'<a href="https://wa.me/'+wa+'" target="_blank" onclick="event.stopPropagation();" style="font-size:10px;text-decoration:none;">\uD83D\uDCF1</a>':'')
@@ -14242,14 +14244,20 @@ function _renderCrmRemindersTab() {
     if(!rems.length){el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);"><div style="font-size:32px;margin-bottom:8px;">\u2705</div>Sin recordatorios pendientes</div>';return;}
     var now=new Date();
     var html='<div style="font-size:14px;font-weight:800;color:#FFD700;margin-bottom:12px;">\u23F0 '+rems.length+' recordatorio'+(rems.length>1?'s':'')+' pendiente'+(rems.length>1?'s':'')+'</div>';
+    // Enrich with prospecto name
+    var _pMap2={};(crmProspectos||[]).forEach(function(p){_pMap2[p.id]=p;});
     rems.forEach(function(r){
       var fecha=new Date(r.fecha_recordatorio);var diff=fecha-now;
       var urgente=diff<0;var pronto=diff<3600000&&diff>=0;
       var bg=urgente?'rgba(226,75,74,0.06)':pronto?'rgba(255,160,0,0.04)':'rgba(255,255,255,0.02)';
       var bc=urgente?'rgba(226,75,74,0.3)':pronto?'rgba(255,160,0,0.25)':'rgba(255,255,255,0.06)';
       var timeStr=fecha.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'})+' '+fecha.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit',hour12:true});
+      var pName=(_pMap2[r.prospecto_id]||{}).nombre||'';
+      var pId=r.prospecto_id||'';
       html+='<div style="background:'+bg+';border:0.5px solid '+bc+';border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">'
-        +'<div style="flex:1;"><div style="font-size:12px;font-weight:700;color:#fff;">'+crmEsc(r.mensaje||'Seguimiento')+'</div>'
+        +'<div style="flex:1;">'
+        +(pName?'<div style="font-size:11px;margin-bottom:3px;"><span onclick="crmOpenDetail(\''+pId+'\')" style="color:#C9A84C;font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(201,168,76,0.3);">'+crmEsc(pName)+'</span></div>':'')
+        +'<div style="font-size:12px;font-weight:700;color:#fff;">'+crmEsc(r.mensaje||'Seguimiento')+'</div>'
         +'<div style="font-size:10px;color:'+(urgente?'#E24B4A':pronto?'#FFA000':'rgba(255,255,255,0.3)')+';margin-top:3px;">'+(urgente?'\u26A0\uFE0F Vencido \u2014 ':'\uD83D\uDCC5 ')+timeStr+'</div></div>'
         +'<button onclick="crmCompleteReminder(\''+r.id+'\');setTimeout(_renderCrmRemindersTab,500);" style="background:rgba(29,158,117,0.15);border:0.5px solid rgba(29,158,117,0.3);color:#1D9E75;border-radius:8px;padding:6px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\u2713 Hecho</button></div>';
     });
