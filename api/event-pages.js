@@ -305,6 +305,40 @@ module.exports = async function handler(req, res) {
     }
 
     // ═══════════════════════════════════════════════════
+    //  BROADCAST EMAIL — Send email to all users (admin)
+    // ═══════════════════════════════════════════════════
+    if (action === 'broadcastEmail' && req.method === 'POST') {
+      var b = req.body;
+      if (!b.subject || !b.html) return res.status(400).json({ error: 'subject + html required' });
+      if (!RESEND_KEY) return res.status(500).json({ error: 'RESEND_KEY not configured' });
+      // Get all user emails
+      var uR = await SB('users?select=email&email=neq.null&email=neq.&limit=1000');
+      var users = await uR.json();
+      if (!Array.isArray(users)) return res.status(500).json({ error: 'Failed to fetch users' });
+      var emails = users.map(function(u) { return u.email; }).filter(function(e) { return e && e.indexOf('@') > 0; });
+      // Send in batches of 50 (Resend limit)
+      var sent = 0;
+      for (var i = 0; i < emails.length; i += 50) {
+        var batch = emails.slice(i, i + 50);
+        try {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'SkyTeam Global <eventos@skyteam.global>',
+              bcc: batch,
+              subject: b.subject,
+              html: b.html
+            })
+          });
+          sent += batch.length;
+        } catch(e) { console.error('[BROADCAST] Email batch error:', e.message); }
+      }
+      console.log('[BROADCAST] Sent email to', sent, 'users');
+      return res.status(200).json({ ok: true, sent: sent });
+    }
+
+    // ═══════════════════════════════════════════════════
     //  DELETE — Remove event and all related data
     // ═══════════════════════════════════════════════════
     if (action === 'delete' && req.method === 'POST') {
