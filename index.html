@@ -8307,7 +8307,7 @@ function _loadSSRanking() {
   var el = document.getElementById('ss-ranking-list');
   if(el) el.innerHTML = '<div style="padding:20px;color:rgba(255,255,255,0.3);">⏳ Cargando...</div>';
   var _myRef = CU ? (CU.ref||CU.username||'').toLowerCase() : '';
-  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:_ssRankPeriod,ref:_myRef})})
+  fetch('/api/landing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getRanking',period:_ssRankPeriod,ref:_myRef,top:20})})
   .then(function(r){return r.json();}).then(function(d){
     var el = document.getElementById('ss-ranking-list');
     if(!el) return;

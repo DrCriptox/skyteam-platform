@@ -402,8 +402,9 @@ export default async function handler(req, res) {
 
       // Count ALL asesores (not just filtered) for position display
       const totalAsesores = Object.keys(allAsesores).filter(function(r){ return r !== 'default'; }).length;
-      // Return top 50 for combined ranking (global ranking merges 3 APIs and needs wider pool)
-      const top20 = ranking.slice(0, 50);
+      // topN: 20 for main Sky Sales ranking, 50 for combined global ranking (backwards compatible)
+      const topN = parseInt(req.body.top) || 50;
+      const top20 = ranking.slice(0, topN);
       const totalParticipants = totalAsesores;
 
       // Return user's position ONLY if not in top 20
