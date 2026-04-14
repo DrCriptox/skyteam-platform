@@ -311,7 +311,10 @@ export default async function handler(req, res) {
       totalToques = toquesPorModo[modo];
 
       // -- 7. Determine which touch to generate --
-      let toqueActual = Math.min(mensajesPrevios + 1, totalToques);
+      // Default: ALWAYS start at touch 1 of the plan. The user manually advances
+      // through the sequence via the touch selector in the UI. This is more
+      // predictable than auto-detecting from interaction history, which is noisy.
+      let toqueActual = 1;
       if (forceToque && forceToque >= 1 && forceToque <= totalToques) toqueActual = forceToque;
 
       // -- 8. Phase per mode --
@@ -368,6 +371,16 @@ export default async function handler(req, res) {
         '(5) SOLO devuelve el mensaje listo para copiar. Sin encabezados, sin comillas, sin explicaciones. ' +
         userProfile;
 
+      // Build real-history summary (exclude IA-generated tracking entries)
+      var realHistoryLines = (interacciones || []).filter(function(i) {
+        var c = ((i.contenido || '') + '').toLowerCase();
+        if (c.indexOf('generado con ia') !== -1) return false;
+        if (c.indexOf('mensaje generado') !== -1) return false;
+        return !!i.contenido;
+      }).slice(-5).map(function(i) {
+        return '- ' + (i.tipo || 'nota') + ': ' + (i.contenido || '').substring(0, 200);
+      }).join('\n');
+
       const userPrompt =
         'PROSPECTO: ' + prospecto.nombre + '\n' +
         'ESTRELLAS: ' + stars + '/5' + (esElite ? ' (perfil élite detectado en notas)' : '') + '\n' +
@@ -375,10 +388,11 @@ export default async function handler(req, res) {
         'ETAPA: ' + prospecto.etapa + '\n' +
         'TEMPERATURA: ' + (prospecto.temperatura || 50) + '/100\n' +
         'DÍAS DESDE CREACIÓN: ' + creadoHaceDias + (esFrio ? ' (contacto frío)' : '') + '\n' +
-        'MENSAJES PREVIOS: ' + mensajesPrevios + '\n' +
+        (realHistoryLines ? 'HISTORIAL REAL (últimas interacciones y notas del socio sobre el prospecto):\n' + realHistoryLines + '\n' : 'NO HAY HISTORIAL PREVIO — este es el primer acercamiento.\n') +
         (socioName ? 'VENDEDOR (quien envía): ' + socioName + '\n' : '') +
         (contexto ? 'CONTEXTO EXTRA DEL VENDEDOR: ' + contexto + '\n' : '') +
-        '\nGenera SOLO el mensaje para la fase ' + fase.toUpperCase() + '.';
+        '\nINSTRUCCIÓN: Genera SOLO el mensaje para la fase ' + fase.toUpperCase() + '. ' +
+        (toqueActual === 1 ? 'ESTE ES EL PRIMER MENSAJE del plan — NO asumas conversaciones previas. Si hay historial real arriba, úsalo con naturalidad, pero si no lo hay, escribe como primer contacto.' : 'Este es el toque ' + toqueActual + ' de ' + totalToques + ' del plan. Puedes referenciar sutilmente la secuencia construida hasta ahora.');
 
       const mensaje = await askClaude(systemPrompt, userPrompt);
 
