@@ -151,6 +151,17 @@ export default async function handler(req, res) {
       if (SB_URL_T && SB_KEY_T) {
         try {
           const sbH = { apikey: SB_KEY_T, Authorization: 'Bearer ' + SB_KEY_T, 'Content-Type': 'application/json' };
+
+          // For conversions: deduplicate — max 1 per IP per ref (ever)
+          if (trackType === 'conversion') {
+            var dupCheck = await fetch(SB_URL_T + '/rest/v1/landing_visits?ref=eq.' + encodeURIComponent(trackRef) + '&ip=eq.' + encodeURIComponent(deviceId) + '&type=eq.conversion&select=id&limit=1', { headers: sbH });
+            var dupRows = await dupCheck.json();
+            if (Array.isArray(dupRows) && dupRows.length > 0) {
+              console.log('[Track] SKIP duplicate conversion:', trackRef, deviceId.slice(0, 10));
+              return res.status(200).json({ ok: true, tracked: false, duplicate: true });
+            }
+          }
+
           const sbR = await fetch(SB_URL_T + '/rest/v1/landing_visits', {
             method: 'POST', headers: sbH,
             body: JSON.stringify({ ref: trackRef, ip: deviceId, type: trackType, day: today, created_at: new Date().toISOString() })
