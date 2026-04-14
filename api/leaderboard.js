@@ -512,10 +512,24 @@ module.exports = async (req, res) => {
       }
       var fromISO2 = fromDate.toISOString();
 
-      // Fetch all data in parallel
+      // Paginated fetch to get ALL data (Supabase limits to 1000 per request)
+      async function sbPaged(path, pageSize) {
+        var all = [], page = 0, sz = pageSize || 1000;
+        while (page < 20) {
+          var from = page * sz, to = from + sz - 1;
+          var rows = await sb(path, { headers: { Range: from + '-' + to } });
+          if (!Array.isArray(rows) || rows.length === 0) break;
+          all = all.concat(rows);
+          if (rows.length < sz) break;
+          page++;
+        }
+        return all;
+      }
+      var prospectosP = sbPaged('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&created_at=gte.' + fromISO2 + '&order=created_at.desc');
+      var interaccionesP = sbPaged('interacciones?select=username,tipo,contenido,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&order=created_at.desc');
       var results2 = await Promise.all([
-        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&created_at=gte.' + fromISO2 + '&order=created_at.desc', { headers: { Range: '0-9999' } }),
-        sb('interacciones?select=username,tipo,contenido,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&order=created_at.desc', { headers: { Range: '0-9999' } }),
+        prospectosP,
+        interaccionesP,
         sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2, { headers: { Range: '0-4999' } }),
         sb('users?select=username,name,' + (noPhoto ? '' : 'photo,') + 'whatsapp', { headers: { Range: '0-4999' } })
       ]);
@@ -523,6 +537,7 @@ module.exports = async (req, res) => {
       var allInteracciones = results2[1] || [];
       var allRecordatorios = results2[2] || [];
       var allUsers = results2[3] || [];
+      console.log('[PROSPECT-RANKING] Loaded', allProspectos.length, 'prospectos,', allInteracciones.length, 'interactions for period', period);
       var userMap2 = {}; allUsers.forEach(function(u){ userMap2[u.username] = u; });
 
       // ── SCORING FORMULA ──
