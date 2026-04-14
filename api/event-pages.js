@@ -793,6 +793,18 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '.ev-sticky-text{flex:1;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.3}'
     + '.ev-sticky-text strong{color:#ff6b6b;display:block;font-size:13px}'
     + '.ev-sticky a{padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#0a0a1a;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0}'
+    // Cupos bar
+    + '.ev-cupos{max-width:400px;margin:16px auto 0;padding:10px 16px;border-radius:12px;background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.06)}'
+    + '.ev-cupos-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.06);margin-top:6px;overflow:hidden}'
+    + '.ev-cupos-fill{height:100%;border-radius:3px;transition:width 1s ease}'
+    // Social proof avatars
+    + '.ev-social-proof{max-width:700px;margin:0 auto;padding:20px;text-align:center}'
+    + '.ev-avatars{display:flex;justify-content:center;gap:0;margin-top:10px}'
+    + '.ev-avatar-circle{width:36px;height:36px;border-radius:50%;border:2px solid #06061a;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}'
+    // Guarantee visual
+    + '.ev-guarantee-premium{max-width:700px;margin:0 auto;padding:30px 20px;text-align:center}'
+    + '.ev-guarantee-card{display:flex;align-items:center;gap:14px;padding:20px;border-radius:16px;background:rgba(78,205,196,0.04);border:1px solid rgba(78,205,196,0.12);text-align:left}'
+    + '.ev-guarantee-shield{width:48px;height:48px;border-radius:12px;background:rgba(78,205,196,0.1);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}'
     // Scroll animations
     + '.ev-reveal{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s}.ev-reveal.visible{opacity:1;transform:translateY(0)}'
     + '@media(max-width:600px){.ev-speaker{flex-direction:column;text-align:center}.ev-meta{flex-direction:column;align-items:center}}'
@@ -816,6 +828,7 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '</div>'
     + '<div class="ev-cd" id="ev-countdown"></div>'
     + '<a href="#ev-registro" class="ev-cta">' + esc(content.cta_text || 'Reserva tu Cupo YA') + '</a>'
+    + '<div class="ev-cupos" id="ev-cupos"><div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:rgba(255,255,255,0.5)">Cupos reservados</span><span id="ev-cupos-text" style="color:#d4af37;font-weight:700">Cargando...</span></div><div class="ev-cupos-bar"><div id="ev-cupos-fill" class="ev-cupos-fill" style="width:0%;background:#d4af37"></div></div></div>'
     + '</div></section>'
 
     // ── FLYER (cartelera de cine) ──
@@ -823,6 +836,9 @@ function buildEventHTML(ev, content, creator, posterUrl) {
 
     // ── HOOK ──
     + (content.hook ? '<section class="ev-hook ev-reveal"><p>' + esc(content.hook) + '</p></section>' : '')
+
+    // ── SOCIAL PROOF AVATARS (populated by JS) ──
+    + '<section class="ev-social-proof ev-reveal" id="ev-social-section" style="display:none"><div style="font-size:13px;color:rgba(255,255,255,0.5)">Ellos ya confirmaron su asistencia</div><div class="ev-avatars" id="ev-avatars"></div><div id="ev-social-count" style="margin-top:8px;font-size:12px;color:#4ecdc4;font-weight:600"></div></section>'
 
     // ── VSL VIDEO ──
     + (function() {
@@ -895,8 +911,8 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + '<div class="ev-urgency">' + esc(content.urgency_text || 'Solo ' + capacidad + ' cupos — Se agotan rapido!') + '</div>'
     + '</div></section>'
 
-    // ── GUARANTEE ──
-    + (content.guarantee ? '<section class="ev-guarantee ev-reveal"><div class="ev-guarantee-box">✅ ' + esc(content.guarantee) + '</div></section>' : '')
+    // ── GUARANTEE (premium visual) ──
+    + (content.guarantee ? '<section class="ev-guarantee-premium ev-reveal"><div class="ev-guarantee-card"><div class="ev-guarantee-shield">🛡️</div><div><div style="font-size:13px;font-weight:700;color:#4ecdc4;margin-bottom:4px">Nuestra Garantia</div><div style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6">' + esc(content.guarantee) + '</div></div></div></section>' : '')
 
     // ── FOOTER ──
     + '<footer class="ev-footer">'
@@ -915,6 +931,32 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'var EVT_WA_PAGO="' + esc(ev.whatsapp_pago || '') + '";'
     + 'var EVT_PRECIO="' + esc(precio) + '";'
     + 'var REF=new URLSearchParams(location.search).get("ref")||"";'
+
+    // Load cupos + social proof dynamically
+    + 'fetch("/api/event-pages?action=stats&event_id="+EVT_ID).then(function(r){return r.json()}).then(function(d){'
+    + 'if(!d.ok)return;'
+    + 'var regs=d.totalRegistrations||0;var cap=' + capacidad + ';'
+    + 'var pct=Math.min(100,Math.round(regs/cap*100));'
+    + 'var cuposEl=document.getElementById("ev-cupos-text");'
+    + 'var fillEl=document.getElementById("ev-cupos-fill");'
+    + 'if(cuposEl)cuposEl.textContent=regs+" de "+cap+" reservados";'
+    + 'if(fillEl){fillEl.style.width=pct+"%";fillEl.style.background=pct>80?"#E24B4A":pct>50?"#FF8C00":"#d4af37";}'
+    // Social proof avatars
+    + 'var names=(d.registrations||[]).slice(0,8);'
+    + 'var avEl=document.getElementById("ev-avatars");'
+    + 'var secEl=document.getElementById("ev-social-section");'
+    + 'if(names.length>0&&avEl&&secEl){'
+    + 'secEl.style.display="block";'
+    + 'var colors=["#d4af37","#7F77DD","#1D9E75","#E24B4A","#4ecdc4","#FF8C00","#25D366","#85B7EB"];'
+    + 'var avH="";names.forEach(function(n,i){var ini=((n.nombre||"?")[0]||"?").toUpperCase();avH+="<div class=\\"ev-avatar-circle\\" style=\\"background:"+colors[i%8]+"\\">"+ini+"</div>";});'
+    + 'avEl.innerHTML=avH;'
+    + 'var countEl=document.getElementById("ev-social-count");'
+    + 'if(countEl&&regs>8)countEl.textContent="+ "+(regs-8)+" personas mas";'
+    + '}'
+    // Update sticky CTA with cupos
+    + 'var stickyText=document.querySelector(".ev-sticky-text strong");'
+    + 'if(stickyText)stickyText.textContent="Solo quedan "+(cap-regs)+" cupos";'
+    + '}).catch(function(){});'
 
     // Track visit
     + 'try{var fp=screen.width+"x"+screen.height+"."+screen.colorDepth+"."+Intl.DateTimeFormat().resolvedOptions().timeZone+"."+navigator.language;'

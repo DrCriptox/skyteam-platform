@@ -1521,8 +1521,12 @@ function renderSTMentor() {
       var hoy = agendaBookings.filter(function(b){if(!b.fecha_iso)return false;var h=(new Date(b.fecha_iso).getTime()-Date.now())/3600000;return h>0&&h<=24;});
       if (hoy.length > 0) chips.push('📅 Tengo citas hoy');
     }
+    // Multinivel chips
+    if (d && d.members && d.members.filter(function(m){return m.level>=2;}).length > 0) {
+      chips.push('🎯 ¿Dónde están las oportunidades de cierre?');
+      chips.push('📊 ¿A quién debo llamar hoy?');
+    }
     // Always include emotional + general
-    chips.push('¿Cómo me siento hoy?');
     chips.push('Dame un plan de accion para hoy');
     // Limit to 5 most relevant
     chips = chips.slice(0, 5);
@@ -2035,11 +2039,40 @@ window.mentorSendChat = function(presetText) {
       });
     }
 
-    // Summary of deeper levels
-    var nivel2 = d.members.filter(function(m){return m.level===2;});
-    var nivel3plus = d.members.filter(function(m){return m.level>=3;});
-    if (nivel2.length > 0) context += 'NIVEL 2: ' + nivel2.length + ' socios (activos:' + nivel2.filter(function(m){return m.status==='active';}).length + ').\n';
-    if (nivel3plus.length > 0) context += 'NIVELES 3-10: ' + nivel3plus.length + ' socios.\n';
+    // Detailed info for levels 2-5 (top performers + closing opportunities)
+    var _etapasAvanzadas = ['presentacion', 'confirmado_cierre', 'seguimiento', 'pendiente_pago', 'abonado'];
+    var _closingOpps = [];
+    for (var _lv = 2; _lv <= 5; _lv++) {
+      var nivelN = d.members.filter(function(m) { return m.level === _lv; });
+      if (!nivelN.length) continue;
+      // Sort by score desc, top 5
+      var topN = nivelN.sort(function(a, b) { return (b.sky_score || 0) - (a.sky_score || 0); }).slice(0, 5);
+      context += 'NIVEL ' + _lv + ' — Top ' + Math.min(5, nivelN.length) + ' de ' + nivelN.length + ':\n';
+      topN.forEach(function(m) {
+        var rk2 = (typeof RANKS !== 'undefined' && RANKS[m.rank]) ? RANKS[m.rank].name : 'R' + m.rank;
+        var etapas2 = m.prospectos_por_etapa || {};
+        var pDetail = (m.prospectos_count || 0) + '(';
+        if (etapas2.presentacion) pDetail += 'pres:' + etapas2.presentacion + ',';
+        if (etapas2.seguimiento) pDetail += 'seg:' + etapas2.seguimiento + ',';
+        if (etapas2.pendiente_pago) pDetail += 'pago:' + etapas2.pendiente_pago + ',';
+        if (etapas2.abonado) pDetail += 'abono:' + etapas2.abonado + ',';
+        if (etapas2.cerrado_ganado) pDetail += 'CERR:' + etapas2.cerrado_ganado + ',';
+        pDetail = pDetail.replace(/,$/, '') + ')';
+        context += '- ' + (m.name || m.username) + ' (sponsor:' + (m.sponsor || '?') + '): ' + rk2 + ', score:' + (m.sky_score || 0) + ', prosp:' + pDetail + ', citas:' + (m.bookings_count || 0) + ', racha:' + (m.streak_current || 0) + 'd, academia:' + (m.academy_pct || 0) + '%\n';
+        // Track closing opportunities
+        var avanzados = 0;
+        _etapasAvanzadas.forEach(function(e) { avanzados += (etapas2[e] || 0); });
+        if (avanzados > 0) _closingOpps.push({ name: m.name || m.username, level: _lv, sponsor: m.sponsor || '?', avanzados: avanzados, detalle: pDetail });
+      });
+    }
+    // Closing opportunities summary
+    if (_closingOpps.length > 0) {
+      _closingOpps.sort(function(a, b) { return b.avanzados - a.avanzados; });
+      context += '\nOPORTUNIDADES DE CIERRE (prospectos en etapas avanzadas):\n';
+      _closingOpps.slice(0, 8).forEach(function(o) {
+        context += '- L' + o.level + ': ' + o.name + ' (sponsor:' + o.sponsor + ') tiene ' + o.avanzados + ' prosp avanzados ' + o.detalle + '\n';
+      });
+    }
 
     // Alerts
     var urgentes = (d.alerts||[]).filter(function(a){return a.category==='urgente';});
@@ -2072,22 +2105,27 @@ window.mentorSendChat = function(presetText) {
     + '- Cuenta historias de lideres famosos cuando sea relevante\n'
     + '- Cada 3-4 mensajes menciona UNA capacidad tuya de forma natural\n\n'
     + 'COMO ANALIZAR SOCIOS:\n'
-    + '- Cada socio tiene: rango, score, dias restantes, prospectos, citas, onboarding, racha, landing, Codigo BANK\n'
-    + '- Si el BANK es "B" (Blueprint): hablarle con datos y estructura\n'
-    + '- Si el BANK es "A" (Action): hablarle de resultados rapidos y desafios\n'
-    + '- Si el BANK es "N" (Nurturing): hablarle de impacto emocional y relaciones\n'
-    + '- Si el BANK es "K" (Knowledge): hablarle con logica y numeros\n'
-    + '- Si no tiene BANK asignado, sugiere al lider que lo perfilen\n'
-    + '- Si un socio tiene onboarding dia 0-1 despues de 7 dias: URGENTE que lo guien\n'
-    + '- Si un socio no tiene prospectos: necesita ayuda con su lista de contactos\n'
-    + '- Si no creo landing (ref): necesita activar Sky Sales\n'
-    + '- Si tiene cumpleaños pronto: recordar al lider que lo celebre\n'
-    + '- Los CLIENTES (rango 0) necesitan enfoque en educacion y rutas de aprendizaje\n'
-    + '- Los socios con membresia por vencer necesitan renovar URGENTE\n\n'
+    + '- Tienes datos DETALLADOS de DIRECTOS (nivel 1) y TOP 5 de niveles 2-5\n'
+    + '- Cada socio tiene: rango, score, prospectos por etapa, citas, racha, academia%\n'
+    + '- BANK: B(Blueprint)=datos/estructura, A(Action)=resultados rapidos, N(Nurturing)=impacto emocional, K(Knowledge)=logica/numeros\n'
+    + '- Si no tiene BANK: sugiere al lider que lo perfilen\n'
+    + '- Si academia < 20% y +7 dias: URGENTE que estudie\n'
+    + '- Si 0 prospectos: necesita ayuda con lista de contactos\n'
+    + '- Si no creo landing: necesita activar Sky Sales\n'
+    + '- Si cumpleaños pronto: recordar al lider que lo celebre\n'
+    + '- CLIENTES (rango 0): educacion y rutas de aprendizaje\n'
+    + '- Membresia por vencer: renovar URGENTE\n\n'
+    + 'ANALISIS MULTINIVEL (CLAVE):\n'
+    + '- Tienes datos de niveles 2-5 con los TOP performers y sus prospectos\n'
+    + '- La seccion OPORTUNIDADES DE CIERRE muestra socios de TODA la red con prospectos en etapas avanzadas (presentacion, seguimiento, pendiente_pago)\n'
+    + '- PRIORIZA estas oportunidades: son los cierres mas cercanos\n'
+    + '- Recomienda al lider EXACTAMENTE con quien hablar y que hacer\n'
+    + '- Ejemplo: "En nivel 3, Maria tiene 2 prospectos en seguimiento. Habla con su sponsor Juan para que la apoye con el cierre"\n'
+    + '- Identifica patrones: si un nivel tiene mucha actividad pero pocos cierres, hay que mejorar el proceso de cierre ahi\n\n'
     + 'TUS CAPACIDADES:\n'
-    + 'Analizar red, Codigo BANK, Zoom semanal, Home Meetings, Proyeccion rango, Plan semanal, '
+    + 'Analisis multinivel, Oportunidades de cierre, Codigo BANK, Zoom semanal, Home Meetings, Proyeccion rango, Plan semanal, '
     + 'Coach emocional, Frases de poder, Reconocimientos, Duplicacion, Scorecard, Metas, Desafios, '
-    + 'Preparar mensajes segun personalidad, Planificar eventos, Rutina de lider\n\n'
+    + 'Preparar mensajes segun personalidad, Planificar eventos, Rutina de lider, Identificar socios clave en niveles profundos\n\n'
     + 'DATOS DEL EQUIPO:\n' + context + '\n'
     + 'Responde conciso (max 3-4 parrafos). Emojis moderados. NO uses markdown. Cuando des consejo sobre un socio especifico, adapta el tono segun su Codigo BANK.';
 
@@ -2098,7 +2136,7 @@ window.mentorSendChat = function(presetText) {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
+        max_tokens: 1000,
         system: systemPrompt,
         messages: messages
       })
