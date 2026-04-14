@@ -214,6 +214,29 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // -- ADMIN: IA performance stats (positive vs negative feedbacks per socio) --
+    if (action === 'iaPerformanceStats') {
+      try {
+        // Fetch last 2000 IA feedbacks across all users
+        const fbPos = await sb('interacciones?tipo=eq.ia_feedback_positive&order=created_at.desc&select=username,created_at,contenido', { headers: { ...{ 'Content-Type':'application/json', apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY }, Range: '0-1999' } });
+        const fbNeg = await sb('interacciones?tipo=eq.ia_feedback_negative&order=created_at.desc&select=username,created_at,contenido', { headers: { ...{ 'Content-Type':'application/json', apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY }, Range: '0-1999' } });
+        const perUser = {};
+        (fbPos || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null }; perUser[f.username].positive++; if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at; });
+        (fbNeg || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null }; perUser[f.username].negative++; if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at; });
+        const users = Object.keys(perUser).map(function(u) {
+          const s = perUser[u]; const total = s.positive + s.negative;
+          return { username: u, positive: s.positive, negative: s.negative, total: total, approval: total > 0 ? Math.round((s.positive / total) * 100) : 0, last: s.last };
+        }).sort(function(a, b) { return b.total - a.total; });
+        const totalPos = users.reduce(function(s, u) { return s + u.positive; }, 0);
+        const totalNeg = users.reduce(function(s, u) { return s + u.negative; }, 0);
+        return res.status(200).json({
+          ok: true,
+          summary: { totalGenerated: totalPos + totalNeg, totalApproved: totalPos, totalRejected: totalNeg, approvalRate: (totalPos + totalNeg) > 0 ? Math.round((totalPos / (totalPos + totalNeg)) * 100) : 0, activeSocios: users.length },
+          socios: users
+        });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+
     // -- FEEDBACK: save whether the socio approved/rejected a generated message --
     // tipo_feedback: 'positive' (copied/sent) | 'negative' (regenerated/closed unused)
     // Stored in `interacciones` with tipo='ia_feedback_positive' or 'ia_feedback_negative'

@@ -251,6 +251,31 @@ function generateTasks() {
         }
       }
     });
+
+    // ── Global: Prospects with fecha_cierre_estimada within next 7 days ──
+    prospects.forEach(function(p) {
+      if (!p || !p.fecha_cierre_estimada) return;
+      var etapa = p.etapa || '';
+      if (etapa === 'cerrado_ganado' || etapa === 'cerrado_perdido') return;
+      var fc = new Date(p.fecha_cierre_estimada);
+      if (isNaN(fc.getTime())) return;
+      var diasRestantes = Math.ceil((fc.getTime() - now) / 86400000);
+      if (diasRestantes < -1 || diasRestantes > 7) return;
+      var urgencyIcon = diasRestantes <= 0 ? '\uD83D\uDD25' : diasRestantes <= 2 ? '\u26A1' : '\uD83D\uDCC5';
+      var urgencyText = diasRestantes < 0 ? 'Venció hace ' + Math.abs(diasRestantes) + 'd \u2014 ¡urgente!'
+        : diasRestantes === 0 ? '¡Cierra HOY!'
+        : diasRestantes === 1 ? 'Cierra MAÑANA'
+        : 'Cierra en ' + diasRestantes + ' días';
+      tasks.push({
+        priority: 0,
+        type: 'close_soon',
+        icon: urgencyIcon,
+        title: 'Cierre próximo: ' + (p.nombre || 'Prospecto'),
+        desc: urgencyText + (etapa ? ' \u2014 ' + etapa.replace('_',' ') : ''),
+        action: { type: 'whatsapp', phone: p.telefono, name: p.nombre },
+        secondaryAction: { type: 'navigate', target: 'prospectos' }
+      });
+    });
   }
 
   // ── Global: Upcoming meetings within 24 hours ──

@@ -13,6 +13,23 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
+    // Admin action: manually approve/reject a proof
+    if (req.body && (req.body.action === 'approveProof' || req.body.action === 'rejectProof')) {
+      const proofId = req.body.proofId;
+      const adminUser = req.body.adminUser;
+      if (!proofId) return res.status(400).json({ error: 'Missing proofId' });
+      const newStatus = req.body.action === 'approveProof' ? 'approved' : 'failed';
+      const notes = req.body.notes || ('Admin ' + (adminUser || '?') + ' ' + (newStatus === 'approved' ? 'aprobo' : 'rechazo') + ' manualmente');
+      const r = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?id=eq.' + encodeURIComponent(proofId), {
+        method: 'PATCH',
+        headers: { ...SB_HEADERS, Prefer: 'return=representation' },
+        body: JSON.stringify({ status: newStatus, notes: notes, verified_at: new Date().toISOString() })
+      });
+      const rowRes = await r.json();
+      if (!r.ok) return res.status(500).json({ error: 'Failed to update proof', detail: rowRes });
+      return res.status(200).json({ ok: true, newStatus: newStatus, row: Array.isArray(rowRes) ? rowRes[0] : rowRes });
+    }
+
     // Admin action: list all proofs
     if (req.body && req.body.action === 'listProofs') {
       var proofsR = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?select=id,username,booking_id,status,created_at,notes&order=created_at.desc&limit=100', { headers: SB_HEADERS });
