@@ -5,7 +5,9 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
 
 async function sb(path, opts) {
-  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: HEADERS, ...opts });
+  var h = { ...HEADERS };
+  if (opts && opts.headers) { Object.assign(h, opts.headers); delete opts.headers; }
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: h, ...opts });
   if (!r.ok) { const t = await r.text(); throw new Error(t); }
   const text = await r.text();
   return text ? JSON.parse(text) : null;
@@ -512,10 +514,10 @@ module.exports = async (req, res) => {
 
       // Fetch all data in parallel
       var results2 = await Promise.all([
-        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&order=created_at.desc&limit=10000'),
-        sb('interacciones?select=username,tipo,contenido,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&limit=5000'),
-        sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2 + '&limit=5000'),
-        sb('users?select=username,name,' + (noPhoto ? '' : 'photo,') + 'whatsapp&limit=5000')
+        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&order=created_at.desc', { headers: { Range: '0-9999' } }),
+        sb('interacciones?select=username,tipo,contenido,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&order=created_at.desc', { headers: { Range: '0-9999' } }),
+        sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2, { headers: { Range: '0-4999' } }),
+        sb('users?select=username,name,' + (noPhoto ? '' : 'photo,') + 'whatsapp', { headers: { Range: '0-4999' } })
       ]);
       var allProspectos = results2[0] || [];
       var allInteracciones = results2[1] || [];
@@ -547,7 +549,7 @@ module.exports = async (req, res) => {
       // Load verified proof_images for cierre points by amount
       var allProofImages = [];
       try {
-        var piR = await sb('proof_images?tipo=eq.cierre&ai_status=eq.approved&select=username,ai_amount,created_at&created_at=gte.' + fromISO2);
+        var piR = await sb('proof_images?tipo=eq.cierre&ai_status=eq.approved&select=username,ai_amount,created_at&created_at=gte.' + fromISO2, { headers: { Range: '0-999' } });
         allProofImages = piR || [];
       } catch(e) {}
       // Points by invoice amount
