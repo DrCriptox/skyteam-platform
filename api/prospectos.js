@@ -246,8 +246,11 @@ export default async function handler(req, res) {
     //   RELACIONAL   (3 touches) - high stars or cold prospect (>30d no movement)
     //   ALTO_PERFIL  (4 touches) - rank INN500+ with 4-5 stars, OR elite keywords in notes
     if (action === 'generarMensajeWA') {
-      const { prospecto_id, contexto, forceToque, forceModo } = req.body;
+      const { prospecto_id, contexto, forceToque, forceModo, ultimoMensajeEnviado, respuestaProspecto, canal } = req.body;
       if (!prospecto_id) return res.status(400).json({ error: 'Missing prospecto_id' });
+      const canalTipo = (canal === 'instagram') ? 'Instagram DM' : 'WhatsApp';
+      const hayConversacionPrevia = !!(ultimoMensajeEnviado && ultimoMensajeEnviado.length > 5);
+      const dejadoEnVisto = hayConversacionPrevia && (!respuestaProspecto || respuestaProspecto.length < 2);
 
       const prospectoArr = await sb('prospectos?id=eq.' + encodeURIComponent(prospecto_id) + '&select=*');
       const prospecto = prospectoArr && prospectoArr[0] ? prospectoArr[0] : null;
@@ -414,27 +417,46 @@ export default async function handler(req, res) {
         negativeSamples.forEach(function(s, i) { styleLearning += '\nEJEMPLO NEGATIVO ' + (i+1) + ':\n' + s + '\n'; });
       }
 
+      // Special phase override if prospect left the last message on read
+      let faseEffective = fase;
+      let instruccionFase = instruccionesPorFase[fase];
+      if (dejadoEnVisto) {
+        faseEffective = 'seguimiento_visto';
+        instruccionFase = 'OBJETIVO: SEGUIMIENTO DESPUÉS DE DEJARTE EN VISTO. El prospecto leyó tu mensaje anterior pero no respondió — probablemente porque fue demasiado largo, intrusivo, o no hubo gancho claro. Genera un mensaje MUY CORTO (MÁXIMO 2 líneas, ~20 palabras total), ligero, sin presión, con gancho de curiosidad o humor sutil. NO repitas lo que dijiste antes. NO te disculpes por insistir. NO invites de nuevo directamente. Un simple "oye te mando esto rápido" o "olvida el mensaje anterior, te pregunto solo una cosa" funciona mejor que un texto elaborado. El objetivo es reactivar, NO cerrar.';
+      }
+
+      // Length rule based on channel — WhatsApp/Instagram demand brevity
+      const lengthRule =
+        '══════════════════════════════════════════\n' +
+        'REGLA DE LONGITUD (CRÍTICA — los mensajes largos son ignorados): ' +
+        (dejadoEnVisto
+          ? 'MÁXIMO 2 LÍNEAS (20 palabras). El prospecto te dejó en visto: no repitas la carga. Corto y con gancho.'
+          : fase === 'invitacion_elite' || fase === 'invitacion_sutil' || fase === 'valor'
+            ? 'MÁXIMO 5 LÍNEAS (60 palabras total). Tu toque actual permite un poco más de contenido, pero NO pases de 5 líneas cortas separadas por saltos de línea.'
+            : 'MÁXIMO 3-4 LÍNEAS (40 palabras total). En ' + canalTipo + ' los mensajes cortos responden, los largos se ignoran. Regla de oro: si no cabe en una captura de pantalla de celular sin scroll, es demasiado largo.');
+
       const systemPrompt =
         'Eres un networker de alto nivel entrenado en los principios de Dale Carnegie (relaciones humanas) y Robert Cialdini (persuasión ética). ' +
-        'Generas mensajes de prospección basados en CONSTRUCCIÓN DE RELACIÓN, no en venta agresiva. ' +
-        'Modo actual: ' + modo + ' | Toque ' + toqueActual + ' de ' + totalToques + ' | Fase: ' + fase.toUpperCase() + '. ' +
-        instruccionesPorFase[fase] + ' ' +
+        'Generas mensajes de prospección para ' + canalTipo + ' basados en CONSTRUCCIÓN DE RELACIÓN, no en venta agresiva. ' +
+        'Modo actual: ' + modo + ' | Toque ' + toqueActual + ' de ' + totalToques + ' | Fase: ' + faseEffective.toUpperCase() + '. ' +
+        instruccionFase + ' ' +
         'REGLAS ESTRICTAS: ' +
         '(1) NUNCA menciones SKYTEAM, Innova, Innova IA ni ningún nombre de empresa. Usa "franquicia digital", "sistema digital", "oportunidad digital" SOLO si la fase es de invitación. ' +
         '(2) NUNCA uses clichés de network: "te va a encantar", "tengo algo increíble", "quiero mostrarte un proyecto", "cambió mi vida", "no te vas a arrepentir". ' +
         '(3) Español latino natural, de persona a persona. Emojis moderados (1-2 máximo, o ninguno si es élite). ' +
-        '(4) Personaliza con lo que sabes del prospecto (usa las notas e historial real). ' +
+        '(4) Personaliza con lo que sabes del prospecto (usa las notas, historial real y conversación previa si fue provista). ' +
         '(5) SOLO devuelve el mensaje listo para copiar. Sin encabezados, sin comillas, sin explicaciones. ' +
+        '\n\n' + lengthRule +
         '\n\n══════════════════════════════════════════\n' +
         'ESTILO DE ESCRITURA HUMANA (MUY IMPORTANTE — evita sonar robot): ' +
-        '(a) Los mensajes de WhatsApp/Instagram reales casi NO tienen puntuación excesiva. Una persona no escribe con puntos finales perfectos en cada oración. ' +
+        '(a) Los mensajes de ' + canalTipo + ' reales casi NO tienen puntuación excesiva. Una persona no escribe con puntos finales perfectos en cada oración. ' +
         '(b) Usa MÁXIMO 1 signo de exclamación y 1 signo de interrogación por mensaje. NUNCA "!!!" ni "???". ' +
-        '(c) Separa ideas con saltos de línea en vez de abusar de puntos y comas. Un mensaje de 3 ideas = 3 líneas cortas. ' +
+        '(c) Separa ideas con saltos de línea en vez de abusar de puntos y comas. ' +
         '(d) Es aceptable (a veces) omitir tildes no críticas para sonar natural (ej: "tu" en vez de "tú" en saludo casual). PERO nunca cometas errores ortográficos reales. ' +
         '(e) Puedes usar minúscula después de punto si suena más conversacional (sin abusar). ' +
         '(f) Conecta con "y", "pero", "entonces" en vez de siempre punto-mayúscula. ' +
-        '(g) Suena como una persona real escribiendo desde el celular, con cierto ritmo relajado, NO como un copywriter perfeccionista. ' +
-        '(h) Los mensajes PERFECTAMENTE puntuados generan desconfianza: parecen plantillas de venta. Los mensajes naturales generan respuesta. ' +
+        '(g) Suena como una persona real escribiendo desde el celular. ' +
+        '(h) Mensajes CORTOS generan respuesta. Mensajes LARGOS generan visto. ' +
         userProfile + ' ' +
         (socioBankcode ? 'El BANKCODE "' + socioBankcode + '" debe guiar el tono: aplica la cadencia y vocabulario típico de ese perfil al escribir. ' : '') +
         styleLearning;
@@ -449,6 +471,19 @@ export default async function handler(req, res) {
         return '- ' + (i.tipo || 'nota') + ': ' + (i.contenido || '').substring(0, 200);
       }).join('\n');
 
+      // Conversation previa (exact copy-paste from WhatsApp/Instagram) — highest priority
+      let conversacionBlock = '';
+      if (hayConversacionPrevia) {
+        conversacionBlock = '\n══════════════════════════════════════════\nCONVERSACIÓN PREVIA REAL (copiada por el vendedor desde su chat — USA ESTO COMO PRINCIPAL CONTEXTO):\n\n' +
+          '→ VENDEDOR ESCRIBIÓ (último mensaje enviado):\n"' + ultimoMensajeEnviado.substring(0, 600) + '"\n\n';
+        if (dejadoEnVisto) {
+          conversacionBlock += '→ PROSPECTO: TE DEJÓ EN VISTO (leyó pero no respondió). Esto significa que el mensaje anterior NO conectó — posiblemente fue demasiado largo, intrusivo o sin gancho. El nuevo mensaje debe ser MUY corto, romper la inercia con curiosidad o humor, sin volver a presionar.\n';
+        } else {
+          conversacionBlock += '→ PROSPECTO RESPONDIÓ:\n"' + respuestaProspecto.substring(0, 600) + '"\n\nBasándote en CÓMO respondió (tono, interés, objeciones, preguntas), genera la siguiente intervención adecuada.\n';
+        }
+        conversacionBlock += '\n';
+      }
+
       const userPrompt =
         'PROSPECTO: ' + prospecto.nombre + '\n' +
         'ESTRELLAS: ' + stars + '/5' + (esElite ? ' (perfil élite detectado en notas)' : '') + '\n' +
@@ -459,8 +494,15 @@ export default async function handler(req, res) {
         (realHistoryLines ? 'HISTORIAL REAL (últimas interacciones y notas del socio sobre el prospecto):\n' + realHistoryLines + '\n' : 'NO HAY HISTORIAL PREVIO — este es el primer acercamiento.\n') +
         (socioName ? 'VENDEDOR (quien envía): ' + socioName + '\n' : '') +
         (contexto ? 'CONTEXTO EXTRA DEL VENDEDOR: ' + contexto + '\n' : '') +
-        '\nINSTRUCCIÓN: Genera SOLO el mensaje para la fase ' + fase.toUpperCase() + '. ' +
-        (toqueActual === 1 ? 'ESTE ES EL PRIMER MENSAJE del plan — NO asumas conversaciones previas. Si hay historial real arriba, úsalo con naturalidad, pero si no lo hay, escribe como primer contacto.' : 'Este es el toque ' + toqueActual + ' de ' + totalToques + ' del plan. Puedes referenciar sutilmente la secuencia construida hasta ahora.');
+        conversacionBlock +
+        '\nINSTRUCCIÓN: Genera SOLO el mensaje para la fase ' + faseEffective.toUpperCase() + '. ' +
+        (hayConversacionPrevia
+          ? (dejadoEnVisto
+              ? 'El prospecto te dejó en visto. NO vuelvas a presionar. Genera un mensaje de reactivación CORTO (máx 2 líneas) con gancho de curiosidad.'
+              : 'Hay una conversación real en curso. Responde apropiadamente a lo que dijo el prospecto, llevando sutilmente hacia la fase del plan.')
+          : (toqueActual === 1
+              ? 'ESTE ES EL PRIMER MENSAJE del plan — NO asumas conversaciones previas. Si hay historial real arriba, úsalo con naturalidad, pero si no lo hay, escribe como primer contacto.'
+              : 'Este es el toque ' + toqueActual + ' de ' + totalToques + ' del plan. Puedes referenciar sutilmente la secuencia construida hasta ahora.'));
 
       const mensaje = await askClaude(systemPrompt, userPrompt);
 
