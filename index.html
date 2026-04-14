@@ -10210,7 +10210,7 @@ function _loadCombinedRanking() {
       html+='<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:10px 0 20px;padding:0 10px;">';
       podiumOrder.forEach(function(pi){
         var u=top20[pi]; if(!u) return;
-        var isMe=CU&&(u.ref===CU.username||u.ref===(CU.ref||'').toLowerCase());
+        var isMe=CU&&(u.ref===(CU.username||'').toLowerCase()||u.ref===(CU.ref||'').toLowerCase());
         var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
         var foto=u.photo||'';
         var sz=pi===0?'64px':'50px';
@@ -10230,7 +10230,7 @@ function _loadCombinedRanking() {
     html+='<div class="card" style="padding:8px;">';
     top20.forEach(function(u,i){
       if(i<3 && top20.length>=3) return;
-      var isMe=CU&&(u.ref===CU.username||u.ref===(CU.ref||'').toLowerCase());
+      var isMe=CU&&(u.ref===(CU.username||'').toLowerCase()||u.ref===(CU.ref||'').toLowerCase());
       var ini=(u.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
       var foto=u.photo||'';
       var flag=_waFlag(u.whatsapp||'');
@@ -10250,9 +10250,16 @@ function _loadCombinedRanking() {
     // Show user's position if NOT in top 20
     if(CU) {
       var myRef = (CU.ref || CU.username || '').toLowerCase();
-      var inTop = top20.some(function(u){ return u.ref === myRef; });
+      var myUser = (CU.username || '').toLowerCase();
+      var inTop = top20.some(function(u){ return u.ref === myRef || u.ref === myUser; });
+      // Show trophy message if in top
+      if(inTop) {
+        var myTopIdx = top20.findIndex(function(u){ return u.ref === myRef || u.ref === myUser; });
+        var topMsg = myTopIdx === 0 ? '\uD83C\uDFC6 \u00a1Est\u00e1s en el #1!' : myTopIdx < 3 ? '\u2B50 \u00a1Top 3 en el ranking global!' : '\u2728 \u00a1Est\u00e1s en el Top 20!';
+        html += '<div style="text-align:center;margin-top:10px;font-size:12px;color:#C9A84C;font-weight:700">' + topMsg + '</div>';
+      }
       if(!inTop) {
-        var myIdx = ranking.findIndex(function(u){ return u.ref === myRef; });
+        var myIdx = ranking.findIndex(function(u){ return u.ref === myRef || u.ref === myUser; });
         var myData = myIdx >= 0 ? ranking[myIdx] : null;
         var myPos = myIdx >= 0 ? myIdx + 1 : ranking.length + 1;
         var myIni = (CU.name||CU.username||'?').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
