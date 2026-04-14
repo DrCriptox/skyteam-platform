@@ -295,6 +295,16 @@ module.exports = async function handler(req, res) {
     //  UPDATE — Edit event data
     // ═══════════════════════════════════════════════════
     // ═══════════════════════════════════════════════════
+    //  BROADCAST PUSH — Send push to all users (admin only)
+    // ═══════════════════════════════════════════════════
+    if (action === 'broadcastPush' && req.method === 'POST') {
+      var b = req.body;
+      if (!b.title || !b.body) return res.status(400).json({ error: 'title + body required' });
+      await broadcastPush(b.title, b.body, b.url || '/');
+      return res.status(200).json({ ok: true, sent: true });
+    }
+
+    // ═══════════════════════════════════════════════════
     //  DELETE — Remove event and all related data
     // ═══════════════════════════════════════════════════
     if (action === 'delete' && req.method === 'POST') {
