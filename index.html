@@ -2624,8 +2624,10 @@ document.addEventListener('DOMContentLoaded',function(){
           <button class="admin-tab" id="atab-config" onclick="switchAdminTab('config')">Configuracion</button>
           <button class="admin-tab" id="atab-duplicadas" onclick="switchAdminTab('duplicadas')">Duplicadas</button>
           <button class="admin-tab" id="atab-pruebas" onclick="switchAdminTab('pruebas');setTimeout(renderAdminPruebas,200);">Pruebas CRM</button>
+          <button class="admin-tab" id="atab-mixlr" onclick="switchAdminTab('mixlr');setTimeout(renderAdminMixlr,100);">🎙️ MIXLR Diario</button>
         </div>
         <div id="admin-solicitudes"></div>
+        <div id="admin-mixlr" style="display:none;"></div>
         <div id="admin-pruebas" style="display:none;"></div>
         <div id="admin-usuarios" style="display:none;"></div>
         <div id="admin-contenido" style="display:none;"></div>
@@ -10823,7 +10825,7 @@ function renderAdminDuplicadas() {
 }
 
 function switchAdminTab(tab) {
-  ['solicitudes','usuarios','contenido','anuncios-admin','config','duplicadas','pruebas'].forEach(t=>{
+  ['solicitudes','usuarios','contenido','anuncios-admin','config','duplicadas','pruebas','mixlr'].forEach(t=>{
     var panel = document.getElementById('admin-'+t);
     if(panel) {
       panel.style.display = t===tab?'block':'none';
@@ -10989,6 +10991,94 @@ function _loadAgendaProofs() {
     container.innerHTML = html;
   }).catch(function(e) { container.innerHTML = '<div style="color:#E24B4A;padding:20px;">Error: ' + e.message + '</div>'; });
 }
+
+function renderAdminMixlr() {
+  var el = document.getElementById('admin-mixlr');
+  if (!el) return;
+  fetch('/api/event-pages?action=getMixlrImage').then(function(r){return r.json();}).then(function(d){
+    var imgUrl = (d && d.url) || '';
+    var html = '<div style="max-width:600px;margin:0 auto;padding:20px">';
+    html += '<h2 style="color:#C9A84C;font-size:18px;margin:0 0 16px">\uD83C\uDF99\uFE0F MIXLR Diario</h2>';
+    html += '<p style="color:rgba(255,255,255,0.5);font-size:13px;line-height:1.6;margin:0 0 20px">Sube la imagen del d\u00eda y se enviar\u00e1 autom\u00e1ticamente por correo a todos los socios de lunes a viernes a las 7:00 AM (hora Colombia).</p>';
+
+    // Current image preview
+    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin-bottom:16px">';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Imagen actual</div>';
+    html += '<div style="text-align:center;background:#0a0a1a;border-radius:8px;padding:12px;min-height:200px;display:flex;align-items:center;justify-content:center">';
+    html += '<img id="mixlr-current-img" src="' + imgUrl + '?t=' + Date.now() + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" style="max-width:100%;max-height:300px;border-radius:8px">';
+    html += '<div style="display:none;color:rgba(255,255,255,0.3);font-size:13px">Sin imagen subida todav\u00eda</div>';
+    html += '</div></div>';
+
+    // Upload section
+    html += '<input type="file" id="mixlr-img-file" accept="image/*" style="display:none" onchange="_uploadMixlrImage(this)">';
+    html += '<button onclick="document.getElementById(\'mixlr-img-file\').click()" style="width:100%;padding:14px;border-radius:12px;border:1px dashed rgba(212,175,55,0.4);background:rgba(212,175,55,0.04);color:#C9A84C;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px">\uD83D\uDCF8 Subir nueva imagen</button>';
+
+    html += '<div id="mixlr-upload-status" style="margin-bottom:16px;text-align:center;font-size:12px"></div>';
+
+    // Test send button
+    html += '<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:16px;margin-top:16px">';
+    html += '<button onclick="_sendMixlrEmailNow()" style="width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#E24B4A,#c0392b);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit">\uD83D\uDCE7 Enviar correo AHORA a todos</button>';
+    html += '<p style="font-size:10px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px">Esto enviar\u00e1 el correo inmediatamente con la imagen actual</p>';
+    html += '</div>';
+
+    html += '</div>';
+    el.innerHTML = html;
+  });
+}
+
+function _uploadMixlrImage(input) {
+  if (!input.files || !input.files[0]) return;
+  var status = document.getElementById('mixlr-upload-status');
+  if (status) status.innerHTML = '<span style="color:#C9A84C">\u23F3 Subiendo imagen...</span>';
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var MAX = 1200;
+      var w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { var r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var base64 = canvas.toDataURL('image/jpeg', 0.85);
+      fetch('/api/upload-event', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: base64, folder: 'mixlr', filename: 'daily.jpg', fixedName: 'daily' })
+      }).then(function(r){return r.json();}).then(function(d) {
+        if (d.ok) {
+          if (status) status.innerHTML = '<span style="color:#1D9E75">\u2705 Imagen subida correctamente</span>';
+          // Reload preview
+          var imgEl = document.getElementById('mixlr-current-img');
+          if (imgEl) { imgEl.src = d.url + '?t=' + Date.now(); imgEl.style.display = 'block'; }
+        } else {
+          if (status) status.innerHTML = '<span style="color:#E24B4A">\u274C Error: ' + (d.error || 'Upload failed') + '</span>';
+        }
+      });
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+window._uploadMixlrImage = _uploadMixlrImage;
+
+function _sendMixlrEmailNow() {
+  if (!confirm('Enviar el correo MIXLR a TODOS los socios ahora?')) return;
+  var status = document.getElementById('mixlr-upload-status');
+  if (status) status.innerHTML = '<span style="color:#C9A84C">\u23F3 Enviando correos...</span>';
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'sendMixlrEmail' })
+  }).then(function(r){return r.json();}).then(function(d) {
+    if (d.ok) {
+      if (status) status.innerHTML = '<span style="color:#1D9E75">\u2705 Enviado a ' + d.sent + ' socios</span>';
+    } else {
+      if (status) status.innerHTML = '<span style="color:#E24B4A">\u274C Error: ' + (d.error || '') + '</span>';
+    }
+  });
+}
+window._sendMixlrEmailNow = _sendMixlrEmailNow;
+window.renderAdminMixlr = renderAdminMixlr;
 
 function renderSolicitudes() {
   var el = document.getElementById('admin-solicitudes');

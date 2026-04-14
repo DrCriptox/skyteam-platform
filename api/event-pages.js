@@ -297,6 +297,61 @@ module.exports = async function handler(req, res) {
     // ═══════════════════════════════════════════════════
     //  BROADCAST PUSH — Send push to all users (admin only)
     // ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════
+    //  MIXLR — Get current daily image URL (cache-busted)
+    // ═══════════════════════════════════════════════════
+    if (action === 'getMixlrImage') {
+      var url = SUPABASE_URL + '/storage/v1/object/public/event-assets/mixlr/daily.jpg?v=' + Math.floor(Date.now() / 60000);
+      return res.status(200).json({ ok: true, url: url });
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  MIXLR — Send daily email (manual or cron)
+    // ═══════════════════════════════════════════════════
+    if (action === 'sendMixlrEmail' && req.method === 'POST') {
+      if (!RESEND_KEY) return res.status(500).json({ error: 'RESEND_KEY not configured' });
+      // Get all unique user emails
+      var uR2 = await SB('users?select=email&email=neq.null&email=neq.&limit=1000');
+      var users2 = await uR2.json();
+      if (!Array.isArray(users2)) return res.status(500).json({ error: 'Failed to fetch users' });
+      var rawEmails2 = users2.map(function(u) { return (u.email || '').toLowerCase().trim(); }).filter(function(e) { return e && e.indexOf('@') > 0; });
+      var emails2 = Array.from(new Set(rawEmails2));
+
+      var imgUrl = SUPABASE_URL + '/storage/v1/object/public/event-assets/mixlr/daily.jpg?v=' + Math.floor(Date.now() / 60000);
+      var subject = '🎙️ Tu dosis diaria MIXLR — Conéctate AHORA';
+      var html = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a1a;color:#fff;padding:0;border-radius:16px;overflow:hidden">'
+        + '<div style="position:relative;background-image:url(' + imgUrl + ');background-size:cover;background-position:center;min-height:280px"><div style="background:linear-gradient(180deg,rgba(10,10,26,0.4) 0%,rgba(10,10,26,0.95) 100%);padding:60px 30px 30px;min-height:280px;display:flex;flex-direction:column;justify-content:flex-end">'
+        + '<div style="display:inline-block;background:#E24B4A;padding:8px 20px;border-radius:8px;margin-bottom:16px;align-self:flex-start"><span style="color:#fff;font-size:22px;font-weight:900;letter-spacing:4px">MIXLR</span></div>'
+        + '<h1 style="color:#fff;font-size:26px;margin:0 0 8px;font-weight:800">Dosis Diaria MIXLR</h1>'
+        + '<p style="color:#d4af37;font-size:13px;font-weight:600;margin:0;text-transform:uppercase;letter-spacing:2px">Crecimiento Personal • Mentalidad</p>'
+        + '</div></div>'
+        + '<div style="padding:30px">'
+        + '<p style="color:rgba(255,255,255,0.85);font-size:16px;line-height:1.7;margin:0 0 16px">Tu <strong style="color:#d4af37">dosis diaria de crecimiento personal y mentalidad</strong> que te va a ayudar a:</p>'
+        + '<div style="background:rgba(212,175,55,0.05);border-left:3px solid #d4af37;padding:16px 20px;margin:20px 0;border-radius:8px"><div style="color:rgba(255,255,255,0.85);font-size:15px;line-height:2">🧠 <strong>Expandir tu mente</strong><br>💪 <strong>Desarrollar tus habilidades</strong><br>📚 <strong>Aumentar tu conocimiento</strong><br>🎯 <strong>Lograr los resultados</strong> que siempre has soñado</div></div>'
+        + '<p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.7;text-align:center;margin:24px 0">No te lo pierdas. Una sesión diaria que cambia vidas.</p>'
+        + '<div style="text-align:center;margin:30px 0 10px"><a href="https://innovationsimplifies.mixlr.com/" style="display:inline-block;padding:18px 50px;border-radius:14px;background:linear-gradient(135deg,#E24B4A,#c0392b);color:#fff;font-size:18px;font-weight:800;text-decoration:none;box-shadow:0 4px 20px rgba(226,75,74,0.4);letter-spacing:0.5px">🔗 Conectarme AHORA</a></div>'
+        + '<p style="color:rgba(255,255,255,0.3);font-size:11px;text-align:center;margin-top:20px">Si el botón no funciona, copia este link:<br><a href="https://innovationsimplifies.mixlr.com/" style="color:#d4af37;word-break:break-all">https://innovationsimplifies.mixlr.com/</a></p>'
+        + '</div>'
+        + '<div style="padding:14px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.3)"><img src="https://skyteam.global/logo-skyteam-white.png" alt="SkyTeam" width="100" style="opacity:0.7;margin-bottom:6px"><br><p style="color:rgba(255,255,255,0.3);font-size:11px;margin:0">SkyTeam Global — Tu plataforma de crecimiento</p></div>'
+        + '</div>';
+
+      var sent2 = 0;
+      for (var i2 = 0; i2 < emails2.length; i2 += 100) {
+        var batch2 = emails2.slice(i2, i2 + 100);
+        var batchBody2 = batch2.map(function(em) { return { from: 'SkyTeam Global <lideres@skyteam.global>', to: [em], subject: subject, html: html }; });
+        try {
+          var er = await fetch('https://api.resend.com/emails/batch', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify(batchBody2)
+          });
+          if (er.ok) sent2 += batch2.length;
+        } catch(e) {}
+      }
+      console.log('[MIXLR] Daily email sent to', sent2, 'unique users');
+      return res.status(200).json({ ok: true, sent: sent2 });
+    }
+
     if (action === 'broadcastPush' && req.method === 'POST') {
       var b = req.body;
       if (!b.title || !b.body) return res.status(400).json({ error: 'title + body required' });
@@ -368,7 +423,9 @@ module.exports = async function handler(req, res) {
       var uR = await SB('users?select=email&email=neq.null&email=neq.&limit=1000');
       var users = await uR.json();
       if (!Array.isArray(users)) return res.status(500).json({ error: 'Failed to fetch users' });
-      var emails = users.map(function(u) { return u.email; }).filter(function(e) { return e && e.indexOf('@') > 0; });
+      var rawEmails = users.map(function(u) { return (u.email || '').toLowerCase().trim(); }).filter(function(e) { return e && e.indexOf('@') > 0; });
+      // Deduplicate emails (some users have 2 accounts with same email)
+      var emails = Array.from(new Set(rawEmails));
       // Send in batches of 50 (Resend limit)
       var sent = 0, errors = 0;
       // Use Resend Batch API: up to 100 emails per call

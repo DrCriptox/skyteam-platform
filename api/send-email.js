@@ -463,6 +463,39 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('evening_recap: ' + e.message); }
 
+    // ── TRIGGER MIXLR: Daily email Mon-Fri 7:00-7:14 AM Colombia ──
+    try {
+      var nowMx = new Date();
+      var colHourMx = (nowMx.getUTCHours() - 5 + 24) % 24;
+      var colMinMx = nowMx.getUTCMinutes();
+      var colDayMx = (nowMx.getUTCDay()); // UTC day; 0=sun..6=sat
+      // Colombia day: same as UTC since UTC 5-12 = Col 0-7am
+      var isWeekday = colDayMx >= 1 && colDayMx <= 5; // Mon-Fri
+      if (isWeekday && colHourMx === 7 && colMinMx <= 14) {
+        var todayMx = nowMx.toISOString().slice(0, 10);
+        var sentKey = 'mixlr_sent_' + todayMx;
+        // Check if already sent today (using a row in a table or just rely on cron de-dup)
+        try {
+          var checkR = await fetch(SUPABASE_URL + '/rest/v1/cron_log?key=eq.' + sentKey + '&select=key&limit=1', { headers: SB_HEADERS });
+          var checkRows = await checkR.json();
+          if (Array.isArray(checkRows) && checkRows.length > 0) {
+            // Already sent today, skip
+          } else {
+            // Mark as sent + send via internal API call
+            try { await fetch(SUPABASE_URL + '/rest/v1/cron_log', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify({ key: sentKey, sent_at: new Date().toISOString() }) }); } catch(e) {}
+            // Trigger sendMixlrEmail action
+            var host = req.headers && req.headers.host ? req.headers.host : 'skyteam.global';
+            var proto = host.indexOf('localhost') === 0 ? 'http' : 'https';
+            await fetch(proto + '://' + host + '/api/event-pages', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'sendMixlrEmail' })
+            });
+            results.triggers.push({ type: 'mixlr_daily', date: todayMx });
+          }
+        } catch(e) { results.errors.push('mixlr: ' + e.message); }
+      }
+    } catch(e) { results.errors.push('mixlr_outer: ' + e.message); }
+
     // ── TRIGGER 11: Training reminder for new users (rank 0-1, 10am Colombia) ──
     try {
       const colombiaHour5 = (now.getUTCHours() - 5 + 24) % 24;

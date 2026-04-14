@@ -25,8 +25,15 @@ module.exports = async function handler(req, res) {
     var folder = (b.folder || 'general').replace(/[^a-zA-Z0-9_-]/g, '');
     var ext = b.filename ? b.filename.split('.').pop().toLowerCase() : 'jpg';
     if (['jpg','jpeg','png','webp','gif'].indexOf(ext) === -1) ext = 'jpg';
-    var fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.' + ext;
-    var storagePath = folder + '/' + fileName;
+    var fileName, storagePath;
+    // Special: MIXLR daily image uses fixed path (overwrites)
+    if (b.fixedName) {
+      fileName = b.fixedName + '.' + ext;
+      storagePath = folder + '/' + fileName;
+    } else {
+      fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.' + ext;
+      storagePath = folder + '/' + fileName;
+    }
 
     // Detect content type
     var contentType = 'image/jpeg';
