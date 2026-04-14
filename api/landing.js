@@ -247,32 +247,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, stats: data });
     }
 
-    // ── DEBUG: analyze visits for a specific ref ──
-    if (action === 'debugVisits') {
-      var debugRef = (req.body || {}).ref || 'legend';
-      var SB_D = process.env.SUPABASE_URL;
-      var SK_D = process.env.SUPABASE_SERVICE_KEY;
-      var dR = await fetch(SB_D + '/rest/v1/landing_visits?ref=eq.' + encodeURIComponent(debugRef) + '&select=ip,type,day&order=day.desc&limit=500', { headers: { apikey: SK_D, Authorization: 'Bearer ' + SK_D } });
-      var dVisits = await dR.json();
-      if (!Array.isArray(dVisits)) return res.status(200).json({ error: 'fetch failed' });
-      var pageViews = dVisits.filter(function(v) { return v.type !== 'conversion'; });
-      var conversions = dVisits.filter(function(v) { return v.type === 'conversion'; });
-      var viewIps = {}, convIps = {};
-      pageViews.forEach(function(v) { viewIps[v.ip] = (viewIps[v.ip] || 0) + 1; });
-      conversions.forEach(function(v) { convIps[v.ip] = (convIps[v.ip] || 0) + 1; });
-      var uVisits = Object.keys(viewIps).length;
-      var uConvs = Object.keys(convIps).length;
-      return res.status(200).json({
-        ref: debugRef,
-        totalVisits: pageViews.length, uniqueVisitorIPs: uVisits, duplicatedVisits: pageViews.length - uVisits,
-        totalConversions: conversions.length, uniqueConversionIPs: uConvs, duplicatedConversions: conversions.length - uConvs,
-        score: Math.max(0, pageViews.length - (pageViews.length - uVisits) + (uConvs * 15)),
-        topVisitorIPs: Object.entries(viewIps).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10).map(function(e) { return { ip: e[0], count: e[1] }; }),
-        topConversionIPs: Object.entries(convIps).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10).map(function(e) { return { ip: e[0], count: e[1] }; }),
-        conversionsByDay: conversions.reduce(function(acc, v) { acc[v.day] = (acc[v.day] || 0) + 1; return acc; }, {})
-      });
-    }
-
     // ── GET RANKING: merge both asesor files + stats, filter by period ──
     // Uses cached GitHub reads (60s TTL) — 3 files read in parallel
     if (action === 'getRanking') {
