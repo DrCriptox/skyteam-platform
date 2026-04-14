@@ -317,22 +317,25 @@ module.exports = async function handler(req, res) {
       if (!Array.isArray(users)) return res.status(500).json({ error: 'Failed to fetch users' });
       var emails = users.map(function(u) { return u.email; }).filter(function(e) { return e && e.indexOf('@') > 0; });
       // Send in batches of 50 (Resend limit)
-      var sent = 0;
-      for (var i = 0; i < emails.length; i += 50) {
-        var batch = emails.slice(i, i + 50);
+      var sent = 0, errors = 0;
+      // Send individually (Resend BCC requires 'to' and has limits)
+      for (var i = 0; i < emails.length; i++) {
         try {
-          await fetch('https://api.resend.com/emails', {
+          var eR = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               from: 'SkyTeam Global <lideres@skyteam.global>',
-              bcc: batch,
+              to: [emails[i]],
               subject: b.subject,
               html: b.html
             })
           });
-          sent += batch.length;
-        } catch(e) { console.error('[BROADCAST] Email batch error:', e.message); }
+          if (eR.ok) sent++;
+          else { errors++; if (errors <= 3) { var eTxt = await eR.text(); console.error('[BROADCAST] Email error:', eR.status, eTxt.substring(0, 200)); } }
+          // Rate limit: max 10/sec (Resend Pro)
+          if (i % 8 === 7) await new Promise(function(r) { setTimeout(r, 1000); });
+        } catch(e) { errors++; }
       }
       console.log('[BROADCAST] Sent email to', sent, 'users');
       return res.status(200).json({ ok: true, sent: sent });
