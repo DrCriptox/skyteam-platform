@@ -996,11 +996,17 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'fetch("/api/event-pages?action=stats&event_id="+EVT_ID).then(function(r){return r.json()}).then(function(d){'
     + 'if(!d.ok)return;'
     + 'var realRegs=d.totalRegistrations||0;var cap=' + capacidad + ';'
-    // Social proof: muestra minimo 65% del capacity para generar urgencia
-    // El numero crece conforme real registrations aumentan (nunca baja)
-    + 'var minBase=Math.floor(cap*0.65);'
-    + 'var displayRegs=Math.max(minBase+realRegs,realRegs);'
-    + 'var realRemaining=cap-realRegs;'
+    // Social proof formula:
+    // - Base: arranca en 65% del capacity para generar urgencia
+    // - Reales: cada registro real suma 1:1 hasta llegar a cap-10
+    // - Ultimos 10: cada 10 registros reales sube solo 1 (ritmo lento)
+    // - NUNCA muestra "lleno" (max 99%)
+    + 'var base=Math.floor(cap*0.65);'
+    + 'var displayRegs;'
+    + 'var umbral=cap-10;'  // cuando displayRegs llega aqui, frena
+    + 'var normalCrecimiento=base+realRegs;'
+    + 'if(normalCrecimiento<=umbral){displayRegs=normalCrecimiento;}'
+    + 'else{var excedente=normalCrecimiento-umbral;var lento=Math.floor(excedente/10);displayRegs=Math.min(cap-1,umbral+lento);}'
     + 'var displayRemaining=Math.max(1,cap-displayRegs);'
     + 'var pct=Math.min(99,Math.round(displayRegs/cap*100));'
     + 'var cuposEl=document.getElementById("ev-cupos-text");'

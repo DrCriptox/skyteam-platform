@@ -6,7 +6,7 @@ const SB_H = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authori
 
 // Simple cache: slug → { html, ts, status }
 var PAGE_CACHE = {};
-var CACHE_TTL = 60000; // 1 min (reduced to avoid stale draft cache)
+var CACHE_TTL = 10000; // 10 seconds (aggressive to show regenerations fast)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     var now = Date.now();
     if (!hasRef && PAGE_CACHE[slug] && PAGE_CACHE[slug].status === 'published' && (now - PAGE_CACHE[slug].ts) < CACHE_TTL) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
       return res.status(200).send(PAGE_CACHE[slug].html);
     }
 
@@ -99,14 +99,14 @@ module.exports = async function handler(req, res) {
       // Cache base HTML (only published, never drafts)
       if (ev.status === 'published') PAGE_CACHE[slug] = { html: ev.ai_html, ts: now, status: 'published' };
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
       return res.status(200).send(html);
     }
 
     // Fallback: minimal landing if no AI HTML generated yet
     var fallbackHtml = buildFallback(ev);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=60');
+    res.setHeader('Cache-Control', 'public, s-maxage=10');
     return res.status(200).send(fallbackHtml);
 
   } catch(err) {
