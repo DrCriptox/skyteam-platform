@@ -514,7 +514,7 @@ module.exports = async (req, res) => {
 
       // Fetch all data in parallel
       var results2 = await Promise.all([
-        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&order=created_at.desc', { headers: { Range: '0-9999' } }),
+        sb('prospectos?select=username,etapa,temperatura,created_at,updated_at,calif_positivo,telefono,instagram&created_at=gte.' + fromISO2 + '&order=created_at.desc', { headers: { Range: '0-9999' } }),
         sb('interacciones?select=username,tipo,contenido,created_at,prospecto_id&created_at=gte.' + fromISO2 + '&order=created_at.desc', { headers: { Range: '0-9999' } }),
         sb('recordatorios?select=username,completado,created_at&created_at=gte.' + fromISO2, { headers: { Range: '0-4999' } }),
         sb('users?select=username,name,' + (noPhoto ? '' : 'photo,') + 'whatsapp', { headers: { Range: '0-4999' } })
@@ -533,18 +533,14 @@ module.exports = async (req, res) => {
       // Img abono: +20 | Img pago completo: +60
       var _defStats = function(){ return {contactos:0,conWa:0,conIg:0,calificados:0,avances:0,msgIA:0,actualizaciones:0,recordatorios:0,imgPresentacion:0,imgAbono:0,imgPago:0,cierreMovidos:0,cierreLegacy:0,cierreFotoPts:0,score:0}; };
       var stats2 = {};
-      // Count new prospects in period
-      var fromTs = new Date(fromISO2).getTime(); // Use timestamp comparison (not string)
+      // Count prospects in period (already filtered by Supabase query)
       allProspectos.forEach(function(p) {
         if (!stats2[p.username]) stats2[p.username] = _defStats();
         var s = stats2[p.username];
-        var pTs = new Date(p.created_at).getTime();
-        if (pTs >= fromTs) {
-          s.contactos++;
-          if (p.telefono && p.telefono.length >= 8) s.conWa++;
-          if (p.instagram && p.instagram.length >= 2) s.conIg++;
-          if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
-        }
+        s.contactos++;
+        if (p.telefono && p.telefono.length >= 8) s.conWa++;
+        if (p.instagram && p.instagram.length >= 2) s.conIg++;
+        if (p.calif_positivo !== null && p.calif_positivo !== undefined) s.calificados++;
       });
       // Load verified proof_images for cierre points by amount
       var allProofImages = [];
