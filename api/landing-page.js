@@ -286,8 +286,14 @@ Agendar llamada</a>
     var endCta = document.querySelector('.end-cta');
     _hijackBtn(endCta, linkSaber);
 
-    // ALL CTA buttons — override every javascript:void(0) link to go to WhatsApp
+    // ALL CTA buttons — only override REAL CTAs, not generic javascript:void(0) elements
+    // Look for buttons with explicit CTA classes/text patterns to avoid false conversions
     document.querySelectorAll('a[href="javascript:void(0)"]').forEach(function(el) {
+      var txt = (el.textContent || '').toLowerCase().trim();
+      var hasClass = el.className && /cta|btn|activar|reservar|comenzar|inscribir|empezar|conocer/i.test(el.className);
+      var hasCtaText = /activar|reservar|comenzar|inscribir|empezar|quiero|saber.+mas|conocer.+mas|registrar|hablar/i.test(txt);
+      // Only hijack if it has CTA class OR CTA text
+      if (!hasClass && !hasCtaText) return;
       _hijackBtn(el, linkActivar);
     });
 
@@ -300,9 +306,22 @@ Agendar llamada</a>
     else window._advisorData = { whatsapp: wa, nombre: nombre };
   }, 500);
 
-  // ── Conversion tracking (max 1 per IP on server) ──
+  // ── Conversion tracking (anti-bot + min engagement) ──
+  // Bot detection: filter by user agent
+  var _ua = navigator.userAgent || '';
+  var _isBot = /bot|crawler|spider|preview|scrape|fetch|monitor|headless|phantom|selenium/i.test(_ua);
+  // Engagement tracking: only count after real interaction
+  var _pageLoadTime = Date.now();
+  var _userInteracted = false;
+  ['scroll','mousemove','touchstart','click','keydown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ _userInteracted = true; }, { once: true, passive: true });
+  });
   function _trackConv() {
     if (window._convTracked) return;
+    if (_isBot) return; // skip bots
+    var elapsed = Date.now() - _pageLoadTime;
+    if (elapsed < 5000) return; // require at least 5s on page
+    if (!_userInteracted) return; // require real user interaction
     window._convTracked = true;
     fetch('/api/landing', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

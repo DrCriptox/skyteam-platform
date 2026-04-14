@@ -388,7 +388,9 @@ export default async function handler(req, res) {
           // Score = visitas - (duplicadas x 1) + (conversiones_unicas x 15)
           // Conversión única = max 1 por dispositivo (fingerprint)
           const validConversions = uniqueIps > 0 ? Math.min(conversiones, uniqueIps) : conversiones;
-          const score = Math.max(0, visitas - duplicadas + (validConversions * 15));
+          let score = Math.max(0, visitas - duplicadas + (validConversions * 15));
+          // Admin temporal: dividir entre 5 mientras se reparan las conversiones infladas
+          if (ref === 'admin') score = Math.floor(score / 5);
           const efectividad = uniqueIps > 0 ? Math.round((validConversions / uniqueIps) * 100) : 0;
           return {
             ref: ref, nombre: asesor.nombre || ref,
