@@ -11612,12 +11612,12 @@ function toggleStatus(username) {
 }
 
 function filterAdminUsers() {
-  window._adminSearchQ = (document.getElementById('admin-user-search').value || '').toLowerCase().trim();
+  var curInp = document.getElementById('admin-user-search');
+  window._adminSearchQ = curInp ? curInp.value : '';
   window._adminUserPage = 0;
   renderAdminUsuarios();
-  // Re-fill search input after re-render
   var inp = document.getElementById('admin-user-search');
-  if(inp) { inp.value = window._adminSearchQ; inp.focus(); }
+  if(inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
 
 function filterAdminLegend() {
