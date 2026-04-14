@@ -325,7 +325,7 @@ module.exports = async function handler(req, res) {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'SkyTeam Global <eventos@skyteam.global>',
+              from: 'SkyTeam Global <lideres@skyteam.global>',
               bcc: batch,
               subject: b.subject,
               html: b.html
@@ -544,7 +544,7 @@ module.exports = async function handler(req, res) {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'SkyTeam Events <eventos@skyteam.global>',
+              from: 'SkyTeam Events <lideres@skyteam.global>',
               to: [b.email],
               subject: 'Confirmacion: ' + ev.titulo,
               html: '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">'
