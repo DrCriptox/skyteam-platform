@@ -2306,8 +2306,8 @@ function openMemberDetail(username) {
   html += '</div>';
   html += '</div>';
 
-  // Ver perfil button
-  html += '<button onclick="window.open(\'/?viewprofile=' + _esc(m.username || username) + '\',\'_blank\')" style="width:100%;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px">👁 Ver perfil como lo ve el socio</button>';
+  // Ver perfil button - opens read-only profile overlay
+  html += '<button onclick="_viewSocioProfile(\'' + _esc(m.username || username) + '\')" style="width:100%;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid ' + C.border + ';color:' + C.textSub + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px">👁 Ver perfil del socio</button>';
 
   // Stats grid
   html += '<div class="st-detail-stats-grid">';
@@ -2911,6 +2911,83 @@ function _closeEvtStats() {
   if (el) el.remove();
 }
 window._closeEvtStats = _closeEvtStats;
+
+// View socio profile (read-only overlay)
+function _viewSocioProfile(username) {
+  // Find socio in cached data
+  var members = (stState.data && stState.data.members) || [];
+  var m = members.find(function(x) { return x.username === username; });
+  if (!m) { if (typeof showToast === 'function') showToast('Socio no encontrado'); return; }
+
+  // Also check USERS global for photo
+  var uData = (typeof USERS !== 'undefined' && USERS[username]) ? USERS[username] : {};
+  var photo = uData.photo || m.photo || '';
+  var name = m.name || username;
+  var rank = m.rank || 0;
+  var rk = (typeof RANKS !== 'undefined' && RANKS[rank]) ? RANKS[rank] : { name: 'Cliente', color: '#888' };
+  var days = m.days_remaining != null ? m.days_remaining : null;
+  var daysColor = days != null ? (days > 30 ? '#1D9E75' : days > 7 ? '#C9A84C' : '#E24B4A') : 'rgba(255,255,255,0.3)';
+  var initials = name.split(' ').map(function(w) { return (w[0] || '').toUpperCase(); }).join('').substring(0, 2);
+  var bankcode = m.bankcode || '';
+
+  var html = '<div style="position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto" id="socio-profile-overlay">';
+  html += '<div style="width:100%;max-width:400px;background:#0f0f1a;border-radius:20px;border:1px solid ' + C.border + ';padding:24px;text-align:center">';
+
+  // Close button
+  html += '<div style="text-align:right"><button onclick="document.getElementById(\'socio-profile-overlay\').remove()" style="background:none;border:none;color:' + C.textSub + ';font-size:20px;cursor:pointer">✕</button></div>';
+
+  // Avatar
+  html += '<div style="width:80px;height:80px;border-radius:50%;margin:0 auto 12px;overflow:hidden;border:3px solid ' + rk.color + ';background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:rgba(255,255,255,0.3)">';
+  html += photo ? '<img src="' + _esc(photo) + '" style="width:100%;height:100%;object-fit:cover">' : initials;
+  html += '</div>';
+
+  // Name + username + rank
+  html += '<div style="font-size:18px;font-weight:800;color:#fff">' + _esc(name) + '</div>';
+  html += '<div style="font-size:12px;color:' + C.textSub + ';margin-top:2px">@' + _esc(username) + '</div>';
+  html += '<div style="margin-top:6px"><span style="padding:3px 10px;border-radius:8px;background:' + rk.color + '20;color:' + rk.color + ';font-size:11px;font-weight:700">' + rk.name + '</span></div>';
+
+  // Bankcode
+  if (bankcode) {
+    html += '<div style="margin-top:8px;display:flex;justify-content:center;gap:4px">';
+    bankcode.split('').forEach(function(c) {
+      var colors = { B: '#C9A84C', A: '#1D9E75', N: '#7F77DD', K: '#E24B4A' };
+      html += '<span style="width:24px;height:24px;border-radius:6px;background:' + (colors[c.toUpperCase()] || '#888') + '20;color:' + (colors[c.toUpperCase()] || '#888') + ';font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">' + c.toUpperCase() + '</span>';
+    });
+    html += '</div>';
+  }
+
+  // Days remaining
+  if (days != null) {
+    html += '<div style="margin-top:8px;font-size:11px;font-weight:700;color:' + daysColor + '">' + (days > 0 ? '⏱ ' + days + ' dias restantes' : '⚠️ Expirado') + '</div>';
+  }
+
+  // Data rows
+  html += '<div style="margin-top:16px;text-align:left;border-top:1px solid ' + C.border + ';padding-top:14px">';
+  var _row = function(label, val) { return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);font-size:12px"><span style="color:' + C.textSub + '">' + label + '</span><span style="color:#fff;font-weight:600">' + _esc(val || '—') + '</span></div>'; };
+  html += _row('Sponsor', m.sponsor || '');
+  html += _row('WhatsApp', m.whatsapp || '');
+  html += _row('Instagram', m.instagram || '');
+  html += _row('Email', m.email || '');
+  html += _row('Prospectos', '' + (m.prospectos_count || 0));
+  html += _row('Ventas', '' + (m.direct_socios || m.ventas || 0));
+  html += _row('Academia', (m.academy_pct || 0) + '%');
+  html += _row('Registro', m.created_at ? new Date(m.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '');
+  html += '</div>';
+
+  // WhatsApp contact button
+  if (m.whatsapp) {
+    html += '<a href="https://wa.me/' + (m.whatsapp || '').replace(/[^0-9]/g, '') + '" target="_blank" style="display:block;margin-top:14px;padding:12px;border-radius:12px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.2);color:#25D366;font-size:13px;font-weight:700;text-decoration:none;text-align:center">💬 WhatsApp</a>';
+  }
+
+  html += '</div></div>';
+
+  var old = document.getElementById('socio-profile-overlay');
+  if (old) old.remove();
+  var div = document.createElement('div');
+  div.innerHTML = html;
+  document.body.appendChild(div.firstChild);
+}
+window._viewSocioProfile = _viewSocioProfile;
 
 // ── Event Creation Wizard ──
 function openEventWizard() {
