@@ -6640,7 +6640,7 @@ function refreshNotifications() {
   }
   // 10-11 AM — Coaching / Mentoría
   if(currentHour>=10&&currentHour<11) {
-    _addNotif('10am_mentoria','🧠','¿Cómo estás hoy mental y emocionalmente?','Tu Coach IA está listo para escucharte','Cuéntale cómo te sientes. Un líder que se conoce, lidera mejor.',{label:'🤖 Abrir Coach IA',url:'javascript:navigate("home")'},0.6);
+    _addNotif('10am_mentoria','🧠','¿Cómo estás hoy mental y emocionalmente?','Tu Mentor IA está listo para escucharte','Cuéntale cómo te sientes. Un líder que se conoce, lidera mejor.',{label:'🤖 Abrir Mentor IA',url:'javascript:navigate(\'skyteam\');setTimeout(function(){if(typeof switchSTTab===\"function\")switchSTTab(\"mentor\")},400);'},0.6);
   }
   // 11 AM — Reporte equipo
   if(currentHour>=11&&currentHour<12) {
