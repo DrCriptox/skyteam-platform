@@ -297,28 +297,6 @@ module.exports = async function handler(req, res) {
     // ═══════════════════════════════════════════════════
     //  BROADCAST PUSH — Send push to all users (admin only)
     // ═══════════════════════════════════════════════════
-    // TEMP DEBUG: check prospectos for a username
-    if (action === 'debugProspectos') {
-      var u = (req.body || {}).username || '';
-      var nowCol = new Date(Date.now() - 18000000);
-      var todayStr = nowCol.toISOString().split('T')[0];
-      var fromISO = todayStr + 'T05:00:00.000Z';
-      var fromTs = new Date(fromISO).getTime();
-      // Get all prospectos
-      var allR = await SB('prospectos?select=username,nombre,telefono,instagram,calif_positivo,created_at&order=created_at.desc&limit=100' + (u ? '&username=eq.' + encodeURIComponent(u) : ''));
-      var all = await allR.json();
-      if (!Array.isArray(all)) return res.status(200).json({ error: 'fetch failed', raw: all });
-      var today = all.filter(function(p) { return new Date(p.created_at).getTime() >= fromTs; });
-      // Also search by name if username gives 0
-      var byName = [];
-      if (u && all.length === 0) {
-        var nameR = await SB('prospectos?select=username,nombre,created_at&order=created_at.desc&limit=50');
-        byName = (await nameR.json()) || [];
-        byName = byName.filter(function(p) { return (p.username || '').toLowerCase().indexOf('david') > -1; });
-      }
-      return res.status(200).json({ username: u, total: all.length, todayCount: today.length, fromISO: fromISO, latest5: all.slice(0, 5).map(function(p) { return { username: p.username, nombre: p.nombre, created_at: p.created_at }; }), byNameDavid: byName.slice(0, 10) });
-    }
-
     if (action === 'broadcastPush' && req.method === 'POST') {
       var b = req.body;
       if (!b.title || !b.body) return res.status(400).json({ error: 'title + body required' });
