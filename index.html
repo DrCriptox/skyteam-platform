@@ -11297,12 +11297,13 @@ function renderAdminUsuarios() {
 
   // Search
   html += '<div style="margin-bottom:10px;display:flex;gap:8px;">';
-  html += '<input type="text" id="admin-user-search" placeholder="Buscar..." oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--text);font-size:12px;padding:8px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
+  html += '<input type="text" id="admin-user-search" placeholder="Buscar..." value="' + (window._adminSearchQ || '').replace(/"/g, '&quot;') + '" oninput="filterAdminUsers()" style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--text);font-size:12px;padding:8px 12px;outline:none;font-family:Outfit,Nunito,sans-serif;">';
   html += '</div>';
 
-  // Search filter BEFORE pagination
-  var searchQ = (document.getElementById('admin-user-search') ? document.getElementById('admin-user-search').value : (window._adminSearchQ||'')).toLowerCase().trim();
-  window._adminSearchQ = searchQ;
+  // Search filter BEFORE pagination — persist across re-renders
+  var _searchInput = document.getElementById('admin-user-search');
+  var searchQ = (_searchInput ? _searchInput.value : (window._adminSearchQ || '')).toLowerCase().trim();
+  if (_searchInput) window._adminSearchQ = searchQ; // Only update if input exists (not during re-render)
   var filteredList = nonAdminList;
   if (searchQ) {
     filteredList = nonAdminList.filter(function(u) {
