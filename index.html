@@ -15201,12 +15201,25 @@ function openCrmDetail(id) {
         }
         timelineEl.innerHTML = tHtml;
       } catch(e){ timelineEl.innerHTML = '<div style="color:#E24B4A;font-size:11px;">Error</div>'; }
+      // CRITICAL: always clear stale UI from the PREVIOUS prospect first.
+      // Bug reported 2026-04-14: Mary Villamizar reminder showed up on other cards
+      // because the reminders container kept the previous prospect's content when
+      // the new one had none.
+      var _rContExisting = modal.querySelector('#crm-detail-reminders-list');
+      if (_rContExisting) { _rContExisting.innerHTML = ''; _rContExisting.style.display = 'none'; }
+      var _iaHistExisting = modal.querySelector('#crm-detail-ia-history');
+      if (_iaHistExisting) _iaHistExisting.innerHTML = '';
+      var _iaSectionExisting = modal.querySelector('#crm-detail-ia-section');
+      if (_iaSectionExisting) _iaSectionExisting.style.display = 'none';
       try {
         var remRes = await crmApi('getRecordatorios',{prospecto_id:id});
         var rems = (remRes && remRes.recordatorios) ? remRes.recordatorios : [];
+        // Extra safety: filter to ONLY this prospect's reminders in case backend returned extras
+        rems = rems.filter(function(r){ return r.prospecto_id === id; });
         if (rems.length) {
           var rCont = modal.querySelector('#crm-detail-reminders-list');
           if (!rCont) { rCont = document.createElement('div'); rCont.id = 'crm-detail-reminders-list'; rCont.style.cssText = 'margin-top:8px;padding:8px;background:rgba(255,165,0,0.05);border:0.5px solid rgba(255,165,0,0.15);border-radius:8px;'; timelineEl.parentNode.insertBefore(rCont, timelineEl.nextSibling); }
+          rCont.style.display = 'block';
           var rHtml = '<div style="font-size:10px;color:#FFA500;font-weight:700;margin-bottom:4px;">\uD83D\uDCC5 Recordatorios</div>';
           rems.forEach(function(r){ var rd = new Date(r.fecha_recordatorio); var rds = rd.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); var rts = rd.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true}); rHtml += '<div style="font-size:11px;color:#F0EDE6;padding:3px 0;border-bottom:0.5px solid rgba(255,165,0,0.08);"><span style="color:#FFA500;">'+rds+' '+rts+'</span> \u2014 '+crmEsc(r.mensaje||'')+'</div>'; });
           rCont.innerHTML = rHtml;
@@ -15899,9 +15912,12 @@ function copyCrmWaMessage() {
     _trackIaMessageUsed(crmDetailId);
     _crmSendFeedbackForLast('positive');
     // Auto-create 35min reminder if this was an info-sending flow step
-    if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min) {
-      var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
-      _crmCreate35MinReminder(crmDetailId, p ? p.nombre : '');
+    // Use the prospectoId stored in _crmLastGenerated (not crmDetailId)
+    // to avoid creating reminder for the wrong prospect if state got mixed up.
+    if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min && window._crmLastGenerated.prospectoId) {
+      var _pid = window._crmLastGenerated.prospectoId;
+      var p = crmProspectos.find(function(x){ return x.id === _pid; });
+      _crmCreate35MinReminder(_pid, p ? p.nombre : '');
       window._crmLastGenerated.requiereRecordatorio35min = false; // only once
     }
   });
@@ -15953,8 +15969,11 @@ function sendViaCrmWhatsapp() {
   var phone = p.telefono.replace(/\D/g, '');
   _crmSendFeedbackForLast('positive');
   // Auto-create 35min reminder if this was an info-sending flow step
-  if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min) {
-    _crmCreate35MinReminder(crmDetailId, p.nombre);
+  // Safety: use prospectoId from _crmLastGenerated, not crmDetailId
+  if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min && window._crmLastGenerated.prospectoId) {
+    var _pid = window._crmLastGenerated.prospectoId;
+    var _pp = crmProspectos.find(function(x){ return x.id === _pid; });
+    _crmCreate35MinReminder(_pid, _pp ? _pp.nombre : p.nombre);
     window._crmLastGenerated.requiereRecordatorio35min = false;
   }
   window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
@@ -16205,9 +16224,10 @@ function copyCrmIgMessage(){
   var ctx = document.getElementById('crm-ig-context');
   if(!ctx || !ctx.value){ crmToast('No hay mensaje para copiar','error'); return; }
   var _triggerReminder = function() {
-    if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min) {
-      var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
-      _crmCreate35MinReminder(crmDetailId, p ? p.nombre : '');
+    if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min && window._crmLastGenerated.prospectoId) {
+      var _pid = window._crmLastGenerated.prospectoId;
+      var _pp = crmProspectos.find(function(x){ return x.id === _pid; });
+      _crmCreate35MinReminder(_pid, _pp ? _pp.nombre : '');
       window._crmLastGenerated.requiereRecordatorio35min = false;
     }
   };
@@ -16239,9 +16259,10 @@ function sendViaCrmInstagram(){
     crmToast('\u2705 Mensaje copiado \u2014 p\u00e9galo en el DM','success');
     _trackIaMessageUsed(crmDetailId);
     _crmSendFeedbackForLast('positive');
-    if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min) {
-      var p = crmProspectos.find(function(x){ return x.id === crmDetailId; });
-      _crmCreate35MinReminder(crmDetailId, p ? p.nombre : '');
+    if (window._crmLastGenerated && window._crmLastGenerated.requiereRecordatorio35min && window._crmLastGenerated.prospectoId) {
+      var _pid = window._crmLastGenerated.prospectoId;
+      var _pp = crmProspectos.find(function(x){ return x.id === _pid; });
+      _crmCreate35MinReminder(_pid, _pp ? _pp.nombre : '');
       window._crmLastGenerated.requiereRecordatorio35min = false;
     }
   }
