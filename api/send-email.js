@@ -433,10 +433,10 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('midday_motivation: ' + e.message); }
 
-    // ── TRIGGER 10: Evening recap (6-7pm Colombia) ──
+    // ── TRIGGER 10: Evening recap (10-10:15pm Colombia) ──
     try {
       const colombiaHour4 = (now.getUTCHours() - 5 + 24) % 24;
-      if (colombiaHour4 >= 18 && colombiaHour4 <= 19) {
+      if (colombiaHour4 === 22 && colMin <= 15) {
         const todayDate4 = now.toISOString().slice(0, 10);
         const allSubs4 = await sb('push_subscriptions?select=username&order=username');
         if (allSubs4 && allSubs4.length > 0) {
@@ -451,10 +451,10 @@ async function handleTriggers(req, res) {
               actCount = acts ? acts.length : 0;
             } catch (e) {}
             const body = actCount > 0
-              ? 'Hoy tocaste ' + actCount + ' prospecto' + (actCount > 1 ? 's' : '') + '. ¡Sigue así mañana!'
-              : '¡Aún estás a tiempo! Envía un mensaje antes de cerrar el día.';
+              ? 'Hoy tocaste ' + actCount + ' prospecto' + (actCount > 1 ? 's' : '') + '. Descansa bien, manana seguimos!'
+              : 'Descansa bien. Manana es un nuevo dia para generar resultados!';
             const tag = 'skyteam-evening-' + todayDate4;
-            const r = await pushToUser(username, '🌅 Resumen del día', body, '/?nav=prospectos', tag);
+            const r = await pushToUser(username, '\uD83C\uDF19 Descansa bien, manana seguimos', body, '/?nav=prospectos', tag);
             results.triggers.push({ type: 'evening_recap', user: username, sent: r.sent });
             results.sent += r.sent;
           }
@@ -598,6 +598,82 @@ async function handleTriggers(req, res) {
         results.sent += _sentC;
       }
     } catch (e) { results.errors.push('ranking_motivation: ' + e.message); }
+
+    // ✅✅ TRIGGER WA: WhatsApp Bot Follow-ups (2h, 24h, 48h) ✅✅
+    try {
+      const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
+      const WA_TK = process.env.WHATSAPP_TOKEN;
+      if (WA_PHONE_ID && WA_TK) {
+        const twoHoursAgo = new Date(now.getTime() - 2 * 3600000).toISOString();
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000).toISOString();
+        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 3600000).toISOString();
+        const fiveMinAgo = new Date(now.getTime() - 5 * 60000).toISOString();
+
+        // Get leads that need follow-up (not paused, not already followed up to stage 3)
+        const waLeads = await sb(
+          'wa_leads?select=phone,name,followup_stage,last_message_at,context_summary' +
+          '&followup_paused=eq.false&followup_stage=lt.3' +
+          '&etapa=not.in.(agendado,escalado,frio,cerrado)' +
+          '&order=last_message_at.asc&limit=20'
+        );
+
+        if (waLeads && waLeads.length > 0) {
+          const followupMessages = [
+            function(name) { return 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
+            function(name) { return 'Hey ' + (name || '') + ', guarde un espacio especial para ti esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
+            function(name) { return (name || 'Hola') + ', solo queria dejarte saber que estamos aqui si en algun momento te interesa. Te deseo mucho exito! ✨'; }
+          ];
+
+          for (const lead of waLeads) {
+            const lastMsg = new Date(lead.last_message_at);
+            const msSince = now.getTime() - lastMsg.getTime();
+            const stage = lead.followup_stage || 0;
+            let shouldSend = false;
+
+            if (stage === 0 && msSince >= 2 * 3600000 && msSince < 24 * 3600000) shouldSend = true;
+            else if (stage === 1 && msSince >= 24 * 3600000 && msSince < 48 * 3600000) shouldSend = true;
+            else if (stage === 2 && msSince >= 48 * 3600000) shouldSend = true;
+
+            if (shouldSend) {
+              // Only send during reasonable hours (8am - 8pm Colombia)
+              if (cHour < 8 || cHour > 20) continue;
+
+              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '');
+              try {
+                const waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
+                  body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
+                });
+                const waData = await waR.json();
+                if (waR.ok) {
+                  // Update stage
+                  await sb('wa_leads?phone=eq.' + encodeURIComponent(lead.phone), {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                      followup_stage: stage + 1,
+                      etapa: stage === 2 ? 'frio' : lead.etapa,
+                      updated_at: now.toISOString()
+                    })
+                  });
+                  // Save to conversation
+                  await sb('wa_conversations', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      phone: lead.phone, direction: 'out', message_type: 'text',
+                      content: msgText, bot_username: lead.bot_username || 'yonfer',
+                      metadata: JSON.stringify({ type: 'followup', stage: stage + 1 })
+                    })
+                  });
+                  results.triggers.push({ type: 'wa_followup_' + (stage + 1), phone: lead.phone.substring(0, 6) + '...', sent: 1 });
+                  results.sent++;
+                }
+              } catch (wErr) { results.errors.push('wa_followup: ' + wErr.message); }
+            }
+          }
+        }
+      }
+    } catch (e) { results.errors.push('wa_followup: ' + e.message); }
 
     return res.status(200).json({ ok: true, ...results, checkedAt: now.toISOString() });
   } catch (error) {
