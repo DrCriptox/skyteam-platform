@@ -115,6 +115,29 @@ export default async function handler(req, res) {
       const { action, user, config, booking, id } = req.body;
       if (!user) return res.status(400).json({ error: 'Missing user' });
 
+      // === DIAGNOSTIC: test email sending ===
+      if (action === 'testEmail') {
+        const to = req.body.to;
+        if (!to) return res.status(400).json({ error: 'Missing to' });
+        if (!process.env.RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
+        try {
+          const r = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY },
+            body: JSON.stringify({
+              from: 'SKYTEAM <soporte@skyteam.global>',
+              to: [to],
+              subject: '🧪 Test de email SKYTEAM',
+              html: '<p>Este es un email de prueba enviado el ' + new Date().toISOString() + '</p>'
+            })
+          });
+          const body = await r.json();
+          return res.status(200).json({ status: r.status, ok: r.ok, body: body, env: { hasResendKey: !!process.env.RESEND_API_KEY } });
+        } catch(e) {
+          return res.status(500).json({ error: e.message });
+        }
+      }
+
       if (action === 'saveConfig') {
         const existing = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=username');
         if (!existing || existing.length === 0) {
@@ -194,8 +217,13 @@ export default async function handler(req, res) {
         }
 
         // ══════════════════════════════════════════════════════
-        // 6 SCHEDULED EMAILS: 3 for prospect + 3 for socio
+        // 7 SCHEDULED EMAILS: 4 for prospect (1 instant + 3 reminders) + 3 for socio
         // ══════════════════════════════════════════════════════
+        var _scheduledEmailIds = [];
+        var _emailPromises = [];
+        if (!process.env.RESEND_API_KEY) {
+          console.warn('[AGENDA] RESEND_API_KEY not set — skipping all emails');
+        }
         if (process.env.RESEND_API_KEY) {
           try {
             const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
@@ -237,21 +265,34 @@ export default async function handler(req, res) {
             const LOGO = 'https://skyteam.global/logo-skyteam-white.png';
             var _wrap = function(body) { return '<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:32px;border-radius:16px;"><div style="text-align:center;margin-bottom:20px;"><img src="' + LOGO + '" alt="SKYTEAM" style="height:36px;" /></div>' + body + '<p style="text-align:center;color:rgba(255,255,255,0.15);font-size:9px;margin-top:20px;">Sky Team \u2014 skyteam.global</p></div>'; };
             var _btn = function(text, url) { return '<div style="text-align:center;margin:20px 0;"><a href="' + url + '" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#E8D48B);color:#0a0a12;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:900;font-size:15px;">' + text + '</a></div>'; };
-            var _scheduledEmailIds = [];
             var _sendEmail = function(to, subject, html, sendAt) {
-              // Only send emails that are due NOW or in the past (don't use scheduled_at — unreliable)
-              if (sendAt && sendAt > nowMs + 60000) {
-                console.log('[AGENDA] Skipping future email for', to, 'scheduled for', new Date(sendAt).toISOString());
-                return; // Skip future emails — push notifications handle reminders
-              }
+              if (!to) { console.log('[AGENDA] Skip: no recipient'); return; }
               var payload = { from: 'SKYTEAM <soporte@skyteam.global>', to: [to], subject: subject, html: html };
-              fetch('https://api.resend.com/emails', { method: 'POST', headers: RESEND_H, body: JSON.stringify(payload) })
-                .then(function(r){return r.json();})
-                .then(function(d){
-                  if(d.id) { _scheduledEmailIds.push(d.id); console.log('[AGENDA] Email sent to', to, 'id:', d.id); }
-                  else { console.error('[AGENDA] Email FAILED for', to, JSON.stringify(d).substring(0,200)); }
+              // Resend supports scheduled_at (ISO8601) — schedule future emails
+              // Max 30 days ahead. For anything within 1 minute, send instantly.
+              if (sendAt && sendAt > nowMs + 60000) {
+                var daysAhead = (sendAt - nowMs) / 86400000;
+                if (daysAhead > 30) {
+                  console.log('[AGENDA] Skip: email more than 30 days ahead for', to);
+                  return;
+                }
+                payload.scheduled_at = new Date(sendAt).toISOString();
+                console.log('[AGENDA] Scheduling email to', to, 'for', payload.scheduled_at);
+              } else {
+                console.log('[AGENDA] Sending instant email to', to, '| subject:', subject);
+              }
+              var p = fetch('https://api.resend.com/emails', { method: 'POST', headers: RESEND_H, body: JSON.stringify(payload) })
+                .then(function(r){return r.json().then(function(d){ return { status: r.status, body: d }; });})
+                .then(function(res){
+                  if(res.body && res.body.id) {
+                    _scheduledEmailIds.push(res.body.id);
+                    console.log('[AGENDA] ✓ Email OK to', to, '| id:', res.body.id, '| status:', res.status);
+                  } else {
+                    console.error('[AGENDA] ✗ Email FAILED for', to, '| status:', res.status, '| body:', JSON.stringify(res.body).substring(0,300));
+                  }
                 })
-                .catch(function(e){ console.error('[AGENDA] Email error:', e.message); });
+                .catch(function(e){ console.error('[AGENDA] ✗ Email error for', to, ':', e.message); });
+              _emailPromises.push(p);
             };
 
             // ── SOCIO EMAIL 1: Instant — Nueva cita agendada ──
@@ -282,7 +323,23 @@ export default async function handler(req, res) {
                 + '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;">\uD83D\uDCC5 ' + fechaSocio + '</div>'), citaMs - 7 * 60000);
             }
 
-            // ── PROSPECT EMAIL 1: 4h before — Confirmaci\u00f3n ──
+            // ── PROSPECT EMAIL 0: INSTANT — Confirmaci\u00f3n al agendar ──
+            if (prospectEmail) {
+              var firstName = prospectName.split(' ')[0];
+              _sendEmail(prospectEmail, '\u2705 Cita confirmada con ' + socioName + ' \u00b7 ' + horaProspect,
+                _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:48px;margin-bottom:8px;">\u2705</div><h2 style="color:#C9A84C;font-size:20px;margin:0 0 6px;">\u00a1Cita confirmada, ' + firstName + '!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">Te esperamos el ' + fechaProspect + '</p></div>'
+                + '<div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.18);border-radius:12px;padding:20px;margin-bottom:16px;">'
+                + '<p style="margin:0 0 10px;font-size:14px;color:#F0EDE6;">\uD83D\uDCC5 <strong>' + fechaProspect + '</strong></p>'
+                + '<p style="margin:0 0 10px;font-size:14px;color:#F0EDE6;">\uD83D\uDC64 Con <strong>' + socioName + '</strong></p>'
+                + (linkSala ? '<p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);">\uD83D\uDD17 Link de la sala: <a href="' + linkSala + '" style="color:#C9A84C;">' + linkSala + '</a></p>' : '')
+                + '</div>'
+                + '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">'
+                + '<p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.5;">Prepara c\u00e1mara y micr\u00f3fono. Te recordaremos el d\u00eda de la reuni\u00f3n.</p></div>'
+                + (linkSala ? _btn('\uD83D\uDE80 Guardar link de la sala', linkSala) : '')
+                ), nowMs);
+            }
+
+            // ── PROSPECT EMAIL 1: 4h before — Confirmaci\u00f3n del d\u00eda ──
             if (prospectEmail && citaMs - nowMs > 4.1 * 3600000) {
               _sendEmail(prospectEmail, '\uD83D\uDCC5 Tu reuni\u00f3n con ' + socioName + ' es hoy',
                 _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCC5</div><h2 style="color:#F0EDE6;font-size:18px;margin:0 0 6px;">Hola ' + prospectName.split(' ')[0] + ', tu reuni\u00f3n es hoy</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaProspect + '</p></div>'
@@ -316,18 +373,28 @@ export default async function handler(req, res) {
           } catch (e) { console.warn('[AGENDA] Email scheduling error:', e.message); }
         }
 
-        // Save scheduled email IDs to booking for cancellation
-        setTimeout(function() {
-          if (_scheduledEmailIds.length > 0) {
-            var emailIdsStr = 'EMAIL_IDS:' + _scheduledEmailIds.join(',');
-            sb('bookings?id=eq.' + encodeURIComponent(bookingId), {
-              method: 'PATCH', body: JSON.stringify({ proof_url: emailIdsStr })
-            }).catch(function(){});
-            console.log('[AGENDA] Saved', _scheduledEmailIds.length, 'email IDs for booking', bookingId);
-          }
-        }, 5000);
+        // CRITICAL: await all email promises before returning — Vercel kills
+        // the function after res.json() so fetches would never complete otherwise.
+        if (_emailPromises.length > 0) {
+          try {
+            console.log('[AGENDA] Awaiting', _emailPromises.length, 'email sends...');
+            await Promise.all(_emailPromises);
+            console.log('[AGENDA] All', _emailPromises.length, 'email fetches completed. Sent IDs:', _scheduledEmailIds.length);
+          } catch (e) { console.error('[AGENDA] Email await error:', e.message); }
+        }
 
-        return res.status(200).json({ ok: true, ipFlag: ipFlag });
+        // Save scheduled email IDs to booking for cancellation
+        if (_scheduledEmailIds.length > 0) {
+          try {
+            var emailIdsStr = 'EMAIL_IDS:' + _scheduledEmailIds.join(',');
+            await sb('bookings?id=eq.' + encodeURIComponent(bookingId), {
+              method: 'PATCH', body: JSON.stringify({ proof_url: emailIdsStr })
+            });
+            console.log('[AGENDA] Saved', _scheduledEmailIds.length, 'email IDs for booking', bookingId);
+          } catch(e) { console.error('[AGENDA] PATCH error:', e.message); }
+        }
+
+        return res.status(200).json({ ok: true, ipFlag: ipFlag, emailsSent: _scheduledEmailIds.length });
 
       } else if (action === 'cancelBooking') {
         // Get booking to find scheduled email IDs
