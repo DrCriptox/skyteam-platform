@@ -29,10 +29,12 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Demasiadas solicitudes. Espera un momento.', reply: 'Estoy recibiendo muchas solicitudes. Por favor espera unos segundos antes de enviar otro mensaje.' });
     }
 
-    // Validate message size (max 20KB total)
+    // Validate message size (max 20KB total — higher if includes images)
     const bodySize = JSON.stringify(body).length;
-    if (bodySize > 20000) {
-      return res.status(400).json({ error: 'Mensaje demasiado largo', reply: 'El mensaje es demasiado largo. Por favor acortalo.' });
+    const hasImages = (body.messages || []).some(m => Array.isArray(m.content) && m.content.some(c => c.type === 'image_url' || c.type === 'image'));
+    const maxSize = hasImages ? 2000000 : 20000; // 2MB if images, else 20KB
+    if (bodySize > maxSize) {
+      return res.status(400).json({ error: 'Mensaje demasiado largo', reply: 'El mensaje es demasiado largo. Por favor acortalo o reduce el tamaño de la imagen.' });
     }
 
     // Limit conversation history to last 10 messages (saves ~40% input tokens)
@@ -59,10 +61,16 @@ export default async function handler(req, res) {
     }
 
     // Build OpenAI messages array (system as first message)
+    // Support for vision: if m.content is an array with image_url, pass it directly (OpenAI format)
     const openaiMessages = [];
     if (system) openaiMessages.push({ role: 'system', content: system });
     messages.forEach(m => {
-      openaiMessages.push({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) });
+      if (Array.isArray(m.content)) {
+        // Multimodal content (text + images) — pass as-is, OpenAI gpt-4o-mini supports vision
+        openaiMessages.push({ role: m.role, content: m.content });
+      } else {
+        openaiMessages.push({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) });
+      }
     });
 
     // Add timeout via AbortController
