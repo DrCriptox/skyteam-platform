@@ -336,6 +336,36 @@ export default async function handler(req, res) {
         } catch(e) { return res.status(500).json({ error: e.message }); }
       }
 
+      // === CONTENT AGENT FEEDBACK ===
+      // Save the socio's thumbs up/down on generated content to agenda_configs.config.contenidoFeedback
+      // Used later in /api/chat to inject preferred-style examples into the prompt.
+      if (action === 'saveContenidoFeedback') {
+        try {
+          var cfg = await _getConfig(user);
+          if (!Array.isArray(cfg.contenidoFeedback)) cfg.contenidoFeedback = [];
+          var tipo = (req.body || {}).tipo;
+          var texto = ((req.body || {}).texto || '').substring(0, 800);
+          if (tipo !== 'positive' && tipo !== 'negative') return res.status(400).json({ error: 'Invalid tipo' });
+          if (!texto) return res.status(400).json({ error: 'Missing texto' });
+          cfg.contenidoFeedback.push({ tipo: tipo, texto: texto, ts: new Date().toISOString() });
+          // Cap at 30 most recent (15 pos + 15 neg approx)
+          if (cfg.contenidoFeedback.length > 30) cfg.contenidoFeedback = cfg.contenidoFeedback.slice(-30);
+          await _saveConfig(user, cfg);
+          return res.status(200).json({ ok: true });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
+      // Get content feedback samples for prompt injection (called by /api/chat flow)
+      if (action === 'getContenidoFeedback') {
+        try {
+          var cfg = await _getConfig(user);
+          var fb = Array.isArray(cfg.contenidoFeedback) ? cfg.contenidoFeedback : [];
+          var pos = fb.filter(function(f){ return f.tipo === 'positive'; }).slice(-5);
+          var neg = fb.filter(function(f){ return f.tipo === 'negative'; }).slice(-3);
+          return res.status(200).json({ ok: true, positiveSamples: pos.map(function(p){return p.texto;}), negativeSamples: neg.map(function(n){return n.texto;}) });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
       // === DIAGNOSTIC: test email sending ===
       if (action === 'testEmail') {
         const to = req.body.to;
