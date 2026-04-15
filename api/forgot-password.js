@@ -26,10 +26,21 @@ export default async function handler(req, res) {
 
     // Siempre retorna 200 para evitar enumeración de emails
     if (!email || typeof email !== 'string' || email.length > 200) {
+      console.log('[FORGOT-PASSWORD] Missing or invalid email');
       return res.status(200).json({ ok: true });
     }
 
     const clean = email.trim().toLowerCase();
+    console.log('[FORGOT-PASSWORD] Request received for:', clean);
+
+    // Check that required env vars are set
+    if (!RESET_SECRET) {
+      console.error('[FORGOT-PASSWORD] RESET_SECRET not configured in Vercel env vars!');
+      return res.status(200).json({ ok: true });
+    }
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[FORGOT-PASSWORD] RESEND_API_KEY not configured in Vercel env vars!');
+    }
 
     const r = await fetch(
       SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=username,name&limit=1',
@@ -38,15 +49,18 @@ export default async function handler(req, res) {
     const users = await r.json();
 
     if (!users || users.length === 0) {
+      console.log('[FORGOT-PASSWORD] Email not found in DB:', clean);
       return res.status(200).json({ ok: true }); // No revelar si el email existe
     }
 
     const user = users[0];
+    console.log('[FORGOT-PASSWORD] Match found: username=' + user.username);
     const token = generateToken(user.username, clean);
     const resetLink = 'https://skyteam.global?reset=' + token;
     const primerNombre = user.name ? user.name.split(' ')[0] : 'Socio';
 
     if (process.env.RESEND_API_KEY) {
+      console.log('[FORGOT-PASSWORD] Sending email via Resend to:', clean);
       const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;">
         <div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);">
           <img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:44px;max-width:240px;" />
@@ -70,7 +84,7 @@ export default async function handler(req, res) {
         </div>
       </div>`;
 
-      await fetch('https://api.resend.com/emails', {
+      const emailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.RESEND_API_KEY },
         body: JSON.stringify({
@@ -80,12 +94,18 @@ export default async function handler(req, res) {
           html
         })
       });
+      const emailBody = await emailRes.text().catch(() => '');
+      if (emailRes.ok) {
+        console.log('[FORGOT-PASSWORD] Email sent successfully to', clean, '| Resend status:', emailRes.status);
+      } else {
+        console.error('[FORGOT-PASSWORD] Resend FAILED:', emailRes.status, emailBody.substring(0, 300));
+      }
     }
 
     return res.status(200).json({ ok: true });
 
   } catch (error) {
-    console.error('forgot-password error:', error.message);
+    console.error('[FORGOT-PASSWORD] error:', error.message, error.stack ? error.stack.substring(0, 300) : '');
     return res.status(200).json({ ok: true }); // No revelar errores internos
   }
 }

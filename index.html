@@ -13744,6 +13744,15 @@ function renderPerfil() {
     + '</select>'
     + '</div>'
     + '</div>'
+    // SECURITY: Change password card — sends reset link via email
+    + '<div class="perfil-data-card" style="margin-top:8px;">'
+    + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'
+    + '<span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.40);text-transform:uppercase;">🔐 Seguridad</span>'
+    + '</div>'
+    + '<div style="padding:14px 18px;">'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:12px;line-height:1.5;">Te enviaremos un link seguro al correo registrado <strong style="color:rgba(255,255,255,0.6);">' + (CU.email ? (CU.email.length > 28 ? CU.email.substring(0,26) + '...' : CU.email) : '(sin correo — edítalo arriba)') + '</strong> para que cambies tu contraseña. El link expira en 1 hora.</p>'
+    + '<button id="pf-change-pw-btn" onclick="_solicitarCambioPassword()" ' + (CU.email ? '' : 'disabled ') + 'style="width:100%;padding:11px;border-radius:10px;background:' + (CU.email ? 'rgba(201,168,76,0.08)' : 'rgba(255,255,255,0.04)') + ';border:0.5px solid ' + (CU.email ? 'rgba(201,168,76,0.25)' : 'rgba(255,255,255,0.08)') + ';color:' + (CU.email ? '#C9A84C' : 'rgba(255,255,255,0.3)') + ';font-size:13px;font-weight:700;cursor:' + (CU.email ? 'pointer' : 'not-allowed') + ';font-family:Outfit,Nunito,sans-serif;">🔑 Solicitar cambio de contraseña</button>'
+    + '</div></div>'
     + '<div style="display:flex;gap:10px;">'
     + '<button class="btn-main" style="flex:1;font-size:13px;" onclick="_savePerfilChanges()">\uD83D\uDCBE Guardar cambios</button>'
     + '<button style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;" onclick="navigate(\'home\')">\u2190 Volver</button>'
@@ -13751,6 +13760,29 @@ function renderPerfil() {
     + '</div>';
   document.getElementById('perfil-content').innerHTML = html;
 }
+
+// SECURITY: Request password change via email (sends magic link to registered email)
+function _solicitarCambioPassword() {
+  if (!CU || !CU.email) { showToast('⚠️ Primero agrega tu correo en el perfil'); return; }
+  if (!confirm('¿Enviar link de cambio de contraseña a ' + CU.email + '?')) return;
+  var btn = document.getElementById('pf-change-pw-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  fetch('/api/forgot-password', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ email: CU.email })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){
+    showToast('📧 Revisa tu correo — si no llega en 5 min, revisa la carpeta de spam');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Link enviado — revisa tu correo'; setTimeout(function(){ if (btn) btn.textContent = '🔑 Solicitar cambio de contraseña'; }, 8000); }
+  })
+  .catch(function(){
+    showToast('❌ Error enviando. Intenta de nuevo.');
+    if (btn) { btn.disabled = false; btn.textContent = '🔑 Solicitar cambio de contraseña'; }
+  });
+}
+window._solicitarCambioPassword = _solicitarCambioPassword;
 
 function guardarWhatsAppPerfil() {
   var wa = getPhoneValue('perfil-wa');
