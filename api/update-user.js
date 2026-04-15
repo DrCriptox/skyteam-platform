@@ -1,7 +1,37 @@
 // Server-side user updates — keeps Supabase credentials secure
+//
+// 🔴 SECURITY NOTE (audit 2026-04-15):
+// This endpoint trusts `requestedBy` from the request body to determine caller identity.
+// An attacker can impersonate any admin by sending `requestedBy: "yonfer"` in the body.
+// PROPER FIX: derive caller identity from a signed JWT/session cookie (httpOnly).
+// MITIGATION applied: log caller IP + user agent for all admin actions for audit trail.
+// Until full session auth is implemented, monitor [ADMIN] logs for suspicious patterns.
+//
+import crypto from 'crypto';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Prefer: 'return=representation' };
+
+// Verify caller password against DB hash (scrypt format "salt:hash" or legacy plaintext)
+async function verifyCallerPassword(username, plainPassword) {
+  if (!username || !plainPassword) return false;
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(username) + '&select=password', { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY } });
+    const rows = await r.json();
+    const stored = rows && rows[0] && rows[0].password;
+    if (!stored) return false;
+    if (stored.includes(':')) {
+      const [salt, hash] = stored.split(':');
+      try {
+        const check = crypto.scryptSync(plainPassword, salt, 32).toString('hex');
+        return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(check, 'hex'));
+      } catch { return false; }
+    }
+    // Legacy plaintext
+    return stored === plainPassword;
+  } catch { return false; }
+}
 
 // Fields that ONLY admins can change
 const ADMIN_ONLY_FIELDS = ['rank', 'is_admin', 'expiry', 'ventas', 'equipo', 'sponsor', 'original_sponsor', 'ref'];
@@ -30,7 +60,7 @@ export default async function handler(req, res) {
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { username, updates, requestedBy } = req.body || {};
+    const { username, updates, requestedBy, callerPassword } = req.body || {};
     if (!username) return res.status(400).json({ error: 'Missing username' });
 
     // Determine who is making the request
@@ -40,6 +70,18 @@ export default async function handler(req, res) {
     const callerIsAdmin = callerRole.isAdmin;
     const callerIsLeader = callerRole.isLeader;
     const isSelfUpdate = caller === target;
+
+    // SECURITY: When editing someone else, verify caller identity via password.
+    // Self-updates don't need this (frontend only allows own session to call with own username).
+    // Admin/leader actions on other users MUST prove identity (until session auth ships).
+    if (!isSelfUpdate) {
+      const pwOk = await verifyCallerPassword(caller, callerPassword);
+      if (!pwOk) {
+        const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+        console.warn('[SECURITY] update-user rejected: caller=' + caller + ' target=' + target + ' ip=' + ip + ' (invalid or missing callerPassword)');
+        return res.status(403).json({ error: 'Se requiere verificación de identidad para modificar otros usuarios' });
+      }
+    }
 
     // Special: rename username (admin only)
     if (updates && updates._rename && typeof updates._rename === 'string') {

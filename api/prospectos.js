@@ -101,7 +101,8 @@ export default async function handler(req, res) {
       const clean = {};
       Object.keys(updates || {}).forEach(k => { if (allowed.includes(k)) clean[k] = updates[k]; });
       clean.updated_at = new Date().toISOString();
-      await sb('prospectos?id=eq.' + encodeURIComponent(id), {
+      // SECURITY: only patch if prospect belongs to this user (prevents IDOR)
+      await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify(clean)
@@ -113,7 +114,8 @@ export default async function handler(req, res) {
     if (action === 'moveStage') {
       const { id, etapa } = req.body;
       if (!id || !etapa) return res.status(400).json({ error: 'Missing id or etapa' });
-      await sb('prospectos?id=eq.' + encodeURIComponent(id), {
+      // SECURITY: only patch if prospect belongs to this user (prevents IDOR)
+      await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({ etapa, updated_at: new Date().toISOString() })
@@ -127,7 +129,8 @@ export default async function handler(req, res) {
     if (action === 'delete') {
       const { id } = req.body;
       if (!id) return res.status(400).json({ error: 'Missing id' });
-      await sb('prospectos?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+      // SECURITY: only delete if prospect belongs to this user (prevents IDOR)
+      await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), { method: 'DELETE' });
       return res.status(200).json({ ok: true });
     }
 
@@ -206,7 +209,8 @@ export default async function handler(req, res) {
     if (action === 'completeRecordatorio') {
       const { id } = req.body;
       if (!id) return res.status(400).json({ error: 'Missing id' });
-      await sb('recordatorios?id=eq.' + encodeURIComponent(id), {
+      // SECURITY: only complete if reminder belongs to this user (prevents IDOR)
+      await sb('recordatorios?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({ completado: true })

@@ -829,8 +829,14 @@ export default async function handler(req, res) {
     }
 
     // ✅✅ Email sending (original send-email logic) ✅✅
-    const { to, from, nombre, usuario, password, sponsor, membresia, linkRef, subject, html: customHtml } = req.body;
+    const { to, from, nombre, usuario, password, sponsor, membresia, linkRef, subject, html: customHtml, adminKey } = req.body;
     if (!to) return res.status(400).json({ error: 'Missing email' });
+    // SECURITY: Prevent open mail relay. Require adminKey (env) unless invoked by Vercel cron.
+    const ADMIN_KEY = process.env.ADMIN_PUSH_KEY;
+    const isInternalCall = req.headers && req.headers['x-vercel-cron'];
+    if (!isInternalCall && ADMIN_KEY && adminKey !== ADMIN_KEY) {
+      return res.status(403).json({ error: 'Unauthorized — this endpoint is for admin/cron use only' });
+    }
 
     const senderLabels = {
       'lideres@skyteam.global': 'SKYTEAM Lideres',
@@ -856,7 +862,7 @@ export default async function handler(req, res) {
       + '<table style="width:100%;border-collapse:collapse;">'
       + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);width:110px;">🌐 Plataforma</td><td style="padding:5px 0;font-size:14px;"><a href="https://skyteam.global" style="color:#C9A84C;font-weight:700;text-decoration:none;">skyteam.global</a></td></tr>'
       + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">👤 Usuario</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + usuario + '</td></tr>'
-      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🔑 Contraseña</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + password + '</td></tr>'
+      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🔑 Contraseña</td><td style="padding:5px 0;font-size:13px;color:rgba(255,255,255,0.7);">La que elegiste al registrarte · <a href="https://skyteam.global/#forgot" style="color:#C9A84C;">recuperar</a></td></tr>'
       + (sponsor ? '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🤝 Sponsor</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + sponsor + '</td></tr>' : '')
       + '</table>'
       + '</div>'
@@ -1545,8 +1551,14 @@ export default async function handler(req, res) {
     }
 
     // ✅✅ Email sending (original send-email logic) ✅✅
-    const { to, from, nombre, usuario, password, sponsor, membresia, linkRef, subject, html: customHtml } = req.body;
+    const { to, from, nombre, usuario, password, sponsor, membresia, linkRef, subject, html: customHtml, adminKey } = req.body;
     if (!to) return res.status(400).json({ error: 'Missing email' });
+    // SECURITY: Prevent open mail relay. Require adminKey (env) unless invoked by Vercel cron.
+    const ADMIN_KEY = process.env.ADMIN_PUSH_KEY;
+    const isInternalCall = req.headers && req.headers['x-vercel-cron'];
+    if (!isInternalCall && ADMIN_KEY && adminKey !== ADMIN_KEY) {
+      return res.status(403).json({ error: 'Unauthorized — this endpoint is for admin/cron use only' });
+    }
 
     const senderLabels = {
       'lideres@skyteam.global': 'SKYTEAM Lideres',
@@ -1572,7 +1584,7 @@ export default async function handler(req, res) {
       + '<table style="width:100%;border-collapse:collapse;">'
       + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);width:110px;">🌐 Plataforma</td><td style="padding:5px 0;font-size:14px;"><a href="https://skyteam.global" style="color:#C9A84C;font-weight:700;text-decoration:none;">skyteam.global</a></td></tr>'
       + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">👤 Usuario</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + usuario + '</td></tr>'
-      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🔑 Contraseña</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + password + '</td></tr>'
+      + '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🔑 Contraseña</td><td style="padding:5px 0;font-size:13px;color:rgba(255,255,255,0.7);">La que elegiste al registrarte · <a href="https://skyteam.global/#forgot" style="color:#C9A84C;">recuperar</a></td></tr>'
       + (sponsor ? '<tr><td style="padding:5px 0;font-size:14px;color:rgba(255,255,255,0.5);">🤝 Sponsor</td><td style="padding:5px 0;font-size:14px;color:#F0EDE6;font-weight:700;">' + sponsor + '</td></tr>' : '')
       + '</table>'
       + '</div>'

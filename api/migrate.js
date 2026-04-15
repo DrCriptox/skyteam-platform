@@ -6,7 +6,10 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
-  if (req.query.key !== 'skyteam2026migrate') return res.status(403).json({ error: 'Invalid key' });
+  // SECURITY: Key now required from env (not hardcoded). Endpoint is kept for future migrations.
+  const VALID_KEY = process.env.MIGRATE_KEY;
+  if (!VALID_KEY) return res.status(410).json({ error: 'Migration disabled — set MIGRATE_KEY env to re-enable' });
+  if (req.query.key !== VALID_KEY) return res.status(403).json({ error: 'Invalid key' });
 
   const results = [];
 

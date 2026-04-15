@@ -6460,7 +6460,7 @@ function showNativeNotification(title, body, icon, url) {
     }).catch(function() {
       // Fallback to Notification API
       var n = new Notification(title, {body:body, icon:icon||'/icon-192.png', tag:'skyteam-'+Date.now(), silent:false});
-      if(url) n.onclick = function(){ window.focus(); if(url.indexOf('javascript:')===0){ eval(url.replace('javascript:','')); } else { window.location.href=url; } };
+      if(url) n.onclick = function(){ window.focus(); /* SECURITY: block javascript: URIs (XSS) */ if(/^(https?:|\/)/.test(url)){ window.location.href=url; } };
     });
   } else {
     var n = new Notification(title, {body:body, icon:icon||'/icon-192.png', tag:'skyteam-'+Date.now(), silent:false});
@@ -12192,10 +12192,10 @@ function _doAprobar(sol, id) {
     expiry: null
   };
 
-  // Remove from server and localStorage
+  // Remove from server and localStorage (admin only on server — adminUser required)
   fetch('/api/solicitudes', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({action:'remove', id: id})
+    body: JSON.stringify({action:'remove', id: id, adminUser: CU ? CU.username : ''})
   });
   var localPending = JSON.parse(localStorage.getItem('skyteam_pending') || '[]');
   localStorage.setItem('skyteam_pending', JSON.stringify(localPending.filter(function(s){ return s.id !== id; })));
@@ -12539,6 +12539,33 @@ function _adminViewProfile(username) {
 }
 window._adminViewProfile = _adminViewProfile;
 
+// SECURITY helper: prompt for admin password once per session and cache in memory.
+// Required for updates where caller !== target (server now validates).
+window._adminPwCache = window._adminPwCache || '';
+function _getAdminPw(forceAsk) {
+  if (!forceAsk && window._adminPwCache) return window._adminPwCache;
+  var pw = prompt('🔐 Ingresa tu contraseña admin para confirmar esta acción:');
+  if (pw) { window._adminPwCache = pw; return pw; }
+  return '';
+}
+function _adminFetchUpdateUser(body) {
+  // If caller !== target, ensure callerPassword is attached
+  if (CU && body.username !== CU.username && !body.callerPassword) {
+    body.callerPassword = _getAdminPw(false);
+    if (!body.callerPassword) return Promise.resolve({ ok: false, error: 'Password requerido' });
+  }
+  return fetch('/api/update-user', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    // Wrong password → clear cache so next attempt prompts again
+    if (d && d.error && d.error.indexOf('identidad') !== -1) window._adminPwCache = '';
+    return d;
+  });
+}
+window._adminFetchUpdateUser = _adminFetchUpdateUser;
+
 function _adminSaveProfile(username) {
   var updates = {};
   var fields = [{id:'apn',key:'name'},{id:'ape',key:'email'},{id:'apw',key:'whatsapp'},{id:'aps',key:'sponsor'},{id:'apr',key:'ref'}];
@@ -12546,11 +12573,7 @@ function _adminSaveProfile(username) {
     var el = document.getElementById(f.id);
     if(el) updates[f.key] = el.value.trim();
   });
-  fetch('/api/update-user', {
-    method: 'PATCH',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username: username, updates: updates, requestedBy: CU ? CU.username : username })
-  }).then(function(r){ return r.json(); }).then(function(d) {
+  _adminFetchUpdateUser({ username: username, updates: updates, requestedBy: CU ? CU.username : username }).then(function(d) {
     if(d.ok) {
       if(USERS[username]) Object.assign(USERS[username], updates);
       showToast('\u2705 Perfil de @' + username + ' actualizado');
@@ -12567,7 +12590,7 @@ function _adminLoadScreenshot(innovaUser) {
   var area = document.getElementById('admin-screenshot-area');
   if(!area) return;
   area.innerHTML = '<div style="text-align:center;padding:10px;color:rgba(255,255,255,0.3);font-size:11px;">\u23F3 Buscando imagen...</div>';
-  fetch('/api/solicitudes?limit=50').then(function(r){return r.json();}).then(function(d) {
+  fetch('/api/solicitudes?limit=50&adminUser=' + encodeURIComponent(CU ? CU.username : '')).then(function(r){return r.json();}).then(function(d) {
     var sols = d.solicitudes || [];
     var found = sols.find(function(s) { return (s.innovaUser||'').toLowerCase() === innovaUser.toLowerCase(); });
     if(!found) { area.innerHTML = '<div style="text-align:center;padding:8px;color:rgba(255,255,255,0.25);font-size:10px;">No se encontr\u00f3 solicitud de registro</div>'; return; }
@@ -12595,22 +12618,14 @@ function _adminLoadScreenshot(innovaUser) {
 window._adminLoadScreenshot = _adminLoadScreenshot;
 
 function _adminShowPassword(innovaUser) {
+  // SECURITY: passwords plaintext were removed from /api/solicitudes response (audit 2026-04-15).
+  // The admin can no longer see the password. Direct the user to password recovery instead.
   var area = document.getElementById('admin-password-area');
   if(!area) return;
-  area.innerHTML = '<div style="text-align:center;padding:6px;color:rgba(255,255,255,0.3);font-size:10px;">\u23F3 Buscando...</div>';
-  fetch('/api/solicitudes?limit=50').then(function(r){return r.json();}).then(function(d) {
-    var sols = d.solicitudes || [];
-    var found = sols.find(function(s) { return (s.innovaUser||'').toLowerCase() === innovaUser.toLowerCase(); });
-    if(!found || !found.password) {
-      area.innerHTML = '<div style="padding:6px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);border-radius:6px;font-size:10px;color:rgba(255,255,255,0.3);">No se encontr\u00f3 contrase\u00f1a en solicitudes</div>';
-      return;
-    }
-    area.innerHTML = '<div style="padding:8px 12px;background:rgba(226,75,74,0.06);border:0.5px solid rgba(226,75,74,0.15);border-radius:8px;display:flex;align-items:center;gap:8px;">'
-      + '<span style="font-size:9px;color:rgba(255,255,255,0.3);">\uD83D\uDD11</span>'
-      + '<span style="font-family:monospace;font-size:13px;color:#F0EDE6;font-weight:700;flex:1;">' + found.password + '</span>'
-      + '<button onclick="copyText(\''+found.password.replace(/'/g,"\\'")+'\');showToast(\'\uD83D\uDD11 Contrase\u00f1a copiada\')" style="padding:3px 8px;border-radius:5px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.5);font-size:9px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">\uD83D\uDD17 Copiar</button>'
-      + '</div>';
-  }).catch(function(){ area.innerHTML = '<div style="color:#E24B4A;font-size:10px;">Error</div>'; });
+  area.innerHTML = '<div style="padding:10px 14px;background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.15);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">'
+    + '🔐 Por seguridad, las contraseñas ya no se muestran en texto plano.<br>'
+    + 'Si el usuario no recuerda su contraseña, que use "Recuperar contraseña" en el login o pídele que te autorice para resetearla mediante <em>Panel Admin → Reset Password</em>.'
+    + '</div>';
 }
 window._adminShowPassword = _adminShowPassword;
 
@@ -12622,11 +12637,7 @@ function _adminExtendDays(username, days) {
   var base = (u.expiry && u.expiry > Date.now()) ? u.expiry : Date.now();
   var newExpiry = base + (days * 86400000);
   showToast('\u23F3 Extendiendo ' + days + ' d\u00edas...');
-  fetch('/api/update-user', {
-    method: 'PATCH',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ username: username, updates: { expiry: newExpiry }, requestedBy: CU ? CU.username : username })
-  }).then(function(r){ return r.json(); }).then(function(d) {
+  _adminFetchUpdateUser({ username: username, updates: { expiry: newExpiry }, requestedBy: CU ? CU.username : username }).then(function(d) {
     if(d.ok) {
       var newDays = Math.ceil((newExpiry - Date.now()) / 86400000);
       showToast('\u2705 @' + username + ' ahora tiene ' + newDays + ' d\u00edas de acceso');
@@ -12650,11 +12661,7 @@ function cambiarRango(username, newRank) {
   var rk = RANKS[+newRank]||RANKS[0];
   showToast('\u23F3 Guardando...');
 
-  fetch('/api/update-user', {
-    method: 'PATCH',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({username: username, updates: {rank: +newRank}, requestedBy: CU ? CU.username : username})
-  }).then(function(r){ return r.json(); }).then(function(d) {
+  _adminFetchUpdateUser({username: username, updates: {rank: +newRank}, requestedBy: CU ? CU.username : username}).then(function(d) {
     if(d.ok) {
       showToast('\u2705 @' + username + ' \u2192 ' + rk.icon + ' ' + rk.name);
       // Force reload ALL users from server so USERS object stays in sync

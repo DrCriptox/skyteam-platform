@@ -11,16 +11,27 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      // SECURITY: Solicitudes contain emails, phones and plaintext passwords.
+      // Require admin auth via ?adminUser=username query param + DB check.
+      const adminUser = (req.query.adminUser || '').toLowerCase().trim();
+      if (!adminUser) return res.status(403).json({ error: 'Unauthorized' });
+      try {
+        const adCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser) + '&select=is_admin', { headers: HEADERS });
+        const adRows = await adCheck.json();
+        if (!Array.isArray(adRows) || !adRows.length || !adRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+      } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
+
       const limit = Math.min(+(req.query.limit || 100), 200);
       const offset = +(req.query.offset || 0);
       const r = await fetch(SUPABASE_URL + '/rest/v1/solicitudes?order=created_at.desc&limit=' + limit + '&offset=' + offset, { headers: HEADERS });
       if (!r.ok) throw new Error('Supabase GET failed: ' + r.status);
       const rows = await r.json();
-      // Map to old format for frontend compatibility
+      // Map to old format for frontend compatibility — NEVER return plaintext password
       const solicitudes = rows.map(s => ({
         id: s.id, name: s.name, email: s.email, phone: s.phone,
         innovaUser: s.innova_user, ref: s.ref, sponsor: s.sponsor,
-        password: s.password, status: s.status, timestamp: s.created_at
+        hasPassword: !!s.password, // boolean flag only
+        status: s.status, timestamp: s.created_at
       }));
       return res.status(200).json({ solicitudes });
     }
@@ -42,6 +53,14 @@ export default async function handler(req, res) {
         if (!r.ok) { const t = await r.text(); throw new Error('Insert failed: ' + t.substring(0, 200)); }
 
       } else if (action === 'remove' && id) {
+        // SECURITY: Require admin auth to delete solicitudes
+        const remAdmin = (req.body.adminUser || '').toLowerCase().trim();
+        if (!remAdmin) return res.status(403).json({ error: 'Unauthorized' });
+        try {
+          const adCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(remAdmin) + '&select=is_admin', { headers: HEADERS });
+          const adRows = await adCheck.json();
+          if (!Array.isArray(adRows) || !adRows.length || !adRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+        } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
         await fetch(SUPABASE_URL + '/rest/v1/solicitudes?id=eq.' + encodeURIComponent(id), {
           method: 'DELETE', headers: HEADERS
         });

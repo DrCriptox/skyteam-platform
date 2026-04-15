@@ -167,7 +167,14 @@ export default async function handler(req, res) {
       r = { data: p };
     } else if (action === 'add_xp') {
       const { xp_amount, action_type, details } = req.body;
-      r = { data: await addXP(user, xp_amount, action_type, details) };
+      // SECURITY: limit XP range and whitelist action_types to prevent inflation attacks.
+      // TODO: derive `user` from auth session instead of body to prevent impersonation.
+      const ALLOWED_ACTIONS = ['login', 'prospecto_add', 'interaccion', 'cita_completed', 'cierre_ganado', 'streak_daily', 'profile_complete', 'video_watched', 'referral', 'achievement'];
+      if (!ALLOWED_ACTIONS.includes(action_type)) {
+        return res.status(400).json({ error: 'Invalid action_type' });
+      }
+      const safeXp = Math.max(0, Math.min(100, parseInt(xp_amount) || 0));
+      r = { data: await addXP(user, safeXp, action_type, details) };
     } else if (action === 'check_streak') {
       r = await checkStreak(user);
     } else if (action === 'unlock_achievement') {

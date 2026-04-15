@@ -742,22 +742,9 @@ export default async function handler(req, res) {
         await sb('bookings?id=eq.' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ status: 'cancelada' }) });
 
       } else if (action === 'saveProof') {
-        const { bookingId, proof } = req.body;
-        if (!bookingId) return res.status(400).json({ error: 'Missing bookingId' });
-        // Save proof status (we don't store the full image in DB — just mark as verified)
-        await sb('bookings?id=eq.' + encodeURIComponent(bookingId), {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'verificada', proof_url: 'uploaded', updated_at: new Date().toISOString() })
-        });
-        // Award bonus points in leaderboard (booking_proofs table)
-        try {
-          await sb('booking_proofs', {
-            method: 'POST',
-            headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-            body: JSON.stringify({ username: user, booking_id: bookingId, status: 'approved', created_at: new Date().toISOString() })
-          });
-        } catch(e) { console.warn('Proof points save failed:', e.message); }
-        return res.status(200).json({ ok: true, proof: true });
+        // SECURITY: This legacy action auto-approved bookings without verification.
+        // Now redirects to the secure flow via /api/verify-proof (EXIF + AI check + ownership).
+        return res.status(410).json({ error: 'Deprecated — use /api/verify-proof with full image for verification' });
 
       } else {
         return res.status(400).json({ error: 'Unknown action' });

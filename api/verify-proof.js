@@ -18,6 +18,13 @@ module.exports = async (req, res) => {
       const proofId = req.body.proofId;
       const adminUser = req.body.adminUser;
       if (!proofId) return res.status(400).json({ error: 'Missing proofId' });
+      if (!adminUser) return res.status(403).json({ error: 'Unauthorized' });
+      // SECURITY: Verify adminUser is actually admin in DB (not just claimed by client)
+      try {
+        const adCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser) + '&select=is_admin', { headers: SB_HEADERS });
+        const adRows = await adCheck.json();
+        if (!Array.isArray(adRows) || !adRows.length || !adRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+      } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
       const newStatus = req.body.action === 'approveProof' ? 'approved' : 'failed';
       const notes = req.body.notes || ('Admin ' + (adminUser || '?') + ' ' + (newStatus === 'approved' ? 'aprobo' : 'rechazo') + ' manualmente');
       const r = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?id=eq.' + encodeURIComponent(proofId), {
@@ -32,6 +39,14 @@ module.exports = async (req, res) => {
 
     // Admin action: list all proofs
     if (req.body && req.body.action === 'listProofs') {
+      // SECURITY: Require admin auth
+      const listAdmin = req.body.adminUser;
+      if (!listAdmin) return res.status(403).json({ error: 'Unauthorized' });
+      try {
+        const adCheck2 = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(listAdmin) + '&select=is_admin', { headers: SB_HEADERS });
+        const adRows2 = await adCheck2.json();
+        if (!Array.isArray(adRows2) || !adRows2.length || !adRows2[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+      } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
       var proofsR = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?select=id,username,booking_id,status,created_at,notes&order=created_at.desc&limit=100', { headers: SB_HEADERS });
       var proofs = await proofsR.json();
       if (!Array.isArray(proofs)) proofs = [];

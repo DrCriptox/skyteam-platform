@@ -11,8 +11,12 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // SECURITY: Removed email, birthday, bankcode, income_goal from public response.
+    // These are highly sensitive and leak PII to anyone who hits /api/users.
+    // Socios ven whatsapp/instagram de su equipo en /api/team (que tiene cierta auth por ref).
+    // Para email/bankcode/birthday, usar endpoint privado con identificación del caller.
     const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,is_admin,email,whatsapp,birthday,bankcode,profession,income_goal,comm_style,instagram,photo,created_at&limit=1000',
+      SUPABASE_URL + '/rest/v1/users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,is_admin,whatsapp,profession,comm_style,instagram,photo,created_at,innova_user&limit=1000',
       { headers: HEADERS }
     );
     if (!r.ok) {
@@ -21,7 +25,7 @@ export default async function handler(req, res) {
     }
     const rows = await r.json();
 
-    // Convert array to keyed object — NO passwords sent to frontend
+    // Convert array to keyed object — NO passwords, emails, birthdays or bankcodes sent to frontend
     const users = {};
     for (const row of rows) {
       users[row.username] = {
@@ -29,7 +33,6 @@ export default async function handler(req, res) {
         rank: row.rank != null ? row.rank : 0,
         ref: row.ref || row.username,
         sponsor: row.sponsor || null,
-        email: row.email || null,
         wa: row.whatsapp || null,
         whatsapp: row.whatsapp || null,
         ventas: row.ventas || 0,
@@ -38,9 +41,7 @@ export default async function handler(req, res) {
         createdAt: row.created_at || null,
         isAdmin: row.is_admin || false,
         innova_user: row.innova_user || null,
-        birthday: row.birthday || null,
         photo: row.photo || null,
-        bankcode: row.bankcode || null,
         instagram: row.instagram || null
       };
     }

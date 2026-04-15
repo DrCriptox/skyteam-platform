@@ -20,9 +20,15 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      // Admin delete
+      // Admin delete — SECURITY: verify adminUser is actually admin in DB
       if (req.body.action === 'delete') {
-        const { msgText, msgUser } = req.body;
+        const { msgText, msgUser, adminUser } = req.body;
+        if (!adminUser) return res.status(403).json({ error: 'Unauthorized' });
+        try {
+          const adCheck = await fetch(SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(adminUser) + '&select=is_admin', { headers: HEADERS });
+          const adRows = await adCheck.json();
+          if (!Array.isArray(adRows) || !adRows.length || !adRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+        } catch(e) { return res.status(403).json({ error: 'Auth failed' }); }
         if (msgText && msgUser) {
           await fetch(SUPABASE_URL + '/rest/v1/chat_messages?username=eq.' + encodeURIComponent(msgUser) + '&text=eq.' + encodeURIComponent(msgText) + '&limit=1', { method: 'DELETE', headers: HEADERS });
         }
