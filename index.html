@@ -4560,13 +4560,27 @@ async function _loadEndorsementUI() {
       h += '<button onclick="_revokeEndorsement()" style="margin-top:10px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);color:#E24B4A;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Cancelar endoso</button>';
       h += '</div>';
     } else {
-      // No endoso: ofrecer solicitar al patrocinador
-      if (d.mySponsor) {
+      // No endoso: mostrar candidatos elegibles (hasta 2 niveles arriba)
+      if (d.eligibleClosers && d.eligibleClosers.length > 0) {
         h += '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:10px;">';
-        h += '<div style="font-size:12px;color:#F0EDE6;margin-bottom:8px;">¿Eres nuevo cerrando llamadas? Puedes pedir a tu patrocinador que cierre por ti y que la venta quede a tu nombre.</div>';
-        h += '<button onclick="_requestEndorsement()" style="background:linear-gradient(135deg,#7F77DD,#C9A84C);border:none;color:#fff;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">🎯 Solicitar endoso a mi patrocinador</button>';
-        h += '<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:6px;">Tu patrocinador debe ser NOVA 1500 o superior.</div>';
+        h += '<div style="font-size:12px;color:#F0EDE6;margin-bottom:10px;">¿Eres nuevo cerrando llamadas? Solicita a un cerrador de tu upline que cierre por ti. <strong>La venta queda a tu nombre.</strong></div>';
+        h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-bottom:6px;">CERRADORES ELEGIBLES</div>';
+        d.eligibleClosers.forEach(function(c) {
+          var rankLabel = c.rank >= 7 ? 'NOVA 50K+' : c.rank >= 6 ? 'NOVA DIAMOND' : c.rank >= 5 ? 'NOVA 10K' : c.rank >= 4 ? 'NOVA 5K' : 'NOVA 1500';
+          var levelBadge = c.level === 1 ? 'Patrocinador' : 'Patrocinador de tu patrocinador';
+          h += '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(127,119,221,0.15);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
+          h += '<div style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;">';
+          h += '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#0a0a12;">' + (c.level === 1 ? '1°' : '2°') + '</div>';
+          h += '<div><div style="font-size:13px;font-weight:700;color:#fff;">' + crmEsc(c.name) + '</div>';
+          h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);">' + levelBadge + ' · ' + rankLabel + '</div></div>';
+          h += '</div>';
+          h += '<button onclick="_requestEndorsement(\'' + c.username + '\')" style="background:linear-gradient(135deg,#7F77DD,#C9A84C);border:none;color:#fff;border-radius:8px;padding:7px 14px;font-weight:800;font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">🎯 Solicitar</button>';
+          h += '</div>';
+        });
+        h += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:8px;line-height:1.5;">Solo puedes elegir cerradores NOVA 1500+ a máximo 2 niveles arriba en tu upline.</div>';
         h += '</div>';
+      } else if (d.mySponsor) {
+        h += '<div style="background:rgba(255,165,0,0.06);border:0.5px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,165,0,0.85);">⚠️ Ninguno de tus upline (hasta 2 niveles arriba) tiene rango NOVA 1500+. Sigue creciendo y cuando asciendan podrás solicitarlo.</div>';
       } else {
         h += '<div style="color:rgba(255,255,255,0.4);font-size:11px;">No tienes patrocinador asignado.</div>';
       }
@@ -4609,13 +4623,15 @@ async function _loadEndorsementUI() {
   }
 }
 
-async function _requestEndorsement() {
+async function _requestEndorsement(targetCloser) {
   try {
-    var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'requestEndorsement', user:(CU&&CU.username)||'' }) });
+    var body = { action:'requestEndorsement', user:(CU&&CU.username)||'' };
+    if (targetCloser) body.targetCloser = targetCloser;
+    var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     var d = await r.json();
     if (d && d.ok) {
       if (d.alreadyActive) crmToast('Ya estás endosado por ' + d.endorsed_by, 'info');
-      else crmToast('🎯 Solicitud enviada a ' + (d.sponsor_name || d.endorsed_by), 'success');
+      else crmToast('🎯 Solicitud enviada a ' + (d.closer_name || d.endorsed_by), 'success');
       _loadEndorsementUI();
     } else {
       crmToast((d && d.error) || 'No se pudo solicitar', 'error');
@@ -4837,9 +4853,18 @@ function renderAgendaCitasUI() {
     var fechaLabel = (isHoy ? 'Hoy' : DIAS_FULL[d.getDay()].charAt(0).toUpperCase()+DIAS_FULL[d.getDay()].slice(1)) + ' ' + d.getDate() + ' de ' + MESES_FULL[d.getMonth()] + ' · ' + hStr;
     var waNum = cita.whatsapp.replace(/[^0-9]/g,'');
     var linkR = agendaConfig&&agendaConfig.linkReunion||'';
-    html += '<div class="card" style="margin-bottom:6px;padding:10px 12px;">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-    html += '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:13px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cita.nombre + ' <span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:500;">' + cita.whatsapp + '</span></p></div>';
+    // Detect referral prefix in notas: __REF_BY:username__
+    var referredByMatch = ((cita.notas || '') + '').match(/^__REF_BY:([^_]+)__\s*/);
+    var referredBy = referredByMatch ? referredByMatch[1] : null;
+    var referralBadge = '';
+    if (referredBy) {
+      referralBadge = '<div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(127,119,221,0.15),rgba(201,168,76,0.10));border:0.5px solid rgba(127,119,221,0.30);border-radius:6px;padding:2px 8px;font-size:9px;font-weight:800;color:#7F77DD;margin-left:6px;white-space:nowrap;">🎯 Referido por @' + referredBy + '</div>';
+    }
+    // Also strip the prefix from visible notas
+    var visibleNotas = ((cita.notas || '') + '').replace(/^__REF_BY:[^_]+__\s*/, '').trim();
+    html += '<div class="card" style="margin-bottom:6px;padding:10px 12px;' + (referredBy ? 'background:linear-gradient(135deg,rgba(127,119,221,0.04),rgba(255,255,255,0.02));border:0.5px solid rgba(127,119,221,0.18);' : '') + '">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px;">';
+    html += '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:13px;font-weight:800;color:#F0EDE6;overflow:hidden;">' + cita.nombre + ' <span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:500;">' + cita.whatsapp + '</span>' + referralBadge + '</p></div>';
     html += '<div style="flex-shrink:0;text-align:right;margin-left:8px;">';
     html += '<span style="font-size:11px;font-weight:700;color:#C9A84C;">' + fechaLabel + '</span> ' + badge;
     html += '</div></div>';
