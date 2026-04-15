@@ -176,7 +176,22 @@ async function handleTriggers(req, res) {
 
     if (closingProspects && closingProspects.length > 0) {
       for (const p of closingProspects) {
-        const valor = p.valor_estimado ? ' (
+        // Days left until closing
+        const closingDate = new Date(p.fecha_cierre_estimada);
+        const diffMs = closingDate.getTime() - now.getTime();
+        const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+        // Urgency label by days left
+        let urgency;
+        if (daysLeft <= 0) urgency = '🔥 CIERRA HOY';
+        else if (daysLeft === 1) urgency = '⚡ Cierra mañana';
+        else if (daysLeft <= 3) urgency = '📅 ' + daysLeft + ' días para el cierre';
+        else urgency = '🗓️ ' + daysLeft + ' días';
+        const valor = p.valor_estimado ? ' ($' + p.valor_estimado + ')' : '';
+        const title = urgency + ': ' + (p.nombre || 'Prospecto');
+        const body = 'Enfoca tu día en avanzar el cierre' + valor + '. Etapa: ' + (p.etapa || 'nueva');
+        const r = await pushToUser(p.username, title, body, '/?nav=prospectos&focus=' + p.id, 'skyteam-closing-' + p.id);
+        results.triggers.push({ type: 'closing', user: p.username, prospect: p.nombre, daysLeft: daysLeft, sent: r.sent });
+        results.sent += r.sent;
       }
     }
 
