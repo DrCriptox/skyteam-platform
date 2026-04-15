@@ -619,7 +619,7 @@ export default async function handler(req, res) {
 
       // Fetch socio's agenda link — or his endorsed closer's agenda if endorsement is active
       let agendaLink = '';
-      let landingLink = 'https://skyteam.global/landing/' + user;
+      let landingLink = 'https://skyteam.global/landing?ref=' + user;
       let closerName = ''; // if endorsed, name of the closer to show in UI
       try {
         const cfgArr = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
