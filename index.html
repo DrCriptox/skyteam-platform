@@ -8826,7 +8826,7 @@ function renderSkySales() {
   var i, a, active, card;
   for(i = 0; i < agents.length; i++) {
     a = agents[i];
-    active = (a.badge === 'Activo' || a.badge === 'Beta');
+    active = (a.badge === 'Activo' || a.badge === 'Beta' || a.badge === 'Nuevo');
     var onclk;
     if(active) {
       onclk = ' onclick="openAgent(\'' + a.id + '\')"';
