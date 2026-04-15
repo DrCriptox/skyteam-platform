@@ -330,10 +330,10 @@ Agendar llamada</a>
   }
   function _fireFBEvent(name) {
     var eid = 'skywa_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    // Pixel signal isolation: ONLY paid traffic (ref=admin) fires InitiateCheckout.
+    // Pixel signal isolation: ONLY paid traffic (ref=dradmin) fires InitiateCheckout.
     // Partner traffic (legend, socio slugs) fires generic Lead — does NOT train paid campaign.
     // This keeps the pixel signal clean for Meta optimization without affecting partners' landing UX.
-    if (slug === 'admin') {
+    if (slug === 'dradmin' || slug === 'admin') {
       // Paid traffic: strong purchase-intent signal that trains the campaign
       if (typeof fbq === 'function') fbq('track', 'InitiateCheckout', { content_name: name, currency: 'USD', value: 550 }, { eventID: eid });
       if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('InitiateCheckout', eid, { currency: 'USD', value: 550 });

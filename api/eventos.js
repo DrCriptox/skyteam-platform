@@ -50,8 +50,7 @@ module.exports = async function handler(req, res) {
     if (!u) return false;
     const k = u.toLowerCase();
     if (_adminCache[k] !== undefined) return _adminCache[k];
-    // Fallback hardcoded for safety + DB check
-    if (['yonfer','admin','dryonfer','legend'].includes(k)) { _adminCache[k] = true; return true; }
+    // SECURITY: No hardcoded admin fallback — check DB only (is_admin column is source of truth)
     try { const r = await SB('users?username=eq.'+encodeURIComponent(k)+'&select=is_admin&limit=1'); const d = await r.json(); _adminCache[k] = !!(d && d[0] && d[0].is_admin); } catch(e) { _adminCache[k] = false; }
     return _adminCache[k];
   };

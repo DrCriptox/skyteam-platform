@@ -11647,7 +11647,7 @@ function renderAdminPruebas() {
   if(!el) return;
   el.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);">\u23F3 Cargando pruebas...</div>';
   console.log('[ADMIN] Loading pruebas for user:', CU?CU.username:'NO CU');
-  fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'list', adminUser:CU?CU.username:'admin'}) })
+  fetch('/api/verify-crm-proof', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'list', adminUser:CU?CU.username:'dradmin'}) })
   .then(function(r){ console.log('[ADMIN] Pruebas response status:', r.status); return r.json(); }).then(function(d){
     console.log('[ADMIN] Pruebas data:', d.ok, 'count:', d.proofs?d.proofs.length:0, 'error:', d.error||'none');
     if(!d.proofs || !d.proofs.length) { el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);"><div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCCB</div>Sin pruebas registradas'+(d.error?' ('+d.error+')':'')+'</div>'; return; }
@@ -11826,7 +11826,7 @@ async function renderAdminMaint() {
   if (!el) return;
   el.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">Analizando recordatorios...</div>';
   try {
-    var r = await fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'cleanOrphanReminders', user:(CU&&CU.username)||'admin', doClean: false }) });
+    var r = await fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'cleanOrphanReminders', user:(CU&&CU.username)||'dradmin', doClean: false }) });
     var d = await r.json();
     if (!d.ok) { el.innerHTML = '<div style="color:#E24B4A;padding:20px;">Error: ' + (d.error||'desconocido') + '</div>'; return; }
     var rep = d.report || {};
@@ -11880,7 +11880,7 @@ async function renderAdminMaint() {
 async function _adminCleanReminders() {
   if (!confirm('¿Borrar TODOS los recordatorios huérfanos y duplicados? Esta acción NO se puede deshacer.')) return;
   try {
-    var r = await fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'cleanOrphanReminders', user:(CU&&CU.username)||'admin', doClean: true }) });
+    var r = await fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'cleanOrphanReminders', user:(CU&&CU.username)||'dradmin', doClean: true }) });
     var d = await r.json();
     if (d.ok && d.report && d.report.cleaned) {
       alert('✅ Eliminados: ' + (d.report.deleted || 0) + ' recordatorios');
@@ -11897,7 +11897,7 @@ async function _adminTestEmail() {
   if (!inp || !inp.value) { if(result) result.innerHTML = '<span style="color:#E24B4A;">Ingresa un email</span>'; return; }
   if (result) result.innerHTML = '<span style="color:rgba(255,255,255,0.5);">Enviando test a ' + inp.value + '...</span>';
   try {
-    var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'testEmail', user:(CU&&CU.username)||'admin', to: inp.value }) });
+    var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'testEmail', user:(CU&&CU.username)||'dradmin', to: inp.value }) });
     var d = await r.json();
     if (d && d.ok && d.body && d.body.id) {
       if (result) result.innerHTML = '<span style="color:#25D366;">✅ Enviado — ID Resend: ' + d.body.id + '. Revisa tu bandeja (incluye spam).</span>';
@@ -11914,7 +11914,7 @@ async function renderAdminIaPerf() {
   if (!el) return;
   el.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">Cargando estadísticas IA...</div>';
   try {
-    var r = await fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'iaPerformanceStats', user:(CU&&CU.username)||'admin' }) });
+    var r = await fetch('/api/prospectos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'iaPerformanceStats', user:(CU&&CU.username)||'dradmin' }) });
     var d = await r.json();
     if (!d.ok) { el.innerHTML = '<div style="color:#E24B4A;padding:20px;">Error: ' + (d.error||'desconocido') + '</div>'; return; }
     var s = d.summary || {};
