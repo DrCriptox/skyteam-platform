@@ -299,11 +299,15 @@ export default async function handler(req, res) {
     // Returns only the socio's own data + his position (no list of other socios)
     if (action === 'iaMyStats') {
       try {
-        const fbPos = await sb('interacciones?tipo=eq.ia_feedback_positive&order=created_at.desc&select=username,created_at', { headers: { ...HEADERS, Range: '0-1999' } });
-        const fbNeg = await sb('interacciones?tipo=eq.ia_feedback_negative&order=created_at.desc&select=username,created_at', { headers: { ...HEADERS, Range: '0-1999' } });
+        // Fetch all "nota" type interactions with IA feedback prefix (paginated up to 2000)
+        const allFb = await sb('interacciones?tipo=eq.nota&contenido=like.__IA_FB_*&order=created_at.desc&select=username,contenido,created_at', { headers: { ...HEADERS, Range: '0-1999' } });
         const perUser = {};
-        (fbPos || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { pos: 0, neg: 0 }; perUser[f.username].pos++; });
-        (fbNeg || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { pos: 0, neg: 0 }; perUser[f.username].neg++; });
+        (allFb || []).forEach(function(f) {
+          if (!perUser[f.username]) perUser[f.username] = { pos: 0, neg: 0 };
+          const c = (f.contenido || '') + '';
+          if (c.indexOf('__IA_FB_POSITIVE__') === 0) perUser[f.username].pos++;
+          else if (c.indexOf('__IA_FB_NEGATIVE__') === 0) perUser[f.username].neg++;
+        });
         const ranking = Object.keys(perUser).map(function(u) {
           const s = perUser[u]; const tot = s.pos + s.neg;
           return { username: u, total: tot, positive: s.pos, negative: s.neg, approval: tot > 0 ? Math.round((s.pos / tot) * 100) : 0 };
@@ -325,33 +329,30 @@ export default async function handler(req, res) {
     // Returns: summary, per-socio ranking, AND breakdown by modo/fase for analytics
     if (action === 'iaPerformanceStats') {
       try {
-        // Fetch last 2000 IA feedbacks across all users (content includes meta JSON)
-        const fbPos = await sb('interacciones?tipo=eq.ia_feedback_positive&order=created_at.desc&select=username,created_at,contenido', { headers: { ...HEADERS, Range: '0-1999' } });
-        const fbNeg = await sb('interacciones?tipo=eq.ia_feedback_negative&order=created_at.desc&select=username,created_at,contenido', { headers: { ...HEADERS, Range: '0-1999' } });
+        // Fetch all IA feedbacks (tipo='nota' with prefix __IA_FB_*)
+        const allFb = await sb('interacciones?tipo=eq.nota&contenido=like.__IA_FB_*&order=created_at.desc&select=username,created_at,contenido', { headers: { ...HEADERS, Range: '0-1999' } });
         const perUser = {};
         const perModo = {};
         const perFase = {};
-        const parseMeta = function(contenido) {
+        const parseMeta = function(contenido, prefix) {
           try {
-            var parts = ((contenido || '') + '').split('|||');
+            var withoutPrefix = ((contenido || '') + '').substring(prefix.length);
+            var parts = withoutPrefix.split('|||');
             return JSON.parse(parts[0] || '{}');
           } catch(e) { return {}; }
         };
-        (fbPos || []).forEach(function(f) {
+        (allFb || []).forEach(function(f) {
+          const c = (f.contenido || '') + '';
+          const isPos = c.indexOf('__IA_FB_POSITIVE__') === 0;
+          const isNeg = c.indexOf('__IA_FB_NEGATIVE__') === 0;
+          if (!isPos && !isNeg) return;
+          const prefix = isPos ? '__IA_FB_POSITIVE__' : '__IA_FB_NEGATIVE__';
           if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null };
-          perUser[f.username].positive++;
+          if (isPos) perUser[f.username].positive++; else perUser[f.username].negative++;
           if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at;
-          const meta = parseMeta(f.contenido);
-          if (meta.modo) { if (!perModo[meta.modo]) perModo[meta.modo] = { positive: 0, negative: 0 }; perModo[meta.modo].positive++; }
-          if (meta.fase) { if (!perFase[meta.fase]) perFase[meta.fase] = { positive: 0, negative: 0 }; perFase[meta.fase].positive++; }
-        });
-        (fbNeg || []).forEach(function(f) {
-          if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null };
-          perUser[f.username].negative++;
-          if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at;
-          const meta = parseMeta(f.contenido);
-          if (meta.modo) { if (!perModo[meta.modo]) perModo[meta.modo] = { positive: 0, negative: 0 }; perModo[meta.modo].negative++; }
-          if (meta.fase) { if (!perFase[meta.fase]) perFase[meta.fase] = { positive: 0, negative: 0 }; perFase[meta.fase].negative++; }
+          const meta = parseMeta(c, prefix);
+          if (meta.modo) { if (!perModo[meta.modo]) perModo[meta.modo] = { positive: 0, negative: 0 }; if (isPos) perModo[meta.modo].positive++; else perModo[meta.modo].negative++; }
+          if (meta.fase) { if (!perFase[meta.fase]) perFase[meta.fase] = { positive: 0, negative: 0 }; if (isPos) perFase[meta.fase].positive++; else perFase[meta.fase].negative++; }
         });
         const users = Object.keys(perUser).map(function(u) {
           const s = perUser[u]; const total = s.positive + s.negative;
@@ -389,15 +390,17 @@ export default async function handler(req, res) {
       try {
         const meta = JSON.stringify({ modo: modo || '', toque: toque || 0, fase: fase || '' });
         const shortMsg = (mensaje + '').substring(0, 500);
-        // Direct fetch to get real response status (sb() swallows errors)
+        // Use tipo='nota' (allowed by DB CHECK constraint) + prefix in contenido
+        // to identify as IA feedback. Prefix: __IA_FB_POSITIVE__ or __IA_FB_NEGATIVE__
+        const prefix = '__IA_FB_' + tipo_feedback.toUpperCase() + '__';
         const insR = await fetch(SUPABASE_URL + '/rest/v1/interacciones', {
           method: 'POST',
           headers: { ...HEADERS, Prefer: 'return=representation' },
           body: JSON.stringify({
             prospecto_id: prospecto_id,
             username: user,
-            tipo: 'ia_feedback_' + tipo_feedback,
-            contenido: meta + '|||' + shortMsg
+            tipo: 'nota',
+            contenido: prefix + meta + '|||' + shortMsg
           })
         });
         const insBody = await insR.text();
@@ -468,16 +471,21 @@ export default async function handler(req, res) {
       let positiveSamples = [];
       let negativeSamples = [];
       try {
-        const posArr = await sb('interacciones?username=eq.' + encodeURIComponent(user) + '&tipo=eq.ia_feedback_positive&order=created_at.desc&limit=8');
-        positiveSamples = (posArr || []).map(function(f) {
-          var parts = ((f.contenido || '') + '').split('|||');
-          return (parts[1] || '').trim();
-        }).filter(function(x) { return x && x.length > 20; }).slice(0, 5);
-        const negArr = await sb('interacciones?username=eq.' + encodeURIComponent(user) + '&tipo=eq.ia_feedback_negative&order=created_at.desc&limit=4');
-        negativeSamples = (negArr || []).map(function(f) {
-          var parts = ((f.contenido || '') + '').split('|||');
-          return (parts[1] || '').trim();
-        }).filter(function(x) { return x && x.length > 20; }).slice(0, 3);
+        // Feedback stored as tipo='nota' with prefix __IA_FB_POSITIVE__ or __IA_FB_NEGATIVE__
+        const allFb = await sb('interacciones?username=eq.' + encodeURIComponent(user) + '&tipo=eq.nota&contenido=like.__IA_FB_*&order=created_at.desc&limit=20');
+        (allFb || []).forEach(function(f) {
+          const c = (f.contenido || '') + '';
+          const isPos = c.indexOf('__IA_FB_POSITIVE__') === 0;
+          const isNeg = c.indexOf('__IA_FB_NEGATIVE__') === 0;
+          if (!isPos && !isNeg) return;
+          const prefix = isPos ? '__IA_FB_POSITIVE__' : '__IA_FB_NEGATIVE__';
+          const withoutPrefix = c.substring(prefix.length);
+          const parts = withoutPrefix.split('|||');
+          const text = (parts[1] || '').trim();
+          if (!text || text.length < 20) return;
+          if (isPos && positiveSamples.length < 5) positiveSamples.push(text);
+          if (isNeg && negativeSamples.length < 3) negativeSamples.push(text);
+        });
       } catch(e) {}
 
       // -- 2. Calculate prospect stars (0-5) --
@@ -492,8 +500,11 @@ export default async function handler(req, res) {
       // - notes describing real responses ("respondió", "contestó", "confirmó", "dijo")
       const interacciones = await sb('interacciones?prospecto_id=eq.' + encodeURIComponent(prospecto_id) + '&order=created_at.asc&limit=30');
       const mensajesPrevios = (interacciones || []).filter(function(i) {
-        const c = ((i.contenido || '') + '').toLowerCase();
+        const cRaw = ((i.contenido || '') + '');
+        const c = cRaw.toLowerCase();
         const t = ((i.tipo || '') + '').toLowerCase();
+        // Exclude IA feedback entries (stored as tipo=nota with __IA_FB_* prefix)
+        if (cRaw.indexOf('__IA_FB_POSITIVE__') === 0 || cRaw.indexOf('__IA_FB_NEGATIVE__') === 0) return false;
         // Exclude IA-generated tracking entries (internal, not real conversation)
         if (c.indexOf('generado con ia') !== -1) return false;
         if (c.indexOf('mensaje generado') !== -1) return false;
@@ -725,9 +736,11 @@ export default async function handler(req, res) {
         (socioBankcode ? 'El BANKCODE "' + socioBankcode + '" debe guiar el tono: aplica la cadencia y vocabulario típico de ese perfil al escribir. ' : '') +
         styleLearning;
 
-      // Build real-history summary (exclude IA-generated tracking entries)
+      // Build real-history summary (exclude IA-generated tracking + IA feedback entries)
       var realHistoryLines = (interacciones || []).filter(function(i) {
-        var c = ((i.contenido || '') + '').toLowerCase();
+        var cRaw = ((i.contenido || '') + '');
+        var c = cRaw.toLowerCase();
+        if (cRaw.indexOf('__IA_FB_POSITIVE__') === 0 || cRaw.indexOf('__IA_FB_NEGATIVE__') === 0) return false;
         if (c.indexOf('generado con ia') !== -1) return false;
         if (c.indexOf('mensaje generado') !== -1) return false;
         return !!i.contenido;

@@ -15284,8 +15284,15 @@ function openCrmDetail(id) {
       try {
         var intRes = await crmApi('getInteracciones',{prospecto_id:id});
         var ints = (intRes && intRes.interacciones) ? intRes.interacciones : [];
-        var iaMessages = ints.filter(function(it){ return it.tipo === 'ia_feedback_positive' || it.tipo === 'ia_feedback_negative'; });
-        var realInts = ints.filter(function(it){ return it.tipo !== 'ia_feedback_positive' && it.tipo !== 'ia_feedback_negative'; });
+        // IA feedback entries: tipo='nota' with contenido starting with __IA_FB_POSITIVE__ or __IA_FB_NEGATIVE__
+        var iaMessages = ints.filter(function(it){
+          var c = (it.contenido || '') + '';
+          return c.indexOf('__IA_FB_POSITIVE__') === 0 || c.indexOf('__IA_FB_NEGATIVE__') === 0;
+        });
+        var realInts = ints.filter(function(it){
+          var c = (it.contenido || '') + '';
+          return !(c.indexOf('__IA_FB_POSITIVE__') === 0 || c.indexOf('__IA_FB_NEGATIVE__') === 0);
+        });
         // ── IA history section ──
         var iaSection = modal.querySelector('#crm-detail-ia-section');
         var iaHist = modal.querySelector('#crm-detail-ia-history');
@@ -15293,8 +15300,11 @@ function openCrmDetail(id) {
           iaSection.style.display = 'block';
           var iaHtml = '';
           iaMessages.slice(0, 10).forEach(function(it){
-            var isPos = it.tipo === 'ia_feedback_positive';
-            var parts = ((it.contenido || '') + '').split('|||');
+            var cRaw = (it.contenido || '') + '';
+            var isPos = cRaw.indexOf('__IA_FB_POSITIVE__') === 0;
+            var prefix = isPos ? '__IA_FB_POSITIVE__' : '__IA_FB_NEGATIVE__';
+            var withoutPrefix = cRaw.substring(prefix.length);
+            var parts = withoutPrefix.split('|||');
             var meta = {};
             try { meta = JSON.parse(parts[0] || '{}'); } catch(e) {}
             var texto = (parts[1] || parts[0] || '').trim();
