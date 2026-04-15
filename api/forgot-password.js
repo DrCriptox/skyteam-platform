@@ -21,25 +21,40 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // TEMPORARY DEBUG MODE — remove after diagnosis
+  const isDebug = req.body && req.body.debugKey === 'SKYTEAM_DEBUG_4F2A_2026';
+  const debugInfo = { env: {}, steps: [] };
+  if (isDebug) {
+    debugInfo.env.SUPABASE_URL = !!SUPABASE_URL;
+    debugInfo.env.SUPABASE_SERVICE_KEY = !!SUPABASE_KEY;
+    debugInfo.env.RESET_SECRET = !!RESET_SECRET;
+    debugInfo.env.RESEND_API_KEY = !!process.env.RESEND_API_KEY;
+    debugInfo.env.RESEND_API_KEY_prefix = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 8) + '...' : null;
+  }
+
   try {
     const { email } = req.body || {};
 
     // Siempre retorna 200 para evitar enumeración de emails
     if (!email || typeof email !== 'string' || email.length > 200) {
       console.log('[FORGOT-PASSWORD] Missing or invalid email');
+      if (isDebug) { debugInfo.steps.push('missing_email'); return res.status(200).json({ ok: true, debug: debugInfo }); }
       return res.status(200).json({ ok: true });
     }
 
     const clean = email.trim().toLowerCase();
     console.log('[FORGOT-PASSWORD] Request received for:', clean);
+    if (isDebug) debugInfo.steps.push('email_clean:' + clean);
 
     // Check that required env vars are set
     if (!RESET_SECRET) {
       console.error('[FORGOT-PASSWORD] RESET_SECRET not configured in Vercel env vars!');
+      if (isDebug) { debugInfo.steps.push('FAIL_no_reset_secret'); return res.status(200).json({ ok: true, debug: debugInfo }); }
       return res.status(200).json({ ok: true });
     }
     if (!process.env.RESEND_API_KEY) {
       console.error('[FORGOT-PASSWORD] RESEND_API_KEY not configured in Vercel env vars!');
+      if (isDebug) debugInfo.steps.push('WARN_no_resend_key');
     }
 
     const r = await fetch(
@@ -47,20 +62,24 @@ export default async function handler(req, res) {
       { headers: HEADERS }
     );
     const users = await r.json();
+    if (isDebug) debugInfo.steps.push('db_query_result:' + JSON.stringify(users).substring(0, 200));
 
     if (!users || users.length === 0) {
       console.log('[FORGOT-PASSWORD] Email not found in DB:', clean);
-      return res.status(200).json({ ok: true }); // No revelar si el email existe
+      if (isDebug) { debugInfo.steps.push('email_not_found'); return res.status(200).json({ ok: true, debug: debugInfo }); }
+      return res.status(200).json({ ok: true });
     }
 
     const user = users[0];
     console.log('[FORGOT-PASSWORD] Match found: username=' + user.username);
+    if (isDebug) debugInfo.steps.push('match_found:' + user.username);
     const token = generateToken(user.username, clean);
     const resetLink = 'https://skyteam.global?reset=' + token;
     const primerNombre = user.name ? user.name.split(' ')[0] : 'Socio';
 
     if (process.env.RESEND_API_KEY) {
       console.log('[FORGOT-PASSWORD] Sending email via Resend to:', clean);
+      if (isDebug) debugInfo.steps.push('attempting_resend');
       const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;">
         <div style="background:linear-gradient(135deg,#0a0a12,#0f0f18,#0a0a12);padding:32px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.15);">
           <img src="https://skyteam.global/logo-skyteam-white.png" alt="SKYTEAM" style="height:44px;max-width:240px;" />
@@ -97,15 +116,19 @@ export default async function handler(req, res) {
       const emailBody = await emailRes.text().catch(() => '');
       if (emailRes.ok) {
         console.log('[FORGOT-PASSWORD] Email sent successfully to', clean, '| Resend status:', emailRes.status);
+        if (isDebug) debugInfo.steps.push('RESEND_OK:' + emailRes.status + ':' + emailBody.substring(0, 200));
       } else {
         console.error('[FORGOT-PASSWORD] Resend FAILED:', emailRes.status, emailBody.substring(0, 300));
+        if (isDebug) debugInfo.steps.push('RESEND_FAIL:' + emailRes.status + ':' + emailBody.substring(0, 400));
       }
     }
 
+    if (isDebug) return res.status(200).json({ ok: true, debug: debugInfo });
     return res.status(200).json({ ok: true });
 
   } catch (error) {
     console.error('[FORGOT-PASSWORD] error:', error.message, error.stack ? error.stack.substring(0, 300) : '');
-    return res.status(200).json({ ok: true }); // No revelar errores internos
+    if (isDebug) { debugInfo.steps.push('EXCEPTION:' + error.message); return res.status(200).json({ ok: true, debug: debugInfo }); }
+    return res.status(200).json({ ok: true });
   }
 }
