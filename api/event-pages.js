@@ -1080,7 +1080,7 @@ function buildEventHTML(ev, content, creator, posterUrl) {
     + 'var avH="";names.forEach(function(n,i){var ini=((n.nombre||"?")[0]||"?").toUpperCase();avH+="<div class=\\"ev-avatar-circle\\" style=\\"background:"+colors[i%8]+"\\">"+ini+"</div>";});'
     + 'avEl.innerHTML=avH;'
     + 'var countEl=document.getElementById("ev-social-count");'
-    + 'if(countEl&&regs>8)countEl.textContent="+ "+(regs-8)+" personas mas";'
+    + 'if(countEl&&realRegs>8)countEl.textContent="+ "+(realRegs-8)+" personas mas";'
     + '}'
     // Update sticky CTA with cupos (display version for urgency)
     + 'var stickyText=document.querySelector(".ev-sticky-text strong");'
