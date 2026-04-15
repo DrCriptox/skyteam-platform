@@ -622,7 +622,6 @@ function renderSkyTeam() {
     { id: 'socios',    icon: '👥', label: 'Socios' },
     { id: 'ranking',   icon: '🏆', label: 'Ranking' },
     { id: 'alertas',   icon: '🔔', label: 'Alertas' },
-    { id: 'eventos',   icon: '🎪', label: 'Sky Events' },
     { id: 'mentor',    icon: '🧠', label: 'Mentor IA' }
   ];
 
@@ -648,7 +647,6 @@ function renderSkyTeam() {
     case 'socios':    html += renderSTSocios();    break;
     case 'ranking':   html += renderSTRanking();   break;
     case 'alertas':   html += renderSTAlertas();   break;
-    case 'eventos':   html += renderSTEventos();   break;
     case 'mentor':    html += renderSTMentor();    break;
     default:          html += renderSTDashboard();
   }
@@ -2644,6 +2642,83 @@ window._closeMemberDetail = _closeMemberDetail;
 // ═══════════════════════════════════════════════════════════════
 //  EVENTOS — Event Management System
 // ═══════════════════════════════════════════════════════════════
+
+// === INDEPENDENT SKY EVENTS SECTION ===
+// Renders the full Sky Events experience in its own top-level section
+// (moved out from Mi SkyTeam tab). Uses the same internal render functions
+// (_renderEvtTeam, _renderEvtMine, _renderEvtImpact) for consistency.
+function renderSkyEventsSection() {
+  var el = document.getElementById('sky-events-content');
+  if (!el) return;
+  // Reuse stState for view state (defaults to 'team')
+  if (typeof stState === 'undefined' || !stState) window.stState = { evtView: 'team' };
+  if (!stState.evtView) stState.evtView = 'team';
+  var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
+  var html = '';
+
+  // Sub-tab bar (same 3 tabs, now at the top of the independent section)
+  var views = [
+    { id: 'team',   label: 'Eventos del Equipo' },
+    { id: 'mine',   label: 'Mis Eventos' },
+    { id: 'impact', label: 'Mi Impacto' }
+  ];
+  html += '<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
+  for (var v = 0; v < views.length; v++) {
+    var isOn = stState.evtView === views[v].id;
+    html += '<button onclick="switchSkyEventsView(\'' + views[v].id + '\')" style="padding:10px 20px;border-radius:12px;border:1px solid ' + (isOn ? C.gold : C.border) + ';background:' + (isOn ? 'rgba(201,168,76,0.15)' : 'transparent') + ';color:' + (isOn ? C.gold : C.textSub) + ';font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s">' + views[v].label + '</button>';
+  }
+  html += '</div>';
+
+  // Create button (only NOVA 5K+ / rango >= 4 or admin)
+  var cuRango = (typeof CU !== 'undefined' && CU) ? (parseInt(CU.rank) || 0) : 0;
+  var cuIsAdmin = (typeof CU !== 'undefined' && CU) ? CU.isAdmin : false;
+  if (cuRango >= 4 || cuIsAdmin) {
+    html += '<button onclick="openEventWizard()" style="width:100%;padding:14px;border-radius:14px;border:1px dashed ' + C.gold + ';background:rgba(201,168,76,0.05);color:' + C.gold + ';font-size:15px;font-weight:700;cursor:pointer;margin-bottom:20px;font-family:inherit">+ Crear Evento</button>';
+  }
+
+  // Render current view
+  switch (stState.evtView) {
+    case 'team':   html += _renderEvtTeam(cuUser);   break;
+    case 'mine':   html += _renderEvtMine(cuUser);   break;
+    case 'impact': html += _renderEvtImpact(cuUser); break;
+  }
+
+  el.innerHTML = html;
+
+  // Load data on first render
+  if (!stState.evtList && !stState.loading) _loadEvtTeamForSection();
+  if (stState.evtView === 'mine' && !stState.evtMyList && !stState.loading) _loadEvtMineForSection(cuUser);
+}
+
+// Switch view from the independent Sky Events section (different from switchEvtView which re-renders MiSkyTeam)
+function switchSkyEventsView(viewId) {
+  if (typeof stState === 'undefined' || !stState) window.stState = {};
+  stState.evtView = viewId;
+  renderSkyEventsSection();
+  if (viewId === 'mine' && typeof CU !== 'undefined' && CU && !stState.evtMyList) _loadEvtMineForSection(CU.username);
+}
+
+function _loadEvtTeamForSection() {
+  _fetchT('/api/event-pages?action=list&_t=' + Date.now(), 10000).then(function(d) {
+    if (d && d.ok) { stState.evtList = d.events || []; renderSkyEventsSection(); }
+  }).catch(function() {});
+}
+
+function _loadEvtMineForSection(username) {
+  if (!username) return;
+  fetch('/api/event-pages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'myEvents', username: username })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.ok) { stState.evtMyList = d.events || []; renderSkyEventsSection(); }
+  }).catch(function() {});
+}
+
+// Expose globally so navigate() can call it
+if (typeof window !== 'undefined') {
+  window.renderSkyEventsSection = renderSkyEventsSection;
+  window.switchSkyEventsView = switchSkyEventsView;
+}
 
 function renderSTEventos() {
   var cuUser = (typeof CU !== 'undefined' && CU) ? CU.username : '';
