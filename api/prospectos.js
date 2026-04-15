@@ -214,6 +214,87 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // -- ADMIN: analyze and clean orphan/duplicate reminders --
+    // Huérfanos reales = recordatorio con prospecto_id que no existe en prospectos
+    // Duplicados = mismo prospecto_id + mismo mensaje + fecha_recordatorio similar
+    if (action === 'cleanOrphanReminders') {
+      var doClean = (req.body || {}).doClean === true;
+      try {
+        // Fetch all active reminders (no paginated, up to 2000)
+        const remsR = await fetch(SUPABASE_URL + '/rest/v1/recordatorios?completado=eq.false&select=id,username,prospecto_id,mensaje,fecha_recordatorio,created_at', { headers: { ...HEADERS, Range: '0-1999' } });
+        const allRems = await remsR.json();
+        if (!Array.isArray(allRems)) return res.status(500).json({ error: 'Failed to list reminders' });
+
+        // Collect unique prospecto_ids and check which exist
+        const prospIds = Array.from(new Set(allRems.map(function(r){ return r.prospecto_id; }).filter(Boolean)));
+        const orphanIds = new Set();
+        if (prospIds.length > 0) {
+          // Query in batches of 100
+          const batches = [];
+          for (let i = 0; i < prospIds.length; i += 100) batches.push(prospIds.slice(i, i + 100));
+          const existingIds = new Set();
+          for (const batch of batches) {
+            const idsQuery = batch.map(function(id){ return '"' + id + '"'; }).join(',');
+            const pR = await fetch(SUPABASE_URL + '/rest/v1/prospectos?id=in.(' + idsQuery + ')&select=id', { headers: HEADERS });
+            const pRows = await pR.json();
+            if (Array.isArray(pRows)) pRows.forEach(function(p){ existingIds.add(p.id); });
+          }
+          prospIds.forEach(function(id){ if (!existingIds.has(id)) orphanIds.add(id); });
+        }
+
+        const orphans = allRems.filter(function(r){ return orphanIds.has(r.prospecto_id); });
+
+        // Detect duplicates: same prospecto_id + same username + same message + within 5 min
+        const dupGroups = {};
+        allRems.forEach(function(r) {
+          if (orphanIds.has(r.prospecto_id)) return; // skip orphans (handled separately)
+          const key = r.prospecto_id + '|' + r.username + '|' + (r.mensaje || '').substring(0, 50);
+          if (!dupGroups[key]) dupGroups[key] = [];
+          dupGroups[key].push(r);
+        });
+        const duplicates = [];
+        Object.keys(dupGroups).forEach(function(key){
+          const group = dupGroups[key];
+          if (group.length > 1) {
+            // Sort by created_at asc, keep first, mark rest as duplicates
+            group.sort(function(a, b){ return (a.created_at || '').localeCompare(b.created_at || ''); });
+            for (let i = 1; i < group.length; i++) {
+              // Only flag as duplicate if within 10 minutes of the first
+              const t0 = new Date(group[0].fecha_recordatorio).getTime();
+              const ti = new Date(group[i].fecha_recordatorio).getTime();
+              if (Math.abs(ti - t0) < 10 * 60000) duplicates.push(group[i]);
+            }
+          }
+        });
+
+        const report = {
+          totalReminders: allRems.length,
+          orphans: orphans.length,
+          duplicates: duplicates.length,
+          orphanSample: orphans.slice(0, 10).map(function(r){ return { id: r.id, prospecto_id: r.prospecto_id, mensaje: (r.mensaje || '').substring(0, 60), fecha: r.fecha_recordatorio, username: r.username }; }),
+          duplicateSample: duplicates.slice(0, 10).map(function(r){ return { id: r.id, prospecto_id: r.prospecto_id, mensaje: (r.mensaje || '').substring(0, 60), fecha: r.fecha_recordatorio }; })
+        };
+
+        if (doClean) {
+          const toDelete = orphans.concat(duplicates);
+          let deleted = 0;
+          for (const r of toDelete) {
+            try {
+              await fetch(SUPABASE_URL + '/rest/v1/recordatorios?id=eq.' + encodeURIComponent(r.id), { method: 'DELETE', headers: HEADERS });
+              deleted++;
+            } catch(e) {}
+          }
+          report.deleted = deleted;
+          report.cleaned = true;
+        } else {
+          report.cleaned = false;
+          report.hint = 'Pass doClean:true to actually delete the flagged reminders.';
+        }
+
+        return res.status(200).json({ ok: true, report: report });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+
     // -- ADMIN: IA performance stats (positive vs negative feedbacks per socio) --
     if (action === 'iaPerformanceStats') {
       try {
