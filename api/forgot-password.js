@@ -28,8 +28,13 @@ export default async function handler(req, res) {
     debugInfo.env.SUPABASE_URL = !!SUPABASE_URL;
     debugInfo.env.SUPABASE_SERVICE_KEY = !!SUPABASE_KEY;
     debugInfo.env.RESET_SECRET = !!RESET_SECRET;
+    debugInfo.env.RESET_SECRET_value = RESET_SECRET ? RESET_SECRET.substring(0, 8) + '...(' + RESET_SECRET.length + ' chars)' : null;
     debugInfo.env.RESEND_API_KEY = !!process.env.RESEND_API_KEY;
     debugInfo.env.RESEND_API_KEY_prefix = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 8) + '...' : null;
+    // List ALL env vars that match patterns of interest (names only, not values)
+    debugInfo.env.ALL_keys = Object.keys(process.env).filter(k =>
+      /^(RESEND|RESET|SUPABASE|OPENAI|VAPID|ADMIN|NEXT|MIGRATE|WHATSAPP|META_|FACEBOOK)/i.test(k)
+    ).sort();
   }
 
   try {
