@@ -212,6 +212,46 @@ async function handleTriggers(req, res) {
 
     } // end TRIGGER 5 hour check
 
+    // ── TRIGGER 5b: Reactivación prospectos fríos (>30 días sin movimiento), 11am ──
+    if (cHour === 11) {
+      try {
+        const coldThresholdISO = new Date(now.getTime() - 30 * 86400000).toISOString();
+        const sixMonthsAgoISO = new Date(now.getTime() - 180 * 86400000).toISOString();
+        const coldProspects = await sb(
+          'prospectos?select=id,username,nombre,updated_at,etapa' +
+          '&updated_at=lt.' + coldThresholdISO +
+          '&updated_at=gt.' + sixMonthsAgoISO +
+          '&etapa=not.in.(cerrado_ganado,cerrado_perdido,nuevo)' +
+          '&limit=100'
+        );
+        if (coldProspects && coldProspects.length > 0) {
+          const byUser = {};
+          coldProspects.forEach(function(p) { if (!byUser[p.username]) byUser[p.username] = []; byUser[p.username].push(p); });
+          const today = now.toISOString().slice(0, 10);
+          for (const username of Object.keys(byUser)) {
+            const list = byUser[username];
+            const sentKey = 'reactivate-' + username + '-' + today;
+            try {
+              const checkR = await fetch(SUPABASE_URL + '/rest/v1/cron_log?key=eq.' + sentKey + '&select=key&limit=1', { headers: SB_HEADERS });
+              const checkD = await checkR.json();
+              if (Array.isArray(checkD) && checkD.length > 0) continue;
+            } catch(e) {}
+            list.sort(function(a, b) { return new Date(a.updated_at) - new Date(b.updated_at); });
+            const mostCold = list[0];
+            const days = Math.floor((now.getTime() - new Date(mostCold.updated_at).getTime()) / 86400000);
+            const title = '❄️ Reactiva prospectos fríos';
+            const body = (list.length === 1)
+              ? mostCold.nombre + ' lleva ' + days + ' dias sin movimiento. Usa el modo RELACIONAL para reconectar.'
+              : 'Tienes ' + list.length + ' prospectos con mas de 30d sin movimiento (' + mostCold.nombre + ' el mas antiguo, ' + days + 'd). Reactivalos con mensajes de reconexion IA.';
+            const r = await pushToUser(username, title, body, '/?nav=prospectos', sentKey);
+            results.triggers.push({ type: 'reactivate_cold', user: username, cold_count: list.length, sent: r.sent });
+            results.sent += r.sent;
+            try { await fetch(SUPABASE_URL + '/rest/v1/cron_log', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'return=minimal' }, body: JSON.stringify({ key: sentKey, sent_at: new Date().toISOString() }) }); } catch(e) {}
+          }
+        }
+      } catch(e) { console.error('[TRIGGER 5b] error:', e.message); }
+    }
+
     // ── TRIGGER 6: New registration — notify sponsor + 2 levels with USD amount ──
     try {
       const fifteenMinAgoISO = new Date(now.getTime() - 15 * 60 * 1000).toISOString();

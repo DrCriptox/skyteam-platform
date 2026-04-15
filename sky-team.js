@@ -690,6 +690,39 @@ function renderSkyTeam() {
 //  TAB: DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 
+// Load the IA personal stats widget inside Mi SkyTeam dashboard
+async function _loadIaMyStatsWidget() {
+  var statsEl = document.getElementById('st-ia-stats');
+  if (!statsEl) return;
+  try {
+    var r = await fetch('/api/prospectos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'iaMyStats', user: (window.CU && window.CU.username) || '' })
+    });
+    var d = await r.json();
+    if (!d || !d.ok) { statsEl.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:11px;padding:8px;">Sin datos aún. Genera mensajes con IA y califícalos con 👍/👎 para empezar.</div>'; return; }
+    var me = d.me || {};
+    var html = '';
+    html += '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:#C9A84C;font-family:Outfit,Nunito,sans-serif;">' + (me.total || 0) + '</div><div style="font-size:9px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px;">Generados</div></div>';
+    html += '<div style="background:rgba(37,211,102,0.08);border:0.5px solid rgba(37,211,102,0.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:#25D366;font-family:Outfit,Nunito,sans-serif;">' + (me.positive || 0) + '</div><div style="font-size:9px;color:#25D366;text-transform:uppercase;letter-spacing:1px;">👍 Aprobados</div></div>';
+    html += '<div style="background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:#E24B4A;font-family:Outfit,Nunito,sans-serif;">' + (me.negative || 0) + '</div><div style="font-size:9px;color:#E24B4A;text-transform:uppercase;letter-spacing:1px;">👎 Descartados</div></div>';
+    var approvalColor = (me.approval || 0) >= 70 ? '#25D366' : (me.approval || 0) >= 40 ? '#FFA500' : '#E24B4A';
+    html += '<div style="background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:' + approvalColor + ';font-family:Outfit,Nunito,sans-serif;">' + (me.approval || 0) + '%</div><div style="font-size:9px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1px;">Aprobación</div></div>';
+    if (me.rank && d.totalSocios) {
+      var pct = Math.round((me.rank / d.totalSocios) * 100);
+      var rankColor = pct <= 10 ? '#FFD700' : pct <= 25 ? '#C9A84C' : pct <= 50 ? '#7F77DD' : 'rgba(255,255,255,0.5)';
+      html += '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:' + rankColor + ';font-family:Outfit,Nunito,sans-serif;">#' + me.rank + '</div><div style="font-size:9px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1px;">de ' + d.totalSocios + '</div></div>';
+    }
+    statsEl.innerHTML = html;
+    // Also update subtitle
+    var subtitle = statsEl.parentElement.querySelector('div > div:last-child');
+    if (subtitle && d.avgTotalPerSocio) subtitle.textContent = 'Promedio equipo: ' + d.avgTotalPerSocio + ' mensajes · ' + (d.avgApproval || 0) + '% aprobación';
+  } catch(e) {
+    statsEl.innerHTML = '<div style="color:#E24B4A;font-size:11px;padding:8px;">Error cargando stats</div>';
+  }
+}
+
 function renderSTDashboard() {
   var d = stState.data;
   if (!d) return _spinnerHTML();
@@ -722,6 +755,17 @@ function renderSTDashboard() {
   html += '</div>';
 
   html += '</div>';
+
+  // ── 1b. Mi Performance IA (personal stats + rank) ──
+  html += '<div id="st-ia-widget" style="background:linear-gradient(135deg,rgba(127,119,221,0.08),rgba(201,168,76,0.06));border:0.5px solid rgba(127,119,221,0.25);border-radius:14px;padding:14px 16px;margin:12px 0 18px;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+  html += '<div style="font-size:12px;font-weight:900;color:#7F77DD;letter-spacing:1.5px;">🤖 MI PERFORMANCE IA</div>';
+  html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">Cargando...</div>';
+  html += '</div>';
+  html += '<div id="st-ia-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;"></div>';
+  html += '</div>';
+  // Lazy-load the stats async
+  setTimeout(function(){ _loadIaMyStatsWidget(); }, 100);
 
   // ── 2. Top 3 Directs (using global ranking scores) ──
   // Load global scores if not loaded yet

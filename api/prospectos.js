@@ -295,25 +295,84 @@ export default async function handler(req, res) {
       } catch(e) { return res.status(500).json({ error: e.message }); }
     }
 
+    // -- SOCIO: my IA usage stats + my rank in the global ranking --
+    // Returns only the socio's own data + his position (no list of other socios)
+    if (action === 'iaMyStats') {
+      try {
+        const fbPos = await sb('interacciones?tipo=eq.ia_feedback_positive&order=created_at.desc&select=username,created_at', { headers: { ...HEADERS, Range: '0-1999' } });
+        const fbNeg = await sb('interacciones?tipo=eq.ia_feedback_negative&order=created_at.desc&select=username,created_at', { headers: { ...HEADERS, Range: '0-1999' } });
+        const perUser = {};
+        (fbPos || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { pos: 0, neg: 0 }; perUser[f.username].pos++; });
+        (fbNeg || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { pos: 0, neg: 0 }; perUser[f.username].neg++; });
+        const ranking = Object.keys(perUser).map(function(u) {
+          const s = perUser[u]; const tot = s.pos + s.neg;
+          return { username: u, total: tot, positive: s.pos, negative: s.neg, approval: tot > 0 ? Math.round((s.pos / tot) * 100) : 0 };
+        }).sort(function(a, b) { return b.total - a.total; });
+        const myPos = ranking.findIndex(function(r) { return r.username === user; });
+        const myData = myPos >= 0 ? ranking[myPos] : { username: user, total: 0, positive: 0, negative: 0, approval: 0 };
+        return res.status(200).json({
+          ok: true,
+          me: { total: myData.total, positive: myData.positive, negative: myData.negative, approval: myData.approval, rank: myPos + 1 || null },
+          totalSocios: ranking.length,
+          avgTotalPerSocio: ranking.length > 0 ? Math.round(ranking.reduce(function(s,r){return s+r.total;},0) / ranking.length) : 0,
+          avgApproval: ranking.length > 0 ? Math.round(ranking.reduce(function(s,r){return s+r.approval;},0) / ranking.length) : 0,
+          topThree: ranking.slice(0, 3).map(function(r){ return { total: r.total, approval: r.approval }; })
+        });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+
     // -- ADMIN: IA performance stats (positive vs negative feedbacks per socio) --
+    // Returns: summary, per-socio ranking, AND breakdown by modo/fase for analytics
     if (action === 'iaPerformanceStats') {
       try {
-        // Fetch last 2000 IA feedbacks across all users
-        const fbPos = await sb('interacciones?tipo=eq.ia_feedback_positive&order=created_at.desc&select=username,created_at,contenido', { headers: { ...{ 'Content-Type':'application/json', apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY }, Range: '0-1999' } });
-        const fbNeg = await sb('interacciones?tipo=eq.ia_feedback_negative&order=created_at.desc&select=username,created_at,contenido', { headers: { ...{ 'Content-Type':'application/json', apikey: process.env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_KEY }, Range: '0-1999' } });
+        // Fetch last 2000 IA feedbacks across all users (content includes meta JSON)
+        const fbPos = await sb('interacciones?tipo=eq.ia_feedback_positive&order=created_at.desc&select=username,created_at,contenido', { headers: { ...HEADERS, Range: '0-1999' } });
+        const fbNeg = await sb('interacciones?tipo=eq.ia_feedback_negative&order=created_at.desc&select=username,created_at,contenido', { headers: { ...HEADERS, Range: '0-1999' } });
         const perUser = {};
-        (fbPos || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null }; perUser[f.username].positive++; if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at; });
-        (fbNeg || []).forEach(function(f) { if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null }; perUser[f.username].negative++; if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at; });
+        const perModo = {};
+        const perFase = {};
+        const parseMeta = function(contenido) {
+          try {
+            var parts = ((contenido || '') + '').split('|||');
+            return JSON.parse(parts[0] || '{}');
+          } catch(e) { return {}; }
+        };
+        (fbPos || []).forEach(function(f) {
+          if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null };
+          perUser[f.username].positive++;
+          if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at;
+          const meta = parseMeta(f.contenido);
+          if (meta.modo) { if (!perModo[meta.modo]) perModo[meta.modo] = { positive: 0, negative: 0 }; perModo[meta.modo].positive++; }
+          if (meta.fase) { if (!perFase[meta.fase]) perFase[meta.fase] = { positive: 0, negative: 0 }; perFase[meta.fase].positive++; }
+        });
+        (fbNeg || []).forEach(function(f) {
+          if (!perUser[f.username]) perUser[f.username] = { positive: 0, negative: 0, last: null };
+          perUser[f.username].negative++;
+          if (!perUser[f.username].last || f.created_at > perUser[f.username].last) perUser[f.username].last = f.created_at;
+          const meta = parseMeta(f.contenido);
+          if (meta.modo) { if (!perModo[meta.modo]) perModo[meta.modo] = { positive: 0, negative: 0 }; perModo[meta.modo].negative++; }
+          if (meta.fase) { if (!perFase[meta.fase]) perFase[meta.fase] = { positive: 0, negative: 0 }; perFase[meta.fase].negative++; }
+        });
         const users = Object.keys(perUser).map(function(u) {
           const s = perUser[u]; const total = s.positive + s.negative;
           return { username: u, positive: s.positive, negative: s.negative, total: total, approval: total > 0 ? Math.round((s.positive / total) * 100) : 0, last: s.last };
         }).sort(function(a, b) { return b.total - a.total; });
         const totalPos = users.reduce(function(s, u) { return s + u.positive; }, 0);
         const totalNeg = users.reduce(function(s, u) { return s + u.negative; }, 0);
+        const modoRanking = Object.keys(perModo).map(function(m) {
+          const s = perModo[m]; const t = s.positive + s.negative;
+          return { modo: m, positive: s.positive, negative: s.negative, total: t, approval: t > 0 ? Math.round((s.positive / t) * 100) : 0 };
+        }).sort(function(a, b) { return b.approval - a.approval; });
+        const faseRanking = Object.keys(perFase).map(function(f) {
+          const s = perFase[f]; const t = s.positive + s.negative;
+          return { fase: f, positive: s.positive, negative: s.negative, total: t, approval: t > 0 ? Math.round((s.positive / t) * 100) : 0 };
+        }).sort(function(a, b) { return b.approval - a.approval; });
         return res.status(200).json({
           ok: true,
           summary: { totalGenerated: totalPos + totalNeg, totalApproved: totalPos, totalRejected: totalNeg, approvalRate: (totalPos + totalNeg) > 0 ? Math.round((totalPos / (totalPos + totalNeg)) * 100) : 0, activeSocios: users.length },
-          socios: users
+          socios: users,
+          porModo: modoRanking,
+          porFase: faseRanking
         });
       } catch(e) { return res.status(500).json({ error: e.message }); }
     }

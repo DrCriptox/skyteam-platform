@@ -252,6 +252,26 @@ function generateTasks() {
       }
     });
 
+    // ── Global: Cold prospects — >30 days without movement, not closed ──
+    // Sugerencia de reactivación con modo RELACIONAL
+    prospects.forEach(function(p) {
+      if (!p || !p.updated_at) return;
+      var etapa = p.etapa || '';
+      if (etapa === 'cerrado_ganado' || etapa === 'cerrado_perdido') return;
+      if (etapa === 'nuevo') return; // Los nuevos aún no son "fríos"
+      var daysSince = Math.floor((now - new Date(p.updated_at).getTime()) / 86400000);
+      if (daysSince < 30 || daysSince > 180) return; // entre 30 y 180 días
+      tasks.push({
+        priority: 2,
+        type: 'reactivate_cold',
+        icon: '\u2744\uFE0F',
+        title: 'Reactiva a ' + (p.nombre || 'Prospecto'),
+        desc: 'Lleva ' + daysSince + ' días sin movimiento — IA tiene un mensaje de reconexión listo',
+        action: { type: 'navigate', target: 'prospectos' },
+        secondaryAction: { type: 'whatsapp', phone: p.telefono, name: p.nombre }
+      });
+    });
+
     // ── Global: Prospects with fecha_cierre_estimada within next 7 days ──
     prospects.forEach(function(p) {
       if (!p || !p.fecha_cierre_estimada) return;
