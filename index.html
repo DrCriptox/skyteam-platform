@@ -4856,13 +4856,22 @@ function renderAgendaCitasUI() {
     // Detect referral prefix in notas: __REF_BY:username__
     var referredByMatch = ((cita.notas || '') + '').match(/^__REF_BY:([^_]+)__\s*/);
     var referredBy = referredByMatch ? referredByMatch[1] : null;
+    // Determine if current user is the OWNER (es su agenda) or the REFERRER (él refirió la cita)
+    var myRole = cita.role || 'owner'; // from backend
     var referralBadge = '';
-    if (referredBy) {
+    if (referredBy && myRole === 'owner') {
+      // I am the closer — show "Referido por @socio"
       referralBadge = '<div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(127,119,221,0.15),rgba(201,168,76,0.10));border:0.5px solid rgba(127,119,221,0.30);border-radius:6px;padding:2px 8px;font-size:9px;font-weight:800;color:#7F77DD;margin-left:6px;white-space:nowrap;">🎯 Referido por @' + referredBy + '</div>';
+    } else if (myRole === 'referrer') {
+      // I am the referrer (socio que prospectó) — show "Cita con @cerrador (+15 pts)"
+      referralBadge = '<div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(29,158,117,0.10));border:0.5px solid rgba(201,168,76,0.35);border-radius:6px;padding:2px 8px;font-size:9px;font-weight:800;color:#C9A84C;margin-left:6px;white-space:nowrap;">🏆 Tu prospecto · cierra @' + (cita.owner || '?') + '</div>';
     }
     // Also strip the prefix from visible notas
     var visibleNotas = ((cita.notas || '') + '').replace(/^__REF_BY:[^_]+__\s*/, '').trim();
-    html += '<div class="card" style="margin-bottom:6px;padding:10px 12px;' + (referredBy ? 'background:linear-gradient(135deg,rgba(127,119,221,0.04),rgba(255,255,255,0.02));border:0.5px solid rgba(127,119,221,0.18);' : '') + '">';
+    var cardBg = myRole === 'referrer' ? 'background:linear-gradient(135deg,rgba(201,168,76,0.05),rgba(255,255,255,0.02));border:0.5px solid rgba(201,168,76,0.22);'
+               : referredBy ? 'background:linear-gradient(135deg,rgba(127,119,221,0.04),rgba(255,255,255,0.02));border:0.5px solid rgba(127,119,221,0.18);'
+               : '';
+    html += '<div class="card" style="margin-bottom:6px;padding:10px 12px;' + cardBg + '">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px;">';
     html += '<div style="flex:1;min-width:0;"><p style="margin:0;font-size:13px;font-weight:800;color:#F0EDE6;overflow:hidden;">' + cita.nombre + ' <span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:500;">' + cita.whatsapp + '</span>' + referralBadge + '</p></div>';
     html += '<div style="flex-shrink:0;text-align:right;margin-left:8px;">';
@@ -4895,7 +4904,9 @@ function renderAgendaCitasUI() {
       html += '\uD83D\uDCF7 Verificar';
       html += '<input type="file" accept="image/*" style="display:none;" onchange="_uploadMeetingProof(this,\''+cita.id+'\')">';
       html += '</label>';
-      html += '<span style="font-size:9px;color:rgba(255,255,255,0.2);">+25 pts</span>';
+      // Points label varies by role: owner +25, referrer +15
+      var ptsLabel = myRole === 'referrer' ? '+15 pts' : '+25 pts';
+      html += '<span style="font-size:9px;color:rgba(255,255,255,0.2);">' + ptsLabel + '</span>';
     } else if(_tooEarly) {
       html += '<span style="font-size:10px;color:rgba(255,255,255,0.2);">\uD83D\uDD12 Desde 30 min antes</span>';
     } else if(_tooLate) {
@@ -4941,7 +4952,9 @@ function _uploadMeetingProof(input, bookingId) {
         body: JSON.stringify({ bookingId: bookingId, username: CU.username, imageBase64: compressedB64, attempt: attempt })
       }).then(function(r){ return r.json(); }).then(function(d) {
         if(d.verified) {
-          showToast('✅ ¡Foto verificada! +25 pts');
+          // Different toast based on role: owner (+25) vs referrer (+15)
+          var toastMsg = d.role === 'referrer' ? '✅ ¡Foto verificada! +15 pts (referidor)' : '✅ ¡Foto verificada! +25 pts';
+          showToast(toastMsg);
           var bk = agendaBookings.find(function(b){ return b.id === bookingId; });
           if(bk) bk.proof = true;
           _proofAttempts[bookingId] = 99;

@@ -71,7 +71,19 @@ export default async function handler(req, res) {
       if (!user) return res.status(400).json({ error: 'Missing user' });
 
       const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
-      const bookings = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&status=neq.cancelada&order=fecha_iso.asc');
+      // Own bookings (citas donde soy el dueño de la agenda)
+      const ownBookings = await sb('bookings?username=eq.' + encodeURIComponent(user) + '&status=neq.cancelada&order=fecha_iso.asc');
+      // Referred bookings (citas donde soy el socio referidor — aparezco en __REF_BY:user__ prefix de notas)
+      const refBookings = await sb('bookings?notas=like.__REF_BY:' + encodeURIComponent(user) + '__*&status=neq.cancelada&order=fecha_iso.asc');
+      // Merge + dedupe by id (in case both queries returned the same row somehow)
+      const bookingMap = {};
+      (ownBookings || []).forEach(function(b) { bookingMap[b.id] = Object.assign({}, b, { _role: 'owner' }); });
+      (refBookings || []).forEach(function(b) {
+        // If I am both the owner AND the ref, mark as owner (precedence)
+        if (bookingMap[b.id]) return;
+        bookingMap[b.id] = Object.assign({}, b, { _role: 'referrer' });
+      });
+      const bookings = Object.values(bookingMap).sort(function(a, b) { return (a.fecha_iso || '').localeCompare(b.fecha_iso || ''); });
 
       // Fetch user's profile photo + name from users table
       const userProfile = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=photo,name');
@@ -106,7 +118,9 @@ export default async function handler(req, res) {
         config: cfgOut,
         bookings: (bookings || []).map(b => ({
           id: b.id, nombre: b.nombre, whatsapp: b.whatsapp, fechaISO: b.fecha_iso,
-          status: b.status, notas: b.notas, ip_address: b.ip_address, email: b.email
+          status: b.status, notas: b.notas, ip_address: b.ip_address, email: b.email,
+          owner: b.username, // quién es el dueño real de la agenda (cerrador si es referral)
+          role: b._role || 'owner' // 'owner' (es mi agenda) o 'referrer' (yo referí, el cerrador lo atendió)
         }))
       });
     }

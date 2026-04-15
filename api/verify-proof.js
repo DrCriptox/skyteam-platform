@@ -55,12 +55,17 @@ module.exports = async (req, res) => {
     const { bookingId, username, imageBase64, attempt } = req.body;
     if (!bookingId || !username || !imageBase64) return res.status(400).json({ error: 'Missing bookingId, username or imageBase64' });
 
-    // Get booking details
-    const bkR = await fetch(SUPABASE_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(bookingId) + '&select=fecha_iso,nombre,username,status', { headers: SB_HEADERS });
+    // Get booking details (include notas to check for referral)
+    const bkR = await fetch(SUPABASE_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(bookingId) + '&select=fecha_iso,nombre,username,status,notas', { headers: SB_HEADERS });
     const bks = await bkR.json();
     if (!Array.isArray(bks) || !bks.length) return res.status(404).json({ error: 'Booking not found' });
     const booking = bks[0];
-    if (booking.username !== username) return res.status(403).json({ error: 'Not your booking' });
+    // Check if user is owner OR referrer (cita referida al socio)
+    const isOwner = booking.username === username;
+    const refMatch = ((booking.notas || '') + '').match(/^__REF_BY:([^_]+)__/);
+    const referrer = refMatch ? refMatch[1].toLowerCase() : null;
+    const isReferrer = referrer === username.toLowerCase();
+    if (!isOwner && !isReferrer) return res.status(403).json({ error: 'Not your booking' });
     if (booking.status === 'sospechosa') return res.status(403).json({ error: 'Booking flagged — cannot verify', reason: 'auto-reserva' });
 
     const bookingDate = new Date(booking.fecha_iso);
@@ -81,18 +86,27 @@ module.exports = async (req, res) => {
     }
 
     // ── IMAGE HASH: prevent reuse of the same photo ──
+    // EXCEPTION: if this user is the REFERRER of THIS booking, allow reusing the image
+    // that the OWNER (cerrador) already used, because the referrer has legitimate right
+    // to verify the same meeting they prospected.
     const crypto = require('crypto');
     const imgBuffer = Buffer.from(imageBase64.replace(/^data:image\/[a-z]+;base64,/, ''), 'base64');
     const imgHash = crypto.createHash('sha256').update(imgBuffer).digest('hex');
-    // Check if this hash was already used by ANY user
     try {
       const hashCheck = await fetch(SUPABASE_URL + '/rest/v1/booking_proofs?image_hash=eq.' + imgHash + '&select=id,username,booking_id', { headers: SB_HEADERS });
       const hashRows = await hashCheck.json();
       if (Array.isArray(hashRows) && hashRows.length > 0) {
         var prevUser = hashRows[0].username;
         var prevBooking = hashRows[0].booking_id;
-        console.log('[VERIFY] DUPLICATE IMAGE hash=' + imgHash.substring(0, 16) + ' already used by ' + prevUser + ' for booking ' + prevBooking);
-        return res.status(400).json({ error: 'Esta foto ya fue usada para verificar otra cita. Sube una foto diferente.', duplicate: true, previousUser: prevUser === username ? 'tuya' : 'otro socio' });
+        // Allow reuse IF: same booking AND current user is the referrer (socio que refirió la cita)
+        const sameBookingReuse = (prevBooking === bookingId && isReferrer);
+        if (sameBookingReuse) {
+          console.log('[VERIFY] Hash reuse ALLOWED for referrer', username, 'on booking', bookingId);
+          // Continue — don't return duplicate error
+        } else {
+          console.log('[VERIFY] DUPLICATE IMAGE hash=' + imgHash.substring(0, 16) + ' already used by ' + prevUser + ' for booking ' + prevBooking);
+          return res.status(400).json({ error: 'Esta foto ya fue usada para verificar otra cita. Sube una foto diferente.', duplicate: true, previousUser: prevUser === username ? 'tuya' : 'otro socio' });
+        }
       }
     } catch(e) { console.log('[VERIFY] Hash check error (column may not exist):', e.message); }
 
@@ -209,17 +223,22 @@ module.exports = async (req, res) => {
       }
     }
 
+    // Role label for messaging and bookkeeping
+    const role = isReferrer ? 'referrer' : 'owner';
+    const pointsLabel = isReferrer ? '+15 pts (referidor)' : '+25 pts';
+
     if (isValid) {
-      // VERIFIED — +25 pts (only save on success, never accumulates with failed)
-      await markProof(bookingId, username, 'approved', 'AI verified: ' + JSON.stringify(analysis), imgHash);
-      return res.status(200).json({ ok: true, verified: true, method: 'ai', message: 'Foto verificada por IA. +25 pts', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
+      // VERIFIED — save role in notes so ranking/reporting can award correct pts
+      var notesTag = (isReferrer ? '[REFERRER_VERIFIED] ' : '[OWNER_VERIFIED] ') + 'AI verified: ' + JSON.stringify(analysis);
+      await markProof(bookingId, username, 'approved', notesTag, imgHash);
+      return res.status(200).json({ ok: true, verified: true, method: 'ai', role: role, message: 'Foto verificada por IA. ' + pointsLabel, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
     } else if (currentAttempt >= 2) {
-      // 2nd attempt failed — +5 pts partial (only now, not on attempt 1)
-      await markProof(bookingId, username, 'failed', 'AI rejected after 2 attempts: ' + JSON.stringify(analysis), imgHash);
-      return res.status(200).json({ ok: true, verified: false, method: 'ai_rejected', message: 'Imagen no verificada. +5 pts parciales.', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence, reason: analysis.reason } });
+      // 2nd attempt failed — partial points
+      await markProof(bookingId, username, 'failed', (isReferrer ? '[REFERRER_FAILED] ' : '[OWNER_FAILED] ') + 'AI rejected after 2 attempts: ' + JSON.stringify(analysis), imgHash);
+      return res.status(200).json({ ok: true, verified: false, method: 'ai_rejected', role: role, message: 'Imagen no verificada. +' + (isReferrer ? '3' : '5') + ' pts parciales.', analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence, reason: analysis.reason } });
     } else {
       // Attempt 1 failed — NO points saved, allow retry
-      return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', message: analysis.reason || 'La foto no coincide. Intenta de nuevo.', attempt: currentAttempt, maxAttempts: 2, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
+      return res.status(200).json({ ok: true, verified: false, method: 'ai_retry', role: role, message: analysis.reason || 'La foto no coincide. Intenta de nuevo.', attempt: currentAttempt, maxAttempts: 2, analysis: { isVideoCall: analysis.isVideoCall, confidence: analysis.confidence } });
     }
 
   } catch(error) {
@@ -230,12 +249,16 @@ module.exports = async (req, res) => {
 
 async function markProof(bookingId, username, status, notes, imageHash) {
   try {
-    // Update booking status
-    var newStatus = status === 'approved' ? 'verificada' : 'completada';
-    await fetch(SUPABASE_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(bookingId), {
-      method: 'PATCH', headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: newStatus, proof_url: status, updated_at: new Date().toISOString() })
-    });
+    // Only update booking status if this is the OWNER verifying (not a referrer)
+    // — referrers get their own proof row but the booking's master state belongs to the owner.
+    var isReferrerProof = ((notes || '') + '').indexOf('[REFERRER_') === 0;
+    if (!isReferrerProof) {
+      var newStatus = status === 'approved' ? 'verificada' : 'completada';
+      await fetch(SUPABASE_URL + '/rest/v1/bookings?id=eq.' + encodeURIComponent(bookingId), {
+        method: 'PATCH', headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: newStatus, proof_url: status, updated_at: new Date().toISOString() })
+      });
+    }
     // Save to booking_proofs with image hash (prevents reuse)
     var proofData = { username: username, booking_id: bookingId, status: status, created_at: new Date().toISOString() };
     // Only include optional columns if they have values (columns may not exist yet)
