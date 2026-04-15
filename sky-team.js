@@ -690,6 +690,37 @@ function renderSkyTeam() {
 //  TAB: DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 
+// Load cerrador stats (only shown if socio is rank NOVA1500+)
+async function _loadCerradorStatsWidget() {
+  var widget = document.getElementById('st-cerrador-widget');
+  var body = document.getElementById('st-cerrador-body');
+  if (!widget || !body) return;
+  try {
+    var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'cerradorStats', user: (window.CU && window.CU.username) || '' }) });
+    var d = await r.json();
+    if (!d || !d.ok || !d.canBeCloser) { widget.style.display = 'none'; return; }
+    widget.style.display = 'block';
+    var h = '';
+    h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
+    h += '<div style="font-size:28px;font-weight:900;color:#C9A84C;font-family:Outfit,Nunito,sans-serif;">' + (d.totalReferrals || 0) + '</div>';
+    h += '<div style="font-size:11px;color:rgba(255,255,255,0.65);">citas recibidas de tu equipo<br><span style="color:rgba(255,255,255,0.35);font-size:10px;">prospectos de socios que te endosaron</span></div>';
+    h += '</div>';
+    if (d.bySocio && d.bySocio.length) {
+      h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-top:12px;margin-bottom:6px;">TOP SOCIOS QUE PROSPECTAN PARA TI</div>';
+      d.bySocio.slice(0, 5).forEach(function(s, i) {
+        var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '•';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:4px;">';
+        h += '<span style="font-size:12px;color:#fff;">' + medal + ' @' + s.socio + '</span>';
+        h += '<span style="font-size:11px;font-weight:800;color:#C9A84C;">' + s.count + ' cita' + (s.count > 1 ? 's' : '') + '</span>';
+        h += '</div>';
+      });
+    } else {
+      h += '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;">Aún no tienes citas recibidas. Cuando tus endosados envíen prospectos, aparecerán aquí.</div>';
+    }
+    body.innerHTML = h;
+  } catch(e) { widget.style.display = 'none'; }
+}
+
 // Load the IA personal stats widget inside Mi SkyTeam dashboard
 async function _loadIaMyStatsWidget() {
   var statsEl = document.getElementById('st-ia-stats');
@@ -766,6 +797,13 @@ function renderSTDashboard() {
   html += '</div>';
   // Lazy-load the stats async
   setTimeout(function(){ _loadIaMyStatsWidget(); }, 100);
+
+  // ── 1c. Cerrador stats (sólo si el socio es NOVA1500+) ──
+  html += '<div id="st-cerrador-widget" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,0.10),rgba(127,119,221,0.06));border:0.5px solid rgba(201,168,76,0.30);border-radius:14px;padding:14px 16px;margin-bottom:18px;">';
+  html += '<div style="font-size:12px;font-weight:900;color:#C9A84C;letter-spacing:1.5px;margin-bottom:10px;">🎯 CERRADOR DE MI EQUIPO</div>';
+  html += '<div id="st-cerrador-body"></div>';
+  html += '</div>';
+  setTimeout(function(){ _loadCerradorStatsWidget(); }, 150);
 
   // ── 2. Top 3 Directs (using global ranking scores) ──
   // Load global scores if not loaded yet

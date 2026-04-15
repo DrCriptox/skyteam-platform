@@ -617,16 +617,26 @@ export default async function handler(req, res) {
         negativeSamples.forEach(function(s, i) { styleLearning += '\nEJEMPLO NEGATIVO ' + (i+1) + ':\n' + s + '\n'; });
       }
 
-      // Fetch socio's agenda link (for auto-schedule mode) + landing link
+      // Fetch socio's agenda link — or his endorsed closer's agenda if endorsement is active
       let agendaLink = '';
       let landingLink = 'https://skyteam.global/landing/' + user;
+      let closerName = ''; // if endorsed, name of the closer to show in UI
       try {
         const cfgArr = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
-        if (cfgArr && cfgArr[0] && cfgArr[0].config) {
-          const cfg = cfgArr[0].config;
-          if (cfg.activa) {
-            agendaLink = 'https://skyteam.global/agenda/' + user;
+        const cfg = (cfgArr && cfgArr[0] && cfgArr[0].config) ? cfgArr[0].config : {};
+        // If socio has an ACTIVE endorsement, use the closer's agenda with ?ref= tracker
+        if (cfg.endorsed_by && cfg.endorsement_status === 'active') {
+          const closerCfgR = await sb('agenda_configs?username=eq.' + encodeURIComponent(cfg.endorsed_by) + '&select=config');
+          const closerCfg = (closerCfgR && closerCfgR[0] && closerCfgR[0].config) ? closerCfgR[0].config : {};
+          if (closerCfg.activa) {
+            agendaLink = 'https://skyteam.global/agenda/' + cfg.endorsed_by + '?ref=' + encodeURIComponent(user);
+            const closerU = await sb('users?username=eq.' + encodeURIComponent(cfg.endorsed_by) + '&select=name&limit=1');
+            if (closerU && closerU[0]) closerName = closerU[0].name || cfg.endorsed_by;
           }
+        }
+        // Fallback: use socio's own agenda if no endorsement or closer has no active agenda
+        if (!agendaLink && cfg.activa) {
+          agendaLink = 'https://skyteam.global/agenda/' + user;
         }
       } catch(e) {}
 
@@ -804,7 +814,10 @@ export default async function handler(req, res) {
         esFrio: esFrio,
         flujoPaso: flujoPaso || null,
         // Flag for frontend: auto-create a 35min reminder after user copies/sends
-        requiereRecordatorio35min: flujoPaso === 'enviar_info_ahora' || flujoPaso === 'enviar_info_despues'
+        requiereRecordatorio35min: flujoPaso === 'enviar_info_ahora' || flujoPaso === 'enviar_info_despues',
+        // Info for frontend badge: if the agenda link belongs to an endorsed closer
+        closerName: closerName || null,
+        agendaLink: agendaLink || null
       });
     }
 

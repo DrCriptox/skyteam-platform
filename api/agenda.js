@@ -115,6 +115,184 @@ export default async function handler(req, res) {
       const { action, user, config, booking, id } = req.body;
       if (!user) return res.status(400).json({ error: 'Missing user' });
 
+      // ════════════════════════════════════════════════════
+      // ENDORSEMENT SYSTEM: socio junior (INN200/INN500) solicita
+      // a su patrocinador (rango NOVA1500+) ser su cerrador.
+      // ════════════════════════════════════════════════════
+      // Stored inside agenda_configs.config as:
+      //   endorsed_by: 'username'     (cerrador que endosa al socio)
+      //   endorsement_status: 'pending' | 'active'
+      //   endorsed_at: ISO timestamp
+
+      // Helper: get user's rank + sponsor
+      var _getUserRank = async function(uname) {
+        var r = await sb('users?username=eq.' + encodeURIComponent(uname) + '&select=rank,sponsor,name&limit=1');
+        return (r && r[0]) ? { rank: parseInt(r[0].rank) || 0, sponsor: r[0].sponsor || '', name: r[0].name || uname } : { rank: 0, sponsor: '', name: uname };
+      };
+      // Helper: read/write config
+      var _getConfig = async function(uname) {
+        var c = await sb('agenda_configs?username=eq.' + encodeURIComponent(uname) + '&select=config&limit=1');
+        return (c && c[0]) ? (c[0].config || {}) : {};
+      };
+      var _saveConfig = async function(uname, cfg) {
+        await sb('agenda_configs', {
+          method: 'POST',
+          headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({ username: uname, config: cfg, updated_at: new Date().toISOString() })
+        });
+      };
+
+      // Solicita endoso al patrocinador
+      if (action === 'requestEndorsement') {
+        try {
+          var me = await _getUserRank(user);
+          if (!me.sponsor) return res.status(400).json({ error: 'No tienes patrocinador asignado' });
+          var sponsor = await _getUserRank(me.sponsor);
+          if (sponsor.rank < 3) return res.status(400).json({ error: 'Tu patrocinador (' + me.sponsor + ') debe ser NOVA1500 o superior para ser cerrador. Rango actual: ' + sponsor.rank });
+          var cfg = await _getConfig(user);
+          if (cfg.endorsement_status === 'active' && cfg.endorsed_by === me.sponsor) {
+            return res.status(200).json({ ok: true, alreadyActive: true, endorsed_by: me.sponsor });
+          }
+          cfg.endorsed_by = me.sponsor;
+          cfg.endorsement_status = 'pending';
+          cfg.endorsed_at = new Date().toISOString();
+          await _saveConfig(user, cfg);
+          // Log: notification to sponsor will be shown in Sky Journal when they load endorsement requests
+          return res.status(200).json({ ok: true, status: 'pending', endorsed_by: me.sponsor, sponsor_name: sponsor.name });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
+      // Lista endosos (mi status como socio + solicitudes pendientes si soy cerrador)
+      if (action === 'listEndorsements') {
+        try {
+          var myCfg = await _getConfig(user);
+          var me = await _getUserRank(user);
+          // Mi endoso como socio (si solicité alguno)
+          var myEndorsement = null;
+          if (myCfg.endorsed_by) {
+            var cerrador = await _getUserRank(myCfg.endorsed_by);
+            myEndorsement = {
+              endorsed_by: myCfg.endorsed_by,
+              name: cerrador.name,
+              rank: cerrador.rank,
+              status: myCfg.endorsement_status || 'pending',
+              since: myCfg.endorsed_at || null
+            };
+          }
+          // Solicitudes PENDIENTES si soy cerrador (rank NOVA1500+)
+          var incomingRequests = [];
+          var activeEndorsed = [];
+          if (me.rank >= 3) {
+            // Find all agenda_configs where config->>endorsed_by = my username
+            // Supabase REST JSON filters: use contenido: we need to fetch all and filter
+            // More efficient: use PostgREST JSON filter. cfg ->> 'endorsed_by' = my username
+            var allR = await fetch(SUPABASE_URL + "/rest/v1/agenda_configs?config->>endorsed_by=eq." + encodeURIComponent(user) + "&select=username,config", { headers: { ...HEADERS, Range: '0-499' } });
+            var allD = await allR.json();
+            if (Array.isArray(allD)) {
+              for (const item of allD) {
+                var ic = item.config || {};
+                var uRank = await _getUserRank(item.username);
+                var obj = {
+                  socio: item.username,
+                  socio_name: uRank.name,
+                  socio_rank: uRank.rank,
+                  status: ic.endorsement_status || 'pending',
+                  since: ic.endorsed_at || null
+                };
+                if (ic.endorsement_status === 'pending') incomingRequests.push(obj);
+                else if (ic.endorsement_status === 'active') activeEndorsed.push(obj);
+              }
+            }
+          }
+          return res.status(200).json({
+            ok: true,
+            myRank: me.rank,
+            mySponsor: me.sponsor || null,
+            myEndorsement: myEndorsement,
+            canBeCloser: me.rank >= 3,
+            incomingRequests: incomingRequests,
+            activeEndorsed: activeEndorsed
+          });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
+      // Aprobar endoso (el cerrador acepta ser cerrador del socio)
+      if (action === 'approveEndorsement') {
+        try {
+          var me = await _getUserRank(user);
+          if (me.rank < 3) return res.status(403).json({ error: 'Solo rangos NOVA1500+ pueden ser cerradores' });
+          var targetSocio = (req.body || {}).socio;
+          if (!targetSocio) return res.status(400).json({ error: 'Missing socio' });
+          var sCfg = await _getConfig(targetSocio);
+          if (sCfg.endorsed_by !== user || sCfg.endorsement_status !== 'pending') {
+            return res.status(400).json({ error: 'No hay solicitud pendiente de este socio hacia ti' });
+          }
+          sCfg.endorsement_status = 'active';
+          sCfg.endorsed_at = new Date().toISOString();
+          await _saveConfig(targetSocio, sCfg);
+          return res.status(200).json({ ok: true, socio: targetSocio });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
+      // Rechazar endoso
+      if (action === 'rejectEndorsement') {
+        try {
+          var targetSocio = (req.body || {}).socio;
+          if (!targetSocio) return res.status(400).json({ error: 'Missing socio' });
+          var sCfg = await _getConfig(targetSocio);
+          if (sCfg.endorsed_by !== user) return res.status(403).json({ error: 'No eres el endosador de este socio' });
+          sCfg.endorsed_by = null;
+          sCfg.endorsement_status = null;
+          sCfg.endorsed_at = null;
+          await _saveConfig(targetSocio, sCfg);
+          return res.status(200).json({ ok: true, socio: targetSocio });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
+      // Revocar endoso (cualquiera de las 2 partes lo puede cancelar)
+      if (action === 'revokeEndorsement') {
+        try {
+          var targetSocio = (req.body || {}).socio || user; // si soy socio, me revoco yo mismo
+          var sCfg = await _getConfig(targetSocio);
+          // Validación: o soy el socio o soy el cerrador
+          if (targetSocio !== user && sCfg.endorsed_by !== user) {
+            return res.status(403).json({ error: 'No puedes revocar este endoso' });
+          }
+          sCfg.endorsed_by = null;
+          sCfg.endorsement_status = null;
+          sCfg.endorsed_at = null;
+          await _saveConfig(targetSocio, sCfg);
+          return res.status(200).json({ ok: true, socio: targetSocio });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
+      // Stats de cerrador: cuántos prospectos de su equipo agendaron
+      // referred_by se guarda como prefijo en notas: __REF_BY:username__ al inicio
+      if (action === 'cerradorStats') {
+        try {
+          var me = await _getUserRank(user);
+          if (me.rank < 3) return res.status(200).json({ ok: true, canBeCloser: false });
+          var bR = await fetch(SUPABASE_URL + '/rest/v1/bookings?username=eq.' + encodeURIComponent(user) + '&notas=like.__REF_BY:*&select=id,nombre,notas,fecha_iso,status&order=created_at.desc&limit=200', { headers: HEADERS });
+          var bD = await bR.json();
+          if (!Array.isArray(bD)) bD = [];
+          var byRef = {};
+          bD.forEach(function(b) {
+            var m = ((b.notas || '') + '').match(/^__REF_BY:([^_]+)__/);
+            if (!m) return;
+            var refUser = m[1];
+            if (!byRef[refUser]) byRef[refUser] = { count: 0, last: null };
+            byRef[refUser].count++;
+            if (!byRef[refUser].last || b.fecha_iso > byRef[refUser].last) byRef[refUser].last = b.fecha_iso;
+          });
+          return res.status(200).json({
+            ok: true,
+            canBeCloser: true,
+            totalReferrals: bD.length,
+            bySocio: Object.keys(byRef).map(function(s) { return { socio: s, count: byRef[s].count, last: byRef[s].last }; }).sort(function(a,b){return b.count-a.count;})
+          });
+        } catch(e) { return res.status(500).json({ error: e.message }); }
+      }
+
       // === DIAGNOSTIC: test email sending ===
       if (action === 'testEmail') {
         const to = req.body.to;
@@ -187,8 +365,21 @@ export default async function handler(req, res) {
           }
         }
 
-        // Insert booking with IP + email + user_agent + self_booking flag
+        // Insert booking with IP + email + user_agent + self_booking flag + referral tracking
         var bookingId = booking.id || crypto.randomUUID();
+        // Referral: if the booking came from a link with ?ref=socio, store it as prefix in notas
+        var referredBy = ((booking.referredBy || '') + '').trim().toLowerCase();
+        var refNotasPrefix = '';
+        if (referredBy && /^[a-z0-9_-]{2,40}$/.test(referredBy)) {
+          // Validate that the socio exists
+          var refCheck = await sb('users?username=eq.' + encodeURIComponent(referredBy) + '&select=username,name&limit=1');
+          if (refCheck && refCheck[0]) {
+            refNotasPrefix = '__REF_BY:' + referredBy + '__ ';
+          }
+        }
+        var finalNotas = selfBooking
+          ? (refNotasPrefix + 'Auto-reserva detectada (misma IP que socio)')
+          : (refNotasPrefix + (booking.notas || ''));
         await sb('bookings', { method: 'POST',
           body: JSON.stringify({
             id: bookingId,
@@ -198,7 +389,7 @@ export default async function handler(req, res) {
             email: booking.email || null,
             fecha_iso: booking.fechaISO,
             status: selfBooking ? 'sospechosa' : 'activa',
-            notas: selfBooking ? 'Auto-reserva detectada (misma IP que socio)' : (booking.notas || null),
+            notas: finalNotas || null,
             ip_address: clientIP,
             user_agent: userAgent.substring(0, 500)
           })
@@ -295,15 +486,77 @@ export default async function handler(req, res) {
               _emailPromises.push(p);
             };
 
-            // ── SOCIO EMAIL 1: Instant — Nueva cita agendada ──
+            // === REFERRAL TRACKING: if booking.referredBy is valid, notify the socio
+            //     who prospected AND create/update the prospect in their CRM ===
+            var refSocioInfo = null;
+            if (referredBy) {
+              try {
+                var refUsers = await sb('users?username=eq.' + encodeURIComponent(referredBy) + '&select=email,name,whatsapp');
+                if (refUsers && refUsers[0]) {
+                  refSocioInfo = refUsers[0];
+                  // SOCIO REFERIDOR EMAIL: su prospecto agendó con el cerrador
+                  if (refSocioInfo.email) {
+                    _sendEmail(refSocioInfo.email, '\uD83C\uDFAF ¡Tu prospecto ' + prospectName + ' agendó con ' + socioName + '!',
+                      _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:44px;margin-bottom:8px;">\uD83C\uDFAF</div><h2 style="color:#C9A84C;font-size:20px;margin:0 0 6px;">¡Tu prospecto acaba de agendar!</h2><p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">' + fechaSocio + '</p></div>'
+                      + '<div style="background:linear-gradient(135deg,rgba(201,168,76,0.10),rgba(127,119,221,0.08));border:1px solid rgba(201,168,76,0.25);border-radius:14px;padding:18px;margin-bottom:16px;">'
+                      + '<p style="margin:0 0 12px;font-size:15px;color:#F0EDE6;text-align:center;">\uD83D\uDC64 <strong>' + prospectName + '</strong> agendó con</p>'
+                      + '<p style="margin:0;font-size:17px;color:#C9A84C;text-align:center;font-weight:900;">\uD83C\uDFAF ' + socioName + '</p>'
+                      + '<p style="margin:10px 0 0;font-size:12px;color:rgba(255,255,255,0.45);text-align:center;">para la reunión de cierre</p>'
+                      + '</div>'
+                      + '<div style="background:rgba(37,211,102,0.08);border:0.5px solid rgba(37,211,102,0.2);border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;">'
+                      + '<p style="margin:0 0 4px;font-size:13px;color:#25D366;font-weight:700;">\u2705 Tu prospecto está listo para cerrar</p>'
+                      + '<p style="margin:0;font-size:11px;color:rgba(255,255,255,0.5);">Si se cierra, la venta queda a tu nombre. Mantente atento al resultado.</p>'
+                      + '</div>'
+                      + _btn('\uD83D\uDCCA Ver mi CRM', 'https://skyteam.global/?nav=prospectos')), nowMs);
+                  }
+                  // Crear o actualizar prospecto en CRM del socio referidor
+                  try {
+                    // Buscar si ya existe un prospecto con este teléfono para el socio
+                    var existingPr = await sb('prospectos?username=eq.' + encodeURIComponent(referredBy) + '&telefono=eq.' + encodeURIComponent(waCheck.cleaned || booking.whatsapp) + '&select=id,etapa&limit=1');
+                    if (existingPr && existingPr[0]) {
+                      // Actualizar etapa a confirmado_cierre
+                      await sb('prospectos?id=eq.' + encodeURIComponent(existingPr[0].id), {
+                        method: 'PATCH',
+                        headers: { ...HEADERS, Prefer: 'return=minimal' },
+                        body: JSON.stringify({
+                          etapa: 'confirmado_cierre',
+                          temperatura: 85,
+                          notas: (existingPr[0].notas || '') + '\n🎯 Agendó cita de cierre con ' + socioName + ' para ' + fechaSocio + '.',
+                          updated_at: new Date().toISOString()
+                        })
+                      });
+                    } else {
+                      // Crear nuevo prospecto en CRM
+                      await sb('prospectos', {
+                        method: 'POST',
+                        headers: { ...HEADERS, Prefer: 'return=minimal' },
+                        body: JSON.stringify({
+                          username: referredBy,
+                          nombre: booking.nombre,
+                          telefono: waCheck.cleaned || booking.whatsapp,
+                          email: booking.email || null,
+                          etapa: 'confirmado_cierre',
+                          fuente: 'agenda_cerrador',
+                          temperatura: 85,
+                          notas: '🎯 Agendó cita de cierre con ' + socioName + ' (tu patrocinador/cerrador) para ' + fechaSocio + '. Booking ID: ' + bookingId
+                        })
+                      });
+                    }
+                  } catch(pe) { console.error('[AGENDA] Error creating prospecto in CRM of referrer:', pe.message); }
+                }
+              } catch(refErr) { console.error('[AGENDA] Referral processing error:', refErr.message); }
+            }
+
+            // ── SOCIO EMAIL 1: Instant — Nueva cita agendada (cerrador) ──
             if (socioEmail) {
               var ipWarning = ipFlag ? '<div style="background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.3);border-radius:8px;padding:10px;margin:12px 0;font-size:12px;color:#FF6B6B;">\u26A0\uFE0F IP repetida</div>' : '';
-              _sendEmail(socioEmail, '\uD83D\uDD14 Nueva cita: ' + prospectName + ' \u00b7 ' + horaSocio,
+              var refBadge = refSocioInfo ? '<div style="background:rgba(127,119,221,0.10);border:1px solid rgba(127,119,221,0.25);border-radius:10px;padding:10px;margin:12px 0;font-size:12px;color:#F0EDE6;">\uD83E\uDD1D Prospecto referido por <strong>' + (refSocioInfo.name || referredBy) + '</strong></div>' : '';
+              _sendEmail(socioEmail, '\uD83D\uDD14 Nueva cita: ' + prospectName + ' \u00b7 ' + horaSocio + (refSocioInfo ? ' \u00b7 Ref: ' + (refSocioInfo.name || referredBy).split(' ')[0] : ''),
                 _wrap('<div style="text-align:center;margin-bottom:20px;"><div style="font-size:36px;margin-bottom:8px;">\uD83C\uDF89</div><h2 style="color:#C9A84C;font-size:18px;margin:0 0 6px;">\u00a1Nueva cita agendada!</h2><p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">' + fechaSocio + '</p></div>'
                 + '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:18px;margin-bottom:16px;">'
                 + '<p style="margin:6px 0;font-size:14px;">\uD83D\uDC64 <strong>' + prospectName + '</strong></p>'
                 + '<p style="margin:6px 0;font-size:13px;color:rgba(255,255,255,0.5);">\uD83D\uDCF1 ' + booking.whatsapp + (prospectEmail ? ' \u00b7 \uD83D\uDCE7 ' + prospectEmail : '') + '</p>'
-                + '</div>' + ipWarning + _btn('\uD83D\uDCCA Ver mi agenda', 'https://skyteam.global/?nav=agenda')), nowMs);
+                + '</div>' + refBadge + ipWarning + _btn('\uD83D\uDCCA Ver mi agenda', 'https://skyteam.global/?nav=agenda')), nowMs);
             }
 
             // ── SOCIO EMAIL 2: 1h before — Recordatorio ──
