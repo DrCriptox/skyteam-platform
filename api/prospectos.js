@@ -389,8 +389,10 @@ export default async function handler(req, res) {
       try {
         const meta = JSON.stringify({ modo: modo || '', toque: toque || 0, fase: fase || '' });
         const shortMsg = (mensaje + '').substring(0, 500);
-        await sb('interacciones', {
+        // Direct fetch to get real response status (sb() swallows errors)
+        const insR = await fetch(SUPABASE_URL + '/rest/v1/interacciones', {
           method: 'POST',
+          headers: { ...HEADERS, Prefer: 'return=representation' },
           body: JSON.stringify({
             prospecto_id: prospecto_id,
             username: user,
@@ -398,7 +400,12 @@ export default async function handler(req, res) {
             contenido: meta + '|||' + shortMsg
           })
         });
-        return res.status(200).json({ ok: true });
+        const insBody = await insR.text();
+        if (!insR.ok) {
+          console.error('[FEEDBACK] FAIL status', insR.status, insBody.substring(0, 300));
+          return res.status(500).json({ error: 'Insert failed', status: insR.status, detail: insBody.substring(0, 300) });
+        }
+        return res.status(200).json({ ok: true, saved: true });
       } catch(e) { return res.status(500).json({ error: e.message }); }
     }
 
