@@ -4528,7 +4528,10 @@ async function _loadEndorsementUI() {
   if (!el) return;
   try {
     var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'listEndorsements', user:(CU&&CU.username)||'' }) });
-    var d = await r.json();
+    // Defensive JSON parse
+    var txt = await r.text();
+    var d;
+    try { d = JSON.parse(txt); } catch(pe) { console.warn('[listEndorsements] non-JSON response:', txt.substring(0,100)); el.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No disponible.</div>'; return; }
     if (!d || !d.ok) { el.innerHTML = '<div style="color:rgba(255,255,255,0.3);">Error: ' + (d && d.error || 'desconocido') + '</div>'; return; }
     var h = '';
 
@@ -4636,7 +4639,7 @@ async function _requestEndorsement(targetCloser) {
     } else {
       crmToast((d && d.error) || 'No se pudo solicitar', 'error');
     }
-  } catch(e) { crmToast('Error: ' + e.message, 'error'); }
+  } catch(e) { console.warn('[endoso request]', e.message); crmToast('No se pudo procesar. Intenta de nuevo.', 'error'); }
 }
 
 async function _approveEndorsement(socio) {
@@ -4645,7 +4648,7 @@ async function _approveEndorsement(socio) {
     var d = await r.json();
     if (d && d.ok) { crmToast('✅ Aprobado — ahora cierras por ' + socio, 'success'); _loadEndorsementUI(); }
     else crmToast((d && d.error) || 'Error', 'error');
-  } catch(e) { crmToast('Error: ' + e.message, 'error'); }
+  } catch(e) { console.warn('[endoso]', e.message); crmToast('No se pudo procesar. Intenta de nuevo.', 'error'); }
 }
 
 async function _rejectEndorsement(socio) {
@@ -4655,7 +4658,7 @@ async function _rejectEndorsement(socio) {
     var d = await r.json();
     if (d && d.ok) { crmToast('Solicitud rechazada', 'info'); _loadEndorsementUI(); }
     else crmToast((d && d.error) || 'Error', 'error');
-  } catch(e) { crmToast('Error: ' + e.message, 'error'); }
+  } catch(e) { console.warn('[endoso]', e.message); crmToast('No se pudo procesar. Intenta de nuevo.', 'error'); }
 }
 
 async function _revokeEndorsement(socio) {
@@ -4668,7 +4671,7 @@ async function _revokeEndorsement(socio) {
     var d = await r.json();
     if (d && d.ok) { crmToast('Endoso cancelado', 'info'); _loadEndorsementUI(); }
     else crmToast((d && d.error) || 'Error', 'error');
-  } catch(e) { crmToast('Error: ' + e.message, 'error'); }
+  } catch(e) { console.warn('[endoso]', e.message); crmToast('No se pudo procesar. Intenta de nuevo.', 'error'); }
 }
 
 function agFmtTimeStr(val) {

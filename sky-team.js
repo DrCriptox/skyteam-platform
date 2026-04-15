@@ -697,7 +697,10 @@ async function _loadCerradorStatsWidget() {
   if (!widget || !body) return;
   try {
     var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'cerradorStats', user: (window.CU && window.CU.username) || '' }) });
-    var d = await r.json();
+    // Defensive: if response is not JSON (HTML error page from Vercel), silently hide
+    var txt = await r.text();
+    var d;
+    try { d = JSON.parse(txt); } catch(e) { console.warn('[cerradorStats] non-JSON response:', txt.substring(0,100)); widget.style.display = 'none'; return; }
     if (!d || !d.ok || !d.canBeCloser) { widget.style.display = 'none'; return; }
     widget.style.display = 'block';
     var h = '';
@@ -731,7 +734,10 @@ async function _loadIaMyStatsWidget() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'iaMyStats', user: (window.CU && window.CU.username) || '' })
     });
-    var d = await r.json();
+    // Defensive: parse safely
+    var txt = await r.text();
+    var d;
+    try { d = JSON.parse(txt); } catch(e) { console.warn('[iaMyStats] non-JSON response:', txt.substring(0,100)); statsEl.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:11px;padding:8px;">Sin datos aún.</div>'; return; }
     if (!d || !d.ok) { statsEl.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:11px;padding:8px;">Sin datos aún. Genera mensajes con IA y califícalos con 👍/👎 para empezar.</div>'; return; }
     var me = d.me || {};
     var html = '';
