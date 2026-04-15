@@ -4,8 +4,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
 
-// Secret requerido — sin fallback hardcodeado
-const RESET_SECRET = process.env.RESET_SECRET;
+// Secret para firmar tokens HMAC. Usa RESET_SECRET si está, si no cae a ADMIN_PUSH_KEY.
+// Debe coincidir con el de api/forgot-password.js (ambos generan/verifican con el mismo).
+const RESET_SECRET = process.env.RESET_SECRET || process.env.ADMIN_PUSH_KEY;
 
 function hashPassword(plain) {
   const salt = crypto.randomBytes(16).toString('hex');
