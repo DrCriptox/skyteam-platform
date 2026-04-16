@@ -23,18 +23,18 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { email } = req.body || {};
+    const { email, _debug } = req.body || {};
 
     // Siempre retorna 200 para evitar enumeración de emails
     if (!email || typeof email !== 'string' || email.length > 200) {
-      return res.status(200).json({ ok: true });
+      return res.status(200).json({ ok: true, _d: _debug ? 'no_email_provided' : undefined });
     }
 
     const clean = email.trim().toLowerCase();
 
     if (!RESET_SECRET) {
       console.error('[FORGOT-PASSWORD] No secret available (RESET_SECRET + ADMIN_PUSH_KEY both missing)');
-      return res.status(200).json({ ok: true });
+      return res.status(200).json({ ok: true, _d: _debug ? 'no_secret' : undefined });
     }
 
     const r = await fetch(
@@ -44,6 +44,7 @@ export default async function handler(req, res) {
     const users = await r.json();
 
     if (!users || users.length === 0) {
+      if (_debug) return res.status(200).json({ ok: true, _d: 'email_not_found', searched: clean });
       return res.status(200).json({ ok: true }); // No revelar si el email existe
     }
 
@@ -89,7 +90,13 @@ export default async function handler(req, res) {
       if (!emailRes.ok) {
         const emailBody = await emailRes.text().catch(() => '');
         console.error('[FORGOT-PASSWORD] Resend FAILED:', emailRes.status, emailBody.substring(0, 300));
+        if (_debug) return res.status(200).json({ ok: true, _d: 'resend_error', status: emailRes.status, body: emailBody.substring(0, 200) });
+      } else {
+        const emailData = await emailRes.json().catch(() => ({}));
+        if (_debug) return res.status(200).json({ ok: true, _d: 'sent', emailId: emailData.id, to: clean, user: user.username });
       }
+    } else {
+      if (_debug) return res.status(200).json({ ok: true, _d: 'no_resend_key' });
     }
 
     return res.status(200).json({ ok: true });
