@@ -34,7 +34,18 @@ export default async function handler(req, res) {
 
     if (!RESET_SECRET) {
       console.error('[FORGOT-PASSWORD] No secret available (RESET_SECRET + ADMIN_PUSH_KEY both missing)');
-      return res.status(200).json({ ok: true, _d: _debug ? 'no_secret' : undefined });
+      if (_debug) return res.status(200).json({ ok: true, _d: 'no_secret', env_check: {
+        HAS_SUPABASE_URL: !!process.env.SUPABASE_URL,
+        HAS_SUPABASE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+        HAS_RESEND: !!process.env.RESEND_API_KEY,
+        HAS_OPENAI: !!process.env.OPENAI_API_KEY,
+        HAS_ADMIN_PUSH_KEY: !!process.env.ADMIN_PUSH_KEY,
+        HAS_RESET_SECRET: !!process.env.RESET_SECRET,
+        HAS_VAPID_PUB: !!process.env.VAPID_PUBLIC_KEY,
+        ADMIN_PUSH_KEY_LEN: (process.env.ADMIN_PUSH_KEY||'').length,
+        RESET_SECRET_LEN: (process.env.RESET_SECRET||'').length
+      }});
+      return res.status(200).json({ ok: true });
     }
 
     const r = await fetch(
