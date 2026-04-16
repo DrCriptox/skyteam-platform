@@ -9165,7 +9165,7 @@ Sugiere agendar llamada de 20 min o enviar el link del video VSL como siguiente 
       '📣 Anuncio Meta Ads',
       '📅 Plan semanal de contenido'
     ],
-    welcome: '¡Hola! Soy tu Agente de Contenido 🎬\n\n**Antes de crear te voy a hacer preguntas** para que salga algo bien tuyo, no un copy genérico. Te diseño cada pieza según:\n\n🎯 **Tu audiencia** — edad, país, qué les duele\n🎭 **Tu tono** — polémico, aspiracional, educativo, testimonial\n📱 **La plataforma** — reel, historia, carrusel, DM\n🎨 **Tu formato** — con o sin tu cara, voz en off, solo texto\n\nToca una opción abajo o dime qué contenido necesitas. Te hago 3-5 preguntas rápidas y después sale el contenido estructurado, listo para grabar o copiar.',
+    welcome: '¡Hola! Soy tu Agente de Contenido 🎬\n\nToca lo que necesitas y te guío paso a paso:',
     system: `Eres el Agente de Contenido de SKYTEAM. Tu propósito es crear contenido viral, aspiracional y que genere prospectos para la franquicia digital. Basado en los principios de los creadores con mayor impacto en Instagram, TikTok y Facebook.
 
 === CÓMO DEBES TRABAJAR (FLUJO CONVERSACIONAL) ===
@@ -9838,18 +9838,17 @@ function initAgentChat(id) {
   if(input) input.focus();
 }
 
-// Chip click — set input value and focus (user can edit before sending)
+// Chip click — auto-send immediately (no need to tap "Enviar")
 function _agenteChipClick(btn) {
   var text = btn.getAttribute('data-chip') || btn.textContent;
   var input = document.getElementById('agente-input');
   if (!input) return;
-  // Strip leading emoji if present
-  var clean = text.replace(/^[^\w]*\s*/, '').trim();
-  input.value = clean;
-  input.focus();
+  input.value = text.trim();
   // Hide chips after selection
   var chipsEl = document.getElementById('agente-chips');
   if (chipsEl) chipsEl.style.display = 'none';
+  // Auto-send
+  sendAgentMsg();
 }
 
 // Same but for clickable items inside the welcome message (from _fmtWelcome)
@@ -9857,12 +9856,12 @@ function _agenteChipClickFromText(el) {
   var text = el.getAttribute('data-chip') || el.textContent;
   var input = document.getElementById('agente-input');
   if (!input) return;
-  var clean = text.replace(/^[^\w]*\s*/, '').trim();
-  input.value = clean;
-  input.focus();
+  input.value = text.trim();
   // Hide chips bar if present
   var chipsEl = document.getElementById('agente-chips');
   if (chipsEl) chipsEl.style.display = 'none';
+  // Auto-send
+  sendAgentMsg();
 }
 
 // Attach image: compress + preview
