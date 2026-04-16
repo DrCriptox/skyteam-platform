@@ -7412,6 +7412,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     @keyframes fadeSlideUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
     .pb-anim{animation:fadeSlideUp 0.5s ease-out both;}
     .pb-anim-d1{animation-delay:0.1s;}.pb-anim-d2{animation-delay:0.2s;}.pb-anim-d3{animation-delay:0.3s;}.pb-anim-d4{animation-delay:0.4s;}
+    @keyframes pbBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
   </style>`;
 
   var fotoActual = cfg.foto || '';
@@ -7610,8 +7611,8 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
     html += '<div id="pb-check-wa" style="width:24px;height:24px;border-radius:50%;border:2px solid rgba(37,211,102,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.3s;font-size:12px;"></div>';
     html += '<div style="flex:1;">';
-    html += '<p style="margin:0 0 3px;font-size:13px;font-weight:800;color:#F0EDE6;">Paso 1: Confirma por WhatsApp</p>';
-    html += '<p style="margin:0 0 10px;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4;">Envíale un mensaje a tu asesor para asegurar tu lugar.</p>';
+    html += '<p style="margin:0 0 3px;font-size:13px;font-weight:800;color:#F0EDE6;">Paso 1: Confirma por WhatsApp <span id="pb-arrow-wa" style="display:inline-block;animation:pbBounce 1s infinite;font-size:16px;">👇</span></p>';
+    html += '<p style="margin:0 0 10px;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4;">Toca el botón verde para enviar un mensaje a tu asesor.</p>';
     html += '<a id="pb-wa-btn" href="#" target="_blank" onclick="pbCheckTask(\'wa\');return true;" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:9px 18px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:900;transition:all 0.15s;position:relative;z-index:10;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar mensaje por WhatsApp</a>';
     html += '</div></div></div>';
     // Task 2: Google Calendar — compact
@@ -7619,7 +7620,7 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
     html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
     html += '<div id="pb-check-gcal" style="width:24px;height:24px;border-radius:50%;border:2px solid rgba(66,133,244,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.3s;font-size:12px;"></div>';
     html += '<div style="flex:1;">';
-    html += '<p style="margin:0 0 3px;font-size:13px;font-weight:800;color:#F0EDE6;">Paso 2: Guárdala en tu calendario</p>';
+    html += '<p style="margin:0 0 3px;font-size:13px;font-weight:800;color:#F0EDE6;">Paso 2: Guárdala en tu calendario <span id="pb-arrow-gcal" style="display:none;animation:pbBounce 1s infinite;font-size:16px;">👇</span></p>';
     html += '<p style="margin:0 0 10px;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4;">Agrega la reunión a Google Calendar para no olvidarla.</p>';
     html += '<a id="pb-gcal-btn" href="#" target="_blank" onclick="pbCheckTask(\'gcal\');return true;" style="display:inline-flex;align-items:center;gap:6px;background:rgba(66,133,244,0.15);border:1px solid rgba(66,133,244,0.3);color:#F0EDE6;padding:9px 18px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:800;transition:all 0.15s;position:relative;z-index:10;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Guardar en Google Calendar</a>';
     html += '</div></div></div>';
@@ -8247,12 +8248,34 @@ function pbConfirmar(username) {
           _setWaBtn(socioWa);
         } else {
           // Fallback: fetch user's WhatsApp from profile
-          fetch('/api/users?action=list').then(function(r){return r.json();}).then(function(ud){
+          fetch('/api/users').then(function(r){return r.json();}).then(function(ud){
             var u=ud.users&&ud.users[username];
-            var fallbackWa=u&&u.whatsapp?(u.whatsapp||'').replace(/[^0-9]/g,''):'';
-            if(fallbackWa) _setWaBtn(fallbackWa);
-            else document.getElementById('pb-wa-btn').style.display='none';
-          }).catch(function(){ document.getElementById('pb-wa-btn').style.display='none'; });
+            var fallbackWa=u&&(u.whatsapp||u.wa||'');
+            fallbackWa=fallbackWa.replace(/[^0-9]/g,'');
+            if(fallbackWa) {
+              _setWaBtn(fallbackWa);
+            } else {
+              // No WA number available — show instruction instead of hiding
+              var waBtn=document.getElementById('pb-wa-btn');
+              if(waBtn) {
+                waBtn.textContent='Tu asesor te contactará por WhatsApp ✅';
+                waBtn.style.background='rgba(37,211,102,0.15)';
+                waBtn.style.border='1px solid rgba(37,211,102,0.3)';
+                waBtn.style.color='#25D366';
+                waBtn.removeAttribute('href');
+                waBtn.onclick=function(){pbCheckTask('wa');return false;};
+              }
+            }
+          }).catch(function(){
+            // Network error — still show button as completable
+            var waBtn2=document.getElementById('pb-wa-btn');
+            if(waBtn2) {
+              waBtn2.textContent='Tu asesor te contactará ✅';
+              waBtn2.style.background='rgba(37,211,102,0.15)';
+              waBtn2.removeAttribute('href');
+              waBtn2.onclick=function(){pbCheckTask('wa');return false;};
+            }
+          });
         }
 
         // Google Calendar link
@@ -8303,18 +8326,26 @@ function pbCheckTask(task) {
   var pctEl = document.getElementById('pb-progress-pct');
   if(bar) bar.style.width = pct + '%';
   if(pctEl) pctEl.textContent = pct + '%';
-  // Update check circles
+  // Update check circles + move arrow indicators
   if(_pbTasksDone.wa) {
     var cw = document.getElementById('pb-check-wa');
     if(cw) { cw.innerHTML = '✅'; cw.style.border = 'none'; }
     var tw = document.getElementById('pb-task-wa');
     if(tw) { tw.style.borderColor = 'rgba(37,211,102,0.5)'; tw.style.background = 'rgba(37,211,102,0.1)'; }
+    // Hide WA arrow, show GCal arrow
+    var arrowWa = document.getElementById('pb-arrow-wa');
+    if(arrowWa) arrowWa.style.display = 'none';
+    var arrowGcal = document.getElementById('pb-arrow-gcal');
+    if(arrowGcal) arrowGcal.style.display = 'inline-block';
   }
   if(_pbTasksDone.gcal) {
     var cg = document.getElementById('pb-check-gcal');
     if(cg) { cg.innerHTML = '✅'; cg.style.border = 'none'; }
     var tg = document.getElementById('pb-task-gcal');
     if(tg) { tg.style.borderColor = 'rgba(66,133,244,0.5)'; tg.style.background = 'rgba(66,133,244,0.1)'; }
+    // Hide GCal arrow
+    var arrowGcal2 = document.getElementById('pb-arrow-gcal');
+    if(arrowGcal2) arrowGcal2.style.display = 'none';
   }
   // If 100% — show completion message
   if(pct === 100) {
