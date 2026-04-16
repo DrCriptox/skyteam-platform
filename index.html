@@ -10001,9 +10001,10 @@ function renderAgentHistory(id) {
           // Match: "1. Option text" or "1) Option text"
           var numMatch = trimmed.match(/^\d+[\.\)]\s*(.+)/);
           // Match: "• **Bold** — rest" or "- **Bold** rest"
-          var bulletMatch = trimmed.match(/^[\•\-\*]\s*\*?\*?([^*\n]{2,40})\*?\*?\s*[\—\-]?\s*(.*)/);
-          // Match: "🎯 **Bold text**" (emoji + bold = option)
-          var emojiOptMatch = trimmed.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+)\s*\*?\*?([^*\n]{2,35})\*?\*?\s*[\—\-]?\s*(.*)/u);
+          var bulletMatch = trimmed.match(/^[\u2022\-\*]\s*\*?\*?([^*\n]{2,40})\*?\*?/);
+          // Match: "🎯 **Bold text**" (emoji + bold = option) — use try/catch for u-flag compat
+          var emojiOptMatch = null;
+          try { emojiOptMatch = trimmed.match(new RegExp('^([\\p{Emoji_Presentation}\\p{Extended_Pictographic}]+)\\s*\\*?\\*?([^*\\n]{2,35})\\*?\\*?', 'u')); } catch(re) {}
           if (numMatch && numMatch[1].length < 60) {
             var label = numMatch[1].replace(/\*\*/g, '').trim();
             if (label.indexOf('?') === -1 && label.length > 2) optChips.push(label);
