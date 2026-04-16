@@ -1254,13 +1254,20 @@ function generateCoachScript() {
   fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: messages })
+    body: JSON.stringify({
+      agent: 'script',
+      systemPrompt: systemPrompt,
+      messages: [{ role: 'user', content: scenario }]
+    })
   })
   .then(function(res) { return res.json(); })
   .then(function(data) {
     var reply = '';
+    // Try all possible response formats
     if (data && data.reply) {
       reply = data.reply;
+    } else if (data && data.content && data.content[0] && data.content[0].text) {
+      reply = data.content[0].text;
     } else if (data && data.choices && data.choices[0]) {
       reply = data.choices[0].message ? data.choices[0].message.content : (data.choices[0].text || '');
     }
