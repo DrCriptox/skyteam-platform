@@ -8745,6 +8745,14 @@ function renderSkySales() {
   if(!window._ssTab) window._ssTab = 'landing';
   var html = '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">';
   var _ssTabs = [{id:'landing',label:'Mi Landing',icon:'\uD83C\uDF10'},{id:'agents',label:'Agentes IA',icon:'\uD83E\uDD16'},{id:'ssranking',label:'Ranking',icon:'\uD83C\uDFC6'}];
+  // Solo dradmin (admin) ve la pestana de Sofi (WhatsApp Assistant)
+  if(CU && CU.username === 'dradmin') {
+    _ssTabs.push({id:'sofi',label:'Wsapp asist',icon:'\uD83D\uDCAC'});
+  }
+  // Si estamos en la pestana sofi pero no somos admin, volver a landing
+  if(window._ssTab === 'sofi' && !(CU && CU.username === 'dradmin')) {
+    window._ssTab = 'landing';
+  }
   _ssTabs.forEach(function(t){
     var on = window._ssTab === t.id;
     html += '<button onclick="window._ssTab=\''+t.id+'\';renderSkySales()" style="padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06))':'rgba(255,255,255,0.02)')+';color:'+(on?'#E8D48B':'rgba(255,255,255,0.35)')+';transition:all 0.3s;'+(on?'box-shadow:0 2px 12px rgba(201,168,76,0.15);':'')+'">'+t.icon+' '+t.label+'</button>';
@@ -8755,6 +8763,19 @@ function renderSkySales() {
     html += _renderSSRanking();
     document.getElementById('skysales-content').innerHTML = html;
     _loadSSRanking();
+    return;
+  }
+
+  if(window._ssTab === 'sofi') {
+    // Doble gate: solo dradmin (admin)
+    if(!CU || CU.username !== 'dradmin') {
+      html += '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">Acceso restringido</div>';
+      document.getElementById('skysales-content').innerHTML = html;
+      return;
+    }
+    html += '<div id="sofi-dashboard-root"></div>';
+    document.getElementById('skysales-content').innerHTML = html;
+    renderSofiDashboard();
     return;
   }
 
@@ -10876,7 +10897,17 @@ function navigate(sec) {
   }
   if(sec==='academia-liderazgo') renderAcadLid();
   if(sec==='agente') { if(typeof currentAgent!=='undefined'&&currentAgent) initAgentChat(currentAgent); }
-  if(sec==='skysales') renderSkySales();
+  if(sec==='skysales') {
+    // Deep-link desde push: ?sstab=sofi abre directo la pestana de Sofi (solo dradmin)
+    try {
+      var _dpParams = new URLSearchParams(window.location.search);
+      var _dpSst = _dpParams.get('sstab');
+      if(_dpSst === 'sofi' && CU && CU.username === 'dradmin') {
+        window._ssTab = 'sofi';
+      }
+    } catch(e) {}
+    renderSkySales();
+  }
   if(sec==='prospectos') initSkyProspectos();
   if(sec==='sky-tv') initSkyTv();
   closeSidebar();
@@ -18223,6 +18254,524 @@ function renderAntiCheatResults(container, results) {
 
   container.innerHTML = html;
 }
+
+// ============================================================
+// SOFI DASHBOARD - WhatsApp Assistant (solo dradmin)
+// ============================================================
+(function(){
+  if(document.getElementById('sofi-dashboard-styles')) return;
+  var st = document.createElement('style');
+  st.id = 'sofi-dashboard-styles';
+  st.textContent = ''
+    + '.sofi-wrap{display:flex;flex-direction:column;height:calc(100vh - 140px);min-height:500px;background:#0a0f14;border-radius:14px;overflow:hidden;border:0.5px solid rgba(255,255,255,0.06);}'
+    + '.sofi-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px;background:rgba(255,255,255,0.02);border-bottom:0.5px solid rgba(255,255,255,0.05);}'
+    + '.sofi-stat{text-align:center;padding:6px 4px;border-radius:8px;background:rgba(255,255,255,0.02);}'
+    + '.sofi-stat-num{font-size:18px;font-weight:800;color:#25D366;line-height:1.1;}'
+    + '.sofi-stat-lbl{font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}'
+    + '.sofi-body{flex:1;display:flex;min-height:0;}'
+    + '.sofi-list{width:100%;display:flex;flex-direction:column;background:#0b1218;border-right:0.5px solid rgba(255,255,255,0.05);overflow:hidden;}'
+    + '.sofi-chat{display:none;flex:1;flex-direction:column;background:#0a0f14;overflow:hidden;}'
+    + '@media(min-width:820px){.sofi-list{width:340px;flex:none;}.sofi-chat{display:flex;}.sofi-wrap.chat-open .sofi-list{display:flex;}}'
+    + '.sofi-wrap.chat-open .sofi-list{display:none;}'
+    + '.sofi-wrap.chat-open .sofi-chat{display:flex;}'
+    + '@media(min-width:820px){.sofi-wrap.chat-open .sofi-list{display:flex;}}'
+    + '.sofi-filters{display:flex;gap:4px;padding:8px;overflow-x:auto;border-bottom:0.5px solid rgba(255,255,255,0.04);scrollbar-width:none;}'
+    + '.sofi-filters::-webkit-scrollbar{display:none;}'
+    + '.sofi-filter-chip{padding:5px 10px;border-radius:14px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;border:0.5px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);color:rgba(255,255,255,0.5);font-family:inherit;}'
+    + '.sofi-filter-chip.active{background:rgba(37,211,102,0.15);border-color:rgba(37,211,102,0.4);color:#25D366;}'
+    + '.sofi-search{padding:8px;border-bottom:0.5px solid rgba(255,255,255,0.04);}'
+    + '.sofi-search input{width:100%;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;color:#F0EDE6;font-size:12px;padding:8px 10px;outline:none;font-family:inherit;box-sizing:border-box;}'
+    + '.sofi-list-scroll{flex:1;overflow-y:auto;}'
+    + '.sofi-conv{display:flex;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:0.5px solid rgba(255,255,255,0.03);transition:background 0.15s;}'
+    + '.sofi-conv:hover{background:rgba(255,255,255,0.02);}'
+    + '.sofi-conv.active{background:rgba(37,211,102,0.06);border-left:3px solid #25D366;padding-left:9px;}'
+    + '.sofi-conv-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#128C7E,#25D366);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;flex-shrink:0;}'
+    + '.sofi-conv-info{flex:1;min-width:0;}'
+    + '.sofi-conv-top{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:3px;}'
+    + '.sofi-conv-name{font-size:13px;font-weight:700;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}'
+    + '.sofi-conv-time{font-size:9px;color:rgba(255,255,255,0.3);flex-shrink:0;}'
+    + '.sofi-conv-msg{font-size:11px;color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}'
+    + '.sofi-conv-meta{display:flex;gap:4px;margin-top:4px;align-items:center;}'
+    + '.sofi-etapa{font-size:8px;padding:2px 6px;border-radius:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}'
+    + '.sofi-chat-header{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.05);}'
+    + '.sofi-back{background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#F0EDE6;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit;}'
+    + '@media(min-width:820px){.sofi-back{display:none;}}'
+    + '.sofi-header-info{flex:1;min-width:0;}'
+    + '.sofi-header-name{font-size:14px;font-weight:800;color:#F0EDE6;}'
+    + '.sofi-header-phone{font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;}'
+    + '.sofi-header-actions{display:flex;gap:6px;flex-shrink:0;}'
+    + '.sofi-btn{background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.1);color:#F0EDE6;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}'
+    + '.sofi-btn.pause{background:rgba(255,180,0,0.15);border-color:rgba(255,180,0,0.35);color:#FFB400;}'
+    + '.sofi-btn.resume{background:rgba(37,211,102,0.15);border-color:rgba(37,211,102,0.35);color:#25D366;}'
+    + '.sofi-msgs{flex:1;overflow-y:auto;padding:14px;background:linear-gradient(180deg,#0a0f14 0%,#0b1218 100%);}'
+    + '.sofi-msg{display:flex;margin-bottom:6px;}'
+    + '.sofi-msg.in{justify-content:flex-start;}'
+    + '.sofi-msg.out{justify-content:flex-end;}'
+    + '.sofi-bubble{max-width:78%;padding:8px 11px 18px;border-radius:8px;font-size:13px;line-height:1.4;position:relative;word-wrap:break-word;white-space:pre-wrap;}'
+    + '.sofi-msg.in .sofi-bubble{background:#1f2c33;color:#F0EDE6;border-bottom-left-radius:2px;}'
+    + '.sofi-msg.out .sofi-bubble{background:#005c4b;color:#F0EDE6;border-bottom-right-radius:2px;}'
+    + '.sofi-msg.out.manual .sofi-bubble{background:#1a4a7c;}'
+    + '.sofi-bubble-meta{position:absolute;right:8px;bottom:3px;font-size:9px;color:rgba(255,255,255,0.45);display:flex;gap:4px;align-items:center;}'
+    + '.sofi-bubble-src{font-size:9px;font-weight:700;opacity:0.6;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.4px;}'
+    + '.sofi-day-sep{text-align:center;margin:10px 0;}'
+    + '.sofi-day-sep span{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-size:10px;padding:3px 10px;border-radius:10px;}'
+    + '.sofi-input-wrap{display:flex;gap:6px;padding:10px;background:rgba(255,255,255,0.02);border-top:0.5px solid rgba(255,255,255,0.05);}'
+    + '.sofi-input{flex:1;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-radius:20px;color:#F0EDE6;font-size:13px;padding:9px 14px;outline:none;font-family:inherit;resize:none;max-height:120px;min-height:38px;}'
+    + '.sofi-send{background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:16px;flex-shrink:0;font-family:inherit;}'
+    + '.sofi-send:disabled{opacity:0.4;cursor:not-allowed;}'
+    + '.sofi-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:12px;}'
+    + '.sofi-placeholder{display:flex;flex:1;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:13px;padding:40px;text-align:center;}'
+    + '.sofi-paused-banner{background:rgba(255,180,0,0.1);border-bottom:0.5px solid rgba(255,180,0,0.25);color:#FFB400;font-size:11px;padding:6px 12px;text-align:center;font-weight:700;}';
+  document.head.appendChild(st);
+})();
+
+// Estado global del dashboard
+window._sofiState = window._sofiState || {
+  selectedPhone: null,
+  conversations: [],
+  messages: [],
+  filter: 'all',
+  search: '',
+  stats: null,
+  lastMsgTs: null,
+  pollList: null,
+  pollMsgs: null,
+  pollStats: null
+};
+
+function _sofiApi(action, payload) {
+  var body = Object.assign({ action: action, user: (CU && CU.username) || '' }, payload || {});
+  return fetch('/api/whatsapp-admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); });
+}
+
+function _sofiEtapaStyle(etapa) {
+  var map = {
+    nuevo: { label: 'Nuevo', bg: 'rgba(127,119,221,0.15)', color: '#9A92E8' },
+    esperando_video: { label: 'Video', bg: 'rgba(255,165,0,0.15)', color: '#FFA500' },
+    calificando: { label: 'Calificando', bg: 'rgba(127,119,221,0.15)', color: '#9A92E8' },
+    agenda_enviada: { label: 'Agenda', bg: 'rgba(255,215,0,0.15)', color: '#FFD700' },
+    agendado: { label: 'Agendado', bg: 'rgba(29,158,117,0.2)', color: '#1D9E75' },
+    escalado: { label: 'Escalado', bg: 'rgba(226,75,74,0.18)', color: '#E24B4A' },
+    frio: { label: 'Frio', bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' },
+    descartado: { label: 'X', bg: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)' }
+  };
+  return map[etapa] || { label: etapa || '-', bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' };
+}
+
+function _sofiFormatTime(iso) {
+  if(!iso) return '';
+  try {
+    var d = new Date(iso);
+    var now = new Date();
+    var diff = now - d;
+    if(diff < 60000) return 'ahora';
+    if(diff < 3600000) return Math.floor(diff/60000) + ' min';
+    var sameDay = d.toDateString() === now.toDateString();
+    if(sameDay) return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false });
+    var yesterday = new Date(now); yesterday.setDate(yesterday.getDate()-1);
+    if(d.toDateString() === yesterday.toDateString()) return 'ayer';
+    return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+  } catch(e) { return ''; }
+}
+
+function _sofiFormatDayLabel(iso) {
+  var d = new Date(iso);
+  var now = new Date();
+  if(d.toDateString() === now.toDateString()) return 'Hoy';
+  var yest = new Date(now); yest.setDate(yest.getDate()-1);
+  if(d.toDateString() === yest.toDateString()) return 'Ayer';
+  return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function _sofiEscape(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function renderSofiDashboard() {
+  var root = document.getElementById('sofi-dashboard-root');
+  if(!root) return;
+  if(!CU || CU.username !== 'dradmin') { root.innerHTML = '<div class="sofi-empty">Acceso restringido</div>'; return; }
+
+  // Cleanup de pollers previos
+  _sofiStopPolling();
+
+  var html = '<div class="sofi-wrap" id="sofi-wrap">';
+  // Stats bar
+  html += '<div class="sofi-stats" id="sofi-stats-bar">'
+       + '<div class="sofi-stat"><div class="sofi-stat-num" id="sst-msgs">-</div><div class="sofi-stat-lbl">Msgs hoy</div></div>'
+       + '<div class="sofi-stat"><div class="sofi-stat-num" id="sst-leads">-</div><div class="sofi-stat-lbl">Leads hoy</div></div>'
+       + '<div class="sofi-stat"><div class="sofi-stat-num" id="sst-ag">-</div><div class="sofi-stat-lbl">Agendados hoy</div></div>'
+       + '<div class="sofi-stat"><div class="sofi-stat-num" id="sst-conv">-</div><div class="sofi-stat-lbl">Conv 7d %</div></div>'
+       + '</div>';
+
+  html += '<div class="sofi-body">';
+  // List pane
+  html += '<div class="sofi-list">';
+  html += '<div class="sofi-filters" id="sofi-filters"></div>';
+  html += '<div class="sofi-search"><input id="sofi-search-input" placeholder="Buscar por nombre o telefono..." /></div>';
+  html += '<div class="sofi-list-scroll" id="sofi-list-scroll"><div class="sofi-empty">Cargando...</div></div>';
+  html += '</div>';
+  // Chat pane
+  html += '<div class="sofi-chat" id="sofi-chat-pane">';
+  html += '<div class="sofi-placeholder">Selecciona una conversacion para ver el chat</div>';
+  html += '</div>';
+  html += '</div>'; // body
+  html += '</div>'; // wrap
+
+  root.innerHTML = html;
+
+  // Filters
+  _sofiRenderFilters();
+
+  // Search debounced
+  var searchInput = document.getElementById('sofi-search-input');
+  if(searchInput) {
+    searchInput.addEventListener('input', function(e){
+      clearTimeout(window._sofiSearchTmr);
+      window._sofiSearchTmr = setTimeout(function(){
+        window._sofiState.search = (e.target.value || '').trim();
+        _sofiLoadList();
+      }, 350);
+    });
+  }
+
+  // Load initial data
+  _sofiLoadStats();
+  _sofiLoadList();
+
+  // Deep link: ?phone=XXX abre la conversacion directamente (desde push)
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var dpPhone = params.get('phone');
+    if(dpPhone) {
+      setTimeout(function(){ _sofiOpenChat(dpPhone); }, 300);
+      // Limpiar el param para no reabrir al refrescar
+      params.delete('phone');
+      var newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      try { history.replaceState({}, '', newUrl); } catch(e) {}
+    }
+  } catch(e) {}
+
+  // Start polling
+  _sofiStartPolling();
+}
+
+function _sofiRenderFilters() {
+  var el = document.getElementById('sofi-filters');
+  if(!el) return;
+  var filters = [
+    { id: 'all', label: 'Todos' },
+    { id: 'esperando_video', label: '📹 Video' },
+    { id: 'calificando', label: '🎯 Calif.' },
+    { id: 'agenda_enviada', label: '📅 Agenda' },
+    { id: 'agendado', label: '✅ Agendados' },
+    { id: 'escalado', label: '⚠️ Escalados' },
+    { id: 'paused', label: '⏸ Pausados' },
+    { id: 'frio', label: '🧊 Frios' }
+  ];
+  var h = '';
+  filters.forEach(function(f){
+    var active = window._sofiState.filter === f.id;
+    h += '<button class="sofi-filter-chip' + (active?' active':'') + '" onclick="_sofiSetFilter(\'' + f.id + '\')">' + f.label + '</button>';
+  });
+  el.innerHTML = h;
+}
+
+function _sofiSetFilter(id) {
+  window._sofiState.filter = id;
+  _sofiRenderFilters();
+  _sofiLoadList();
+}
+
+function _sofiLoadStats() {
+  _sofiApi('stats').then(function(r){
+    if(!r || !r.ok) return;
+    window._sofiState.stats = r.stats;
+    var s = r.stats;
+    var set = function(id, val){ var e = document.getElementById(id); if(e) e.textContent = val; };
+    set('sst-msgs', s.msgs_today || 0);
+    set('sst-leads', s.leads_today || 0);
+    set('sst-ag', s.agendados_today || 0);
+    set('sst-conv', (s.conversion_week || 0) + '%');
+  }).catch(function(){});
+}
+
+function _sofiLoadList() {
+  var scroll = document.getElementById('sofi-list-scroll');
+  if(!scroll) return;
+  _sofiApi('listConversations', {
+    etapa: window._sofiState.filter || 'all',
+    search: window._sofiState.search || ''
+  }).then(function(r){
+    if(!r || !r.ok) { scroll.innerHTML = '<div class="sofi-empty">Error al cargar</div>'; return; }
+    window._sofiState.conversations = r.conversations || [];
+    _sofiRenderList();
+  }).catch(function(){
+    scroll.innerHTML = '<div class="sofi-empty">Error de conexion</div>';
+  });
+}
+
+function _sofiRenderList() {
+  var scroll = document.getElementById('sofi-list-scroll');
+  if(!scroll) return;
+  var convs = window._sofiState.conversations || [];
+  if(convs.length === 0) {
+    scroll.innerHTML = '<div class="sofi-empty">Sin conversaciones</div>';
+    return;
+  }
+  var h = '';
+  convs.forEach(function(c){
+    var selected = window._sofiState.selectedPhone === c.phone;
+    var et = _sofiEtapaStyle(c.etapa);
+    var preview = '';
+    if(c.last_message) {
+      var prefix = c.last_message.direction === 'in' ? '' : '🤖 ';
+      preview = prefix + (c.last_message.content || '[' + (c.last_message.type||'?') + ']').substring(0, 60);
+    }
+    var initial = (c.name || '?').charAt(0).toUpperCase();
+    var pauseIcon = c.followup_paused ? ' 🔇' : '';
+    h += '<div class="sofi-conv' + (selected?' active':'') + '" onclick="_sofiOpenChat(\'' + c.phone + '\')">';
+    h += '<div class="sofi-conv-av">' + _sofiEscape(initial) + '</div>';
+    h += '<div class="sofi-conv-info">';
+    h += '<div class="sofi-conv-top"><div class="sofi-conv-name">' + _sofiEscape(c.name) + pauseIcon + '</div><div class="sofi-conv-time">' + _sofiFormatTime(c.last_message_at) + '</div></div>';
+    h += '<div class="sofi-conv-msg">' + _sofiEscape(preview) + '</div>';
+    h += '<div class="sofi-conv-meta"><span class="sofi-etapa" style="background:' + et.bg + ';color:' + et.color + ';">' + et.label + '</span></div>';
+    h += '</div></div>';
+  });
+  scroll.innerHTML = h;
+}
+
+function _sofiOpenChat(phone) {
+  window._sofiState.selectedPhone = phone;
+  window._sofiState.messages = [];
+  window._sofiState.lastMsgTs = null;
+  document.getElementById('sofi-wrap').classList.add('chat-open');
+  _sofiRenderList(); // para marcar activo
+  _sofiLoadMessages(true);
+  // restart message polling for this chat
+  _sofiStartMsgPolling();
+}
+
+function _sofiBackToList() {
+  window._sofiState.selectedPhone = null;
+  var wrap = document.getElementById('sofi-wrap');
+  if(wrap) wrap.classList.remove('chat-open');
+  var pane = document.getElementById('sofi-chat-pane');
+  if(pane) pane.innerHTML = '<div class="sofi-placeholder">Selecciona una conversacion para ver el chat</div>';
+  if(window._sofiState.pollMsgs) { clearInterval(window._sofiState.pollMsgs); window._sofiState.pollMsgs = null; }
+  _sofiRenderList();
+}
+
+function _sofiLoadMessages(full) {
+  var phone = window._sofiState.selectedPhone;
+  if(!phone) return;
+  var payload = { phone: phone };
+  if(!full && window._sofiState.lastMsgTs) payload.since = window._sofiState.lastMsgTs;
+  _sofiApi('getMessages', payload).then(function(r){
+    if(!r || !r.ok) return;
+    if(full) {
+      window._sofiState.messages = r.messages || [];
+      window._sofiState.currentLead = r.lead || null;
+      _sofiRenderChat();
+    } else if(r.messages && r.messages.length > 0) {
+      window._sofiState.messages = (window._sofiState.messages || []).concat(r.messages);
+      _sofiRenderChat(true);
+    }
+    if(r.messages && r.messages.length > 0) {
+      window._sofiState.lastMsgTs = r.messages[r.messages.length - 1].created_at;
+    }
+  }).catch(function(){});
+}
+
+function _sofiRenderChat(append) {
+  var pane = document.getElementById('sofi-chat-pane');
+  if(!pane) return;
+  var phone = window._sofiState.selectedPhone;
+  var lead = window._sofiState.currentLead || {};
+  var msgs = window._sofiState.messages || [];
+
+  // Re-render full chat structure
+  var initial = (lead.name || '?').charAt(0).toUpperCase();
+  var paused = !!lead.followup_paused;
+  var etapa = lead.etapa || 'nuevo';
+
+  var h = '<div class="sofi-chat-header">';
+  h += '<button class="sofi-back" onclick="_sofiBackToList()">←</button>';
+  h += '<div class="sofi-conv-av" style="width:36px;height:36px;font-size:13px;">' + _sofiEscape(initial) + '</div>';
+  h += '<div class="sofi-header-info">';
+  h += '<div class="sofi-header-name">' + _sofiEscape(lead.name || 'Prospecto') + '</div>';
+  h += '<div class="sofi-header-phone">+' + _sofiEscape(phone) + '</div>';
+  h += '</div>';
+  h += '<div class="sofi-header-actions">';
+  h += '<select class="sofi-btn" id="sofi-etapa-sel" onchange="_sofiChangeEtapa(this.value)" style="padding:6px 8px;">';
+  var etapas = [
+    ['nuevo','Nuevo'],['esperando_video','Video'],['calificando','Calificando'],
+    ['agenda_enviada','Agenda enviada'],['agendado','Agendado'],['escalado','Escalado'],
+    ['frio','Frio'],['descartado','Descartado']
+  ];
+  etapas.forEach(function(e){
+    h += '<option value="' + e[0] + '"' + (etapa===e[0]?' selected':'') + '>' + e[1] + '</option>';
+  });
+  h += '</select>';
+  if(paused) {
+    h += '<button class="sofi-btn resume" onclick="_sofiTogglePause(false)">▶ Reanudar</button>';
+  } else {
+    h += '<button class="sofi-btn pause" onclick="_sofiTogglePause(true)">⏸ Pausar</button>';
+  }
+  h += '</div></div>'; // header
+
+  if(paused) {
+    h += '<div class="sofi-paused-banner">⏸ Sofi pausada — tu controlas esta conversacion</div>';
+  }
+
+  h += '<div class="sofi-msgs" id="sofi-msgs-scroll">';
+  if(msgs.length === 0) {
+    h += '<div class="sofi-empty">Sin mensajes</div>';
+  } else {
+    var lastDayKey = '';
+    msgs.forEach(function(m){
+      var d = new Date(m.created_at);
+      var dayKey = d.toDateString();
+      if(dayKey !== lastDayKey) {
+        h += '<div class="sofi-day-sep"><span>' + _sofiFormatDayLabel(m.created_at) + '</span></div>';
+        lastDayKey = dayKey;
+      }
+      var isIn = m.direction === 'in';
+      var isManual = m.metadata && m.metadata.manual;
+      var cls = isIn ? 'in' : ('out' + (isManual ? ' manual' : ''));
+      var src = isIn ? '' : (isManual ? '<div class="sofi-bubble-src">👤 Tu</div>' : '<div class="sofi-bubble-src">🤖 Sofi</div>');
+      var content = _sofiEscape(m.content || '');
+      var timeStr = d.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
+      h += '<div class="sofi-msg ' + cls + '"><div class="sofi-bubble">' + src + content + '<div class="sofi-bubble-meta">' + timeStr + '</div></div></div>';
+    });
+  }
+  h += '</div>'; // msgs
+
+  // Input
+  h += '<div class="sofi-input-wrap">';
+  h += '<textarea class="sofi-input" id="sofi-input" rows="1" placeholder="Responder manualmente (pausara a Sofi automaticamente)..."></textarea>';
+  h += '<button class="sofi-send" onclick="_sofiSendManual()">➤</button>';
+  h += '</div>';
+
+  pane.innerHTML = h;
+
+  // Auto-scroll a abajo
+  var scroll = document.getElementById('sofi-msgs-scroll');
+  if(scroll) scroll.scrollTop = scroll.scrollHeight;
+
+  // Auto-resize textarea
+  var ta = document.getElementById('sofi-input');
+  if(ta) {
+    ta.addEventListener('input', function(){
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    });
+    ta.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        _sofiSendManual();
+      }
+    });
+  }
+}
+
+function _sofiSendManual() {
+  var ta = document.getElementById('sofi-input');
+  if(!ta) return;
+  var text = (ta.value || '').trim();
+  if(!text) return;
+  var phone = window._sofiState.selectedPhone;
+  if(!phone) return;
+  var btn = document.querySelector('.sofi-send');
+  if(btn) btn.disabled = true;
+  ta.value = '';
+  ta.style.height = 'auto';
+  _sofiApi('sendManualMessage', { phone: phone, text: text }).then(function(r){
+    if(btn) btn.disabled = false;
+    if(!r || !r.ok) {
+      if(typeof showToast === 'function') showToast('Error al enviar ❌');
+      return;
+    }
+    // Optimistic: refresh chat inmediatamente
+    _sofiLoadMessages(true);
+    _sofiLoadList();
+  }).catch(function(){
+    if(btn) btn.disabled = false;
+    if(typeof showToast === 'function') showToast('Error de conexion ❌');
+  });
+}
+
+function _sofiTogglePause(shouldPause) {
+  var phone = window._sofiState.selectedPhone;
+  if(!phone) return;
+  _sofiApi(shouldPause ? 'pauseBot' : 'resumeBot', { phone: phone }).then(function(r){
+    if(!r || !r.ok) return;
+    if(window._sofiState.currentLead) window._sofiState.currentLead.followup_paused = shouldPause;
+    _sofiRenderChat();
+    _sofiLoadList();
+    if(typeof showToast === 'function') showToast(shouldPause ? 'Sofi pausada ⏸' : 'Sofi reanudada ▶');
+  });
+}
+
+function _sofiChangeEtapa(newEtapa) {
+  var phone = window._sofiState.selectedPhone;
+  if(!phone || !newEtapa) return;
+  _sofiApi('updateEtapa', { phone: phone, etapa: newEtapa }).then(function(r){
+    if(!r || !r.ok) return;
+    if(window._sofiState.currentLead) window._sofiState.currentLead.etapa = newEtapa;
+    _sofiLoadList();
+    if(typeof showToast === 'function') showToast('Etapa actualizada ✓');
+  });
+}
+
+function _sofiStartPolling() {
+  _sofiStopPolling();
+  // Lista cada 8s
+  window._sofiState.pollList = setInterval(function(){
+    if(window._ssTab !== 'sofi') { _sofiStopPolling(); return; }
+    _sofiLoadList();
+  }, 8000);
+  // Stats cada 60s
+  window._sofiState.pollStats = setInterval(function(){
+    if(window._ssTab !== 'sofi') { _sofiStopPolling(); return; }
+    _sofiLoadStats();
+  }, 60000);
+  // Si hay chat abierto, tambien polling de msgs
+  if(window._sofiState.selectedPhone) _sofiStartMsgPolling();
+}
+
+function _sofiStartMsgPolling() {
+  if(window._sofiState.pollMsgs) clearInterval(window._sofiState.pollMsgs);
+  window._sofiState.pollMsgs = setInterval(function(){
+    if(window._ssTab !== 'sofi' || !window._sofiState.selectedPhone) {
+      clearInterval(window._sofiState.pollMsgs);
+      window._sofiState.pollMsgs = null;
+      return;
+    }
+    _sofiLoadMessages(false);
+  }, 3500);
+}
+
+function _sofiStopPolling() {
+  if(window._sofiState.pollList) { clearInterval(window._sofiState.pollList); window._sofiState.pollList = null; }
+  if(window._sofiState.pollMsgs) { clearInterval(window._sofiState.pollMsgs); window._sofiState.pollMsgs = null; }
+  if(window._sofiState.pollStats) { clearInterval(window._sofiState.pollStats); window._sofiState.pollStats = null; }
+}
+
+// Exponer globalmente para onclicks del HTML inline
+window.renderSofiDashboard = renderSofiDashboard;
+window._sofiSetFilter = _sofiSetFilter;
+window._sofiOpenChat = _sofiOpenChat;
+window._sofiBackToList = _sofiBackToList;
+window._sofiSendManual = _sofiSendManual;
+window._sofiTogglePause = _sofiTogglePause;
+window._sofiChangeEtapa = _sofiChangeEtapa;
 
 </script>
 <script src="patch-v3.js"></script>

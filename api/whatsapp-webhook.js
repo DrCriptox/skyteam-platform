@@ -638,6 +638,15 @@ export default async function handler(req, res) {
     // Save incoming message
     await saveMessage(from, 'in', textContent, msgType, msgId);
 
+    // === RESPECT HUMAN PAUSE: si dradmin tomo control, no responder automaticamente ===
+    if (lead.followup_paused === true) {
+      console.log('[WA-BOT] Lead paused (human control), skipping AI response for', from);
+      // Push a dradmin para que sepa que llego un mensaje a conversacion pausada
+      notifyAdminNewMessage(lead.name || contactName, from, textContent).catch(function () { });
+      if (req.body && req.body.From) return res.status(200).set('Content-Type', 'text/xml').send('<Response></Response>');
+      return res.status(200).json({ status: 'paused_saved' });
+    }
+
     // === DETECT SLOT SELECTION (user replied with a number) ===
     var selectedSlotISO = detectSlotSelection(textContent, from);
 
@@ -738,6 +747,8 @@ export default async function handler(req, res) {
         method: 'PATCH',
         body: JSON.stringify({ etapa: 'agenda_enviada', temperatura: 'caliente', updated_at: new Date().toISOString() })
       });
+      // Push a dradmin: Sofi envio agenda
+      notifyAdminEvent('agenda', lead.name || contactName, from).catch(function () { });
     }
 
     if (shouldEscalate) {
@@ -746,6 +757,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({ etapa: 'escalado', followup_paused: true, updated_at: new Date().toISOString() })
       });
       notifySocio(lead.name || contactName, from, 'solicita hablar con una persona').catch(function () { });
+      // Push a dradmin: Sofi necesita ayuda
+      notifyAdminEvent('escalar', lead.name || contactName, from).catch(function () { });
     }
 
     if (objectionMatch && objectionMatch[1]) {
@@ -790,6 +803,63 @@ async function notifySocio(leadName, leadPhone, detail) {
     var payload = JSON.stringify({
       title: '📱 Nuevo lead WhatsApp', body: (leadName || 'Prospecto') + ' — ' + detail,
       url: '/?page=prospectos', tag: 'wa-lead-' + Date.now()
+    });
+    for (var i = 0; i < subs.length; i++) {
+      webpush.sendNotification(subs[i].subscription, payload).catch(function () { });
+    }
+  } catch (e) { /* silent */ }
+}
+
+// Push a dradmin cuando llega un mensaje a una conversacion pausada (humano tomo control)
+async function notifyAdminNewMessage(leadName, leadPhone, preview) {
+  var VAPID_PUB = process.env.VAPID_PUBLIC_KEY;
+  var VAPID_PRIV = process.env.VAPID_PRIVATE_KEY;
+  var VAPID_SUB = process.env.VAPID_SUBJECT;
+  if (!VAPID_PUB || !VAPID_PRIV || !VAPID_SUB) return;
+  try {
+    var webpush = require('web-push');
+    webpush.setVapidDetails(VAPID_SUB, VAPID_PUB, VAPID_PRIV);
+    var subs = await sb('push_subscriptions?username=eq.' + (process.env.SOFI_ADMIN_USERNAME || 'dradmin'));
+    if (!subs || subs.length === 0) return;
+    var shortPreview = (preview || '').substring(0, 80);
+    var payload = JSON.stringify({
+      title: '💬 ' + (leadName || 'Prospecto'),
+      body: shortPreview,
+      url: '/?page=skysales&sstab=sofi&phone=' + encodeURIComponent(leadPhone),
+      tag: 'sofi-msg-' + leadPhone
+    });
+    for (var i = 0; i < subs.length; i++) {
+      webpush.sendNotification(subs[i].subscription, payload).catch(function () { });
+    }
+  } catch (e) { /* silent */ }
+}
+
+// Push a dradmin cuando Sofi agenda o escala
+async function notifyAdminEvent(type, leadName, leadPhone) {
+  var VAPID_PUB = process.env.VAPID_PUBLIC_KEY;
+  var VAPID_PRIV = process.env.VAPID_PRIVATE_KEY;
+  var VAPID_SUB = process.env.VAPID_SUBJECT;
+  if (!VAPID_PUB || !VAPID_PRIV || !VAPID_SUB) return;
+  try {
+    var webpush = require('web-push');
+    webpush.setVapidDetails(VAPID_SUB, VAPID_PUB, VAPID_PRIV);
+    var subs = await sb('push_subscriptions?username=eq.' + (process.env.SOFI_ADMIN_USERNAME || 'dradmin'));
+    if (!subs || subs.length === 0) return;
+    var title, body;
+    if (type === 'agenda') {
+      title = '🎯 Sofi envio la agenda';
+      body = (leadName || 'Prospecto') + ' esta por agendar';
+    } else if (type === 'escalar') {
+      title = '⚠️ Sofi necesita ayuda';
+      body = (leadName || 'Prospecto') + ' quiere hablar contigo';
+    } else {
+      title = '📱 Sofi';
+      body = leadName || 'Prospecto';
+    }
+    var payload = JSON.stringify({
+      title: title, body: body,
+      url: '/?page=skysales&sstab=sofi&phone=' + encodeURIComponent(leadPhone),
+      tag: 'sofi-evt-' + leadPhone + '-' + type
     });
     for (var i = 0; i < subs.length; i++) {
       webpush.sendNotification(subs[i].subscription, payload).catch(function () { });
