@@ -21,7 +21,7 @@ const META_TOKEN = process.env.WHATSAPP_TOKEN || '';
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'skyteam_wa_verify_2026';
 
 // Bot config
-const BOT_USERNAME = process.env.WA_BOT_USERNAME || 'yonfer';
+const BOT_USERNAME = process.env.WA_BOT_USERNAME || 'dradmin';
 const AUDIO_URL = process.env.WA_AUDIO_URL || '';
 
 // === SUPABASE HELPER ===
@@ -390,6 +390,7 @@ REGLAS CRITICAS:
 - Si despues de 3 intercambios no han agendado, ofrece la agenda directamente
 - Se calida pero con sentido de urgencia: "quedan pocos espacios", "esta semana el Doctor tiene disponibilidad"
 - Tutea siempre, tono cercano de amiga que te quiere ayudar
+- LINK DE AGENDA: https://www.skyteam.global?agenda=dradmin — si el prospecto prefiere agendar directamente, enviale este link
 
 ACCIONES ESPECIALES (incluye estas etiquetas EXACTAS):
 - Cuando el prospecto diga si a la reunion o quiera agendar: incluye [AGENDAR] al final
