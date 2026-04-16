@@ -29,10 +29,11 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Demasiadas solicitudes. Espera un momento.', reply: 'Estoy recibiendo muchas solicitudes. Por favor espera unos segundos antes de enviar otro mensaje.' });
     }
 
-    // Validate message size (max 20KB total — higher if includes images)
+    // Validate message size (max 80KB total — higher if includes images)
+    // Agent system prompts can be 6-10KB + conversation history + feedback samples
     const bodySize = JSON.stringify(body).length;
     const hasImages = (body.messages || []).some(m => Array.isArray(m.content) && m.content.some(c => c.type === 'image_url' || c.type === 'image'));
-    const maxSize = hasImages ? 2000000 : 20000; // 2MB if images, else 20KB
+    const maxSize = hasImages ? 2000000 : 80000; // 2MB if images, else 80KB
     if (bodySize > maxSize) {
       return res.status(400).json({ error: 'Mensaje demasiado largo', reply: 'El mensaje es demasiado largo. Por favor acortalo o reduce el tamaño de la imagen.' });
     }

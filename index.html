@@ -9171,30 +9171,52 @@ Sugiere agendar llamada de 20 min o enviar el link del video VSL como siguiente 
 === CÓMO DEBES TRABAJAR (FLUJO CONVERSACIONAL) ===
 NUNCA entregues contenido al primer mensaje si la solicitud es genérica (ej: "hazme un reel", "necesito contenido", "historia para prospectos").
 PROCESO OBLIGATORIO:
-1. PRIMER TURNO: recibe la solicitud y HAZ 3-5 preguntas específicas de descubrimiento. Numeradas, claras, sin saturar. Presenta opciones para que el socio elija rápido en vez de escribir todo.
-2. SEGUNDO TURNO: basado en las respuestas, entregas el contenido COMPLETO y ESTRUCTURADO.
-3. SI FALTA INFO: haz una pregunta más, solo UNA, para no frustrar al socio.
+1. PRIMER TURNO: Haz UNA sola pregunta con opciones numeradas cortas (máx 5 opciones). El usuario hace TAP, no escribe.
+2. SEGUNDO TURNO: Otra pregunta con opciones. Máximo 3 turnos de preguntas antes de entregar contenido.
+3. TERCER TURNO: Entrega el contenido COMPLETO y ESTRUCTURADO.
+
+FORMATO DE PREGUNTAS (MUY IMPORTANTE — el frontend convierte opciones en botones clickeables):
+Siempre presenta opciones como lista numerada con texto corto (max 40 caracteres por opción):
+"¿Para qué plataforma?"
+1. 📱 Reel de Instagram
+2. 🎵 TikTok
+3. 📘 Facebook
+4. 📸 Historia de Instagram
+
+NUNCA hagas preguntas abiertas. SIEMPRE da opciones para tocar. Incluye una última opción "Otro (escríbelo)" si aplica.
 
 EXCEPCIÓN: si el socio YA te dio en su primer mensaje los datos esenciales (audiencia + tono + plataforma + tema), puedes ir directo al contenido — pero siempre termina preguntando si quiere ajustar algo.
 
-=== PREGUNTAS DE DESCUBRIMIENTO (elige las 3-5 más relevantes según el tipo de contenido) ===
-- 🎯 ¿A qué público le va dirigido? (edad 18-25 / 26-35 / 36-50, país principal, profesión/situación)
-- 🎭 ¿Qué tono prefieres? Opciones:
-  • **Polémico/Viral** — afirmación fuerte, genera comentarios
-  • **Aspiracional/Lifestyle** — libertad, viajes, estilo de vida
-  • **Educativo/Profesional** — datos, tips, autoridad
-  • **Testimonial/Humano** — historia personal, transformación
-  • **Curiosidad/Intriga** — pregunta disruptiva sin vender
-- 📱 ¿Para qué plataforma? (Instagram, TikTok, Facebook — cambia duración y formato)
-- 🎨 ¿Sales en cámara o quieres contenido sin tu cara? (determina tipo de shots)
-- 🎙️ ¿Grabas con voz en off o hablas a cámara? (cambia el guion)
-- 💡 ¿Tienes resultados propios o estás empezando? (cambia el ángulo — resultados = "así lo hice"; sin resultados = "esto descubrí")
-- 📍 ¿Tienes un tema específico o lo escojo yo? (si no, propón 3 opciones del calendario de la semana)
-- ⏱️ ¿Cuánto tiempo tienes para grabar? (3 min = texto solo; 10 min = reel; 30 min = reel con producción)
+=== PREGUNTAS DE DESCUBRIMIENTO (haz UNA por turno, con opciones numeradas clickeables) ===
 
-Para BIO de Instagram: pregunta profesión actual, país, meta financiera, estilo (casual / profesional / aspiracional).
-Para DMs: pregunta si es primer contacto, tibio, o ya habló antes — cambia mucho el mensaje.
-Para ANUNCIOS: pregunta presupuesto diario, objetivo (leads, tráfico, mensajes), ubicación geográfica.
+TURNO 1 (elige según el tipo de contenido):
+"¿Para qué audiencia?"
+1. 🇨🇴 Colombia 18-35
+2. 🇲🇽 México 18-35
+3. 🌎 Latinoamérica general
+4. 🇺🇸 Hispanos en USA
+5. ✍️ Otro (escríbelo)
+
+TURNO 2:
+"¿Qué tono prefieres?"
+1. 🔥 Polémico/Viral
+2. ✨ Aspiracional/Lifestyle
+3. 📚 Educativo/Profesional
+4. 💪 Testimonial/Humano
+5. 🤔 Curiosidad/Intriga
+
+TURNO 3:
+"¿Formato de grabación?"
+1. 🎤 Hablo a cámara (cara)
+2. 🎙️ Voz en off (sin cara)
+3. 📝 Solo texto en pantalla
+4. 🎬 Mix (B-roll + voz)
+
+Después de máximo 3 preguntas, entrega el contenido completo.
+
+Para BIO: pregunta estilo (casual/profesional/aspiracional) con opciones numeradas.
+Para DMs: pregunta tipo de contacto (frío/tibio/caliente) con opciones numeradas.
+Para ANUNCIOS: pregunta objetivo (leads/tráfico/mensajes) con opciones numeradas.
 
 === FORMATO DEL CONTENIDO FINAL (MUY IMPORTANTE — organización espectacular) ===
 Cuando entregues el contenido, USA estructura clara con secciones bien marcadas:
@@ -9752,7 +9774,9 @@ function initAgentChat(id) {
   var imgBtn = document.getElementById('agente-img-btn');
   var micBtn = document.getElementById('agente-mic-btn');
   if (imgBtn) imgBtn.style.display = cfg.supportsVision ? 'inline-flex' : 'none';
-  if (micBtn) micBtn.style.display = 'inline-flex'; // Mic available for all agents
+  // Mic: only show for agents that benefit from voice (objeciones, copywriter, contenido)
+  // Hides for clean layout on agents that use mostly chips/selection
+  if (micBtn) micBtn.style.display = (id === 'objeciones' || id === 'copywriter') ? 'inline-flex' : 'none';
   // Hide preview of any previous image
   var preview = document.getElementById('agente-preview');
   if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
@@ -9948,8 +9972,9 @@ function renderAgentHistory(id) {
       var contentStr = typeof m.content === 'string' ? m.content : '';
       var feedbackUI = '';
       // Add feedback buttons only for contenido agent, on messages that contain actual content
-      // (skip if message is short like a question back to the user — hard to detect; we always show)
-      if (showFeedback && contentStr.length > 80 && !m._feedbackSent) {
+      // Skip: short msgs (questions), error/warning msgs, "demasiado largo" errors
+      var isErrorMsg = contentStr.indexOf('⚠️') === 0 || contentStr.indexOf('Error') === 0 || contentStr.indexOf('demasiado largo') !== -1 || contentStr.indexOf('No se pudo') !== -1;
+      if (showFeedback && contentStr.length > 120 && !m._feedbackSent && !isErrorMsg) {
         feedbackUI = '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:10px;">'
           + '<span style="font-size:10px;color:rgba(255,255,255,0.45);flex:1;">¿Te gustó este contenido?</span>'
           + '<button onclick="_agenteContenidoFb(' + idx + ', \'positive\')" title="Me gusta este estilo" style="background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.25);color:#25D366;border-radius:8px;padding:5px 10px;font-size:14px;cursor:pointer;transition:all 0.2s;">👍</button>'
@@ -9965,6 +9990,40 @@ function renderAgentHistory(id) {
         + '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + cfg.icon + '</div>'
         + '<div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:0 14px 14px 14px;padding:12px 16px;max-width:80%;font-size:14px;color:#F0EDE6;line-height:1.6;white-space:pre-wrap;">' + _fmtMd(contentStr) + feedbackUI + '</div>'
         + '</div>';
+
+      // SMART CHIPS: parse last assistant message for selectable options
+      // Renders clickable pills for numbered options, bullet points with bold, or • items
+      if (idx === agentHistory[id].length - 1 && !isErrorMsg) {
+        var optChips = [];
+        var lines = contentStr.split('\n');
+        lines.forEach(function(line) {
+          var trimmed = line.trim();
+          // Match: "1. Option text" or "1) Option text"
+          var numMatch = trimmed.match(/^\d+[\.\)]\s*(.+)/);
+          // Match: "• **Bold** — rest" or "- **Bold** rest"
+          var bulletMatch = trimmed.match(/^[\•\-\*]\s*\*?\*?([^*\n]{2,40})\*?\*?\s*[\—\-]?\s*(.*)/);
+          // Match: "🎯 **Bold text**" (emoji + bold = option)
+          var emojiOptMatch = trimmed.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+)\s*\*?\*?([^*\n]{2,35})\*?\*?\s*[\—\-]?\s*(.*)/u);
+          if (numMatch && numMatch[1].length < 60) {
+            var label = numMatch[1].replace(/\*\*/g, '').trim();
+            if (label.indexOf('?') === -1 && label.length > 2) optChips.push(label);
+          } else if (emojiOptMatch && emojiOptMatch[2].length > 2) {
+            optChips.push((emojiOptMatch[1] + ' ' + emojiOptMatch[2]).replace(/\*\*/g, '').trim());
+          } else if (bulletMatch && bulletMatch[1].length > 2 && bulletMatch[1].length < 45) {
+            optChips.push(bulletMatch[1].replace(/\*\*/g, '').trim());
+          }
+        });
+        // Dedupe and limit to 8 chips
+        var seen = {};
+        optChips = optChips.filter(function(c) { if (seen[c]) return false; seen[c] = true; return true; }).slice(0, 8);
+        if (optChips.length >= 2) {
+          html += '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 2px 44px;">';
+          optChips.forEach(function(chip) {
+            html += '<button onclick="_agenteChipClick(this)" data-chip="' + chip.replace(/"/g, '&quot;') + '" style="background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.22);color:#E8D48B;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.2s;white-space:nowrap;">' + chip + '</button>';
+          });
+          html += '</div>';
+        }
+      }
     }
   });
   msgs.innerHTML = html;
