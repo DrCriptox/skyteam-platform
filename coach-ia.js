@@ -806,6 +806,21 @@ function renderToolView(toolId) {
     case 'crm_autoseg':
       html += renderToolCrmAutoseg();
       break;
+    case 'roleplay':
+      html += renderToolRoleplay();
+      break;
+    case 'plan':
+      html += renderToolPlan();
+      break;
+    case 'desafios':
+      html += renderToolDesafios();
+      break;
+    case 'voz':
+      html += renderToolVoz();
+      break;
+    case 'seguimiento':
+      html += renderToolSeguimiento();
+      break;
     default:
       html += renderToolPlaceholder(toolId);
       break;
@@ -1311,6 +1326,417 @@ function copyCoachScript(btn) {
     document.body.removeChild(ta);
     setTimeout(function() { btn.textContent = 'Copiar al portapapeles'; }, 2000);
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL: DESAFÍOS DIARIOS
+// ═══════════════════════════════════════════════════════════════
+
+var DESAFIOS_POOL = [
+  {icon:'\uD83D\uDCDE',title:'Contacta 3 prospectos nuevos',desc:'Abre 3 conversaciones nuevas hoy con personas que no has contactado.',dif:'Facil'},
+  {icon:'\uD83D\uDD25',title:'Seguimiento a todos tus calientes',desc:'Contacta a cada prospecto con +70% de temperatura.',dif:'Medio'},
+  {icon:'\uD83C\uDFAF',title:'Cierra 1 venta hoy',desc:'Enfocate en tu prospecto mas caliente y llega al cierre.',dif:'Dificil'},
+  {icon:'\uD83D\uDCDD',title:'Agrega notas a 5 prospectos',desc:'Documenta en que etapa esta cada uno y que hablaron.',dif:'Facil'},
+  {icon:'\uD83E\uDD1D',title:'Pide 2 referidos',desc:'Contacta clientes o socios y pideles que te refieran a alguien.',dif:'Medio'},
+  {icon:'\uD83D\uDCCA',title:'Haz 2 presentaciones del negocio',desc:'Presenta la oportunidad a 2 personas hoy.',dif:'Medio'},
+  {icon:'\uD83D\uDCAC',title:'Practica tu pitch 3 veces',desc:'Usa la herramienta de Voz para grabar y mejorar tu discurso.',dif:'Facil'},
+  {icon:'\uD83D\uDCF1',title:'Envia 5 mensajes de seguimiento',desc:'Reabre conversaciones con prospectos tibios.',dif:'Medio'},
+  {icon:'\uD83C\uDF1F',title:'Publica 1 historia en Instagram',desc:'Comparte un testimonio, resultado o contenido de valor.',dif:'Facil'},
+  {icon:'\uD83D\uDCC5',title:'Agenda 2 reuniones esta semana',desc:'Invita prospectos calientes a una llamada o videollamada.',dif:'Medio'},
+  {icon:'\uD83D\uDCA1',title:'Aprende 1 leccion de la academia',desc:'Completa un video de capacitacion en Sky TV.',dif:'Facil'},
+  {icon:'\uD83D\uDE80',title:'Invita a 1 persona a un evento',desc:'Comparte el link de tu proximo Sky Event.',dif:'Medio'},
+  {icon:'\uD83C\uDFC6',title:'Logra que 1 prospecto diga SI',desc:'Obtén un compromiso verbal de presentacion o compra.',dif:'Dificil'},
+  {icon:'\uD83D\uDCB0',title:'Calcula el ROI para 3 prospectos',desc:'Preparales numeros personalizados de cuanto pueden ganar.',dif:'Medio'},
+  {icon:'\uD83E\uDDD8',title:'Mentalidad: escribe 3 metas del mes',desc:'Define metas claras de ventas, equipo e ingresos.',dif:'Facil'}
+];
+
+function _getDesafiosState() {
+  try { return JSON.parse(localStorage.getItem('coach_desafios') || '{}'); } catch(e) { return {}; }
+}
+function _saveDesafiosState(s) {
+  try { localStorage.setItem('coach_desafios', JSON.stringify(s)); } catch(e) {}
+}
+
+function renderToolDesafios() {
+  var state = _getDesafiosState();
+  var today = new Date().toISOString().slice(0,10);
+  var dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  var desafio = DESAFIOS_POOL[dayOfYear % DESAFIOS_POOL.length];
+  var doneToday = (state.completedDates || []).indexOf(today) !== -1;
+  var streak = state.currentStreak || 0;
+  var best = state.bestStreak || 0;
+  var difColor = desafio.dif === 'Facil' ? '#1D9E75' : desafio.dif === 'Medio' ? '#C9A84C' : '#E24B4A';
+
+  // Week view
+  var weekHtml = '';
+  for (var wi = 6; wi >= 0; wi--) {
+    var wd = new Date(); wd.setDate(wd.getDate() - wi);
+    var wds = wd.toISOString().slice(0,10);
+    var done = (state.completedDates || []).indexOf(wds) !== -1;
+    var isToday = wds === today;
+    var dayNames = ['D','L','M','M','J','V','S'];
+    weekHtml += '<div style="text-align:center;"><div style="font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:4px;">' + dayNames[wd.getDay()] + '</div>'
+      + '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;'
+      + (done ? 'background:rgba(29,158,117,0.2);border:1.5px solid #1D9E75;color:#1D9E75;' : isToday ? 'background:rgba(201,168,76,0.15);border:1.5px solid rgba(201,168,76,0.4);color:#C9A84C;' : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.2);')
+      + '">' + (done ? '\u2705' : isToday ? '\u2B50' : '') + '</div></div>';
+  }
+
+  var html = '<div class="coach-toolview-card">';
+  // Streak header
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
+  html += '<div><span style="font-size:22px;">\uD83D\uDD25</span> <span style="font-size:16px;font-weight:900;color:#C9A84C;">Racha: ' + streak + ' d\u00edas</span></div>';
+  html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);">Mejor: ' + best + ' d\u00edas</div>';
+  html += '</div>';
+  // Week
+  html += '<div style="display:flex;justify-content:space-between;gap:4px;margin-bottom:16px;">' + weekHtml + '</div>';
+  // Today's challenge
+  html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;text-align:center;">';
+  html += '<div style="font-size:36px;margin-bottom:8px;">' + desafio.icon + '</div>';
+  html += '<div style="font-size:15px;font-weight:900;color:#F0EDE6;margin-bottom:4px;">' + desafio.title + '</div>';
+  html += '<span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:800;color:' + difColor + ';background:' + difColor + '20;border:1px solid ' + difColor + '40;margin-bottom:8px;">' + desafio.dif + '</span>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.5;">' + desafio.desc + '</div>';
+  if (doneToday) {
+    html += '<div style="margin-top:14px;padding:10px;background:rgba(29,158,117,0.1);border-radius:10px;color:#1D9E75;font-size:13px;font-weight:800;">\u2705 \u00a1Completado hoy!</div>';
+  } else {
+    html += '<div style="display:flex;gap:8px;margin-top:14px;">';
+    html += '<button onclick="coachCompleteDesafio()" class="coach-task-btn" style="flex:1;padding:10px;font-size:13px;">\u2705 Completado</button>';
+    html += '<button onclick="coachSkipDesafio()" class="coach-task-btn coach-task-btn-secondary" style="padding:10px;font-size:13px;">\u23ED Saltar</button>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function coachCompleteDesafio() {
+  var state = _getDesafiosState();
+  var today = new Date().toISOString().slice(0,10);
+  if (!state.completedDates) state.completedDates = [];
+  if (state.completedDates.indexOf(today) !== -1) return;
+  state.completedDates.push(today);
+  // Streak logic
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  var yStr = yesterday.toISOString().slice(0,10);
+  if (state.lastDate === yStr || !state.lastDate) {
+    state.currentStreak = (state.currentStreak || 0) + 1;
+  } else if (state.lastDate !== today) {
+    state.currentStreak = 1;
+  }
+  state.lastDate = today;
+  if (state.currentStreak > (state.bestStreak || 0)) state.bestStreak = state.currentStreak;
+  // Keep only last 30 days
+  if (state.completedDates.length > 30) state.completedDates = state.completedDates.slice(-30);
+  _saveDesafiosState(state);
+  if (typeof showToast === 'function') showToast('\uD83C\uDFC6 \u00a1Desaf\u00edo completado! Racha: ' + state.currentStreak + ' d\u00edas');
+  openCoachTool('desafios');
+}
+
+function coachSkipDesafio() {
+  if (typeof showToast === 'function') showToast('\u23ED Desaf\u00edo saltado. \u00a1Ma\u00f1ana hay uno nuevo!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL: SEGUIMIENTO (Follow-up Dashboard)
+// ═══════════════════════════════════════════════════════════════
+
+function renderToolSeguimiento() {
+  var pros = (window.crmProspectos || []).filter(function(p) {
+    return p && p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido';
+  });
+  var now = Date.now();
+  var urgente = [], pendiente = [], alDia = [], proxCierre = [];
+  pros.forEach(function(p) {
+    var lastContact = p.updated_at ? new Date(p.updated_at).getTime() : 0;
+    var daysSince = Math.floor((now - lastContact) / 86400000);
+    p._daysSince = daysSince;
+    if (daysSince >= 7) urgente.push(p);
+    else if (daysSince >= 3) pendiente.push(p);
+    else alDia.push(p);
+    if (p.fecha_cierre_estimada) {
+      var cd = new Date(p.fecha_cierre_estimada).getTime();
+      if (cd > now && cd < now + 7 * 86400000) proxCierre.push(p);
+    }
+  });
+  urgente.sort(function(a,b) { return b._daysSince - a._daysSince; });
+  pendiente.sort(function(a,b) { return b._daysSince - a._daysSince; });
+
+  var html = '<div class="coach-toolview-card">';
+  // Stats header
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">';
+  html += '<div style="text-align:center;padding:10px;background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.2);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#E24B4A;">' + urgente.length + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);">Urgentes 7d+</div></div>';
+  html += '<div style="text-align:center;padding:10px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#C9A84C;">' + pendiente.length + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);">Pendientes 3-6d</div></div>';
+  html += '<div style="text-align:center;padding:10px;background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.2);border-radius:10px;"><div style="font-size:20px;font-weight:900;color:#1D9E75;">' + alDia.length + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);">Al d\u00eda</div></div>';
+  html += '</div>';
+
+  function _renderProspectRow(p, color) {
+    var phone = (p.telefono || '').replace(/[^0-9]/g, '');
+    var nombre = (p.nombre || 'Prospecto').split(' ')[0];
+    var row = '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.02);border-left:3px solid ' + color + ';border-radius:6px;margin-bottom:6px;">';
+    row += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:800;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _safe(p.nombre || 'Prospecto') + '</div>';
+    row += '<div style="font-size:10px;color:rgba(255,255,255,0.35);">' + p._daysSince + 'd sin contacto \u00b7 ' + (p.etapa || 'nuevo') + '</div></div>';
+    row += '<div style="display:flex;gap:4px;flex-shrink:0;">';
+    if (phone) row += '<a href="https://wa.me/' + phone + '" target="_blank" style="width:30px;height:30px;border-radius:8px;background:rgba(37,211,102,0.15);border:1px solid rgba(37,211,102,0.3);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;" title="WhatsApp">\uD83D\uDCAC</a>';
+    row += '<button onclick="openCoachTool(\'crm_message\')" style="width:30px;height:30px;border-radius:8px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#C9A84C;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Mensaje IA">\uD83E\uDD16</button>';
+    row += '</div></div>';
+    return row;
+  }
+
+  // Urgentes
+  if (urgente.length) {
+    html += '<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:800;color:#E24B4A;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">\uD83D\uDD34 Urgente (7+ d\u00edas)</div>';
+    urgente.slice(0, 8).forEach(function(p) { html += _renderProspectRow(p, '#E24B4A'); });
+    html += '</div>';
+  }
+  // Pendientes
+  if (pendiente.length) {
+    html += '<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:800;color:#C9A84C;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">\uD83D\uDFE1 Pendiente (3-6 d\u00edas)</div>';
+    pendiente.slice(0, 8).forEach(function(p) { html += _renderProspectRow(p, '#C9A84C'); });
+    html += '</div>';
+  }
+  // Próximos cierres
+  if (proxCierre.length) {
+    html += '<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:800;color:#7F77DD;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">\uD83D\uDCC5 Pr\u00f3ximos cierres</div>';
+    proxCierre.slice(0, 5).forEach(function(p) { html += _renderProspectRow(p, '#7F77DD'); });
+    html += '</div>';
+  }
+  // Empty state
+  if (!urgente.length && !pendiente.length && !proxCierre.length) {
+    html += '<div style="text-align:center;padding:20px;"><div style="font-size:36px;margin-bottom:8px;">\u2705</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:#1D9E75;">Todos tus prospectos est\u00e1n al d\u00eda</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;">Sigue as\u00ed. Revisa de nuevo ma\u00f1ana.</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL: PLAN SEMANAL
+// ═══════════════════════════════════════════════════════════════
+
+function renderToolPlan() {
+  var pros = (window.crmProspectos || []).filter(function(p) { return p && p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; });
+  var hot = pros.filter(function(p) { return (p.temperatura || 0) >= 70; }).length;
+  var total = pros.length;
+  var won = (window.crmProspectos || []).filter(function(p) { return p && p.etapa === 'cerrado_ganado'; }).length;
+  var rate = total > 0 ? Math.round(won / Math.max(1, total) * 100) : 0;
+
+  var html = '<div class="coach-toolview-card">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">';
+  html += '<div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;"><div style="font-size:18px;font-weight:900;color:#C9A84C;">' + total + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);">Activos</div></div>';
+  html += '<div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;"><div style="font-size:18px;font-weight:900;color:#E24B4A;">' + hot + '</div><div style="font-size:9px;color:rgba(255,255,255,0.4);">Calientes</div></div>';
+  html += '<div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;"><div style="font-size:18px;font-weight:900;color:#1D9E75;">' + rate + '%</div><div style="font-size:9px;color:rgba(255,255,255,0.4);">Cierre</div></div>';
+  html += '</div>';
+  html += '<button onclick="coachGeneratePlan()" class="coach-task-btn" style="width:100%;padding:12px;font-size:14px;margin-bottom:10px;">\uD83D\uDCCB Generar Plan Semanal</button>';
+  html += '<div id="coach-plan-output"></div>';
+  html += '</div>';
+  return html;
+}
+
+function coachGeneratePlan() {
+  var output = document.getElementById('coach-plan-output');
+  if (!output) return;
+  output.innerHTML = '<div style="text-align:center;padding:16px;"><div class="coach-chat-typing">Generando tu plan...</div></div>';
+  var pros = (window.crmProspectos || []).filter(function(p) { return p && p.etapa !== 'cerrado_ganado' && p.etapa !== 'cerrado_perdido'; });
+  var now = Date.now();
+  var hotNames = pros.filter(function(p) { return (p.temperatura||0) >= 70; }).slice(0,5).map(function(p) { return (p.nombre||'').split(' ')[0] + ' (' + (p.etapa||'nuevo') + ', ' + (p.temperatura||0) + '%)'; }).join(', ');
+  var coldNames = pros.filter(function(p) { var d = p.updated_at ? Math.floor((now-new Date(p.updated_at).getTime())/86400000) : 99; return d >= 3; }).slice(0,5).map(function(p) { return (p.nombre||'').split(' ')[0]; }).join(', ');
+  var bookings = (window.agendaBookings || []).filter(function(b) { return b.fechaISO && new Date(b.fechaISO).getTime() > now && b.status !== 'cancelada'; }).length;
+  var rank = window.CU ? (window.CU.rank || 0) : 0;
+  var ctx = 'DATOS: ' + pros.length + ' prospectos activos. Calientes: ' + hotNames + '. Frios (3d+ sin contacto): ' + coldNames + '. Citas esta semana: ' + bookings + '. Rango: ' + rank + '.';
+  var sysPrompt = 'Eres un coach de ventas y network marketing. Genera un plan semanal concreto (Lunes a Viernes) con 2-3 acciones por dia. USA LOS NOMBRES REALES de los prospectos. Prioriza: calientes primero, frios para reactivar, nuevas prospecciones. Formato: DIA: acciones. Maximo 350 palabras. En espanol.';
+  var fetchFn = typeof _skyFetch === 'function' ? _skyFetch : fetch;
+  fetchFn('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:sysPrompt, max_tokens:500, messages:[{role:'user',content:ctx}] }) })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var text = (d.content && d.content[0]) ? d.content[0].text : (d.reply || 'No se pudo generar el plan.');
+    output.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;">' + _safe(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>') + '</div>'
+      + '<button onclick="var t=this.parentElement.querySelector(\'div\');if(t)navigator.clipboard.writeText(t.textContent);if(typeof showToast===\'function\')showToast(\'\u2705 Plan copiado\')" class="coach-task-btn coach-task-btn-secondary" style="margin-top:8px;font-size:11px;width:100%;">\uD83D\uDCCB Copiar Plan</button>';
+  }).catch(function() { output.innerHTML = '<div style="color:#E24B4A;font-size:12px;">Error al generar. Intenta de nuevo.</div>'; });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL: VOZ (Pitch Training)
+// ═══════════════════════════════════════════════════════════════
+
+function renderToolVoz() {
+  var html = '<div class="coach-toolview-card">';
+  html += '<div style="text-align:center;margin-bottom:14px;">';
+  html += '<div style="font-size:32px;margin-bottom:6px;">\uD83C\uDFA4</div>';
+  html += '<div style="font-size:14px;font-weight:800;color:#F0EDE6;margin-bottom:4px;">Entrena tu pitch de venta</div>';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5;">Habla como si estuvieras frente a un prospecto real. La IA analizar\u00e1 tu estructura, claridad y persuasi\u00f3n.</div>';
+  html += '</div>';
+  // Record button
+  html += '<div style="text-align:center;margin-bottom:14px;">';
+  html += '<button id="coach-pitch-rec-btn" onclick="coachStartPitchRec()" style="width:70px;height:70px;border-radius:50%;border:3px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#C9A84C;font-size:28px;cursor:pointer;transition:all 0.3s;">\uD83C\uDFA4</button>';
+  html += '<div id="coach-pitch-status" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;">Toca para grabar</div>';
+  html += '</div>';
+  // Transcript
+  html += '<textarea id="coach-pitch-textarea" placeholder="Tu transcripci\u00f3n aparecer\u00e1 aqu\u00ed. Tambi\u00e9n puedes escribir/pegar tu pitch." style="width:100%;min-height:80px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px;resize:vertical;font-family:Outfit,Nunito,sans-serif;outline:none;box-sizing:border-box;"></textarea>';
+  html += '<button onclick="coachAnalyzePitch()" class="coach-task-btn" style="width:100%;padding:12px;font-size:14px;margin-top:8px;">\uD83E\uDD16 Analizar mi Pitch</button>';
+  html += '<div id="coach-voz-feedback" style="margin-top:10px;"></div>';
+  html += '</div>';
+  return html;
+}
+
+var _coachPitchRec = null;
+var _coachPitchRecording = false;
+function coachStartPitchRec() {
+  var btn = document.getElementById('coach-pitch-rec-btn');
+  var status = document.getElementById('coach-pitch-status');
+  var ta = document.getElementById('coach-pitch-textarea');
+  if (_coachPitchRecording && _coachPitchRec) {
+    _coachPitchRec.stop(); _coachPitchRecording = false;
+    if (btn) { btn.style.borderColor = 'rgba(201,168,76,0.4)'; btn.style.background = 'rgba(201,168,76,0.1)'; }
+    if (status) status.textContent = 'Transcripci\u00f3n lista. Puedes editarla antes de analizar.';
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { if (status) status.textContent = 'Tu navegador no soporta grabaci\u00f3n por voz.'; return; }
+  _coachPitchRec = new SR();
+  _coachPitchRec.lang = 'es-MX'; _coachPitchRec.continuous = true; _coachPitchRec.interimResults = true;
+  var finalTx = ta ? (ta.value || '') : '';
+  _coachPitchRec.onresult = function(e) {
+    var interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTx += (finalTx ? ' ' : '') + e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (ta) ta.value = (finalTx + (interim ? ' ' + interim : '')).trim();
+  };
+  _coachPitchRec.onend = function() {
+    if (_coachPitchRecording) { try { _coachPitchRec.start(); } catch(e) { _coachPitchRecording = false; } }
+  };
+  _coachPitchRec.onerror = function(e) { if (e.error !== 'no-speech') console.warn('pitch rec error', e.error); };
+  _coachPitchRec.start(); _coachPitchRecording = true;
+  if (btn) { btn.style.borderColor = '#E24B4A'; btn.style.background = 'rgba(226,75,74,0.2)'; }
+  if (status) status.textContent = 'Grabando... toca de nuevo para detener.';
+}
+
+function coachAnalyzePitch() {
+  var ta = document.getElementById('coach-pitch-textarea');
+  var output = document.getElementById('coach-voz-feedback');
+  if (!ta || !output) return;
+  var transcript = (ta.value || '').trim();
+  if (!transcript || transcript.length < 20) { if (typeof showToast === 'function') showToast('Graba o escribe tu pitch primero (m\u00ednimo 20 caracteres)','error'); return; }
+  output.innerHTML = '<div style="text-align:center;padding:12px;"><div class="coach-chat-typing">Analizando tu pitch...</div></div>';
+  var sysPrompt = 'Eres un coach de ventas. Analiza este pitch y da feedback en: 1) ESTRUCTURA (apertura, problema, solucion, cierre) 1-5, 2) CLARIDAD 1-5, 3) PERSUASION 1-5, 4) NATURALIDAD 1-5. Da 2 mejoras concretas. Maximo 200 palabras. Espanol.';
+  var fetchFn = typeof _skyFetch === 'function' ? _skyFetch : fetch;
+  fetchFn('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:sysPrompt, max_tokens:350, messages:[{role:'user',content:'Mi pitch: ' + transcript}] }) })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var text = (d.content && d.content[0]) ? d.content[0].text : (d.reply || 'No se pudo analizar.');
+    output.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px;">' + _safe(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>') + '</div>';
+  }).catch(function() { output.innerHTML = '<div style="color:#E24B4A;font-size:12px;">Error al analizar. Intenta de nuevo.</div>'; });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL: ROLEPLAY (Sales Practice)
+// ═══════════════════════════════════════════════════════════════
+
+var ROLEPLAY_PERSONAS = [
+  {id:'esceptico',label:'\uD83E\uDD14 Esc\u00e9ptico',prompt:'Eres un prospecto MUY ESCEPTICO. Crees que todo es estafa y piramide. Haz preguntas duras, pide pruebas. No te dejes convencer facil. 2-3 oraciones por mensaje. Espanol.'},
+  {id:'ocupado',label:'\u23F0 Ocupado',prompt:'Eres un prospecto que NO TIENE TIEMPO. Trabajas mucho, tienes familia. Cualquier cosa extra te parece imposible. Responde corto, con prisa. 1-2 oraciones. Espanol.'},
+  {id:'sindinero',label:'\uD83D\uDCB8 Sin dinero',prompt:'Eres un prospecto que QUIERE pero dice NO TENER DINERO. Te interesa pero el precio te asusta. Pregunta por planes de pago, descuentos. 2 oraciones. Espanol.'},
+  {id:'otroneg',label:'\uD83C\uDFE2 Ya en otro negocio',prompt:'Eres un prospecto que YA ESTA EN OTRO negocio de network marketing. Comparas todo, crees que el tuyo es mejor. Eres competitivo. 2 oraciones. Espanol.'},
+  {id:'indeciso',label:'\uD83E\uDD37 Indeciso',prompt:'Eres un prospecto INTERESADO pero INDECISO. Te gusta pero necesitas pensarlo, hablar con tu pareja, ver mas testimonios. Siempre dices "dejame pensarlo". 2 oraciones. Espanol.'}
+];
+
+function renderToolRoleplay() {
+  var active = coachState._roleplayMsgs && coachState._roleplayMsgs.length > 0;
+  var html = '<div class="coach-toolview-card">';
+  if (!active) {
+    html += '<div style="text-align:center;margin-bottom:14px;"><div style="font-size:32px;margin-bottom:6px;">\uD83C\uDFAD</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:#F0EDE6;">Practica ventas con IA</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;">La IA simula un prospecto. T\u00fa practicas responder.</div></div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px;">Elige el tipo de prospecto:</div>';
+    ROLEPLAY_PERSONAS.forEach(function(p) {
+      html += '<button onclick="coachStartRoleplay(\'' + p.id + '\')" style="display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;transition:all 0.15s;">' + p.label + '</button>';
+    });
+  } else {
+    // Active roleplay
+    html += '<div style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">\uD83C\uDFAD Roleplay en curso (' + Math.floor(coachState._roleplayMsgs.length/2) + '/5 turnos)</div>';
+    html += '<div id="coach-roleplay-chat" style="max-height:250px;overflow-y:auto;margin-bottom:10px;">';
+    coachState._roleplayMsgs.forEach(function(m) {
+      if (m.role === 'user') {
+        html += '<div style="text-align:right;margin-bottom:6px;"><span style="display:inline-block;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);border-radius:12px 0 12px 12px;padding:8px 12px;font-size:12px;color:#F0EDE6;max-width:80%;text-align:left;">' + _safe(m.content) + '</span></div>';
+      } else {
+        html += '<div style="margin-bottom:6px;"><span style="display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:0 12px 12px 12px;padding:8px 12px;font-size:12px;color:#F0EDE6;max-width:80%;">\uD83D\uDE10 ' + _safe(m.content) + '</span></div>';
+      }
+    });
+    html += '</div>';
+    html += '<div id="coach-roleplay-typing" style="display:none;margin-bottom:8px;"><div class="coach-chat-typing">Prospecto pensando...</div></div>';
+    html += '<div style="display:flex;gap:6px;margin-bottom:8px;">';
+    html += '<input id="coach-roleplay-input" type="text" placeholder="Tu respuesta..." style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#F0EDE6;font-size:13px;padding:10px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeypress="if(event.key===\'Enter\')coachRoleplayReply()">';
+    html += '<button onclick="coachRoleplayReply()" style="padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;font-weight:900;font-size:13px;cursor:pointer;">\u27A1</button>';
+    html += '</div>';
+    html += '<button onclick="coachRoleplayEnd()" class="coach-task-btn coach-task-btn-secondary" style="width:100%;font-size:11px;">\uD83D\uDCCA Terminar y recibir feedback</button>';
+    html += '<div id="coach-roleplay-feedback" style="margin-top:10px;"></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function coachStartRoleplay(personaId) {
+  var persona = ROLEPLAY_PERSONAS.find(function(p) { return p.id === personaId; });
+  if (!persona) return;
+  coachState._roleplaySysPrompt = persona.prompt;
+  coachState._roleplayMsgs = [];
+  coachState._roleplayPersona = persona.label;
+  // AI sends first message
+  var fetchFn = typeof _skyFetch === 'function' ? _skyFetch : fetch;
+  fetchFn('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:persona.prompt, max_tokens:150, messages:[{role:'user',content:'[El socio acaba de contactarte por WhatsApp. Envia tu primer mensaje como prospecto. Solo el mensaje, sin explicacion.]'}] }) })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var text = (d.content && d.content[0]) ? d.content[0].text : (d.reply || 'Hola, me hablaron de un negocio. De que se trata?');
+    coachState._roleplayMsgs.push({role:'assistant',content:text});
+    openCoachTool('roleplay');
+  }).catch(function() {
+    coachState._roleplayMsgs.push({role:'assistant',content:'Hola, alguien me paso tu contacto. De que se trata esto?'});
+    openCoachTool('roleplay');
+  });
+}
+
+function coachRoleplayReply() {
+  var input = document.getElementById('coach-roleplay-input');
+  if (!input) return;
+  var text = (input.value || '').trim();
+  if (!text) return;
+  input.value = '';
+  coachState._roleplayMsgs.push({role:'user',content:text});
+  // Check turn limit
+  var turns = Math.floor(coachState._roleplayMsgs.length / 2);
+  if (turns >= 5) { coachRoleplayEnd(); return; }
+  openCoachTool('roleplay');
+  var typing = document.getElementById('coach-roleplay-typing');
+  if (typing) typing.style.display = 'block';
+  var fetchFn = typeof _skyFetch === 'function' ? _skyFetch : fetch;
+  fetchFn('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:coachState._roleplaySysPrompt, max_tokens:150, messages:coachState._roleplayMsgs.slice(-8) }) })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var reply = (d.content && d.content[0]) ? d.content[0].text : (d.reply || 'Hmm, no se...');
+    coachState._roleplayMsgs.push({role:'assistant',content:reply});
+    openCoachTool('roleplay');
+  }).catch(function() {
+    coachState._roleplayMsgs.push({role:'assistant',content:'Dejame pensarlo...'});
+    openCoachTool('roleplay');
+  });
+}
+
+function coachRoleplayEnd() {
+  if (!coachState._roleplayMsgs || coachState._roleplayMsgs.length < 2) return;
+  var feedback = document.getElementById('coach-roleplay-feedback');
+  var transcript = coachState._roleplayMsgs.map(function(m){return (m.role==='user'?'SOCIO':'PROSPECTO')+': '+m.content;}).join('\n');
+  if (feedback) feedback.innerHTML = '<div style="text-align:center;padding:12px;"><div class="coach-chat-typing">Evaluando tu desempe\u00f1o...</div></div>';
+  else { openCoachTool('roleplay'); return; }
+  var sysPrompt = 'Eres un coach de ventas. Evalua esta conversacion de roleplay. Puntua 1-5 en: APERTURA, MANEJO DE OBJECIONES, EMPATIA, INTENTO DE CIERRE. Da 1 tip concreto por area. Maximo 200 palabras. Espanol.';
+  var fetchFn = typeof _skyFetch === 'function' ? _skyFetch : fetch;
+  fetchFn('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:sysPrompt, max_tokens:350, messages:[{role:'user',content:transcript}] }) })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    var text = (d.content && d.content[0]) ? d.content[0].text : (d.reply || 'No se pudo evaluar.');
+    feedback.innerHTML = '<div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap;background:rgba(127,119,221,0.08);border:1px solid rgba(127,119,221,0.2);border-radius:10px;padding:14px;">' + _safe(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>') + '</div>'
+      + '<button onclick="coachState._roleplayMsgs=null;openCoachTool(\'roleplay\')" class="coach-task-btn" style="width:100%;margin-top:8px;font-size:12px;">\uD83D\uDD04 Nueva pr\u00e1ctica</button>';
+  }).catch(function() { feedback.innerHTML = '<div style="color:#E24B4A;font-size:12px;">Error al evaluar.</div>'; });
 }
 
 
@@ -2512,5 +2938,15 @@ window.toggleCoachVoice = toggleVoice;
 window.requestCoachScript = requestCoachScript;
 window.generateCoachScript = generateCoachScript;
 window.copyCoachScript = copyCoachScript;
+
+// New tools
+window.coachCompleteDesafio = coachCompleteDesafio;
+window.coachSkipDesafio = coachSkipDesafio;
+window.coachGeneratePlan = coachGeneratePlan;
+window.coachStartPitchRec = coachStartPitchRec;
+window.coachAnalyzePitch = coachAnalyzePitch;
+window.coachStartRoleplay = coachStartRoleplay;
+window.coachRoleplayReply = coachRoleplayReply;
+window.coachRoleplayEnd = coachRoleplayEnd;
 
 })();
