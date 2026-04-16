@@ -684,9 +684,13 @@ async function handleTriggers(req, res) {
 
     // ✅✅ TRIGGER WA: WhatsApp Bot Follow-ups (2h, 24h, 48h) ✅✅
     try {
+      const WA_PROVIDER = process.env.WA_PROVIDER || 'twilio';
+      const TW_SID = process.env.TWILIO_ACCOUNT_SID;
+      const TW_TK = process.env.TWILIO_AUTH_TOKEN;
+      const TW_FROM = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
       const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
       const WA_TK = process.env.WHATSAPP_TOKEN;
-      if (WA_PHONE_ID && WA_TK) {
+      if ((WA_PROVIDER === 'twilio' && TW_SID && TW_TK) || (WA_PHONE_ID && WA_TK)) {
         const twoHoursAgo = new Date(now.getTime() - 2 * 3600000).toISOString();
         const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000).toISOString();
         const fortyEightHoursAgo = new Date(now.getTime() - 48 * 3600000).toISOString();
@@ -702,8 +706,8 @@ async function handleTriggers(req, res) {
 
         if (waLeads && waLeads.length > 0) {
           const followupMessages = [
-            function(name) { return 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
-            function(name) { return 'Hey ' + (name || '') + ', guarde un espacio especial para ti esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
+            function(name, etapa) { return etapa === 'esperando_video' ? 'Hola ' + (name || '') + '! Pudiste ver el video de la franquicia digital? 🎬 Te lo dejo aqui por si no lo encuentras: https://skyteam.global/landing?ref=dradmin Cuentame que te parecio!' : 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
+            function(name) { return 'Hey ' + (name || '') + ', el Doctor Rojas tiene unos espacios esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
             function(name) { return (name || 'Hola') + ', solo queria dejarte saber que estamos aqui si en algun momento te interesa. Te deseo mucho exito! ✨'; }
           ];
 
@@ -721,14 +725,28 @@ async function handleTriggers(req, res) {
               // Only send during reasonable hours (8am - 8pm Colombia)
               if (cHour < 8 || cHour > 20) continue;
 
-              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '');
+              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '', lead.etapa);
               try {
-                const waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
-                  body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
-                });
-                const waData = await waR.json();
+                let waR, waData;
+                if (WA_PROVIDER === 'twilio') {
+                  const params = new URLSearchParams();
+                  params.append('To', 'whatsapp:+' + lead.phone);
+                  params.append('From', TW_FROM);
+                  params.append('Body', msgText);
+                  waR = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + TW_SID + '/Messages.json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + Buffer.from(TW_SID + ':' + TW_TK).toString('base64') },
+                    body: params.toString()
+                  });
+                  waData = await waR.json();
+                } else {
+                  waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
+                    body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
+                  });
+                  waData = await waR.json();
+                }
                 if (waR.ok) {
                   // Update stage
                   await sb('wa_leads?phone=eq.' + encodeURIComponent(lead.phone), {
@@ -1422,9 +1440,13 @@ export default async function handler(req, res) {
 
     // ✅✅ TRIGGER WA: WhatsApp Bot Follow-ups (2h, 24h, 48h) ✅✅
     try {
+      const WA_PROVIDER = process.env.WA_PROVIDER || 'twilio';
+      const TW_SID = process.env.TWILIO_ACCOUNT_SID;
+      const TW_TK = process.env.TWILIO_AUTH_TOKEN;
+      const TW_FROM = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
       const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
       const WA_TK = process.env.WHATSAPP_TOKEN;
-      if (WA_PHONE_ID && WA_TK) {
+      if ((WA_PROVIDER === 'twilio' && TW_SID && TW_TK) || (WA_PHONE_ID && WA_TK)) {
         const twoHoursAgo = new Date(now.getTime() - 2 * 3600000).toISOString();
         const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000).toISOString();
         const fortyEightHoursAgo = new Date(now.getTime() - 48 * 3600000).toISOString();
@@ -1440,8 +1462,8 @@ export default async function handler(req, res) {
 
         if (waLeads && waLeads.length > 0) {
           const followupMessages = [
-            function(name) { return 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
-            function(name) { return 'Hey ' + (name || '') + ', guarde un espacio especial para ti esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
+            function(name, etapa) { return etapa === 'esperando_video' ? 'Hola ' + (name || '') + '! Pudiste ver el video de la franquicia digital? 🎬 Te lo dejo aqui por si no lo encuentras: https://skyteam.global/landing?ref=dradmin Cuentame que te parecio!' : 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
+            function(name) { return 'Hey ' + (name || '') + ', el Doctor Rojas tiene unos espacios esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
             function(name) { return (name || 'Hola') + ', solo queria dejarte saber que estamos aqui si en algun momento te interesa. Te deseo mucho exito! ✨'; }
           ];
 
@@ -1459,14 +1481,28 @@ export default async function handler(req, res) {
               // Only send during reasonable hours (8am - 8pm Colombia)
               if (cHour < 8 || cHour > 20) continue;
 
-              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '');
+              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '', lead.etapa);
               try {
-                const waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
-                  body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
-                });
-                const waData = await waR.json();
+                let waR, waData;
+                if (WA_PROVIDER === 'twilio') {
+                  const params = new URLSearchParams();
+                  params.append('To', 'whatsapp:+' + lead.phone);
+                  params.append('From', TW_FROM);
+                  params.append('Body', msgText);
+                  waR = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + TW_SID + '/Messages.json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + Buffer.from(TW_SID + ':' + TW_TK).toString('base64') },
+                    body: params.toString()
+                  });
+                  waData = await waR.json();
+                } else {
+                  waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
+                    body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
+                  });
+                  waData = await waR.json();
+                }
                 if (waR.ok) {
                   // Update stage
                   await sb('wa_leads?phone=eq.' + encodeURIComponent(lead.phone), {

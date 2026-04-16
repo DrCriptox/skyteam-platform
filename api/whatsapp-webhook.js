@@ -386,7 +386,7 @@ SOBRE EL NEGOCIO (lo que puedes decir):
 TU FLUJO DE CONVERSACION (seguir ESTRICTAMENTE en este orden):
 1. SALUDO: "Hola [nombre]! Soy Sofi, asistente del Dr. Rojas. Que bueno que te intereso la franquicia digital 🙌"
 2. FILTRO OBLIGATORIO (aunque digan "quiero agendar"): SIEMPRE pregunta primero: "Cuentame, alcanzaste a ver el video completo de la pagina? Quiero asegurarme de que tengas toda la info antes de la reunion con el Doctor."
-3. SI NO VIO EL VIDEO: "Te recomiendo que lo veas primero para que aproveches al maximo la reunion. Es cortito y te explica como funciona el sistema de IA. Cuando lo veas me escribes y te agendo!"
+3. SI NO VIO EL VIDEO: Responde EXACTAMENTE asi: "Te recomiendo que lo veas primero para que aproveches al maximo la reunion con el Doctor Rojas. Es cortito y te explica todo el sistema de IA 🚀 Aqui te lo dejo: https://skyteam.global/landing?ref=dradmin Revisalo con calma y en 30 minutos te escribo para ver que te parecio!" Luego incluye [RECORDAR_30MIN] al final del mensaje.
 4. SI SI LO VIO - CALIFICAR: "Perfecto! Y cuentame, que fue lo que mas te llamo la atencion? Que te gustaria lograr con el sistema?" (esperar respuesta antes de ofrecer agenda)
 5. VALIDAR INTERES REAL: Solo cuando el prospecto demuestre interes genuino (responde con metas, suenos, o preguntas especificas), ENTONCES ofrece la agenda
 6. AGENDAR: "El Doctor Rojas tiene unos espacios esta semana. Te comparto su agenda para que elijas el horario que mejor te funcione" + enviar link de agenda
@@ -679,10 +679,25 @@ export default async function handler(req, res) {
     // === PARSE SPECIAL TAGS ===
     var shouldShowSlots = aiResponse.indexOf('[AGENDAR]') !== -1;
     var shouldEscalate = aiResponse.indexOf('[ESCALAR]') !== -1;
+    var shouldRemind30 = aiResponse.indexOf('[RECORDAR_30MIN]') !== -1;
     var objectionMatch = aiResponse.match(/\[OBJECION:([^\]]+)\]/);
 
     var cleanResponse = aiResponse
-      .replace(/\[AGENDAR\]/g, '').replace(/\[ESCALAR\]/g, '').replace(/\[OBJECION:[^\]]+\]/g, '').trim();
+      .replace(/\[AGENDAR\]/g, '').replace(/\[ESCALAR\]/g, '').replace(/\[RECORDAR_30MIN\]/g, '').replace(/\[OBJECION:[^\]]+\]/g, '').trim();
+
+    // Schedule 35-min reminder for prospects who haven't seen the video
+    if (shouldRemind30) {
+      await sb('wa_leads?phone=eq.' + encodeURIComponent(from), {
+        method: 'PATCH',
+        body: JSON.stringify({
+          etapa: 'esperando_video',
+          followup_stage: 0,
+          followup_paused: false,
+          last_message_at: new Date(Date.now() - 1.5 * 3600000).toISOString(), // trick: set 1.5h ago so 2h followup fires in ~35min
+          updated_at: new Date().toISOString()
+        })
+      });
+    }
 
     // === SEND RESPONSE ===
     if (cleanResponse) {
