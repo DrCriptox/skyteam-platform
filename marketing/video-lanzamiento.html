@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<!--
+  SKY TEAM — VIDEO LANZAMIENTO (Para durante la llamada)
+  Duración: ~40 segundos · Formato: 1920×1080 (16:9)
+
+  CÓMO GRABAR:
+  1. Abre en Chrome · F11 para pantalla completa
+  2. Windows + G → botón ● de grabación (o Windows + Alt + R)
+  3. Presiona F5 para reiniciar · graba 45 segundos
+  4. Detén con Windows + Alt + R
+  5. Video queda en: Videos > Captures
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:1920px; height:1080px; overflow:hidden; background:#000; font-family:'Segoe UI',Arial,sans-serif; }
+
+  .scene { width:1920px; height:1080px; position:relative; background:#000; overflow:hidden; }
+
+  /* ── BACKGROUND ── */
+  .bg-black { position:absolute; inset:0; background:#000; }
+  .bg-aurora {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 120% 80% at -10% -10%, rgba(140,0,220,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 100% 100% at 110% 110%, rgba(0,10,200,0.28) 0%, transparent 50%),
+      radial-gradient(ellipse 140% 60% at 50% -10%, rgba(201,162,39,0.20) 0%, transparent 38%);
+    animation: bgIn 2s 2s ease-out forwards;
+    opacity:0;
+  }
+  @keyframes bgIn { to { opacity:1; } }
+
+  .bg-grid {
+    position:absolute; inset:0;
+    background-image: linear-gradient(rgba(255,215,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.04) 1px, transparent 1px);
+    background-size:80px 80px;
+    animation: bgIn 3s 3s ease-out forwards;
+    opacity:0;
+  }
+
+  /* ── BOOT SEQUENCE ── */
+  .boot {
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:6px;
+    animation: bootOut 0.5s 7s ease-in forwards;
+  }
+  .boot-line {
+    font-size:18px; color:rgba(0,255,100,0.75); font-family:'Courier New',monospace;
+    letter-spacing:1px; white-space:nowrap; overflow:hidden;
+    width:0; animation: typeOut 0.6s ease-out forwards;
+  }
+  .boot-line.l1 { animation-delay:0.3s; }
+  .boot-line.l2 { animation-delay:0.9s; }
+  .boot-line.l3 { animation-delay:1.5s; }
+  .boot-line.l4 { animation-delay:2.1s; }
+  .boot-line.l5 { animation-delay:2.7s; animation: typeOut 0.6s 2.7s ease-out forwards, lineGold 0.3s 4.5s ease-out forwards; }
+  @keyframes typeOut { from{width:0;opacity:0} 10%{opacity:1} to{width:100%;opacity:1} }
+  @keyframes lineGold { to{color:#FFD700;text-shadow:0 0 10px rgba(255,215,0,0.5)} }
+  @keyframes bootOut { to{opacity:0;pointer-events:none} }
+
+  /* ── TEXT LAYERS ── */
+  .layer { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; }
+
+  /* Scene 1: System activated */
+  .s1 { animation: fadeInScale 1.2s 7.5s ease-out forwards, fadeOut 0.7s 12s ease-in forwards; opacity:0; }
+  .s1-tag { font-size:18px; letter-spacing:10px; color:rgba(0,255,150,0.70); text-transform:uppercase; margin-bottom:20px; font-family:'Courier New',monospace; }
+  .s1-main { font-size:110px; font-weight:900; letter-spacing:6px; color:#fff; text-transform:uppercase;
+    text-shadow: 0 0 40px rgba(255,255,255,0.3), 0 0 80px rgba(100,200,255,0.2); }
+
+  /* Scene 2: Modules */
+  .s2 { animation: fadeInScale 1s 13s ease-out forwards, fadeOut 0.7s 22s ease-in forwards; opacity:0; flex-direction:column; gap:0; }
+  .s2-title { font-size:36px; color:rgba(255,255,255,0.45); letter-spacing:4px; text-transform:uppercase; margin-bottom:48px; }
+  .modules { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; max-width:1400px; }
+  .mod {
+    background:rgba(255,255,255,0.03); border:1px solid rgba(201,162,39,0.25); border-radius:10px;
+    padding:28px 32px; text-align:left;
+    opacity:0; transform:translateY(30px);
+  }
+  .mod.m1 { animation: modIn 0.6s 14.0s ease-out forwards; }
+  .mod.m2 { animation: modIn 0.6s 14.7s ease-out forwards; }
+  .mod.m3 { animation: modIn 0.6s 15.4s ease-out forwards; }
+  .mod.m4 { animation: modIn 0.6s 16.1s ease-out forwards; }
+  .mod.m5 { animation: modIn 0.6s 16.8s ease-out forwards; }
+  .mod.m6 { animation: modIn 0.6s 17.5s ease-out forwards; }
+  @keyframes modIn { to{opacity:1;transform:translateY(0)} }
+  .mod-icon { font-size:36px; margin-bottom:10px; }
+  .mod-name { font-size:22px; font-weight:700; color:#FFD700; margin-bottom:6px; }
+  .mod-desc { font-size:15px; color:rgba(255,255,255,0.45); line-height:1.5; }
+
+  /* Scene 3: Users live */
+  .s3 { animation: fadeInScale 1s 23.5s ease-out forwards, fadeOut 0.7s 30s ease-in forwards; opacity:0; }
+  .s3-live { display:flex; align-items:center; gap:16px; margin-bottom:24px; justify-content:center; }
+  .s3-dot { width:18px; height:18px; border-radius:50%; background:#00ff88; box-shadow:0 0 15px #00ff88; animation:livePulse 1s ease-in-out infinite; }
+  @keyframes livePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+  .s3-live-txt { font-size:20px; letter-spacing:6px; color:rgba(0,255,136,0.80); text-transform:uppercase; }
+  .s3-num { font-size:160px; font-weight:900; background:linear-gradient(135deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 50px rgba(255,215,0,0.60)); line-height:1; margin-bottom:12px; }
+  .s3-label { font-size:32px; color:rgba(255,255,255,0.55); letter-spacing:4px; }
+
+  /* Scene 4: THE reveal */
+  .s4 { animation: explosiveIn 1.5s 32s ease-out forwards, fadeOut 0.7s 39s ease-in forwards; opacity:0; }
+  @keyframes explosiveIn {
+    0%   { opacity:0; transform:scale(1.3); filter:blur(20px); }
+    40%  { opacity:1; transform:scale(0.97); filter:blur(0); }
+    60%  { transform:scale(1.02); }
+    100% { opacity:1; transform:scale(1); filter:blur(0); }
+  }
+  .s4-pre { font-size:22px; letter-spacing:10px; color:rgba(201,162,39,0.60); text-transform:uppercase; margin-bottom:16px; }
+  .s4-sky  { font-size:200px; font-weight:900; letter-spacing:-8px; line-height:1; background:linear-gradient(135deg,#FFD700 0%,#C9A227 30%,#FFD700 60%,#FFF7A0 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 80px rgba(255,215,0,0.80)); }
+  .s4-team { font-size:200px; font-weight:900; letter-spacing:-8px; line-height:1; color:#fff; text-shadow:0 0 60px rgba(255,255,255,0.25); }
+  .s4-global { font-size:28px; letter-spacing:14px; color:rgba(255,255,255,0.40); text-transform:uppercase; margin-top:12px; margin-bottom:32px; }
+  .s4-tagline { font-size:32px; color:rgba(255,215,0,0.65); letter-spacing:3px; margin-bottom:24px; }
+  .s4-url { font-size:26px; letter-spacing:8px; color:rgba(255,255,255,0.50); animation:urlBlink 1.5s 34s ease-in-out infinite; }
+  @keyframes urlBlink { 0%,100%{opacity:0.50} 50%{opacity:0.90} }
+
+  /* Shockwave */
+  .shockwave {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    border-radius:50%; border:2px solid rgba(255,215,0,0.50);
+    animation: shockwaveOut 1.2s 32s ease-out forwards;
+    width:0; height:0;
+  }
+  @keyframes shockwaveOut {
+    0%   { width:0; height:0; opacity:0.8; }
+    100% { width:3000px; height:3000px; margin-left:-1500px; margin-top:-1500px; opacity:0; }
+  }
+
+  /* Cinematic bars */
+  .bar-top, .bar-bot {
+    position:absolute; left:0; right:0; z-index:90;
+    background:#000;
+    transition:height 1s ease;
+  }
+  .bar-top { top:0; height:60px; }
+  .bar-bot { bottom:0; height:60px; }
+
+  .scanline { position:absolute; inset:0; pointer-events:none; z-index:100; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.025) 0px, rgba(0,0,0,0.025) 1px, transparent 1px, transparent 2px); }
+  .vignette { position:absolute; inset:0; pointer-events:none; z-index:99; background:radial-gradient(ellipse 110% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.80) 100%); }
+
+  @keyframes fadeInScale { 0%{opacity:0;transform:scale(0.95)} 100%{opacity:1;transform:scale(1)} }
+  @keyframes fadeOut     { 0%{opacity:1} 100%{opacity:0;pointer-events:none} }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="bg-black"></div>
+  <div class="bg-aurora"></div>
+  <div class="bg-grid"></div>
+
+  <!-- Boot sequence -->
+  <div class="boot">
+    <div class="boot-line l1">█ Inicializando sistema SKY TEAM v2.0 ...</div>
+    <div class="boot-line l2">✓ Módulos de IA cargados .............. OK</div>
+    <div class="boot-line l3">✓ Base de datos conectada ............. OK</div>
+    <div class="boot-line l4">✓ Agentes de ventas activados ......... OK</div>
+    <div class="boot-line l5">⚡ SISTEMA LISTO — LANZAMIENTO INICIADO</div>
+  </div>
+
+  <!-- Scene 1: SISTEMA ACTIVADO -->
+  <div class="layer s1">
+    <div class="s1-tag">⚡ Sistema activado</div>
+    <div class="s1-main">¡HA LLEGADO!</div>
+  </div>
+
+  <!-- Scene 2: Modules -->
+  <div class="layer s2">
+    <div class="s2-title">Todo lo que necesitas en una plataforma</div>
+    <div class="modules">
+      <div class="mod m1">
+        <div class="mod-icon">🤖</div>
+        <div class="mod-name">Sky Sales IA</div>
+        <div class="mod-desc">6 agentes de IA entrenados para vender, crear contenido y prospectar</div>
+      </div>
+      <div class="mod m2">
+        <div class="mod-icon">📊</div>
+        <div class="mod-name">Sky Prospectos</div>
+        <div class="mod-desc">CRM inteligente: seguimiento, recordatorios y mensajes automáticos</div>
+      </div>
+      <div class="mod m3">
+        <div class="mod-icon">🎓</div>
+        <div class="mod-name">Academia</div>
+        <div class="mod-desc">Formación en servicios, liderazgo y estrategias de ventas</div>
+      </div>
+      <div class="mod m4">
+        <div class="mod-icon">📅</div>
+        <div class="mod-name">Mi Agenda</div>
+        <div class="mod-desc">Plan diario con actividades y rutas de éxito en 7 días</div>
+      </div>
+      <div class="mod m5">
+        <div class="mod-icon">📺</div>
+        <div class="mod-name">Sky TV</div>
+        <div class="mod-desc">Biblioteca de videos de entrenamiento y motivación</div>
+      </div>
+      <div class="mod m6">
+        <div class="mod-icon">💬</div>
+        <div class="mod-name">Comunidad</div>
+        <div class="mod-desc">Red activa de socios digitales para crecer juntos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 3: Live users -->
+  <div class="layer s3">
+    <div class="s3-live">
+      <div class="s3-dot"></div>
+      <div class="s3-live-txt">Miembros accediendo ahora</div>
+    </div>
+    <div class="s3-num">500+</div>
+    <div class="s3-label">SOCIOS DIGITALES ACTIVOS</div>
+  </div>
+
+  <!-- Shockwave -->
+  <div class="shockwave"></div>
+
+  <!-- Scene 4: THE reveal -->
+  <div class="layer s4">
+    <div class="s4-pre">Bienvenidos a</div>
+    <img src="logo-skyteam-white.png" style="width:780px;filter:drop-shadow(0 0 60px rgba(255,215,0,0.70)) drop-shadow(0 0 140px rgba(255,215,0,0.30));margin-bottom:28px;">
+    <div class="s4-tagline">La franquicia digital que lo cambia todo</div>
+    <div class="s4-url">skyteam.global</div>
+  </div>
+
+  <div class="bar-top"></div>
+  <div class="bar-bot"></div>
+  <div class="vignette"></div>
+  <div class="scanline"></div>
+</div>
+</body>
+</html>

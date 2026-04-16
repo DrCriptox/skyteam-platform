@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<!--
+  SKY TEAM — VIDEO PROMO (Historia vertical · Misterio / Expectativa)
+  Formato: 1080 × 1920 px (9:16 · Historias de WhatsApp / Instagram)
+  Duración: ~60 segundos
+
+  CÓMO GRABAR:
+  1. Abre en Chrome. Ajusta la ventana a 1080×1920 (o usa DevTools → iPhone Pro Max)
+     Atajo rápido: F12 → ícono de celular → Custom: 1080×1920 → F5
+  2. Windows + G → botón ● grabar (o Windows + Alt + R)
+  3. Graba 65 segundos y detén con Windows + Alt + R
+  4. Video queda en: Videos > Captures
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+
+  .scene {
+    width: 1080px;
+    height: 1920px;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── STARS ── */
+  .stars { position: absolute; inset: 0; opacity: 0; animation: starsIn 4s 0.5s ease-out forwards; }
+  @keyframes starsIn { to { opacity: 1; } }
+
+  /* ── DEEP AURORA ── */
+  .aurora {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 120% 50% at 50% 0%,   rgba(100,0,180,0.30) 0%, transparent 55%),
+      radial-gradient(ellipse 100% 60% at 50% 100%, rgba(0,0,140,0.25) 0%, transparent 55%),
+      radial-gradient(ellipse 60%  80% at 20% 50%,  rgba(80,0,160,0.15) 0%, transparent 55%),
+      radial-gradient(ellipse 60%  80% at 80% 50%,  rgba(0,20,180,0.12) 0%, transparent 55%);
+    opacity: 0;
+    animation: auroraIn 5s 2s ease-out forwards;
+  }
+  @keyframes auroraIn { to { opacity: 1; } }
+
+  /* ── GRID ── */
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,215,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,215,0,0.03) 1px, transparent 1px);
+    background-size: 90px 90px;
+    opacity: 0;
+    animation: gridIn 3s 3s ease-out forwards;
+  }
+  @keyframes gridIn { to { opacity: 1; } }
+
+  /* ── SCAN LINE ── */
+  .scanline {
+    position: absolute; inset: 0; z-index: 200; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.035) 0px, rgba(0,0,0,0.035) 1px, transparent 1px, transparent 3px);
+  }
+  .vignette {
+    position: absolute; inset: 0; z-index: 199; pointer-events: none;
+    background: radial-gradient(ellipse 100% 70% at 50% 50%, transparent 35%, rgba(0,0,0,0.88) 100%);
+  }
+
+  /* ── SIGNAL PULSE (scene 1) ── */
+  .signal {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: signalIn 1s 4s ease-out forwards, signalOut 0.8s 9s ease-in forwards;
+  }
+  .signal-ring {
+    position: absolute; border-radius: 50%;
+    border: 2px solid rgba(255,215,0,0.5);
+    top: 50%; left: 50%;
+  }
+  .r1 { width:  80px; height:  80px; margin: -40px 0 0 -40px; animation: ringPulse 2s 4.2s ease-out infinite; }
+  .r2 { width: 180px; height: 180px; margin: -90px 0 0 -90px; animation: ringPulse 2s 4.5s ease-out infinite; }
+  .r3 { width: 320px; height: 320px; margin:-160px 0 0 -160px; animation: ringPulse 2s 4.8s ease-out infinite; }
+  .r4 { width: 500px; height: 500px; margin:-250px 0 0 -250px; animation: ringPulse 2s 5.1s ease-out infinite; }
+  @keyframes ringPulse {
+    0%   { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 0;   transform: scale(1.6); }
+  }
+  .signal-dot {
+    width: 18px; height: 18px; background: #FFD700; border-radius: 50%;
+    box-shadow: 0 0 30px rgba(255,215,0,0.9), 0 0 80px rgba(255,215,0,0.5);
+    position: absolute; top: 50%; left: 50%; margin: -9px 0 0 -9px;
+    animation: dotPulse 1.2s 4s ease-in-out infinite alternate;
+  }
+  @keyframes dotPulse { 0%{transform:scale(1)} 100%{transform:scale(1.6);box-shadow:0 0 50px rgba(255,215,0,1),0 0 120px rgba(255,215,0,0.6)} }
+
+  /* ── MYSTERY TEXTS ── */
+  .layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 80px 60px; }
+
+  /* "Se detectó algo..." */
+  .s-detect {
+    opacity: 0;
+    animation: fadeInUp 1.2s 5.5s ease-out forwards, fadeOut 0.7s 9.5s ease-in forwards;
+  }
+  .detect-tag { font-size: 18px; letter-spacing: 8px; color: rgba(0,220,120,0.75); text-transform: uppercase; font-family: 'Courier New', monospace; margin-bottom: 20px; }
+  .detect-line { width: 200px; height: 1px; background: rgba(0,220,120,0.40); margin: 0 auto 20px; }
+  .detect-main { font-size: 44px; font-weight: 300; color: rgba(255,255,255,0.70); letter-spacing: 3px; line-height: 1.4; }
+
+  /* "UNA NUEVA ERA" */
+  .s-era {
+    opacity: 0;
+    animation: fadeInUp 1.2s 11s ease-out forwards, fadeOut 0.7s 16.5s ease-in forwards;
+  }
+  .era-top { font-size: 20px; letter-spacing: 10px; color: rgba(201,162,39,0.55); text-transform: uppercase; margin-bottom: 24px; }
+  .era-main { font-size: 86px; font-weight: 900; line-height: 1.0; color: #fff; letter-spacing: -2px;
+    text-shadow: 0 0 60px rgba(255,255,255,0.20); }
+  .era-sub { font-size: 54px; font-weight: 300; color: rgba(255,255,255,0.55); margin-top: 8px; letter-spacing: 4px; }
+
+  /* "???" */
+  .s-qmarks {
+    opacity: 0;
+    animation: fadeInUp 1s 18s ease-out forwards, fadeOut 0.8s 23s ease-in forwards;
+  }
+  .qmarks { font-size: 220px; font-weight: 900; color: rgba(255,215,0,0.12); letter-spacing: -10px; line-height: 1;
+    animation: qPulse 2s 18s ease-in-out infinite alternate; }
+  @keyframes qPulse { 0%{color:rgba(255,215,0,0.10)} 100%{color:rgba(255,215,0,0.22);text-shadow:0 0 80px rgba(255,215,0,0.15)} }
+  .qmarks-txt { font-size: 28px; color: rgba(255,255,255,0.35); letter-spacing: 6px; margin-top: 16px; text-transform: uppercase; }
+
+  /* ROCKET LAUNCH SCENE */
+  .s-rocket {
+    opacity: 0;
+    animation: fadeInUp 1s 24.5s ease-out forwards, fadeOut 0.8s 37s ease-in forwards;
+    flex-direction: column; gap: 0; justify-content: flex-end; padding-bottom: 160px;
+  }
+  .rocket-emoji {
+    font-size: 140px; line-height: 1;
+    filter: drop-shadow(0 0 30px rgba(255,200,50,0.8)) drop-shadow(0 0 80px rgba(255,100,0,0.5));
+    animation:
+      rocketFloat  1.5s 24.5s ease-in-out infinite alternate,
+      rocketLaunch 4s   30s   cubic-bezier(0.4,0,0.6,1) forwards;
+  }
+  @keyframes rocketFloat {
+    0%   { transform: translateY(0)    rotate(-5deg); }
+    100% { transform: translateY(-30px) rotate(5deg); }
+  }
+  @keyframes rocketLaunch {
+    0%   { opacity:1; transform:translateY(0)     scale(1)   rotate(0deg); filter:drop-shadow(0 0 40px rgba(255,200,50,1)) drop-shadow(0 0 120px rgba(255,100,0,0.8)); }
+    15%  { opacity:1; transform:translateY(-60px) scale(1.1) rotate(-2deg); }
+    100% { opacity:0; transform:translateY(-1800px) scale(0.2) rotate(5deg); filter:drop-shadow(0 0 10px rgba(255,200,50,0.3)); }
+  }
+  .rocket-trail {
+    width: 6px; height: 0; background: linear-gradient(180deg, rgba(255,200,50,0.9), rgba(255,50,0,0.4), transparent);
+    border-radius: 3px; margin: 0 auto;
+    animation: trailGrow 4.5s 29s ease-in forwards;
+  }
+  @keyframes trailGrow { 0%{height:0;opacity:0} 10%{opacity:1} 100%{height:1400px;opacity:0} }
+  .rocket-glow {
+    position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,180,0,0.5) 0%, rgba(255,80,0,0.2) 40%, transparent 70%);
+    animation: glowExplode 2s 30s ease-out forwards;
+  }
+  @keyframes glowExplode {
+    0%   { width:0; height:0; margin-left:0; margin-bottom:0; opacity:0; }
+    20%  { opacity:1; width:500px; height:500px; margin-left:-250px; margin-bottom:-250px; }
+    100% { opacity:0; width:1080px; height:1080px; margin-left:-540px; margin-bottom:-540px; }
+  }
+
+  /* FLASH SCREEN */
+  .flash {
+    position: absolute; inset: 0; background: #fff; z-index: 150;
+    opacity: 0; pointer-events: none;
+    animation: flashAnim 0.6s 34.2s ease-out forwards;
+  }
+  @keyframes flashAnim { 0%{opacity:0} 15%{opacity:0.85} 100%{opacity:0} }
+
+  /* "LUNES · 9 PM" */
+  .s-date {
+    opacity: 0;
+    animation: dateIn 1.5s 35s cubic-bezier(0.22,1,0.36,1) forwards, fadeOut 0.8s 42s ease-in forwards;
+  }
+  .date-pre { font-size: 20px; letter-spacing: 10px; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 32px; }
+  .date-main { font-size: 100px; font-weight: 900; color: #fff; letter-spacing: -3px; line-height: 1;
+    background: linear-gradient(135deg, #FFD700, #FFF3A0);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    filter: drop-shadow(0 0 40px rgba(255,215,0,0.60)); }
+  .date-time { font-size: 60px; font-weight: 300; color: rgba(255,255,255,0.65); letter-spacing: 8px; margin-top: 12px; }
+  @keyframes dateIn { 0%{opacity:0;transform:scale(1.15)} 60%{opacity:1;transform:scale(0.98)} 100%{opacity:1;transform:scale(1)} }
+
+  /* "¿ESTÁS LISTO?" */
+  .s-ready {
+    opacity: 0;
+    animation: fadeInUp 1s 43.5s ease-out forwards, fadeOut 0.8s 49s ease-in forwards;
+  }
+  .ready-main { font-size: 78px; font-weight: 900; color: #fff; line-height: 1.1; letter-spacing: -1px; }
+  .ready-main em { font-style: normal; background: linear-gradient(135deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 25px rgba(255,215,0,0.5)); }
+  .ready-sub { font-size: 24px; color: rgba(255,255,255,0.40); letter-spacing: 5px; text-transform: uppercase; margin-top: 24px; }
+
+  /* LOGO REVEAL FINAL */
+  .s-logo {
+    opacity: 0;
+    animation: logoReveal 2.5s 51s cubic-bezier(0.22,1,0.36,1) forwards;
+    flex-direction: column; gap: 36px;
+  }
+  @keyframes logoReveal {
+    0%   { opacity:0; transform:scale(0.80); filter:blur(20px); }
+    50%  { opacity:1; transform:scale(1.04); filter:blur(0); }
+    100% { opacity:1; transform:scale(1);    filter:blur(0); }
+  }
+  .logo-glow-ring {
+    position: absolute; border-radius: 50%;
+    border: 1px solid rgba(201,162,39,0.30);
+    animation: logoRing 3s 52s ease-out infinite;
+  }
+  .logo-img { width: 680px; filter: drop-shadow(0 0 40px rgba(255,215,0,0.50)) drop-shadow(0 0 100px rgba(255,215,0,0.20)); }
+  .logo-tagline { font-size: 22px; letter-spacing: 3px; color: rgba(255,215,0,0.60); }
+  @keyframes logoRing {
+    0%   { width:300px; height:300px; margin:-150px 0 0 -150px; opacity:0.6; }
+    100% { width:900px; height:900px; margin:-450px 0 0 -450px; opacity:0; }
+  }
+
+  /* Shared */
+  @keyframes fadeInUp  { 0%{opacity:0;transform:translateY(40px)} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes fadeOut   { 0%{opacity:1} 100%{opacity:0;pointer-events:none} }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="stars" id="stars"></div>
+  <div class="aurora"></div>
+  <div class="grid"></div>
+
+  <!-- Signal -->
+  <div class="signal">
+    <div class="signal-ring r1"></div>
+    <div class="signal-ring r2"></div>
+    <div class="signal-ring r3"></div>
+    <div class="signal-ring r4"></div>
+    <div class="signal-dot"></div>
+  </div>
+
+  <!-- Scene: Detectado -->
+  <div class="layer s-detect">
+    <div class="detect-tag">⬤ señal detectada</div>
+    <div class="detect-line"></div>
+    <div class="detect-main">Algo está<br>por llegar</div>
+  </div>
+
+  <!-- Scene: Una Nueva Era -->
+  <div class="layer s-era">
+    <div class="era-top">prepare yourself</div>
+    <div class="era-main">UNA<br>NUEVA<br>ERA</div>
+    <div class="era-sub">está por comenzar</div>
+  </div>
+
+  <!-- Scene: ??? -->
+  <div class="layer s-qmarks">
+    <div class="qmarks">???</div>
+    <div class="qmarks-txt">¿Qué se viene?</div>
+  </div>
+
+  <!-- Scene: Rocket -->
+  <div class="layer s-rocket">
+    <div class="rocket-emoji">🚀</div>
+    <div class="rocket-trail"></div>
+  </div>
+  <div class="rocket-glow"></div>
+
+  <!-- Flash on launch -->
+  <div class="flash"></div>
+
+  <!-- Scene: Date -->
+  <div class="layer s-date">
+    <div class="date-pre">El gran momento</div>
+    <div class="date-main">LUNES</div>
+    <div class="date-time">9 : 0 0  P M</div>
+  </div>
+
+  <!-- Scene: ¿Estás listo? -->
+  <div class="layer s-ready">
+    <div class="ready-main">¿Estás<br><em>listo</em>?</div>
+    <div class="ready-sub">el lanzamiento se acerca</div>
+  </div>
+
+  <!-- Scene: Logo reveal -->
+  <div class="layer s-logo">
+    <div class="logo-glow-ring"></div>
+    <img class="logo-img" src="logo-skyteam-white.png" alt="Sky Team">
+    <div class="logo-tagline">skyteam.global</div>
+  </div>
+
+  <div class="vignette"></div>
+  <div class="scanline"></div>
+</div>
+
+<script>
+// Stars
+const s = document.getElementById('stars');
+for(let i=0;i<400;i++){
+  const el = document.createElement('div');
+  const sz = Math.random()*2.5+0.4;
+  el.style.cssText = `position:absolute;border-radius:50%;background:#fff;width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${0.1+Math.random()*0.8};animation:tw ${1.5+Math.random()*4}s ${Math.random()*6}s ease-in-out infinite alternate;`;
+  s.appendChild(el);
+}
+const st = document.createElement('style');
+st.textContent = '@keyframes tw{0%{opacity:0.1}100%{opacity:0.95}}';
+document.head.appendChild(st);
+</script>
+</body>
+</html>

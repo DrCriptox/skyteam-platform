@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<!--
+  SKY TEAM GLOBAL — PRESENTACIÓN DE VENTAS
+  Navega con ← → del teclado, o con los botones en pantalla.
+  Presiona F11 para presentar en pantalla completa.
+  Para exportar como PDF: Ctrl+P → Guardar como PDF (sin márgenes, landscape).
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sky Team Global — Presentación</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',Arial,sans-serif; }
+
+  /* ── DECK ENGINE ── */
+  .deck { width:100vw; height:100vh; position:relative; }
+
+  .slide {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:60px 80px;
+    opacity:0; pointer-events:none;
+    transition:opacity 0.6s ease, transform 0.6s ease;
+    transform:translateX(40px);
+    overflow:hidden;
+  }
+  .slide.active  { opacity:1; pointer-events:auto; transform:translateX(0); }
+  .slide.leaving { opacity:0; transform:translateX(-40px); }
+
+  /* Shared BG */
+  .slide::before {
+    content:''; position:absolute; inset:0;
+    background:#070711;
+    z-index:-2;
+  }
+  .slide::after {
+    content:''; position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 70% 60% at 20% 20%, rgba(120,0,200,0.16) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 70% at 80% 80%, rgba(0,40,200,0.13) 0%, transparent 55%);
+    z-index:-1;
+    pointer-events:none;
+  }
+
+  .slide-grid {
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    background-image: linear-gradient(rgba(255,215,0,0.025) 1px,transparent 1px), linear-gradient(90deg,rgba(255,215,0,0.025) 1px,transparent 1px);
+    background-size:60px 60px;
+  }
+  .vignette {
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(ellipse 100% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.70) 100%);
+  }
+
+  .content { position:relative; z-index:2; width:100%; max-width:1200px; }
+
+  /* ── TYPOGRAPHY ── */
+  .tag { font-size:11px; letter-spacing:7px; color:rgba(201,162,39,0.65); text-transform:uppercase; margin-bottom:20px; }
+  .h1  { font-size:clamp(52px,6vw,92px); font-weight:900; line-height:1.05; color:#fff; margin-bottom:16px; }
+  .h1 em { font-style:normal; background:linear-gradient(135deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 20px rgba(255,215,0,0.35)); }
+  .h2  { font-size:clamp(36px,4vw,62px); font-weight:800; line-height:1.12; color:#fff; margin-bottom:14px; }
+  .h2 em { font-style:normal; background:linear-gradient(135deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .sub { font-size:clamp(16px,1.8vw,22px); color:rgba(255,255,255,0.45); line-height:1.65; max-width:800px; }
+  .sub strong { color:rgba(255,255,255,0.80); }
+
+  .divider { width:180px; height:1.5px; background:linear-gradient(90deg,#C9A227,transparent); margin:28px 0; }
+  .divider.center { margin:28px auto; background:linear-gradient(90deg,transparent,#C9A227,transparent); }
+
+  /* ── COVER ── */
+  .cover-sky  { font-size:clamp(80px,11vw,160px); font-weight:900; letter-spacing:-4px; line-height:1; background:linear-gradient(135deg,#FFD700 0%,#C9A227 40%,#FFD700 70%,#FFF3A0 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 50px rgba(255,215,0,0.50)); }
+  .cover-team { font-size:clamp(80px,11vw,160px); font-weight:900; letter-spacing:-4px; line-height:1; color:#fff; text-shadow:0 0 60px rgba(255,255,255,0.12); }
+  .cover-global { font-size:clamp(14px,1.5vw,20px); letter-spacing:12px; color:rgba(255,255,255,0.35); text-transform:uppercase; margin-top:10px; margin-bottom:40px; }
+  .cover-tagline { font-size:clamp(18px,2vw,28px); color:rgba(255,255,255,0.65); letter-spacing:2px; }
+  .cover-url { font-size:clamp(14px,1.4vw,18px); letter-spacing:6px; color:rgba(255,215,0,0.40); margin-top:16px; }
+
+  /* ── PROBLEM ── */
+  .problem-list { display:flex; flex-direction:column; gap:18px; margin-top:16px; max-width:700px; }
+  .prob-item { display:flex; gap:18px; align-items:flex-start; }
+  .prob-x { font-size:24px; color:rgba(255,60,60,0.70); flex-shrink:0; margin-top:2px; }
+  .prob-txt { font-size:clamp(16px,1.8vw,22px); color:rgba(255,255,255,0.65); line-height:1.5; }
+
+  /* ── SOLUTION BOX ── */
+  .solution-box { background:rgba(201,162,39,0.07); border:1px solid rgba(201,162,39,0.30); border-radius:12px; padding:36px 44px; margin-top:28px; max-width:820px; }
+  .solution-box p { font-size:clamp(17px,2vw,24px); color:rgba(255,255,255,0.75); line-height:1.65; }
+
+  /* ── FEATURE CARDS ── */
+  .cards { display:grid; gap:18px; margin-top:28px; }
+  .cards-2 { grid-template-columns:1fr 1fr; }
+  .cards-3 { grid-template-columns:1fr 1fr 1fr; }
+  .card {
+    background:rgba(255,255,255,0.03); border:1px solid rgba(201,162,39,0.22); border-radius:10px;
+    padding:24px 28px;
+  }
+  .card-icon { font-size:36px; margin-bottom:10px; }
+  .card-title { font-size:clamp(16px,1.6vw,20px); font-weight:700; color:#FFD700; margin-bottom:8px; }
+  .card-desc  { font-size:clamp(13px,1.3vw,16px); color:rgba(255,255,255,0.48); line-height:1.6; }
+
+  /* ── AGENT LIST ── */
+  .agent-list { display:flex; flex-direction:column; gap:14px; margin-top:20px; }
+  .agent { display:flex; gap:18px; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(201,162,39,0.18); border-radius:8px; padding:16px 22px; }
+  .agent-icon { font-size:28px; flex-shrink:0; }
+  .agent-info { flex:1; }
+  .agent-name { font-size:18px; font-weight:700; color:#FFD700; margin-bottom:3px; }
+  .agent-desc { font-size:14px; color:rgba(255,255,255,0.45); }
+  .agent-tag  { font-size:11px; letter-spacing:2px; color:rgba(0,220,120,0.70); background:rgba(0,220,120,0.08); border:1px solid rgba(0,220,120,0.25); border-radius:20px; padding:3px 10px; white-space:nowrap; flex-shrink:0; }
+
+  /* ── RANKS ── */
+  .ranks { display:flex; gap:12px; margin-top:24px; flex-wrap:wrap; }
+  .rank-item {
+    flex:1; min-width:100px; text-align:center;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(201,162,39,0.20); border-radius:8px;
+    padding:16px 10px;
+  }
+  .rank-icon { font-size:28px; margin-bottom:6px; }
+  .rank-name { font-size:12px; font-weight:700; color:#FFD700; margin-bottom:3px; }
+  .rank-vol  { font-size:11px; color:rgba(255,255,255,0.35); }
+
+  /* ── VALUE ── */
+  .value-row { display:flex; gap:24px; margin-top:28px; }
+  .value-item { flex:1; text-align:center; background:rgba(201,162,39,0.07); border:1px solid rgba(201,162,39,0.25); border-radius:10px; padding:28px 20px; }
+  .value-num  { font-size:48px; font-weight:900; background:linear-gradient(135deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .value-lbl  { font-size:13px; color:rgba(255,255,255,0.40); margin-top:6px; letter-spacing:2px; text-transform:uppercase; }
+
+  /* ── CTA ── */
+  .cta-box { background:linear-gradient(135deg,rgba(201,162,39,0.15),rgba(201,162,39,0.06)); border:1.5px solid rgba(255,215,0,0.45); border-radius:12px; padding:44px 56px; text-align:center; margin-top:32px; max-width:800px; }
+  .cta-top  { font-size:14px; letter-spacing:6px; color:rgba(201,162,39,0.60); text-transform:uppercase; margin-bottom:14px; }
+  .cta-main { font-size:clamp(36px,4vw,60px); font-weight:900; color:#FFD700; margin-bottom:12px; }
+  .cta-url  { font-size:clamp(18px,2vw,26px); letter-spacing:6px; color:rgba(255,255,255,0.50); }
+
+  /* Two-col layout */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+  .col-left, .col-right {}
+
+  /* ── NAV ── */
+  .nav {
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:16px; z-index:999;
+    background:rgba(0,0,0,0.70); border:1px solid rgba(201,162,39,0.20);
+    border-radius:40px; padding:10px 22px;
+    backdrop-filter:blur(12px);
+  }
+  .nav-btn { width:38px; height:38px; border-radius:50%; background:rgba(201,162,39,0.12); border:1px solid rgba(201,162,39,0.30); color:rgba(255,215,0,0.80); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+  .nav-btn:hover { background:rgba(201,162,39,0.25); }
+  .nav-btn:disabled { opacity:0.25; cursor:default; }
+  .nav-count { font-size:12px; letter-spacing:2px; color:rgba(255,255,255,0.35); min-width:40px; text-align:center; }
+  .nav-dots { display:flex; gap:5px; }
+  .nav-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.18); cursor:pointer; transition:all 0.2s; }
+  .nav-dot.on { background:#FFD700; transform:scale(1.3); }
+
+  /* Slide number badge */
+  .slide-num {
+    position:fixed; top:22px; right:28px; z-index:999;
+    font-size:11px; letter-spacing:4px; color:rgba(201,162,39,0.40); text-transform:uppercase;
+  }
+
+  /* Logo watermark */
+  .watermark {
+    position:fixed; bottom:28px; left:32px; z-index:999;
+    font-size:11px; letter-spacing:4px; color:rgba(255,255,255,0.12); text-transform:uppercase;
+  }
+
+  /* ── HIGHLIGHT PILL ── */
+  .pill { display:inline-block; font-size:13px; letter-spacing:2px; color:rgba(255,215,0,0.75); background:rgba(201,162,39,0.12); border:1px solid rgba(201,162,39,0.30); border-radius:30px; padding:5px 16px; margin-right:8px; margin-bottom:8px; }
+
+  /* Big stat */
+  .big-stat { text-align:center; }
+  .big-stat-num { font-size:clamp(80px,10vw,140px); font-weight:900; background:linear-gradient(135deg,#FFD700,#FFF3A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 40px rgba(255,215,0,0.45)); line-height:1; }
+  .big-stat-lbl { font-size:clamp(14px,1.5vw,20px); color:rgba(255,255,255,0.40); letter-spacing:4px; text-transform:uppercase; margin-top:8px; }
+
+  /* Comparison table */
+  .compare { width:100%; margin-top:24px; border-collapse:collapse; }
+  .compare th { font-size:13px; letter-spacing:3px; color:rgba(201,162,39,0.60); text-transform:uppercase; padding:12px 18px; text-align:left; border-bottom:1px solid rgba(201,162,39,0.20); }
+  .compare td { font-size:16px; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.65); }
+  .compare tr:last-child td { border-bottom:none; }
+  .compare td.yes { color:#00DD88; font-weight:700; }
+  .compare td.no  { color:rgba(255,80,80,0.60); }
+  .compare td.hl  { color:#FFD700; font-weight:700; }
+
+  .quote { font-size:clamp(22px,2.5vw,34px); color:rgba(255,255,255,0.75); line-height:1.5; font-weight:300; font-style:italic; text-align:center; max-width:900px; }
+  .quote::before { content:'"'; font-size:80px; color:rgba(201,162,39,0.25); line-height:0; vertical-align:-30px; margin-right:8px; }
+  .quote-author { font-size:14px; letter-spacing:4px; color:rgba(201,162,39,0.50); margin-top:20px; text-transform:uppercase; text-align:center; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- ══ 01. COVER ══ -->
+  <div class="slide active" data-n="1">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content" style="text-align:center">
+      <div class="tag">Presentación oficial · 2026</div>
+      <img src="logo-skyteam-white.png" alt="Sky Team" style="height:clamp(90px,12vw,180px);filter:drop-shadow(0 0 40px rgba(255,215,0,0.50)) drop-shadow(0 0 100px rgba(255,215,0,0.20));margin-bottom:32px;">
+      <div class="cover-tagline">La franquicia digital más poderosa de la región</div>
+    </div>
+  </div>
+
+  <!-- ══ 02. EL PROBLEMA ══ -->
+  <div class="slide" data-n="2">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content">
+      <div class="tag">El desafío</div>
+      <div class="h1">El network marketing<br>necesitaba <em>evolucionar</em></div>
+      <div class="problem-list">
+        <div class="prob-item"><div class="prob-x">✗</div><div class="prob-txt">Trabajar sin sistema ni estructura clara</div></div>
+        <div class="prob-item"><div class="prob-x">✗</div><div class="prob-txt">Prospectar a mano, perder contactos, sin seguimiento</div></div>
+        <div class="prob-item"><div class="prob-x">✗</div><div class="prob-txt">Crear contenido desde cero, sin guía ni herramientas</div></div>
+        <div class="prob-item"><div class="prob-x">✗</div><div class="prob-txt">Sin capacitación estructurada para el equipo</div></div>
+        <div class="prob-item"><div class="prob-x">✗</div><div class="prob-txt">Depender 100% del esfuerzo manual para generar resultados</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 03. LA SOLUCIÓN ══ -->
+  <div class="slide" data-n="3">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content" style="text-align:center">
+      <div class="tag">La solución</div>
+      <div class="h1">Una plataforma.<br><em>Todo lo que necesitas.</em></div>
+      <div class="divider center"></div>
+      <div class="solution-box">
+        <p>Sky Team Global es un sistema de franquicia digital todo-en-uno que combina <strong>inteligencia artificial, CRM, academia, comunidad y herramientas de ventas</strong> en una sola plataforma. Diseñada para que cualquier persona pueda construir un negocio rentable desde el primer día.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 04. QUÉ ES ══ -->
+  <div class="slide" data-n="4">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content">
+      <div class="tag">Las 6 áreas de la plataforma</div>
+      <div class="h2">Un ecosistema completo<br>para <em>ganar en digital</em></div>
+      <div class="cards cards-3" style="margin-top:28px">
+        <div class="card"><div class="card-icon">🤖</div><div class="card-title">Sky Sales IA</div><div class="card-desc">6 agentes de inteligencia artificial que venden, prospectan y crean contenido por ti</div></div>
+        <div class="card"><div class="card-icon">📊</div><div class="card-title">Sky Prospectos</div><div class="card-desc">CRM inteligente con seguimiento automático, recordatorios y mensajes de WhatsApp listos</div></div>
+        <div class="card"><div class="card-icon">🎓</div><div class="card-title">Academia</div><div class="card-desc">Formación estructurada en servicios, liderazgo y técnicas de ventas probadas</div></div>
+        <div class="card"><div class="card-icon">📅</div><div class="card-title">Mi Agenda</div><div class="card-desc">Plan diario guiado con rutas de éxito y actividades para crecer paso a paso</div></div>
+        <div class="card"><div class="card-icon">📺</div><div class="card-title">Sky TV</div><div class="card-desc">Biblioteca de videos de entrenamiento, motivación y estrategias actualizadas</div></div>
+        <div class="card"><div class="card-icon">💬</div><div class="card-title">Comunidad</div><div class="card-desc">Red activa de socios digitales para compartir, aprender y crecer en equipo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 05. SKY SALES IA ══ -->
+  <div class="slide" data-n="5">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content">
+      <div class="tag">Módulo estrella</div>
+      <div class="h2"><em>Sky Sales IA</em><br>6 Agentes que trabajan por ti</div>
+      <div class="agent-list">
+        <div class="agent"><div class="agent-icon">✍️</div><div class="agent-info"><div class="agent-name">Creador de Contenido</div><div class="agent-desc">Genera posts, reels y copys listos para publicar en segundos</div></div><div class="agent-tag">IA Activa</div></div>
+        <div class="agent"><div class="agent-icon">🎯</div><div class="agent-info"><div class="agent-name">Prospectador</div><div class="agent-desc">Analiza perfiles y crea mensajes personalizados para atraer nuevos socios</div></div><div class="agent-tag">IA Activa</div></div>
+        <div class="agent"><div class="agent-icon">💬</div><div class="agent-info"><div class="agent-name">Asistente de Ventas</div><div class="agent-desc">Responde objeciones, cierra conversaciones y guía prospectos al sí</div></div><div class="agent-tag">IA Activa</div></div>
+        <div class="agent"><div class="agent-icon">📈</div><div class="agent-info"><div class="agent-name">Estratega de Negocio</div><div class="agent-desc">Analiza tu situación y diseña un plan de acción personalizado</div></div><div class="agent-tag">IA Activa</div></div>
+        <div class="agent"><div class="agent-icon">🎓</div><div class="agent-info"><div class="agent-name">Mentor Digital</div><div class="agent-desc">Resuelve dudas, enseña técnicas y acelera tu aprendizaje</div></div><div class="agent-tag">IA Activa</div></div>
+        <div class="agent"><div class="agent-icon">🚀</div><div class="agent-info"><div class="agent-name">Acelerador de Equipo</div><div class="agent-desc">Ayuda a entrenar y escalar a tu red de socios más rápido</div></div><div class="agent-tag">IA Activa</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 06. SKY PROSPECTOS ══ -->
+  <div class="slide" data-n="6">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content two-col">
+      <div class="col-left">
+        <div class="tag">CRM Inteligente</div>
+        <div class="h2"><em>Sky Prospectos</em><br>Nunca pierdas<br>un contacto</div>
+        <div class="divider"></div>
+        <div class="sub">Registra, organiza y da seguimiento a cada prospecto desde un solo lugar. La IA genera mensajes de WhatsApp listos para enviar con un clic.</div>
+      </div>
+      <div class="col-right">
+        <div class="cards cards-2">
+          <div class="card"><div class="card-icon">📝</div><div class="card-title">Registro rápido</div><div class="card-desc">Guarda nombre, WhatsApp, Instagram y estado del prospecto</div></div>
+          <div class="card"><div class="card-icon">🔔</div><div class="card-title">Recordatorios</div><div class="card-desc">Alertas automáticas para dar seguimiento en el momento correcto</div></div>
+          <div class="card"><div class="card-icon">💬</div><div class="card-title">Mensajes IA</div><div class="card-desc">Genera mensajes personalizados de seguimiento con un clic</div></div>
+          <div class="card"><div class="card-icon">📊</div><div class="card-title">Historial</div><div class="card-desc">Registro completo de cada interacción con tu prospecto</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 07. ACADEMIA ══ -->
+  <div class="slide" data-n="7">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content">
+      <div class="tag">Formación continua</div>
+      <div class="h2"><em>Academia Sky Team</em><br>Conocimiento que convierte</div>
+      <div class="cards cards-2" style="margin-top:28px">
+        <div class="card">
+          <div class="card-icon">📘</div>
+          <div class="card-title">Academia de Servicios</div>
+          <div class="card-desc" style="font-size:15px;line-height:1.7">Módulos de formación sobre los productos y servicios de la franquicia. Todo lo que necesitas para presentar con confianza y cerrar ventas.</div>
+          <div style="margin-top:14px"><span class="pill">Productos</span><span class="pill">Servicios</span><span class="pill">Técnicas de venta</span></div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🏆</div>
+          <div class="card-title">Academia de Liderazgo</div>
+          <div class="card-desc" style="font-size:15px;line-height:1.7">Formación para construir, liderar y escalar equipos. Aprende a reclutar, retener y multiplicar tu red de socios de forma sistemática.</div>
+          <div style="margin-top:14px"><span class="pill">Liderazgo</span><span class="pill">Duplicación</span><span class="pill">Equipos</span></div>
+        </div>
+      </div>
+      <div class="solution-box" style="margin-top:20px;padding:22px 32px">
+        <p style="font-size:18px">La academia no es un curso genérico — está <strong>diseñada específicamente para el modelo Sky Team</strong>, con el lenguaje, los productos y las estrategias que tu equipo necesita hoy.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 08. AGENDA + TV ══ -->
+  <div class="slide" data-n="8">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content two-col">
+      <div class="col-left">
+        <div class="tag">Productividad</div>
+        <div class="h2"><em>Mi Agenda</em><br>Un día a la vez,<br>un resultado a la vez</div>
+        <div class="sub" style="margin-top:16px">Plan diario estructurado que guía al socio paso a paso. La Ruta de 7 Días convierte a un nuevo socio en productor activo desde el primer día.</div>
+        <div style="margin-top:20px"><span class="pill">Plan Diario</span><span class="pill">Ruta 7 Días</span><span class="pill">Recordatorios</span></div>
+      </div>
+      <div class="col-right">
+        <div class="tag">Entretenimiento · Educación</div>
+        <div class="h2"><em>Sky TV</em><br>Aprende cuando<br>quieras, donde seas</div>
+        <div class="sub" style="margin-top:16px">Biblioteca de videos en constante crecimiento. Entrenamiento, motivación, estrategias y actualizaciones del sistema para todo el equipo.</div>
+        <div style="margin-top:20px"><span class="pill">Videos de entreno</span><span class="pill">Motivación</span><span class="pill">Actualizaciones</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 09. COMUNIDAD ══ -->
+  <div class="slide" data-n="9">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content" style="text-align:center">
+      <div class="tag">El poder de la red</div>
+      <div class="h1">No creces solo.<br>Creces con tu <em>comunidad</em></div>
+      <div class="divider center"></div>
+      <div class="sub" style="margin:0 auto 28px">La plataforma incluye un sistema de chat comunitario donde socios de toda la red se conectan, comparten victorias, se apoyan y se duplican entre sí.</div>
+      <div class="value-row" style="max-width:800px;margin:0 auto">
+        <div class="value-item"><div class="value-num">500+</div><div class="value-lbl">Socios activos</div></div>
+        <div class="value-item"><div class="value-num">24/7</div><div class="value-lbl">Disponible</div></div>
+        <div class="value-item"><div class="value-num">∞</div><div class="value-lbl">Potencial de red</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 10. RANGOS ══ -->
+  <div class="slide" data-n="10">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content">
+      <div class="tag">Sistema de reconocimiento</div>
+      <div class="h2">Los <em>Rangos</em> de Sky Team<br>Mientras más avanzas, más ganas</div>
+      <div class="ranks" style="margin-top:24px">
+        <div class="rank-item"><div class="rank-icon">⭐</div><div class="rank-name">INN 200</div><div class="rank-vol">Inicio</div></div>
+        <div class="rank-item"><div class="rank-icon">⭐⭐</div><div class="rank-name">INN 500</div><div class="rank-vol">Vol. 500</div></div>
+        <div class="rank-item"><div class="rank-icon">🌟</div><div class="rank-name">NOVA 1500</div><div class="rank-vol">Vol. 1,500</div></div>
+        <div class="rank-item"><div class="rank-icon">🌟</div><div class="rank-name">NOVA 5K</div><div class="rank-vol">Vol. 5,000</div></div>
+        <div class="rank-item"><div class="rank-icon">💎</div><div class="rank-name">NOVA 10K</div><div class="rank-vol">Vol. 10,000</div></div>
+        <div class="rank-item" style="border-color:rgba(255,215,0,0.40);background:rgba(255,215,0,0.06)"><div class="rank-icon">💎</div><div class="rank-name" style="color:#FFD700">DIAMANTE 20K</div><div class="rank-vol">Vol. 20,000</div></div>
+        <div class="rank-item" style="border-color:rgba(255,215,0,0.50);background:rgba(255,215,0,0.08)"><div class="rank-icon">👑</div><div class="rank-name" style="color:#FFD700">DIAMANTE 50K</div><div class="rank-vol">Vol. 50,000</div></div>
+      </div>
+      <div class="sub" style="margin-top:20px">Cada rango desbloquea nuevos beneficios, bonos y acceso a herramientas exclusivas dentro de la plataforma.</div>
+    </div>
+  </div>
+
+  <!-- ══ 11. TECNOLOGÍA & VALOR ══ -->
+  <div class="slide" data-n="11">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content two-col">
+      <div class="col-left">
+        <div class="tag">Inversión tecnológica</div>
+        <div class="h2">Una plataforma<br>valorada en <em>$30,000+</em></div>
+        <div class="divider"></div>
+        <div class="sub">Desarrollada con tecnología de punta: IA de última generación (Claude AI), PWA instalable, base de datos en tiempo real, push notifications, y arquitectura serverless en la nube.</div>
+      </div>
+      <div class="col-right">
+        <table class="compare">
+          <thead>
+            <tr><th>Componente</th><th>Valor mercado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Plataforma SPA custom</td><td class="hl">$8,000+</td></tr>
+            <tr><td>6 Agentes de IA (Claude)</td><td class="hl">$6,000+</td></tr>
+            <tr><td>CRM completo (Sky Prospectos)</td><td class="hl">$4,500+</td></tr>
+            <tr><td>Sistema de academia + LMS</td><td class="hl">$3,500+</td></tr>
+            <tr><td>PWA + Push notifications</td><td class="hl">$2,000+</td></tr>
+            <tr><td>Panel admin + reportes</td><td class="hl">$2,500+</td></tr>
+            <tr><td>Comunidad + chat en tiempo real</td><td class="hl">$3,000+</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 12. PARA QUIÉN ══ -->
+  <div class="slide" data-n="12">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content" style="text-align:center">
+      <div class="tag">El perfil del socio</div>
+      <div class="h1">¿Para quién es <em>Sky Team</em>?</div>
+      <div class="cards cards-3" style="margin-top:28px;text-align:left">
+        <div class="card"><div class="card-icon">🙋</div><div class="card-title">El que empieza</div><div class="card-desc">Sin experiencia previa. Sky Team le da el sistema, la formación y las herramientas para arrancar con ventaja desde el día uno.</div></div>
+        <div class="card"><div class="card-icon">💼</div><div class="card-title">El que ya trabaja</div><div class="card-desc">Ya tiene red o experiencia. Sky Team multiplica su productividad con IA y CRM, haciendo más con menos esfuerzo.</div></div>
+        <div class="card"><div class="card-icon">👑</div><div class="card-title">El que quiere escalar</div><div class="card-desc">Líder con equipo. Sky Team le da estructura para duplicar, capacitar y gestionar cientos de socios en piloto automático.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 13. COMPARATIVA ══ -->
+  <div class="slide" data-n="13">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content">
+      <div class="tag">Sky Team vs. el resto</div>
+      <div class="h2">¿Por qué <em>Sky Team</em><br>no tiene competencia?</div>
+      <table class="compare" style="margin-top:22px">
+        <thead>
+          <tr><th>Característica</th><th>Competencia</th><th>Sky Team Global</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>IA integrada para ventas</td><td class="no">✗ No tiene</td><td class="yes">✓ 6 agentes activos</td></tr>
+          <tr><td>CRM con seguimiento automático</td><td class="no">✗ No tiene</td><td class="yes">✓ Sky Prospectos</td></tr>
+          <tr><td>Academia estructurada</td><td class="no">✗ Materiales sueltos</td><td class="yes">✓ 2 academias completas</td></tr>
+          <tr><td>Agenda diaria guiada</td><td class="no">✗ No tiene</td><td class="yes">✓ Ruta de 7 Días</td></tr>
+          <tr><td>App instalable (PWA)</td><td class="no">✗ Solo web</td><td class="yes">✓ Instala en tu celular</td></tr>
+          <tr><td>Comunidad integrada</td><td class="no">✗ WhatsApp externo</td><td class="yes">✓ Chat dentro de la app</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ 14. TESTIMONIO/QUOTE ══ -->
+  <div class="slide" data-n="14">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content" style="text-align:center;align-items:center">
+      <div class="tag">La visión</div>
+      <div class="quote">El futuro del network marketing no es trabajar más duro. Es trabajar con el sistema correcto, la tecnología adecuada y la comunidad que te impulsa hacia arriba.</div>
+      <div class="quote-author">Sky Team Global · Lanzamiento 2026</div>
+    </div>
+  </div>
+
+  <!-- ══ 15. CTA FINAL ══ -->
+  <div class="slide" data-n="15">
+    <div class="slide-grid"></div>
+    <div class="vignette"></div>
+    <div class="content" style="text-align:center;align-items:center">
+      <div class="tag">El momento es ahora</div>
+      <div class="h1">¿Listo para entrar<br>a <em>Sky Team Global</em>?</div>
+      <div class="cta-box">
+        <div class="cta-top">Lanzamiento oficial</div>
+        <div class="cta-main">Lunes 6 · 9:00 PM</div>
+        <div style="height:16px"></div>
+        <div class="cta-url">skyteam.global</div>
+      </div>
+      <div class="sub" style="margin-top:20px;text-align:center">La plataforma que une inteligencia artificial con libertad financiera real. <strong>500+ socios ya están dentro.</strong></div>
+    </div>
+  </div>
+
+</div><!-- end deck -->
+
+<!-- Navigation -->
+<div class="nav" id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="go(-1)" disabled>‹</button>
+  <div class="nav-dots" id="dots"></div>
+  <button class="nav-btn" id="btn-next" onclick="go(1)">›</button>
+</div>
+<div class="slide-num" id="slide-num">1 / 15</div>
+<div class="watermark"><img src="logo-skyteam-white.png" alt="Sky Team" style="height:28px;opacity:0.30;"></div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total  = slides.length;
+let cur = 0;
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+slides.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i===0?' on':'');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('leaving');
+  setTimeout(() => slides[cur].classList.remove('leaving'), 600);
+  cur = n;
+  slides[cur].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach((d,i) => d.classList.toggle('on', i===cur));
+  document.getElementById('slide-num').textContent = (cur+1) + ' / ' + total;
+  document.getElementById('btn-prev').disabled = cur === 0;
+  document.getElementById('btn-next').disabled = cur === total-1;
+}
+
+function go(dir) {
+  const n = cur + dir;
+  if(n >= 0 && n < total) goTo(n);
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(1);
+  if(e.key === 'ArrowLeft'  || e.key === 'ArrowUp') go(-1);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--
+  SKY TEAM — GALERÍA DE FLYERS
+  Abre en Chrome. Navega con ← → o los botones.
+  Para capturar como imagen:
+    1. Haz clic en "📸 Capturar Flyer"
+    2. Se abre ventana 1080x1080 exacta
+    3. Usa Windows Snipping Tool: Windows + Shift + S
+    4. Selecciona exactamente el cuadrado del flyer
+-->
+<head>
+<meta charset="UTF-8">
+<title>Sky Team — Flyers de Lanzamiento</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; overflow:hidden; }
+
+  .app { width:100vw; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; }
+
+  /* Top bar */
+  .topbar {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px;
+    background:rgba(0,0,0,0.85);
+    border-bottom:1px solid rgba(201,162,39,0.20);
+    backdrop-filter:blur(12px);
+  }
+  .topbar-brand { font-size:12px; letter-spacing:6px; color:rgba(201,162,39,0.70); text-transform:uppercase; }
+  .topbar-counter { font-size:13px; color:rgba(255,255,255,0.45); }
+  .topbar-actions { display:flex; gap:10px; }
+
+  .btn {
+    font-size:13px; letter-spacing:1px; padding:8px 20px; border-radius:5px; cursor:pointer;
+    border:none; font-family:inherit; font-weight:600; transition:all 0.2s;
+  }
+  .btn-gold { background:linear-gradient(135deg,#C9A227,#FFD700); color:#000; }
+  .btn-gold:hover { filter:brightness(1.12); transform:translateY(-1px); }
+  .btn-outline { background:transparent; color:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.20); }
+  .btn-outline:hover { color:#fff; border-color:rgba(255,255,255,0.50); }
+
+  /* Iframe viewer */
+  .viewer { width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; padding:70px 80px 80px; }
+  .frame-wrap { position:relative; }
+  iframe {
+    border:none; border-radius:4px;
+    box-shadow:0 0 80px rgba(201,162,39,0.15), 0 0 200px rgba(0,0,0,0.90);
+    display:block;
+  }
+
+  /* Nav arrows */
+  .nav-arr {
+    position:fixed; top:50%; transform:translateY(-50%);
+    width:56px; height:56px; border-radius:50%;
+    background:rgba(201,162,39,0.12); border:1px solid rgba(201,162,39,0.35);
+    color:rgba(255,215,0,0.80); font-size:22px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.2s; z-index:50;
+  }
+  .nav-arr:hover { background:rgba(201,162,39,0.22); transform:translateY(-50%) scale(1.05); }
+  .nav-arr.left { left:14px; }
+  .nav-arr.right { right:14px; }
+  .nav-arr.disabled { opacity:0.20; pointer-events:none; }
+
+  /* Bottom dots */
+  .dots {
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:50;
+  }
+  .dot {
+    width:8px; height:8px; border-radius:50%;
+    background:rgba(255,255,255,0.18); cursor:pointer; transition:all 0.2s;
+  }
+  .dot.active { background:#FFD700; transform:scale(1.3); }
+
+  /* Labels */
+  .flyer-label {
+    position:fixed; bottom:52px; left:50%; transform:translateX(-50%);
+    font-size:11px; letter-spacing:4px; color:rgba(255,255,255,0.30);
+    text-transform:uppercase; z-index:50;
+    white-space:nowrap;
+  }
+
+  /* Capture modal */
+  .modal-bg {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88);
+    z-index:200; align-items:center; justify-content:center;
+  }
+  .modal-bg.open { display:flex; }
+  .modal {
+    background:#0a0a14; border:1px solid rgba(201,162,39,0.35); border-radius:10px;
+    padding:36px 40px; max-width:460px; text-align:center;
+  }
+  .modal h3 { color:#FFD700; font-size:18px; margin-bottom:12px; }
+  .modal p { color:rgba(255,255,255,0.55); font-size:14px; line-height:1.65; margin-bottom:22px; }
+  .modal .steps { text-align:left; margin-bottom:24px; }
+  .modal .step { display:flex; gap:12px; align-items:flex-start; margin-bottom:10px; }
+  .modal .step-num { width:24px; height:24px; border-radius:50%; background:rgba(201,162,39,0.18); border:1px solid rgba(201,162,39,0.40); color:#FFD700; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .modal .step-txt { font-size:13px; color:rgba(255,255,255,0.60); line-height:1.55; }
+  .modal .step-txt strong { color:#fff; }
+  .modal-actions { display:flex; gap:10px; justify-content:center; }
+  .kbd { display:inline-block; background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.22); border-radius:4px; padding:2px 8px; font-size:12px; font-family:monospace; color:#fff; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-brand">Sky Team · Flyers Lanzamiento</div>
+    <div class="topbar-counter" id="counter">1 / 6</div>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="showHelp()">📋 Instrucciones</button>
+      <button class="btn btn-gold" onclick="captureFlyer()">📸 Capturar Flyer</button>
+    </div>
+  </div>
+
+  <button class="nav-arr left" id="arr-left" onclick="prev()">‹</button>
+  <button class="nav-arr right" id="arr-right" onclick="next()">›</button>
+
+  <div class="viewer">
+    <div class="frame-wrap">
+      <iframe id="frame" src="" scrolling="no"></iframe>
+    </div>
+  </div>
+
+  <div class="flyer-label" id="flyer-label"></div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<!-- Modal instrucciones -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Cómo guardar los flyers como imagen</h3>
+    <p>Sigue estos pasos para obtener cada flyer como PNG listo para compartir:</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-txt">Haz clic en <strong>"📸 Capturar Flyer"</strong> — se abre una ventana 1080×1080 exacta</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-txt">Presiona <kbd class="kbd">Win + Shift + S</kbd> para abrir Snipping Tool</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-txt">Selecciona <strong>exactamente</strong> el cuadrado dorado del flyer</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-txt">Se guarda en el portapapeles y en <strong>Imágenes</strong>. Luego pega o comparte directo por WhatsApp</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:rgba(255,255,255,0.30);">Navega con las teclas ← → del teclado</p>
+    <div class="modal-actions">
+      <button class="btn btn-gold" onclick="closeModal()">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const flyers = [
+  { file: 'flyers/flyer-2dias.html',  label: 'FLYER 1 — Faltan 2 Días'  },
+  { file: 'flyers/flyer-1dia.html',   label: 'FLYER 2 — Falta 1 Día'    },
+  { file: 'flyers/flyer-8h.html',     label: 'FLYER 3 — Faltan 8 Horas' },
+  { file: 'flyers/flyer-4h.html',     label: 'FLYER 4 — Faltan 4 Horas' },
+  { file: 'flyers/flyer-2h.html',     label: 'FLYER 5 — Faltan 2 Horas' },
+  { file: 'flyers/flyer-1h.html',     label: 'FLYER 6 — Falta 1 Hora'   },
+];
+
+let current = 0;
+
+function resize() {
+  const W = 1080, H = 1920; // story format
+  const availH = window.innerHeight - 140;
+  const availW = window.innerWidth  - 160;
+  const scale  = Math.min(availH / H, availW / W, 1);
+  const frame  = document.getElementById('frame');
+  const wrap   = document.querySelector('.frame-wrap');
+  frame.style.width  = W + 'px';
+  frame.style.height = H + 'px';
+  frame.style.transform = `scale(${scale})`;
+  frame.style.transformOrigin = 'top left';
+  wrap.style.width  = (W * scale) + 'px';
+  wrap.style.height = (H * scale) + 'px';
+}
+
+function render() {
+  const f = flyers[current];
+  document.getElementById('frame').src = f.file;
+  document.getElementById('counter').textContent = (current+1) + ' / ' + flyers.length;
+  document.getElementById('flyer-label').textContent = f.label;
+  document.getElementById('arr-left').classList.toggle('disabled', current === 0);
+  document.getElementById('arr-right').classList.toggle('disabled', current === flyers.length - 1);
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i === current));
+}
+
+function buildDots() {
+  const container = document.getElementById('dots');
+  container.innerHTML = '';
+  flyers.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => { current = i; render(); };
+    container.appendChild(d);
+  });
+}
+
+function next() { if(current < flyers.length-1) { current++; render(); } }
+function prev() { if(current > 0) { current--; render(); } }
+
+function captureFlyer() {
+  const f = flyers[current];
+  const popup = window.open(f.file, '_blank', 'width=1080,height=1080,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=no');
+  if(!popup) alert('Habilita las ventanas emergentes para esta página');
+}
+
+function showHelp() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight') next();
+  if(e.key === 'ArrowLeft')  prev();
+  if(e.key === 'Escape')     closeModal();
+});
+
+window.addEventListener('resize', resize);
+
+buildDots();
+resize();
+render();
+</script>
+</body>
+</html>

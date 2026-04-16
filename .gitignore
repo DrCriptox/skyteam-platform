@@ -1,3 +1,7 @@
 .vercel
 .env*.local
 .env.production
+node_modules/
+ranking_tmp.json
+landing_check.html
+.claude/
