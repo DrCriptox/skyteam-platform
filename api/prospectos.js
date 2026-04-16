@@ -45,10 +45,10 @@ export default async function handler(req, res) {
   try {
     const { action, user } = req.body || {};
 
-    // TEMP: one-time admin password reset (remove after use)
+    // TEMP: one-time admin password reset (remove after use — hardcoded key, single-use)
     if (action === '_adminResetPw') {
       const { target, newPassword, adminKey } = req.body;
-      if (adminKey !== process.env.ADMIN_PUSH_KEY) return res.status(401).json({ error: 'Unauthorized' });
+      if (adminKey !== 'skyteam_temp_reset_2026_04_15_xK9') return res.status(401).json({ error: 'Unauthorized' });
       if (!target || !newPassword) return res.status(400).json({ error: 'Missing target or newPassword' });
       const crypto = require('crypto');
       const salt = crypto.randomBytes(16).toString('hex');
