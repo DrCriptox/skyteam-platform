@@ -14130,6 +14130,14 @@ function saveBirthday(val) {
                 if(perfilEl) renderPerfil();
               }
             }
+          } else if(d && d.users && !d.users[CU.username]) {
+            // STALE SESSION: username no longer exists in DB (was renamed or deleted)
+            // Force logout so user re-authenticates with current username
+            console.warn('[SKY] STALE SESSION: username "' + CU.username + '" not found on server. Forcing re-login.');
+            localStorage.removeItem('skyteam_u');
+            CU = null;
+            showToast('⚠️ Tu sesión expiró. Inicia sesión de nuevo.');
+            setTimeout(function(){ location.reload(); }, 1500);
           }
         }).catch(function(){});
 

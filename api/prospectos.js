@@ -90,7 +90,12 @@ export default async function handler(req, res) {
         headers: { Prefer: 'return=representation' },
         body: JSON.stringify(row)
       });
-      return res.status(200).json({ ok: true, prospecto: data && data[0] ? data[0] : null });
+      if (!data || !data[0]) {
+        // Most likely cause: username doesn't exist in users table (FK constraint)
+        console.error('[PROSPECTOS] INSERT failed for user:', user, '— check if username exists in users table');
+        return res.status(400).json({ error: 'No se pudo guardar. Cierra sesión y vuelve a entrar.', code: 'INSERT_FAILED' });
+      }
+      return res.status(200).json({ ok: true, prospecto: data[0] });
     }
 
     // -- UPDATE --
