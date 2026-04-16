@@ -1498,8 +1498,12 @@ function initCoachIA() {
     return;
   }
 
-  // Prevent double-init
-  if (document.getElementById('coach-fab')) return;
+  // Prevent double-init — but re-show if it was hidden by logout
+  var existingFab = document.getElementById('coach-fab');
+  if (existingFab) {
+    if (existingFab.style.display === 'none') existingFab.style.display = '';
+    return;
+  }
 
   // Inject CSS
   injectCoachCSS();

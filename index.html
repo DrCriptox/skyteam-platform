@@ -3671,9 +3671,12 @@ function doLogout() {
   if(_sb) _sb.classList.remove('open');
   if(_sbOv) _sbOv.classList.remove('show');
 
-  // Remove coach IA fab
+  // Remove coach IA fab entirely (not just hide — initCoachIA checks for element existence)
   var _fab = document.getElementById('coach-fab');
-  if(_fab) _fab.style.display = 'none';
+  if(_fab) _fab.remove();
+  // Also remove coach modal if open
+  var _coachModal = document.getElementById('coach-modal');
+  if(_coachModal) _coachModal.remove();
 
   // Show landing (not login)
   document.getElementById('app').style.display = 'none';
