@@ -7680,46 +7680,16 @@ function renderPublicBookingUI(div, username, cfg, bookings) {
   };
 }
 
-// ── Slot renderer with IP-based scarcity ──────────────────────────────────
+// ── Slot renderer — trusts s.available flag from generarSlotsAgenda ─────────
+// ipHash kept in signature for backward-compatibility with pbSelectDay callers.
 function renderSlotList(slots, tz, ipHash) {
   var html = '';
 
-  // Group available slots by time period
-  var periods = { morning:[], afternoon:[], evening:[] };
-  slots.forEach(function(s) {
-    if(!s.available) return;
-    try {
-      var h = parseInt(new Intl.DateTimeFormat('en',{hour:'numeric',hour12:false,timeZone:tz}).format(new Date(s.iso)));
-      if(h < 12) periods.morning.push(s.iso);
-      else if(h < 17) periods.afternoon.push(s.iso);
-      else periods.evening.push(s.iso);
-    } catch(e) {}
-  });
-
-  // For each period: keep at least 1 available, block ~30% of the rest
-  // Use ipHash so each visitor sees different occupied slots but same available ones in each period
-  var fakeOccupied = {};
-  ['morning','afternoon','evening'].forEach(function(period) {
-    var pSlots = periods[period];
-    if(!pSlots.length) return;
-    var toBlock = Math.max(0, Math.floor(pSlots.length * 0.30));
-    var mustKeep = Math.max(1, Math.ceil(pSlots.length * 0.50)); // keep at least 50% of each period
-    var canBlock = pSlots.length - mustKeep;
-    toBlock = Math.min(toBlock, canBlock);
-
-    // Shuffle based on ipHash + period seed
-    var periodSeed = period === 'morning' ? 7 : period === 'afternoon' ? 13 : 19;
-    var shuffled = pSlots.slice().sort(function(a,b) {
-      var ha=0, hb=0;
-      var dow=new Date(a).getDay(); var ca=a+String(ipHash*periodSeed+dow*997), cb=b+String(ipHash*periodSeed+dow*997);
-      for(var i=0;i<ca.length;i++) ha=(ha*31+ca.charCodeAt(i))&0x7fffffff;
-      for(var i=0;i<cb.length;i++) hb=(hb*31+cb.charCodeAt(i))&0x7fffffff;
-      return ha-hb;
-    });
-    for(var i=0;i<toBlock;i++) fakeOccupied[shuffled[i]]=true;
-  });
-
-  // Render all slots
+  // Render all slots — scarcity already applied upstream in generarSlotsAgenda
+  // (which picks exactly 5 available + 5 busy with greedy-spread algorithm).
+  // Do NOT apply additional fake-occupation here — that was a legacy double-scarcity
+  // layer that reduced visible availability below the intended 5, causing reports of
+  // "10 slots but only 3-4 available" (e.g. Daniela Parra, Wed 9AM-11PM config).
   slots.forEach(function(s){
     var timeLabel;
     try{ timeLabel=new Intl.DateTimeFormat('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso)); }
@@ -7728,7 +7698,7 @@ function renderSlotList(slots, tz, ipHash) {
     try{ fullLabel=new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true,timeZone:tz}).format(new Date(s.iso)); }
     catch(e){ fullLabel=s.iso; }
 
-    var isOccupied = !s.available || fakeOccupied[s.iso];
+    var isOccupied = !s.available;
 
     if(isOccupied){
       html += '<div style="width:100%;max-width:100%;padding:13px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:0.5px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;opacity:0.42;cursor:not-allowed;box-sizing:border-box;">'
