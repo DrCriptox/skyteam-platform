@@ -7844,7 +7844,7 @@ function generarSlotsAgenda(cfg, bookings) {
     {name:'tarde',    from:15*60,to:18*60},
     {name:'noche',    from:18*60,to:24*60}
   ];
-  var MAX_PER_DAY = 8;       // Max slots shown per day (looks busy, not enslaved)
+  // MAX_PER_DAY is computed per-day inside the loop (8 normally, 9 when rawAvail >= 11)
   var BUSY_RATIO  = 0.35;    // ~35% appear busy — aim: 5 avail + 3 busy when 6+ real slots
 
   for(var di=0;di<8;di++){
@@ -7915,6 +7915,11 @@ function generarSlotsAgenda(cfg, bookings) {
 
     if(!rawAvail.length) continue; // skip day entirely if zero available
 
+    // HIGH VOLUME DAYS (11+ real slots available): show 9 boxes / 6 avail / 3 busy
+    // Normal days (1-10 real slots): show up to 8 boxes / 5 avail / 3 busy
+    var HIGH_VOLUME_DAY = rawAvail.length >= 11;
+    var MAX_PER_DAY = HIGH_VOLUME_DAY ? 9 : 8;
+
     // 2) Distribute available slots into time bands
     var bandSlots = BANDS.map(function(band){
       return rawAvail.filter(function(s){ return s.wallMin >= band.from && s.wallMin < band.to; });
@@ -7941,19 +7946,21 @@ function generarSlotsAgenda(cfg, bookings) {
     // Sort by time
     selected.sort(function(a,b){ return a.wallMin - b.wallMin; });
 
-    // 4) Smart scarcity: 8 total / 5 avail / 3 busy when 6+ real slots
-    //    - 6+ real slots: 5 available + 3 busy = 8 total (looks busy, not enslaved)
+    // 4) Smart scarcity:
+    //    - 11+ real slots: 6 available + 3 busy = 9 total (HIGH VOLUME, spread across zones)
+    //    - 6-10 real slots: 5 available + 3 busy = 8 total (looks busy, not enslaved)
     //    - 1-5 real slots: all real as available + pad with busy to hit totalMap target
     //    - Day rotation: slots hidden today appear available tomorrow (paired days 0/1, 2/3…)
+    //    - Zone distribution: when HIGH_VOLUME, seed 1 slot per active band (mañana/mediodía/tarde/noche)
     //    - Spread rule: available slots should be as far apart as possible (not consecutive)
     //    - Per-visitor rotation: userAgent+hour seed → each prospect sees a different combo
     //    - Booked slots NEVER shown as available (anti double-booking)
-    var MIN_VISIBLE = 8;
+    var MIN_VISIBLE = HIGH_VOLUME_DAY ? 9 : 8;
     var daySlots = [];
 
     if(selected.length >= 6) {
-      // 6+ REAL SLOTS: pick best 5 with max spread
-      var nAvail = 5;
+      // 6+ REAL SLOTS: pick nAvail with max spread
+      var nAvail = HIGH_VOLUME_DAY ? 6 : 5;
       var nBusy = selected.length - nAvail;
 
       var availIndices = {};
@@ -7993,8 +8000,25 @@ function generarSlotsAgenda(cfg, bookings) {
 
         // Step 1: Compute Day A pattern (greedy spread from pair-specific start)
         var dayAIndices = {};
-        var pairStart = pairIdx % selected.length;
-        dayAIndices[pairStart] = true;
+        if (HIGH_VOLUME_DAY) {
+          // ZONE DISTRIBUTION: seed 1 slot per active band (mañana/mediodía/tarde/noche)
+          // so the 6 disponibles span the whole day. Greedy fills the rest.
+          BANDS.forEach(function(band) {
+            var inBand = [];
+            for (var si = 0; si < selected.length; si++) {
+              if (selected[si].wallMin >= band.from && selected[si].wallMin < band.to) inBand.push(si);
+            }
+            if (inBand.length) {
+              // Pair-rotated pick from this band for per-day variety
+              dayAIndices[inBand[pairIdx % inBand.length]] = true;
+            }
+          });
+          // If fewer active bands than nAvail, greedy fills the rest with max spread.
+          // If more seeds than nAvail (unlikely: max 4 bands, nAvail=6), greedy is a no-op.
+        } else {
+          var pairStart = pairIdx % selected.length;
+          dayAIndices[pairStart] = true;
+        }
         greedyFill(dayAIndices, selected.length, nAvail);
 
         if(!isInvertDay) {
