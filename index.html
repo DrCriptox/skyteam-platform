@@ -7844,8 +7844,8 @@ function generarSlotsAgenda(cfg, bookings) {
     {name:'tarde',    from:15*60,to:18*60},
     {name:'noche',    from:18*60,to:24*60}
   ];
-  var MAX_PER_DAY = 10;      // Max slots shown per day
-  var BUSY_RATIO  = 0.35;    // ~35% appear busy (only when 7+ slots)
+  var MAX_PER_DAY = 8;       // Max slots shown per day (looks busy, not enslaved)
+  var BUSY_RATIO  = 0.35;    // ~35% appear busy — aim: 5 avail + 3 busy when 6+ real slots
 
   for(var di=0;di<8;di++){
     var base=new Date(ahora); base.setDate(base.getDate()+di);
@@ -7941,13 +7941,14 @@ function generarSlotsAgenda(cfg, bookings) {
     // Sort by time
     selected.sort(function(a,b){ return a.wallMin - b.wallMin; });
 
-    // 4) Smart scarcity: ~40% busy, min 7 visible, max spread + day rotation
-    //    - Many real slots (4+): ~60% available, ~40% busy — MAX DISTANCE between available
-    //    - Few real slots (1-3): ALL real as available, pad with busy to min 7
-    //    - Day rotation: slots hidden today appear available tomorrow
+    // 4) Smart scarcity: 8 total / 5 avail / 3 busy when 6+ real slots
+    //    - 6+ real slots: 5 available + 3 busy = 8 total (looks busy, not enslaved)
+    //    - 1-5 real slots: all real as available + pad with busy to hit totalMap target
+    //    - Day rotation: slots hidden today appear available tomorrow (paired days 0/1, 2/3…)
     //    - Spread rule: available slots should be as far apart as possible (not consecutive)
+    //    - Per-visitor rotation: userAgent+hour seed → each prospect sees a different combo
     //    - Booked slots NEVER shown as available (anti double-booking)
-    var MIN_VISIBLE = 7;
+    var MIN_VISIBLE = 8;
     var daySlots = [];
 
     if(selected.length >= 6) {
@@ -8036,13 +8037,13 @@ function generarSlotsAgenda(cfg, bookings) {
 
     } else {
       // 1-5 REAL SLOTS: show all as available + pad with occupied
-      // 1-4 reales: pad to 7 total. 5 reales: pad to 8 total.
+      // Target: 1→5, 2→6, 3→7, 4→8, 5→8 (uniform 8 from 4 reales up)
       selected.forEach(function(s) {
         daySlots.push({ iso: s.iso, wallMin: s.wallMin, available: true });
       });
-      // 1 real=5 total, 2=6, 3=7, 4=7, 5=8
-      var totalMap = {1:5, 2:6, 3:7, 4:7, 5:8};
-      var MIN_TOTAL = totalMap[selected.length] || 7;
+      // 1 real=5 total, 2=6, 3=7, 4=8, 5=8
+      var totalMap = {1:5, 2:6, 3:7, 4:8, 5:8};
+      var MIN_TOTAL = totalMap[selected.length] || 8;
       var need = MIN_TOTAL - daySlots.length;
       if(need > 0 && rawUnavail.length > 0) {
         // Pick unavailable slots spread across the day, not adjacent to available ones
