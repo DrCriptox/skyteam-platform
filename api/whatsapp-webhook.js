@@ -148,6 +148,36 @@ async function callClaude(systemPrompt, messages, maxTokens) {
   } catch (e) { console.error('[WA-BOT] Claude error:', e.message); return callGPT(systemPrompt, messages, maxTokens); }
 }
 
+// Transcribe audio using OpenAI Whisper
+async function transcribeAudio(mediaUrl) {
+  var key = process.env.OPENAI_API_KEY;
+  if (!key || !mediaUrl) return null;
+  try {
+    // Twilio media URLs require auth to download
+    var audioResponse = await fetch(mediaUrl, {
+      headers: { 'Authorization': 'Basic ' + Buffer.from(TWILIO_SID + ':' + TWILIO_TOKEN).toString('base64') }
+    });
+    if (!audioResponse.ok) return null;
+    var audioBuffer = await audioResponse.arrayBuffer();
+    // Create form data for Whisper
+    var boundary = '----WhisperBoundary' + Date.now();
+    var body = Buffer.concat([
+      Buffer.from('--' + boundary + '\r\nContent-Disposition: form-data; name="file"; filename="audio.ogg"\r\nContent-Type: audio/ogg\r\n\r\n'),
+      Buffer.from(audioBuffer),
+      Buffer.from('\r\n--' + boundary + '\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n'),
+      Buffer.from('--' + boundary + '\r\nContent-Disposition: form-data; name="language"\r\n\r\nes\r\n'),
+      Buffer.from('--' + boundary + '--\r\n')
+    ]);
+    var r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'multipart/form-data; boundary=' + boundary },
+      body: body
+    });
+    var data = await r.json();
+    return data.text || null;
+  } catch (e) { console.error('[WA-BOT] Whisper error:', e.message); return null; }
+}
+
 function detectComplexity(text) {
   if (!text) return 'simple';
   var lower = text.toLowerCase();
@@ -353,12 +383,14 @@ SOBRE EL NEGOCIO (lo que puedes decir):
 - Es 100% digital, lo puedes hacer desde tu celular, desde cualquier pais
 - La reunion es GRATIS y sin compromiso — es solo para que conozcas el modelo completo
 
-TU FLUJO DE CONVERSACION (seguir en este orden):
-1. SALUDO: "Hola [nombre]! Soy Sofi, asistente del Dr. Rojas. Vi que te intereso nuestra franquicia digital. Que bueno tenerte aqui!"
-2. CALIFICACION RAPIDA (1-2 preguntas max): "Cuentame, que es lo que mas te llamo la atencion?" o "Que tipo de ingresos te gustaria generar?"
-3. VALIDAR Y CONECTAR: Usa su respuesta para crear urgencia. Ejemplo: "Perfecto, justamente el Doctor Rojas tiene un espacio esta semana para mostrarte como el sistema te puede ayudar con eso."
-4. AGENDAR: "Te reservo un espacio de 25 min con el? Es privada, sin compromiso, y te va a encantar lo que va a ver ahi."
-5. CONFIRMAR: Mostrar horarios y cerrar la cita
+TU FLUJO DE CONVERSACION (seguir ESTRICTAMENTE en este orden):
+1. SALUDO: "Hola [nombre]! Soy Sofi, asistente del Dr. Rojas. Que bueno que te intereso la franquicia digital 🙌"
+2. FILTRO OBLIGATORIO (aunque digan "quiero agendar"): SIEMPRE pregunta primero: "Cuentame, alcanzaste a ver el video completo de la pagina? Quiero asegurarme de que tengas toda la info antes de la reunion con el Doctor."
+3. SI NO VIO EL VIDEO: "Te recomiendo que lo veas primero para que aproveches al maximo la reunion. Es cortito y te explica como funciona el sistema de IA. Cuando lo veas me escribes y te agendo!"
+4. SI SI LO VIO - CALIFICAR: "Perfecto! Y cuentame, que fue lo que mas te llamo la atencion? Que te gustaria lograr con el sistema?" (esperar respuesta antes de ofrecer agenda)
+5. VALIDAR INTERES REAL: Solo cuando el prospecto demuestre interes genuino (responde con metas, suenos, o preguntas especificas), ENTONCES ofrece la agenda
+6. AGENDAR: "El Doctor Rojas tiene unos espacios esta semana. Te comparto su agenda para que elijas el horario que mejor te funcione" + enviar link de agenda
+7. IMPORTANTE: NUNCA ofrezcas la agenda en el primer mensaje. SIEMPRE filtra primero (minimo 2-3 intercambios antes de ofrecer agenda)
 
 FRASES DE PODER (usarlas naturalmente):
 - "El sistema de IA hace gran parte del trabajo por ti"
@@ -555,6 +587,17 @@ export default async function handler(req, res) {
     var msgId = parsed.msgId;
     var msgType = parsed.msgType;
 
+    // Transcribe audio messages
+    if ((msgType === 'audio' || msgType === 'voice') && parsed.mediaUrl) {
+      var transcription = await transcribeAudio(parsed.mediaUrl);
+      if (transcription) {
+        textContent = transcription;
+        msgType = 'audio_transcribed';
+      } else {
+        textContent = '[El prospecto envio un audio que no se pudo transcribir]';
+      }
+    }
+
     console.log('[WA-BOT] From:', from, 'Type:', msgType, 'Text:', textContent.substring(0, 80));
 
     // Mark as read (Meta only)
@@ -647,15 +690,16 @@ export default async function handler(req, res) {
       await saveMessage(from, 'out', cleanResponse, 'text', textResult.messageId);
     }
 
-    if (shouldShowSlots && slots.length > 0) {
-      // Cache slots for this phone (for number-based selection)
-      _pendingSlots[from] = slots;
-      await sendSlotList(from, 'Elige el horario que mejor te funcione 👇', slots);
-      await saveMessage(from, 'out', '[Lista de horarios enviada]', 'interactive');
-    } else if (shouldShowSlots && slots.length === 0) {
-      var noSlotsText = 'En este momento no tengo horarios disponibles, pero te contactamos pronto para coordinar. 🙏';
-      await sendText(from, noSlotsText);
-      await saveMessage(from, 'out', noSlotsText, 'text');
+    if (shouldShowSlots) {
+      var agendaLink = 'https://www.skyteam.global?agenda=dradmin';
+      var agendaText = 'Aqui te comparto la agenda del Doctor Rojas para que elijas el horario que mejor te funcione 👇\n\n📅 ' + agendaLink + '\n\nEs una reunion privada de 25 min por videollamada. Sin compromiso. Cuando agendes me avisas y te confirmo todo! 🙌';
+      var agendaResult = await sendText(from, agendaText);
+      await saveMessage(from, 'out', agendaText, 'text', agendaResult.messageId);
+      // Update lead stage
+      await sb('wa_leads?phone=eq.' + encodeURIComponent(from), {
+        method: 'PATCH',
+        body: JSON.stringify({ etapa: 'agenda_enviada', temperatura: 'caliente', updated_at: new Date().toISOString() })
+      });
     }
 
     if (shouldEscalate) {
