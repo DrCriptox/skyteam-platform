@@ -145,6 +145,15 @@ export default async function handler(req, res) {
       // Device ID: fingerprint (preferred) or IP fallback
       const deviceId = deviceFP || clientIP;
       if (!trackRef) return res.status(200).json({ ok: true });
+
+      // ── Bot filter: reject Facebook/WhatsApp/crawler preview bots from inflating rankings ──
+      const ua = (req.headers['user-agent'] || '').toLowerCase();
+      const isBotUA = /facebookexternalhit|facebot|whatsapp|bot|crawler|spider|preview|scrape|fetch|monitor|headless|phantom|selenium|slurp|bing|yandex|baidu|duckduck|semrush|ahref|mj12|dotbot|petalbot|bytespider|gptbot|claude/i.test(ua);
+      if (isBotUA) {
+        console.log('[Track] SKIP bot:', ua.substring(0, 60), trackType, trackRef);
+        return res.status(200).json({ ok: true, tracked: false, bot: true });
+      }
+
       const SB_URL_T = process.env.SUPABASE_URL;
       const SB_KEY_T = process.env.SUPABASE_SERVICE_KEY;
       const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10);

@@ -235,11 +235,17 @@ Agendar llamada</a>
     var s = screen.width+'x'+screen.height+'|'+screen.colorDepth+'|'+(Intl.DateTimeFormat().resolvedOptions().timeZone||'')+'|'+navigator.language+'|'+navigator.platform+'|'+navigator.hardwareConcurrency;
     var h=0; for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return 'fp_'+Math.abs(h).toString(36);
   })();
-  // Track page visit ALWAYS (even if asesor has no WA data)
-  fetch('/api/landing', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'track', ref: slug, type: 'visit', fp: _fp }), keepalive: true
-  }).catch(function(){});
+  // Bot detection (shared between visit + conversion tracking)
+  var _ua = navigator.userAgent || '';
+  var _isBot = /bot|crawler|spider|preview|scrape|fetch|monitor|headless|phantom|selenium|facebookexternalhit|facebot|whatsapp\/|slurp/i.test(_ua);
+
+  // Track page visit — SKIP bots to prevent inflated ranking numbers
+  if (!_isBot) {
+    fetch('/api/landing', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'track', ref: slug, type: 'visit', fp: _fp }), keepalive: true
+    }).catch(function(){});
+  }
 
   var a = (window._mergedData && (window._mergedData[slug] || window._mergedData[_ref])) || null;
   if(!a) return;
@@ -308,9 +314,7 @@ Agendar llamada</a>
   }, 500);
 
   // ── Conversion tracking (anti-bot + min engagement) ──
-  // Bot detection: filter by user agent
-  var _ua = navigator.userAgent || '';
-  var _isBot = /bot|crawler|spider|preview|scrape|fetch|monitor|headless|phantom|selenium/i.test(_ua);
+  // Bot detection: _isBot already defined above (shared with visit tracking)
   // Engagement tracking: only count after real interaction
   var _pageLoadTime = Date.now();
   var _userInteracted = false;
