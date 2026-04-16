@@ -247,9 +247,10 @@ Agendar llamada</a>
   if(!wa) return;
   var nombre = a.nombre || '';
 
-  // Pre-built WhatsApp links — messages that commit the person to action
-  var msgSaber = encodeURIComponent('Hola ' + nombre + ', ya vi la informacion y quiero agendar una llamada para resolver mis dudas antes de activar. Cuando tienes disponibilidad?');
-  var msgActivar = encodeURIComponent('Hola ' + nombre + ', estoy listo para activar. Cual es el paso a seguir?');
+  // Pre-built WhatsApp links — short, low-commitment messages that maximize send rate.
+  // The bot handles qualification after they write. Keep these SHORT so people actually press Send.
+  var msgSaber = encodeURIComponent('Hola, vi el video sobre la franquicia de trading con IA. Me gustaria saber mas.');
+  var msgActivar = encodeURIComponent('Hola, me interesa activar la franquicia digital. Quiero info.');
   var linkSaber = 'https://wa.me/' + wa + '?text=' + msgSaber;
   var linkActivar = 'https://wa.me/' + wa + '?text=' + msgActivar;
 
