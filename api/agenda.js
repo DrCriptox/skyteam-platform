@@ -138,10 +138,12 @@ export default async function handler(req, res) {
       //   endorsement_status: 'pending' | 'active'
       //   endorsed_at: ISO timestamp
 
-      // Helper: get user's rank + sponsor
+      // Helper: get user's rank + sponsor (case-insensitive — sponsor field stores UPPERCASE)
       var _getUserRank = async function(uname) {
-        var r = await sb('users?username=eq.' + encodeURIComponent(uname) + '&select=rank,sponsor,name&limit=1');
-        return (r && r[0]) ? { rank: parseInt(r[0].rank) || 0, sponsor: r[0].sponsor || '', name: r[0].name || uname } : { rank: 0, sponsor: '', name: uname };
+        var clean = (uname || '').trim().toLowerCase();
+        if (!clean) return { rank: 0, sponsor: '', name: uname };
+        var r = await sb('users?username=ilike.' + encodeURIComponent(clean) + '&select=username,rank,sponsor,name&limit=1');
+        return (r && r[0]) ? { rank: parseInt(r[0].rank) || 0, sponsor: (r[0].sponsor || '').trim(), name: r[0].name || uname, username: r[0].username } : { rank: 0, sponsor: '', name: uname, username: clean };
       };
       // Helper: read/write config
       var _getConfig = async function(uname) {
@@ -156,26 +158,37 @@ export default async function handler(req, res) {
         });
       };
 
-      // Solicita endoso a un cerrador específico (patrocinador directo o hasta 2 niveles arriba)
+      // Solicita endoso a un cerrador específico (patrocinador directo o hasta 3 niveles arriba)
       if (action === 'requestEndorsement') {
         try {
           var me = await _getUserRank(user);
           if (!me.sponsor) return res.status(400).json({ error: 'No tienes patrocinador asignado' });
           // Resolver el targetCloser: si no se pasa, default es el sponsor directo
-          var targetCloser = ((req.body || {}).targetCloser || '').trim().toLowerCase() || me.sponsor;
-          // Validar que el target sea el sponsor directo O el sponsor del sponsor (máx 2 niveles arriba)
+          var targetCloser = ((req.body || {}).targetCloser || '').trim().toLowerCase() || me.sponsor.toLowerCase();
+          // Validar que el target sea sponsor directo, abuelo, o bisabuelo (máx 3 niveles arriba)
           var lvl1 = await _getUserRank(me.sponsor);
           var isValidTarget = false;
           var targetData = null;
-          if (targetCloser === me.sponsor) {
+          if (targetCloser === (lvl1.username || me.sponsor.toLowerCase())) {
             isValidTarget = true;
             targetData = lvl1;
-          } else if (lvl1.sponsor && targetCloser === lvl1.sponsor) {
-            isValidTarget = true;
-            targetData = await _getUserRank(lvl1.sponsor);
+          }
+          if (!isValidTarget && lvl1.sponsor) {
+            var lvl2 = await _getUserRank(lvl1.sponsor);
+            if (targetCloser === (lvl2.username || lvl1.sponsor.toLowerCase())) {
+              isValidTarget = true;
+              targetData = lvl2;
+            }
+            if (!isValidTarget && lvl2.sponsor) {
+              var lvl3 = await _getUserRank(lvl2.sponsor);
+              if (targetCloser === (lvl3.username || lvl2.sponsor.toLowerCase())) {
+                isValidTarget = true;
+                targetData = lvl3;
+              }
+            }
           }
           if (!isValidTarget) {
-            return res.status(400).json({ error: 'Solo puedes solicitar endoso a tu patrocinador directo o al patrocinador de tu patrocinador (máx 2 niveles arriba).' });
+            return res.status(400).json({ error: 'Solo puedes solicitar endoso a tu patrocinador directo o hasta 3 niveles arriba.' });
           }
           if (targetData.rank < 3) {
             return res.status(400).json({ error: 'El cerrador elegido (' + (targetData.name || targetCloser) + ') debe ser NOVA 1500 o superior. Rango actual: ' + targetData.rank });
@@ -197,16 +210,21 @@ export default async function handler(req, res) {
         try {
           var myCfg = await _getConfig(user);
           var me = await _getUserRank(user);
-          // Eligible candidates: patrocinador directo (nivel 1) + abuelo (nivel 2)
-          // Ambos deben ser NOVA1500+ (rank >= 3). Si no lo son, no aparecen.
+          // Eligible candidates: up to 3 levels up (sponsor, grandparent, great-grandparent)
+          // Must be NOVA1500+ (rank >= 3) to appear as eligible closer
           var eligibleClosers = [];
           if (me.sponsor) {
             var lvl1 = await _getUserRank(me.sponsor);
-            if (lvl1.rank >= 3) eligibleClosers.push({ username: me.sponsor, name: lvl1.name, rank: lvl1.rank, level: 1 });
+            if (lvl1.rank >= 3) eligibleClosers.push({ username: lvl1.username || me.sponsor.toLowerCase(), name: lvl1.name, rank: lvl1.rank, level: 1 });
             // Nivel 2 (patrocinador del patrocinador)
             if (lvl1.sponsor) {
               var lvl2 = await _getUserRank(lvl1.sponsor);
-              if (lvl2.rank >= 3) eligibleClosers.push({ username: lvl1.sponsor, name: lvl2.name, rank: lvl2.rank, level: 2 });
+              if (lvl2.rank >= 3) eligibleClosers.push({ username: lvl2.username || lvl1.sponsor.toLowerCase(), name: lvl2.name, rank: lvl2.rank, level: 2 });
+              // Nivel 3 (bisabuelo)
+              if (lvl2.sponsor) {
+                var lvl3 = await _getUserRank(lvl2.sponsor);
+                if (lvl3.rank >= 3) eligibleClosers.push({ username: lvl3.username || lvl2.sponsor.toLowerCase(), name: lvl3.name, rank: lvl3.rank, level: 3 });
+              }
             }
           }
           // Mi endoso como socio (si solicité alguno)
