@@ -62,18 +62,32 @@ export default async function handler(req, res) {
     // Support login by email or username
     const isEmail = clean.includes('@');
     const query = isEmail
-      ? SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=*&limit=1'
+      ? SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=*'
       : SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(clean) + '&select=*&limit=1';
 
     const r = await fetch(query, { headers: HEADERS });
     if (!r.ok) throw new Error('DB error');
     const rows = await r.json();
 
-    if (!rows.length || !checkPassword(password, rows[0].password)) {
+    if (!rows.length) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
-    const user = rows[0];
+    // If multiple users share the same email, try password against each — prefer admin
+    let user = null;
+    if (isEmail && rows.length > 1) {
+      // Sort: admins first
+      rows.sort(function(a, b) { return (b.is_admin ? 1 : 0) - (a.is_admin ? 1 : 0); });
+      for (const row of rows) {
+        if (checkPassword(password, row.password)) { user = row; break; }
+      }
+    } else {
+      if (checkPassword(password, rows[0].password)) user = rows[0];
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
     // Save last login IP for anti-fraud (fire-and-forget)
     try {
       const loginIP = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';

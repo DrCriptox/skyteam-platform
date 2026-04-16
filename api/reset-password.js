@@ -53,6 +53,7 @@ export default async function handler(req, res) {
 
     const hashedPassword = hashPassword(password);
 
+    // Update password for the user from the token
     const r = await fetch(
       SUPABASE_URL + '/rest/v1/users?username=eq.' + encodeURIComponent(data.u),
       {
@@ -63,6 +64,18 @@ export default async function handler(req, res) {
     );
 
     if (!r.ok) throw new Error('DB update failed');
+
+    // ALSO update any other users with the same email (handles duplicate-email accounts)
+    if (data.e) {
+      await fetch(
+        SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(data.e) + '&username=neq.' + encodeURIComponent(data.u),
+        {
+          method: 'PATCH',
+          headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({ password: hashedPassword })
+        }
+      ).catch(function() {});
+    }
 
     return res.status(200).json({ ok: true });
 

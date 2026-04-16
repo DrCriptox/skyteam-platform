@@ -38,18 +38,22 @@ export default async function handler(req, res) {
     }
 
     const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=username,name&limit=1',
+      SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(clean) + '&select=username,name,is_admin',
       { headers: HEADERS }
     );
     const users = await r.json();
 
     if (!users || users.length === 0) {
-      console.error('[FORGOT-PASSWORD] Email not found in DB:', clean);
       return res.status(200).json({ ok: true }); // No revelar si el email existe
     }
-    console.log('[FORGOT-PASSWORD] Found user:', users[0].username, 'for email:', clean);
 
-    const user = users[0];
+    // If multiple users share the same email, prefer the admin account
+    var user = users[0];
+    if (users.length > 1) {
+      var adminUser = users.find(function(u) { return u.is_admin; });
+      if (adminUser) user = adminUser;
+    }
+    console.log('[FORGOT-PASSWORD] Found user:', user.username, 'for email:', clean, '(of', users.length, 'matches)');
     const token = generateToken(user.username, clean);
     const resetLink = 'https://skyteam.global?reset=' + token;
     const primerNombre = user.name ? user.name.split(' ')[0] : 'Socio';
