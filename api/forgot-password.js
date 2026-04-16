@@ -44,8 +44,10 @@ export default async function handler(req, res) {
     const users = await r.json();
 
     if (!users || users.length === 0) {
+      console.error('[FORGOT-PASSWORD] Email not found in DB:', clean);
       return res.status(200).json({ ok: true }); // No revelar si el email existe
     }
+    console.log('[FORGOT-PASSWORD] Found user:', users[0].username, 'for email:', clean);
 
     const user = users[0];
     const token = generateToken(user.username, clean);
