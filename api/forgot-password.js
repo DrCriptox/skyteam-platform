@@ -4,9 +4,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const HEADERS = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
 
-// Secret para firmar tokens HMAC. Usa RESET_SECRET si está, si no cae a ADMIN_PUSH_KEY
-// (que siempre está inyectado en runtime). Ambas son server-side, nunca expuestas al cliente.
-const RESET_SECRET = process.env.RESET_SECRET || process.env.ADMIN_PUSH_KEY;
+// Secret para firmar tokens HMAC. Cascada de fallbacks (todos server-side, nunca expuestos):
+// 1) RESET_SECRET (dedicado) 2) ADMIN_PUSH_KEY 3) SUPABASE_SERVICE_KEY (siempre disponible)
+const RESET_SECRET = process.env.RESET_SECRET || process.env.ADMIN_PUSH_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 function generateToken(username, email) {
   if (!RESET_SECRET) throw new Error('RESET_SECRET not configured');
@@ -23,28 +23,17 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { email, _debug } = req.body || {};
+    const { email } = req.body || {};
 
     // Siempre retorna 200 para evitar enumeración de emails
     if (!email || typeof email !== 'string' || email.length > 200) {
-      return res.status(200).json({ ok: true, _d: _debug ? 'no_email_provided' : undefined });
+      return res.status(200).json({ ok: true });
     }
 
     const clean = email.trim().toLowerCase();
 
     if (!RESET_SECRET) {
-      console.error('[FORGOT-PASSWORD] No secret available (RESET_SECRET + ADMIN_PUSH_KEY both missing)');
-      if (_debug) return res.status(200).json({ ok: true, _d: 'no_secret', env_check: {
-        HAS_SUPABASE_URL: !!process.env.SUPABASE_URL,
-        HAS_SUPABASE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
-        HAS_RESEND: !!process.env.RESEND_API_KEY,
-        HAS_OPENAI: !!process.env.OPENAI_API_KEY,
-        HAS_ADMIN_PUSH_KEY: !!process.env.ADMIN_PUSH_KEY,
-        HAS_RESET_SECRET: !!process.env.RESET_SECRET,
-        HAS_VAPID_PUB: !!process.env.VAPID_PUBLIC_KEY,
-        ADMIN_PUSH_KEY_LEN: (process.env.ADMIN_PUSH_KEY||'').length,
-        RESET_SECRET_LEN: (process.env.RESET_SECRET||'').length
-      }});
+      console.error('[FORGOT-PASSWORD] No secret available — all fallbacks failed');
       return res.status(200).json({ ok: true });
     }
 
@@ -55,7 +44,6 @@ export default async function handler(req, res) {
     const users = await r.json();
 
     if (!users || users.length === 0) {
-      if (_debug) return res.status(200).json({ ok: true, _d: 'email_not_found', searched: clean });
       return res.status(200).json({ ok: true }); // No revelar si el email existe
     }
 
@@ -101,13 +89,7 @@ export default async function handler(req, res) {
       if (!emailRes.ok) {
         const emailBody = await emailRes.text().catch(() => '');
         console.error('[FORGOT-PASSWORD] Resend FAILED:', emailRes.status, emailBody.substring(0, 300));
-        if (_debug) return res.status(200).json({ ok: true, _d: 'resend_error', status: emailRes.status, body: emailBody.substring(0, 200) });
-      } else {
-        const emailData = await emailRes.json().catch(() => ({}));
-        if (_debug) return res.status(200).json({ ok: true, _d: 'sent', emailId: emailData.id, to: clean, user: user.username });
       }
-    } else {
-      if (_debug) return res.status(200).json({ ok: true, _d: 'no_resend_key' });
     }
 
     return res.status(200).json({ ok: true });
