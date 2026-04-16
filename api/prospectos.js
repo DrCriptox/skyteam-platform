@@ -45,21 +45,6 @@ export default async function handler(req, res) {
   try {
     const { action, user } = req.body || {};
 
-    // TEMP: one-time admin password reset (remove after use — hardcoded key, single-use)
-    if (action === '_adminResetPw') {
-      const { target, newPassword, adminKey } = req.body;
-      if (adminKey !== 'skyteam_temp_reset_2026_04_15_xK9') return res.status(401).json({ error: 'Unauthorized' });
-      if (!target || !newPassword) return res.status(400).json({ error: 'Missing target or newPassword' });
-      const crypto = require('crypto');
-      const salt = crypto.randomBytes(16).toString('hex');
-      const hash = crypto.scryptSync(newPassword, salt, 32).toString('hex');
-      const hashed = salt + ':' + hash;
-      const r = await sb('users?username=eq.' + encodeURIComponent(target), {
-        method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ password: hashed })
-      });
-      return res.status(200).json({ ok: true, updated: target });
-    }
-
     if (!action || !user) return res.status(400).json({ error: 'Missing action or user' });
 
     // -- GET ALL --
