@@ -387,10 +387,10 @@ TU FLUJO DE CONVERSACION (seguir ESTRICTAMENTE en este orden):
 1. SALUDO: "Hola [nombre]! Soy Sofi, asistente del Dr. Rojas. Que bueno que te intereso la franquicia digital 🙌"
 2. FILTRO OBLIGATORIO (aunque digan "quiero agendar"): SIEMPRE pregunta primero: "Cuentame, alcanzaste a ver el video completo de la pagina? Quiero asegurarme de que tengas toda la info antes de la reunion con el Doctor."
 3. SI NO VIO EL VIDEO: Responde EXACTAMENTE asi: "Te recomiendo que lo veas primero para que aproveches al maximo la reunion con el Doctor Rojas. Es cortito y te explica todo el sistema de IA 🚀 Aqui te lo dejo: https://skyteam.global/landing?ref=dradmin Revisalo con calma y en 30 minutos te escribo para ver que te parecio!" Luego incluye [RECORDAR_30MIN] al final del mensaje.
-4. SI SI LO VIO - CALIFICAR: "Perfecto! Y cuentame, que fue lo que mas te llamo la atencion? Que te gustaria lograr con el sistema?" (esperar respuesta antes de ofrecer agenda)
-5. VALIDAR INTERES REAL: Solo cuando el prospecto demuestre interes genuino (responde con metas, suenos, o preguntas especificas), ENTONCES ofrece la agenda
-6. AGENDAR: "El Doctor Rojas tiene unos espacios esta semana. Te comparto su agenda para que elijas el horario que mejor te funcione" + enviar link de agenda
-7. IMPORTANTE: NUNCA ofrezcas la agenda en el primer mensaje. SIEMPRE filtra primero (minimo 2-3 intercambios antes de ofrecer agenda)
+4. SI SI LO VIO - CALIFICAR (NO ofrezcas la agenda todavia): Pregunta UNA cosa a la vez. Ejemplo: "Que bueno! Y cuentame, que es lo que mas te gustaria lograr? Libertad financiera, tiempo para tu familia, viajar...?" ESPERA su respuesta.
+5. CONECTAR CON SU META: Cuando responda, valida su respuesta. Ejemplo: "Eso es genial! Justamente hay socios que lograron [algo similar]. El Doctor Rojas te puede mostrar como." ESPERA su respuesta.
+6. SOLO DESPUES DE PASO 5 - AGENDAR: "El Doctor tiene espacios esta semana. Te comparto su agenda personal para que reserves tu horario" e incluye [AGENDAR]
+7. REGLA DE ORO: MINIMO 3 mensajes de IDA Y VUELTA antes de ofrecer la agenda. Si no han pasado 3 intercambios, NO incluyas [AGENDAR]. Conversa, conoce al prospecto, genera confianza primero.
 
 FRASES DE PODER (usarlas naturalmente):
 - "El sistema de IA hace gran parte del trabajo por ti"
@@ -583,10 +583,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'unknown_format' });
     }
 
-    if (!parsed || !parsed.phone || !parsed.text) {
-      // Twilio expects TwiML response, return empty
+    if (!parsed || !parsed.phone) {
       if (req.body && req.body.From) return res.status(200).set('Content-Type', 'text/xml').send('<Response></Response>');
       return res.status(200).json({ status: 'empty' });
+    }
+
+    // Allow audio/media messages through even without text
+    if (!parsed.text && !parsed.hasMedia) {
+      if (req.body && req.body.From) return res.status(200).set('Content-Type', 'text/xml').send('<Response></Response>');
+      return res.status(200).json({ status: 'no_content' });
     }
 
     var from = parsed.phone;
@@ -596,14 +601,28 @@ export default async function handler(req, res) {
     var msgType = parsed.msgType;
 
     // Transcribe audio messages
-    if ((msgType === 'audio' || msgType === 'voice') && parsed.mediaUrl) {
+    if ((msgType === 'audio' || msgType === 'voice' || msgType === 'media') && parsed.mediaUrl && parsed.hasMedia) {
+      console.log('[WA-BOT] Audio detected, mediaUrl:', parsed.mediaUrl.substring(0, 60));
       var transcription = await transcribeAudio(parsed.mediaUrl);
       if (transcription) {
         textContent = transcription;
         msgType = 'audio_transcribed';
+        console.log('[WA-BOT] Transcribed:', transcription.substring(0, 80));
       } else {
-        textContent = '[El prospecto envio un audio que no se pudo transcribir]';
+        // Transcription failed — ask for text
+        var fallbackMsg = 'Disculpa, no pude escuchar bien tu audio 🙈 Me lo puedes escribir por texto para ayudarte mejor?';
+        await sendText(from, fallbackMsg);
+        await saveMessage(from, 'out', fallbackMsg, 'text');
+        await saveMessage(from, 'in', '[Audio no transcrito]', 'audio', msgId);
+        if (req.body && req.body.From) return res.status(200).set('Content-Type', 'text/xml').send('<Response></Response>');
+        return res.status(200).json({ status: 'audio_fallback' });
       }
+    }
+
+    // If still no text content after audio processing, skip
+    if (!textContent) {
+      if (req.body && req.body.From) return res.status(200).set('Content-Type', 'text/xml').send('<Response></Response>');
+      return res.status(200).json({ status: 'no_text' });
     }
 
     console.log('[WA-BOT] From:', from, 'Type:', msgType, 'Text:', textContent.substring(0, 80));
