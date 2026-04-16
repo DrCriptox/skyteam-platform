@@ -14232,18 +14232,34 @@ window.addEventListener('DOMContentLoaded', function(){
   if(params.get('agenda')) {
     checkPublicAgenda();
   }
-  // Handle password reset link (?reset=TOKEN)
+  // Handle password reset link (?reset=TOKEN) — go DIRECTLY to reset form
   var resetToken = params.get('reset');
   if(resetToken) {
     window._resetToken = resetToken;
-    // Remove token from URL without reload
+    // Remove token from URL without reload (keep ref if present)
     var cleanUrl = window.location.pathname + (params.get('ref') ? '?ref=' + params.get('ref') : '');
     history.replaceState(null, '', cleanUrl);
-    // Show reset box in login screen
+
+    // Skip landing → go straight to login screen with reset box
+    var lp = document.getElementById('landing-page');
+    if(lp) lp.style.display = 'none';
+    document.body.classList.remove('landing-active');
+    var ls = document.getElementById('login-screen');
+    if(ls) ls.style.display = 'flex';
+
+    // Hide all other boxes, show only reset-box
     var boxes = ['solicitud-box','forgot-box','solicitud-success'];
     boxes.forEach(function(b){ var el=document.getElementById(b); if(el) el.style.display='none'; });
     var rb = document.getElementById('reset-box');
-    if(rb) rb.style.display = 'block';
+    if(rb) {
+      rb.style.display = 'block';
+      // Scroll to reset box + focus password input
+      setTimeout(function() {
+        rb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var rp = document.getElementById('reset-pass');
+        if(rp) rp.focus();
+      }, 400);
+    }
   }
 });
 
