@@ -758,6 +758,22 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('wa_followup: ' + e.message); }
 
+    // -- TRIGGER HEALTHCHECK: 2x/day (9 AM + 5 PM Colombia) --
+    try {
+      if ((colHour === 9 || colHour === 17) && colMin >= 0 && colMin <= 14) {
+        var hcKey = "healthcheck_" + today + "_" + colHour;
+        var hcCheck = await sb("cron_log?key=eq." + hcKey + "&select=key&limit=1");
+        if (!hcCheck || hcCheck.length === 0) {
+          try { await sb("cron_log", { method:"POST", headers:{Prefer:"return=minimal"}, body:JSON.stringify({key:hcKey,sent_at:new Date().toISOString()}) }); } catch(e){}
+          var hcHost = req.headers && req.headers.host ? req.headers.host : "skyteam.global";
+          var hcProto = hcHost.indexOf("localhost") === 0 ? "http" : "https";
+          var hcAuthKey = (process.env.SUPABASE_SERVICE_KEY || "").slice(-12) || "skyteam_healthcheck_2026";
+          fetch(hcProto + "://" + hcHost + "/api/healthcheck?key=" + encodeURIComponent(hcAuthKey), { method: "GET" }).catch(function(){});
+          results.triggers.push({ type: "healthcheck", hour: colHour });
+        }
+      }
+    } catch(e) { results.errors.push("healthcheck: " + e.message); }
+
     return res.status(200).json({ ok: true, ...results, checkedAt: now.toISOString() });
   } catch (error) {
     results.errors.push(error.message);
