@@ -310,35 +310,49 @@ function normalizePhone(phone) {
 // Detecta la zona horaria IANA del lead a partir del codigo de pais del telefono.
 // Default: America/Bogota (UTC-5) — cubre Colombia, Ecuador, Peru, Panama.
 function detectTimezoneFromPhone(phone) {
-  var p = (phone || '').replace(/^\+/, '').replace(/\s/g, '');
-  // Longest match first (prefijos de 2-3 digitos)
-  var map = [
-    ['598', 'America/Montevideo'],   // Uruguay
-    ['595', 'America/Asuncion'],     // Paraguay
-    ['593', 'America/Guayaquil'],    // Ecuador (UTC-5)
-    ['591', 'America/La_Paz'],       // Bolivia (UTC-4)
-    ['590', 'America/Guadeloupe'],   // Guadalupe
-    ['507', 'America/Panama'],       // Panama (UTC-5)
-    ['506', 'America/Costa_Rica'],   // Costa Rica (UTC-6)
-    ['505', 'America/Managua'],      // Nicaragua
-    ['504', 'America/Tegucigalpa'],  // Honduras
-    ['503', 'America/El_Salvador'],  // El Salvador
-    ['502', 'America/Guatemala'],    // Guatemala
-    ['501', 'America/Belize'],       // Belice
-    ['58',  'America/Caracas'],      // Venezuela (UTC-4)
-    ['57',  'America/Bogota'],       // Colombia (UTC-5)
-    ['56',  'America/Santiago'],     // Chile (UTC-4/-3)
-    ['55',  'America/Sao_Paulo'],    // Brasil (UTC-3)
-    ['54',  'America/Argentina/Buenos_Aires'], // Argentina (UTC-3)
-    ['53',  'America/Havana'],       // Cuba
-    ['52',  'America/Mexico_City'],  // Mexico (UTC-6)
-    ['51',  'America/Lima'],         // Peru (UTC-5)
-    ['1',   'America/New_York']      // EE.UU./Canada default (UTC-5)
+  var p = (phone || '').replace(/^\+/, '').replace(/\s/g, '').replace(/[^0-9]/g, '');
+  // Validar longitud minima (phones con codigo pais tienen >=10 digitos)
+  // Si es muy corto o vacio, fallback seguro a Colombia
+  if (!p || p.length < 10) return 'America/Bogota';
+
+  // Longest match first (prefijos de 2-3 digitos). El '+1' NA va AL FINAL
+  // porque tiene prefijo generico y podria falsamente matchear phones locales
+  // sin codigo pais que empiecen en 1 (ej: algunos regionales de Peru).
+  // Para '+1' requerimos ademas que el phone tenga exactamente 11 digitos.
+  var map3 = [
+    ['598', 'America/Montevideo'],
+    ['595', 'America/Asuncion'],
+    ['593', 'America/Guayaquil'],
+    ['591', 'America/La_Paz'],
+    ['590', 'America/Guadeloupe'],
+    ['507', 'America/Panama'],
+    ['506', 'America/Costa_Rica'],
+    ['505', 'America/Managua'],
+    ['504', 'America/Tegucigalpa'],
+    ['503', 'America/El_Salvador'],
+    ['502', 'America/Guatemala'],
+    ['501', 'America/Belize']
   ];
-  for (var i = 0; i < map.length; i++) {
-    if (p.indexOf(map[i][0]) === 0) return map[i][1];
+  for (var i = 0; i < map3.length; i++) {
+    if (p.indexOf(map3[i][0]) === 0) return map3[i][1];
   }
-  return 'America/Bogota'; // fallback
+  var map2 = [
+    ['58', 'America/Caracas'],
+    ['57', 'America/Bogota'],
+    ['56', 'America/Santiago'],
+    ['55', 'America/Sao_Paulo'],
+    ['54', 'America/Argentina/Buenos_Aires'],
+    ['53', 'America/Havana'],
+    ['52', 'America/Mexico_City'],
+    ['51', 'America/Lima']
+  ];
+  for (var j = 0; j < map2.length; j++) {
+    if (p.indexOf(map2[j][0]) === 0) return map2[j][1];
+  }
+  // '+1' (NANP) solo si el telefono tiene EXACTAMENTE 11 digitos (1 + 10)
+  if (p.indexOf('1') === 0 && p.length === 11) return 'America/New_York';
+
+  return 'America/Bogota'; // fallback seguro
 }
 
 // Devuelve hora UTC actual para guardar en response_pattern_hours (cap a 20 entradas)

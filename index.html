@@ -8755,7 +8755,9 @@ function renderSkySales() {
   }
   _ssTabs.forEach(function(t){
     var on = window._ssTab === t.id;
-    html += '<button onclick="window._ssTab=\''+t.id+'\';renderSkySales()" style="padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06))':'rgba(255,255,255,0.02)')+';color:'+(on?'#E8D48B':'rgba(255,255,255,0.35)')+';transition:all 0.3s;'+(on?'box-shadow:0 2px 12px rgba(201,168,76,0.15);':'')+'">'+t.icon+' '+t.label+'</button>';
+    // Al hacer click en un tab, si estabamos en 'sofi' detener polling explicitamente
+    var clickHandler = 'if(window._ssTab===\'sofi\' && \'' + t.id + '\'!==\'sofi\' && typeof _sofiStopPolling===\'function\')_sofiStopPolling();window._ssTab=\''+t.id+'\';renderSkySales()';
+    html += '<button onclick="'+clickHandler+'" style="padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;border:'+(on?'1px solid rgba(201,168,76,0.3)':'0.5px solid rgba(255,255,255,0.06)')+';background:'+(on?'linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06))':'rgba(255,255,255,0.02)')+';color:'+(on?'#E8D48B':'rgba(255,255,255,0.35)')+';transition:all 0.3s;'+(on?'box-shadow:0 2px 12px rgba(201,168,76,0.15);':'')+'">'+t.icon+' '+t.label+'</button>';
   });
   html += '</div>';
 
@@ -18263,7 +18265,7 @@ function renderAntiCheatResults(container, results) {
   var st = document.createElement('style');
   st.id = 'sofi-dashboard-styles';
   st.textContent = ''
-    + '.sofi-wrap{display:flex;flex-direction:column;height:calc(100vh - 140px);min-height:500px;background:#0a0f14;border-radius:14px;overflow:hidden;border:0.5px solid rgba(255,255,255,0.06);}'
+    + '.sofi-wrap{display:flex;flex-direction:column;height:calc(100dvh - 140px);min-height:500px;max-height:calc(100vh - 140px);background:#0a0f14;border-radius:14px;overflow:hidden;border:0.5px solid rgba(255,255,255,0.06);}'
     + '.sofi-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px;background:rgba(255,255,255,0.02);border-bottom:0.5px solid rgba(255,255,255,0.05);}'
     + '.sofi-stat{text-align:center;padding:6px 4px;border-radius:8px;background:rgba(255,255,255,0.02);}'
     + '.sofi-stat-num{font-size:18px;font-weight:800;color:#25D366;line-height:1.1;}'
@@ -18424,6 +18426,11 @@ function _sofiEscape(s) {
   });
 }
 
+// Sanitiza phone para uso seguro en onclick inline (solo digitos y +)
+function _sofiCleanPhone(p) {
+  return String(p || '').replace(/[^0-9+]/g, '');
+}
+
 function renderSofiDashboard() {
   var root = document.getElementById('sofi-dashboard-root');
   if(!root) return;
@@ -18574,7 +18581,7 @@ function _sofiRenderList() {
     }
     var initial = (c.name || '?').charAt(0).toUpperCase();
     var pauseIcon = c.followup_paused ? ' 🔇' : '';
-    h += '<div class="sofi-conv' + (selected?' active':'') + '" onclick="_sofiOpenChat(\'' + c.phone + '\')">';
+    h += '<div class="sofi-conv' + (selected?' active':'') + '" onclick="_sofiOpenChat(\'' + _sofiCleanPhone(c.phone) + '\')">';
     h += '<div class="sofi-conv-av">' + _sofiEscape(initial) + '</div>';
     h += '<div class="sofi-conv-info">';
     h += '<div class="sofi-conv-top"><div class="sofi-conv-name">' + _sofiEscape(c.name) + pauseIcon + '</div><div class="sofi-conv-time">' + _sofiFormatTime(c.last_message_at) + '</div></div>';
@@ -18834,7 +18841,12 @@ function _sofiOpenStats() {
       if (body) body.innerHTML = '<div class="sofi-empty">Error al cargar stats. ¿Corriste la SQL migration?</div>';
       return;
     }
-    var s = r.stats;
+    // Null-safe coalescing para cada subobjeto (defensive coding)
+    var s = r.stats || {};
+    s.by_stage = s.by_stage || {};
+    s.by_window = s.by_window || { morning: 0, lunch: 0, evening: 0 };
+    s.ai_vs_template = s.ai_vs_template || { ai: 0, template: 0 };
+    s.revival_pool = s.revival_pool || { frio: 0, cerrado_sin_respuesta: 0, en_seguimiento_stage_4plus: 0 };
     var h = '';
     // Top metrics
     h += '<div class="sofi-stat-grid">';
@@ -18974,9 +18986,10 @@ function _sofiRenderRevival(candidates) {
     h += '<div class="sofi-revival-list">';
     candidates.forEach(function(c) {
       var et = _sofiEtapaStyle(c.etapa);
+      var cleanP = _sofiCleanPhone(c.phone);
       h += '<label class="sofi-rev-item">';
-      h += '<input type="checkbox" data-phone="' + c.phone + '" onchange="_sofiToggleRevival(\'' + c.phone + '\')" />';
-      h += '<div class="sofi-rev-name">' + _sofiEscape(c.name) + ' <span style="font-size:10px;color:rgba(255,255,255,0.35);">+' + c.phone + '</span></div>';
+      h += '<input type="checkbox" data-phone="' + cleanP + '" onchange="_sofiToggleRevival(\'' + cleanP + '\')" />';
+      h += '<div class="sofi-rev-name">' + _sofiEscape(c.name) + ' <span style="font-size:10px;color:rgba(255,255,255,0.35);">+' + cleanP + '</span></div>';
       h += '<span class="sofi-etapa" style="background:' + et.bg + ';color:' + et.color + ';">' + et.label + '</span>';
       h += '<span class="sofi-rev-time">' + _sofiFormatTime(c.last_message_at) + '</span>';
       h += '</label>';
@@ -19011,6 +19024,9 @@ function _sofiRenderRevival(candidates) {
 }
 
 function _sofiSendRevival() {
+  // Guard contra doble-click
+  if (window._sofiRevivalSending) return;
+
   var ta = document.getElementById('sofi-revival-msg');
   var msg = ta ? (ta.value || '').trim() : '';
   if (msg.length < 10) {
@@ -19024,6 +19040,11 @@ function _sofiSendRevival() {
   }
   if (!confirm('¿Enviar este mensaje a ' + phones.length + ' leads? Se enviará con 2 seg entre mensajes (total ~' + Math.round(phones.length * 2 / 60) + ' min).')) return;
 
+  // Lock en TRUE + disable botones visualmente
+  window._sofiRevivalSending = true;
+  var sendBtn = document.querySelector('.sofi-modal-footer .sofi-send');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.4'; sendBtn.style.pointerEvents = 'none'; }
+
   var body = document.getElementById('sofi-modal-body');
   if (body) body.innerHTML = '<div class="sofi-empty">⏳ Enviando ' + phones.length + ' mensajes... No cierres esta ventana.</div>';
 
@@ -19032,6 +19053,7 @@ function _sofiSendRevival() {
     message: msg,
     campaignName: 'Revival ' + new Date().toISOString().slice(0, 16)
   }).then(function(r) {
+    window._sofiRevivalSending = false;
     if (!r || !r.ok) {
       if (body) body.innerHTML = '<div class="sofi-empty">❌ Error: ' + ((r && r.error) || 'desconocido') + '</div>';
       return;
@@ -19048,6 +19070,7 @@ function _sofiSendRevival() {
     _sofiLoadList();
     _sofiLoadStats();
   }).catch(function(e) {
+    window._sofiRevivalSending = false;
     if (body) body.innerHTML = '<div class="sofi-empty">❌ Error de conexión: ' + e.message + '</div>';
   });
 }
@@ -19067,6 +19090,8 @@ window._sofiSetRevivalFilter = _sofiSetRevivalFilter;
 window._sofiToggleRevival = _sofiToggleRevival;
 window._sofiSelectAllRevival = _sofiSelectAllRevival;
 window._sofiSendRevival = _sofiSendRevival;
+window._sofiStopPolling = _sofiStopPolling;
+window._sofiCleanPhone = _sofiCleanPhone;
 
 </script>
 <script src="patch-v3.js"></script>
