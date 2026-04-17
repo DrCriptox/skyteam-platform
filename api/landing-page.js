@@ -241,7 +241,9 @@ Agendar llamada</a>
   // Solo bloquear si la UA INICIA con 'WhatsApp/' (preview fetcher puro sin browser).
   var _ua = navigator.userAgent || '';
   var _uaTrim = _ua.trim();
-  var _isPurePreview = /^(WhatsApp|facebookexternalhit|facebot)\/?/i.test(_uaTrim);
+  // NOTE: This code lives inside a template literal — avoid '\/' escapes, they get
+  // consumed by string interpolation. Use simple regex without '/' characters.
+  var _isPurePreview = /^(WhatsApp|facebookexternalhit|facebot)/i.test(_uaTrim);
   var _isNamedBot = /facebookexternalhit|facebot|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright/i.test(_ua);
   var _isBot = _isPurePreview || _isNamedBot;
 
