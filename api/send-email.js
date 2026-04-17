@@ -1054,19 +1054,34 @@ async function handlePush(req, res) {
   if (action === 'subscribe') {
     if (!user || !subscription || !subscription.endpoint) return res.status(400).json({ error: 'Missing user or subscription' });
     try {
-      const existing = await sb('users?username=eq.' + encodeURIComponent(user) + '&select=username');
-      if (!existing || existing.length === 0) {
-        await sb('users', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ username: user, name: user, email: null, password: null, sponsor: null, ref: user }) });
-      }
-      await sb('push_subscriptions', { method: 'POST', headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ username: user, endpoint: subscription.endpoint, subscription: subscription, created_at: new Date().toISOString() }) });
+      // Solo insertamos la suscripcion. NO pre-creamos users (fallaba con NOT NULL
+      // en email/password de users table). Tampoco incluimos created_at (puede
+      // ser auto-manejado por Supabase con default NOW()).
+      await sb('push_subscriptions', {
+        method: 'POST',
+        headers: { ...SB_HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({
+          username: user,
+          endpoint: subscription.endpoint,
+          subscription: subscription
+        })
+      });
       return res.status(200).json({ ok: true, message: 'Subscription saved' });
-    } catch(e) { console.error('[PUSH] Subscribe error:', e.message); return res.status(500).json({ error: 'Subscribe failed: ' + e.message }); }
+    } catch(e) {
+      console.error('[PUSH] Subscribe error:', e.message, '| user:', user, '| endpoint:', (subscription.endpoint||'').substring(0,60));
+      return res.status(500).json({ error: 'Subscribe failed: ' + e.message });
+    }
   }
 
   if (action === 'unsubscribe') {
     if (!user || !subscription || !subscription.endpoint) return res.status(400).json({ error: 'Missing user or subscription endpoint' });
-    await sb('push_subscriptions?username=eq.' + encodeURIComponent(user) + '&endpoint=eq.' + encodeURIComponent(subscription.endpoint), { method: 'DELETE' });
-    return res.status(200).json({ ok: true, message: 'Subscription removed' });
+    try {
+      await sb('push_subscriptions?username=eq.' + encodeURIComponent(user) + '&endpoint=eq.' + encodeURIComponent(subscription.endpoint), { method: 'DELETE' });
+      return res.status(200).json({ ok: true, message: 'Subscription removed' });
+    } catch(e) {
+      console.error('[PUSH] Unsubscribe error:', e.message);
+      return res.status(500).json({ error: 'Unsubscribe failed: ' + e.message });
+    }
   }
 
   if (action === 'send') {
