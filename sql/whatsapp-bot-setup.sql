@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS wa_leads (
   followup_paused BOOLEAN DEFAULT FALSE,
   last_followup_sent_at TIMESTAMPTZ, -- Anti-spam: max 1 follow-up per 24h
   followup_variant TEXT, -- Rota templates en stages 4-8 para no repetir
+  response_pattern_hours INT[], -- Horas (UTC) cuando el lead historicamente responde (max 20)
+  timezone TEXT DEFAULT 'America/Bogota', -- TZ IANA del lead, autodetectada por codigo de pais
   context_summary TEXT,
   objections TEXT[],
   booking_id UUID,

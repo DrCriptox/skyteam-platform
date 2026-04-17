@@ -307,19 +307,68 @@ function normalizePhone(phone) {
   return (phone || '').replace('whatsapp:', '').replace(/^\+/, '').trim();
 }
 
+// Detecta la zona horaria IANA del lead a partir del codigo de pais del telefono.
+// Default: America/Bogota (UTC-5) — cubre Colombia, Ecuador, Peru, Panama.
+function detectTimezoneFromPhone(phone) {
+  var p = (phone || '').replace(/^\+/, '').replace(/\s/g, '');
+  // Longest match first (prefijos de 2-3 digitos)
+  var map = [
+    ['598', 'America/Montevideo'],   // Uruguay
+    ['595', 'America/Asuncion'],     // Paraguay
+    ['593', 'America/Guayaquil'],    // Ecuador (UTC-5)
+    ['591', 'America/La_Paz'],       // Bolivia (UTC-4)
+    ['590', 'America/Guadeloupe'],   // Guadalupe
+    ['507', 'America/Panama'],       // Panama (UTC-5)
+    ['506', 'America/Costa_Rica'],   // Costa Rica (UTC-6)
+    ['505', 'America/Managua'],      // Nicaragua
+    ['504', 'America/Tegucigalpa'],  // Honduras
+    ['503', 'America/El_Salvador'],  // El Salvador
+    ['502', 'America/Guatemala'],    // Guatemala
+    ['501', 'America/Belize'],       // Belice
+    ['58',  'America/Caracas'],      // Venezuela (UTC-4)
+    ['57',  'America/Bogota'],       // Colombia (UTC-5)
+    ['56',  'America/Santiago'],     // Chile (UTC-4/-3)
+    ['55',  'America/Sao_Paulo'],    // Brasil (UTC-3)
+    ['54',  'America/Argentina/Buenos_Aires'], // Argentina (UTC-3)
+    ['53',  'America/Havana'],       // Cuba
+    ['52',  'America/Mexico_City'],  // Mexico (UTC-6)
+    ['51',  'America/Lima'],         // Peru (UTC-5)
+    ['1',   'America/New_York']      // EE.UU./Canada default (UTC-5)
+  ];
+  for (var i = 0; i < map.length; i++) {
+    if (p.indexOf(map[i][0]) === 0) return map[i][1];
+  }
+  return 'America/Bogota'; // fallback
+}
+
+// Devuelve hora UTC actual para guardar en response_pattern_hours (cap a 20 entradas)
+function appendResponseHour(existingHours) {
+  var h = new Date().getUTCHours();
+  var arr = Array.isArray(existingHours) ? existingHours.slice() : [];
+  arr.push(h);
+  // Mantener solo las ultimas 20
+  if (arr.length > 20) arr = arr.slice(arr.length - 20);
+  return arr;
+}
+
 async function getOrCreateLead(phone, name) {
   var leads = await sb('wa_leads?phone=eq.' + encodeURIComponent(phone) + '&select=*');
   if (leads && leads.length > 0) {
     var lead = leads[0];
     // Follow-up v2: reset TODO lo relacionado a follow-up cuando el lead responde.
-    // Si estaba en etapa terminal (frio / cerrado_sin_respuesta), revivirlo a 'calificando'.
+    // v2.1: tracking de horas de respuesta para smart timing + autoset timezone si falta
+    var newResponseHours = appendResponseHour(lead.response_pattern_hours);
     var patch = {
       last_message_at: new Date().toISOString(),
       followup_stage: 0,
       last_followup_sent_at: null,
       followup_variant: null,
+      response_pattern_hours: newResponseHours,
       updated_at: new Date().toISOString()
     };
+    // Autoset timezone si el lead viejo no la tenia
+    if (!lead.timezone) patch.timezone = detectTimezoneFromPhone(phone);
+    // Si estaba en etapa terminal (frio / cerrado_sin_respuesta), revivirlo a 'calificando'.
     if (lead.etapa === 'frio' || lead.etapa === 'cerrado_sin_respuesta') {
       patch.etapa = 'calificando';
       patch.temperatura = 'tibio';
@@ -332,6 +381,8 @@ async function getOrCreateLead(phone, name) {
     lead.followup_stage = 0;
     lead.last_followup_sent_at = null;
     lead.followup_variant = null;
+    lead.response_pattern_hours = newResponseHours;
+    if (patch.timezone) lead.timezone = patch.timezone;
     if (patch.etapa) lead.etapa = patch.etapa;
     if (patch.temperatura) lead.temperatura = patch.temperatura;
     return { lead, isNew: false };
@@ -340,7 +391,9 @@ async function getOrCreateLead(phone, name) {
   var newLead = {
     phone: phone, name: name || 'Prospecto', bot_username: BOT_USERNAME,
     etapa: 'nuevo', temperatura: 'tibio', source: 'whatsapp_bot',
-    last_message_at: new Date().toISOString()
+    last_message_at: new Date().toISOString(),
+    timezone: detectTimezoneFromPhone(phone),
+    response_pattern_hours: [new Date().getUTCHours()]
   };
   var created = await sb('wa_leads', {
     method: 'POST', headers: { ...SB_HEADERS, Prefer: 'return=representation' },
