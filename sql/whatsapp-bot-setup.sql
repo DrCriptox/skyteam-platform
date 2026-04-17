@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_wa_conv_phone ON wa_conversations(phone, created_
 CREATE INDEX IF NOT EXISTS idx_wa_conv_bot ON wa_conversations(bot_username, created_at DESC);
 
 -- 2. Tabla de leads del bot (perfil persistente por telefono)
+-- Follow-up v2: 8 stages, smart time windows, anti-spam dedup
 CREATE TABLE IF NOT EXISTS wa_leads (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   phone TEXT NOT NULL UNIQUE,
@@ -28,8 +29,10 @@ CREATE TABLE IF NOT EXISTS wa_leads (
   etapa TEXT DEFAULT 'nuevo',
   temperatura TEXT DEFAULT 'tibio',
   last_message_at TIMESTAMPTZ DEFAULT NOW(),
-  followup_stage INT DEFAULT 0,
+  followup_stage INT DEFAULT 0, -- 0..8 (8 stages of re-engagement)
   followup_paused BOOLEAN DEFAULT FALSE,
+  last_followup_sent_at TIMESTAMPTZ, -- Anti-spam: max 1 follow-up per 24h
+  followup_variant TEXT, -- Rota templates en stages 4-8 para no repetir
   context_summary TEXT,
   objections TEXT[],
   booking_id UUID,
@@ -41,8 +44,10 @@ CREATE TABLE IF NOT EXISTS wa_leads (
 );
 
 CREATE INDEX IF NOT EXISTS idx_wa_leads_phone ON wa_leads(phone);
-CREATE INDEX IF NOT EXISTS idx_wa_leads_followup ON wa_leads(followup_stage, last_message_at)
-  WHERE followup_stage < 3 AND followup_paused = FALSE;
+-- Index para que el cron encuentre rapido leads elegibles para follow-up
+DROP INDEX IF EXISTS idx_wa_leads_followup;
+CREATE INDEX IF NOT EXISTS idx_wa_leads_followup ON wa_leads(followup_stage, last_message_at, last_followup_sent_at)
+  WHERE followup_paused = FALSE AND followup_stage < 8;
 
 -- 3. Habilitar RLS (Row Level Security) basico
 ALTER TABLE wa_conversations ENABLE ROW LEVEL SECURITY;

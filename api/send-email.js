@@ -682,99 +682,10 @@ async function handleTriggers(req, res) {
       }
     } catch (e) { results.errors.push('ranking_motivation: ' + e.message); }
 
-    // ✅✅ TRIGGER WA: WhatsApp Bot Follow-ups (2h, 24h, 48h) ✅✅
+    // ✅✅ TRIGGER WA v2: Sofi Follow-ups inteligentes (8 touches / 60 dias / ventanas optimas) ✅✅
     try {
-      const WA_PROVIDER = process.env.WA_PROVIDER || 'twilio';
-      const TW_SID = process.env.TWILIO_ACCOUNT_SID;
-      const TW_TK = process.env.TWILIO_AUTH_TOKEN;
-      const TW_FROM = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
-      const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
-      const WA_TK = process.env.WHATSAPP_TOKEN;
-      if ((WA_PROVIDER === 'twilio' && TW_SID && TW_TK) || (WA_PHONE_ID && WA_TK)) {
-        const twoHoursAgo = new Date(now.getTime() - 2 * 3600000).toISOString();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000).toISOString();
-        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 3600000).toISOString();
-        const fiveMinAgo = new Date(now.getTime() - 5 * 60000).toISOString();
-
-        // Get leads that need follow-up (not paused, not already followed up to stage 3)
-        const waLeads = await sb(
-          'wa_leads?select=phone,name,followup_stage,last_message_at,context_summary' +
-          '&followup_paused=eq.false&followup_stage=lt.3' +
-          '&etapa=not.in.(agendado,escalado,frio,cerrado)' +
-          '&order=last_message_at.asc&limit=20'
-        );
-
-        if (waLeads && waLeads.length > 0) {
-          const followupMessages = [
-            function(name, etapa) { return etapa === 'esperando_video' ? 'Hola ' + (name || '') + '! Pudiste ver el video de la franquicia digital? 🎬 Te lo dejo aqui por si no lo encuentras: https://skyteam.global/landing?ref=dradmin Cuentame que te parecio!' : 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
-            function(name) { return 'Hey ' + (name || '') + ', el Doctor Rojas tiene unos espacios esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
-            function(name) { return (name || 'Hola') + ', solo queria dejarte saber que estamos aqui si en algun momento te interesa. Te deseo mucho exito! ✨'; }
-          ];
-
-          for (const lead of waLeads) {
-            const lastMsg = new Date(lead.last_message_at);
-            const msSince = now.getTime() - lastMsg.getTime();
-            const stage = lead.followup_stage || 0;
-            let shouldSend = false;
-
-            if (stage === 0 && msSince >= 2 * 3600000 && msSince < 24 * 3600000) shouldSend = true;
-            else if (stage === 1 && msSince >= 24 * 3600000 && msSince < 48 * 3600000) shouldSend = true;
-            else if (stage === 2 && msSince >= 48 * 3600000) shouldSend = true;
-
-            if (shouldSend) {
-              // Only send during reasonable hours (8am - 8pm Colombia)
-              if (cHour < 8 || cHour > 20) continue;
-
-              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '', lead.etapa);
-              try {
-                let waR, waData;
-                if (WA_PROVIDER === 'twilio') {
-                  const params = new URLSearchParams();
-                  params.append('To', 'whatsapp:+' + lead.phone);
-                  params.append('From', TW_FROM);
-                  params.append('Body', msgText);
-                  waR = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + TW_SID + '/Messages.json', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + Buffer.from(TW_SID + ':' + TW_TK).toString('base64') },
-                    body: params.toString()
-                  });
-                  waData = await waR.json();
-                } else {
-                  waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
-                    body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
-                  });
-                  waData = await waR.json();
-                }
-                if (waR.ok) {
-                  // Update stage
-                  await sb('wa_leads?phone=eq.' + encodeURIComponent(lead.phone), {
-                    method: 'PATCH',
-                    body: JSON.stringify({
-                      followup_stage: stage + 1,
-                      etapa: stage === 2 ? 'frio' : lead.etapa,
-                      updated_at: now.toISOString()
-                    })
-                  });
-                  // Save to conversation
-                  await sb('wa_conversations', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      phone: lead.phone, direction: 'out', message_type: 'text',
-                      content: msgText, bot_username: lead.bot_username || 'yonfer',
-                      metadata: JSON.stringify({ type: 'followup', stage: stage + 1 })
-                    })
-                  });
-                  results.triggers.push({ type: 'wa_followup_' + (stage + 1), phone: lead.phone.substring(0, 6) + '...', sent: 1 });
-                  results.sent++;
-                }
-              } catch (wErr) { results.errors.push('wa_followup: ' + wErr.message); }
-            }
-          }
-        }
-      }
-    } catch (e) { results.errors.push('wa_followup: ' + e.message); }
+      await runWhatsAppFollowupsV2(now, cHour, todayKey, results);
+    } catch (e) { results.errors.push('wa_followup_v2: ' + e.message); }
 
     // -- TRIGGER HEALTHCHECK: 2x/day (9 AM + 5 PM Colombia) --
     try {
@@ -796,6 +707,262 @@ async function handleTriggers(req, res) {
   } catch (error) {
     results.errors.push(error.message);
     return res.status(200).json({ ok: false, ...results, error: error.message });
+  }
+}
+
+// ============================================================================
+// WHATSAPP FOLLOW-UP v2 - 8 touches, smart time windows, AI messages
+// Invocado desde handleTriggers cada 15 min
+// ============================================================================
+
+const WA_FU_WINDOWS = {
+  morning: { start: 7 * 60 + 45, end: 9 * 60 + 30 },
+  lunch:   { start: 12 * 60 + 45, end: 13 * 60 + 30 },
+  evening: { start: 19 * 60,      end: 20 * 60 + 30 }
+};
+
+const WA_FU_STAGES = {
+  1: { delayMs: 2 * 3600000,       target: null,        useAI: true  },
+  2: { delayMs: 24 * 3600000,      target: 'morning',   useAI: true  },
+  3: { delayMs: 48 * 3600000,      target: 'lunch',     useAI: true  },
+  4: { delayMs: 4 * 86400000,      target: 'evening',   useAI: false },
+  5: { delayMs: 7 * 86400000,      target: 'morning',   useAI: false },
+  6: { delayMs: 14 * 86400000,     target: 'lunch',     useAI: false },
+  7: { delayMs: 30 * 86400000,     target: 'evening',   useAI: false },
+  8: { delayMs: 60 * 86400000,     target: 'morning',   useAI: false }
+};
+
+const WA_FU_TEMPLATES = {
+  4: [
+    'Hey {{firstName}}, el Doctor Rojas solo tiene unos cuantos espacios esta semana para la reunion privada. Te queda algun ratito?',
+    '{{firstName}}, quedan cupos limitados esta semana. Es una videollamada de 25 min, sin costo y sin compromiso. Te animas?',
+    'Hola {{firstName}}! El Doctor Rojas abrio nuevos espacios. Si quieres te agendo uno antes de que se llenen',
+    '{{firstName}}, te recuerdo que la reunion con el Doctor es gratuita y solo 25 min. Cerramos agenda el viernes. Te interesa?'
+  ],
+  5: [
+    'Hola {{firstName}}! Me acorde de ti. Una socia arranco la semana pasada y en pocos dias ya vio resultados. Crees que seria para ti?',
+    '{{firstName}}, hay una historia de un socio que me tiene feliz. Te la cuento rapido si te interesa?',
+    'Hey {{firstName}}! Por aqui tenemos novedades. Hay socios activandose esta semana. Quieres ver como les va?',
+    '{{firstName}}, que tal? Solo para contarte que varios socios que empezaron igual que tu hoy ya tienen resultados. Te cuento?'
+  ],
+  6: [
+    'Hola {{firstName}}! Sin presion. Solo queria saber si ese tema sigue dando vueltas en tu cabeza o ya tomaste otro camino',
+    '{{firstName}}, no quiero ser pesada. Si ya no es para ti avisame y tranquila no te vuelvo a escribir. Si sigues interesada, aqui estoy',
+    'Hey {{firstName}}, espero estes bien. A veces el momento perfecto es mas adelante. Cuando sientas que es el tuyo, aqui estare',
+    '{{firstName}}! Entiendo que la vida va rapida. Te dejo tranquila, pero si alguna vez quieres retomar, escribeme'
+  ],
+  7: [
+    'Hola {{firstName}}! Paso un mes y queria contarte que abrimos unas nuevas funcionalidades con IA que pueden interesarte. Te cuento?',
+    '{{firstName}}, hace un rato que no hablamos. Por aqui todo ha mejorado mucho. Quieres ver las novedades?',
+    'Hey {{firstName}}! Se que paso tiempo, pero tengo algo nuevo que puede servirte. 1 min de tu tiempo?',
+    '{{firstName}}, te acuerdas de la franquicia que viste? Ahora hay mejores condiciones y resultados mas rapidos. Te muestro?'
+  ],
+  8: [
+    '{{firstName}}, ultimo mensaje. Si en algun momento quieres retomar lo de la franquicia digital, solo escribeme. Te deseo exito en todo',
+    'Hey {{firstName}}! No quiero molestarte mas. Si en un futuro te interesa, aqui estoy. Un abrazo',
+    '{{firstName}}, me despido por ahora. Gracias por haber escuchado. Si la vida te abre esa puerta, recuerda que estoy aqui',
+    'Hola {{firstName}}! Este es mi ultimo toque. Quiero que sepas que no importa cuando vuelvas, tu lugar sigue aqui'
+  ]
+};
+
+function waGetActiveWindow(now) {
+  const cHour2 = (now.getUTCHours() - 5 + 24) % 24;
+  const cMin2 = now.getUTCMinutes();
+  const m = cHour2 * 60 + cMin2;
+  const colDay = (new Date(now.getTime() - 5 * 3600000).getUTCDay());
+  const isWeekend = (colDay === 0 || colDay === 6);
+  if (m >= WA_FU_WINDOWS.lunch.start && m <= WA_FU_WINDOWS.lunch.end) return 'lunch';
+  if (isWeekend) return null;
+  if (m >= WA_FU_WINDOWS.morning.start && m <= WA_FU_WINDOWS.morning.end) return 'morning';
+  if (m >= WA_FU_WINDOWS.evening.start && m <= WA_FU_WINDOWS.evening.end) return 'evening';
+  return null;
+}
+
+function waPickTemplate(stage, firstName, lastVariant) {
+  const templates = WA_FU_TEMPLATES[stage] || [];
+  if (templates.length === 0) return null;
+  let idx = 0;
+  if (lastVariant) {
+    const prevIdx = parseInt(String(lastVariant).replace(/^v/, '')) || 0;
+    idx = (prevIdx + 1) % templates.length;
+  } else {
+    idx = Math.floor(Math.random() * templates.length);
+  }
+  const name = firstName || '';
+  return {
+    text: templates[idx].replace(/\{\{firstName\}\}/g, name).replace(/\{\{name\}\}/g, name),
+    variant: 'v' + idx
+  };
+}
+
+async function waGenerateAIMessage(lead, stage, recentMessages) {
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_KEY) return null;
+  const firstName = (lead.name || '').split(' ')[0] || '';
+  const stageGoals = {
+    1: 'Toque suave de check-in. No respondio en 2h. Reabrir conversacion sin presionar. Max 2 oraciones.',
+    2: 'Recordatorio amable. 1 dia sin respuesta. Si no vio video, invitalo con link https://skyteam.global/landing?ref=dradmin. Si ya lo vio, pregunta que le parecio. Max 2 oraciones.',
+    3: 'Genera curiosidad o valor. 2 dias sin respuesta. Comparte algo del negocio (IA, resultados) y cierra con pregunta abierta. Max 3 oraciones.'
+  };
+  const contextMsgs = (recentMessages || []).slice(-6).map(function(m){
+    return (m.direction === 'in' ? 'prospecto' : 'sofi') + ': ' + (m.content || '').substring(0, 150);
+  }).join('\n');
+  const systemPrompt = 'Eres Sofi, asistente virtual del Doctor Rojas por WhatsApp. Tono cercano, calido, espanol de Colombia, sin emojis excesivos (max 1). NUNCA escribas horarios ni fechas (prospecto puede ser de otro pais). Si invitas a agendar, solo escribe "te comparto la agenda" sin link.';
+  const userPrompt = 'Mensaje de re-enganche:\n' +
+    '- Nombre: ' + firstName + '\n' +
+    '- Etapa: ' + (lead.etapa || 'nuevo') + '\n' +
+    (lead.context_summary ? '- Contexto: ' + lead.context_summary + '\n' : '') +
+    (lead.objections && lead.objections.length ? '- Objeciones: ' + lead.objections.join(', ') + '\n' : '') +
+    (contextMsgs ? '- Ultimos mensajes:\n' + contextMsgs + '\n' : '') +
+    '\nStage ' + stage + ' - ' + stageGoals[stage] + '\n\nResponde SOLO con el mensaje, sin comillas.';
+  try {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OPENAI_KEY },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini', max_tokens: 160, temperature: 0.75,
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }]
+      })
+    });
+    const data = await r.json();
+    const msg = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : null;
+    return msg ? msg.trim().replace(/^"|"$/g, '') : null;
+  } catch (e) { return null; }
+}
+
+async function waSendText(phone, text) {
+  const PROVIDER = process.env.WA_PROVIDER || 'twilio';
+  if (PROVIDER === 'twilio') {
+    const TW_SID = process.env.TWILIO_ACCOUNT_SID;
+    const TW_TK = process.env.TWILIO_AUTH_TOKEN;
+    const TW_FROM = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
+    if (!TW_SID || !TW_TK) return { ok: false };
+    const params = new URLSearchParams();
+    params.append('To', phone.indexOf('whatsapp:') === 0 ? phone : 'whatsapp:+' + phone);
+    params.append('From', TW_FROM);
+    params.append('Body', text);
+    const r = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + TW_SID + '/Messages.json', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer.from(TW_SID + ':' + TW_TK).toString('base64')
+      },
+      body: params.toString()
+    });
+    const data = await r.json();
+    return { ok: r.ok, messageId: data.sid };
+  }
+  const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
+  const WA_TK = process.env.WHATSAPP_TOKEN;
+  if (!WA_PHONE_ID || !WA_TK) return { ok: false };
+  const r = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: text } })
+  });
+  const data = await r.json();
+  return { ok: r.ok, messageId: data.messages && data.messages[0] ? data.messages[0].id : null };
+}
+
+async function runWhatsAppFollowupsV2(now, cHour, todayKey, results) {
+  const activeWindow = waGetActiveWindow(now);
+  if (!activeWindow) return;
+
+  const oneDayAgo = new Date(now.getTime() - 24 * 3600000).toISOString();
+  const twoHoursAgo = new Date(now.getTime() - 2 * 3600000).toISOString();
+
+  const waLeads = await sb(
+    'wa_leads?select=phone,name,followup_stage,last_message_at,last_followup_sent_at,followup_variant,context_summary,objections,etapa,temperatura,bot_username' +
+    '&followup_paused=eq.false&followup_stage=lt.8' +
+    '&etapa=not.in.(agendado,escalado,cerrado,cerrado_sin_respuesta,agenda_enviada)' +
+    '&last_message_at=lt.' + twoHoursAgo +
+    '&or=(last_followup_sent_at.is.null,last_followup_sent_at.lt.' + oneDayAgo + ')' +
+    '&order=last_message_at.asc&limit=30'
+  );
+  if (!waLeads || waLeads.length === 0) return;
+
+  for (const lead of waLeads) {
+    const currentStage = lead.followup_stage || 0;
+    const nextStage = currentStage + 1;
+    const stageCfg = WA_FU_STAGES[nextStage];
+    if (!stageCfg) continue;
+
+    const lastMsg = new Date(lead.last_message_at);
+    const msSince = now.getTime() - lastMsg.getTime();
+    if (msSince < stageCfg.delayMs) continue;
+
+    if (stageCfg.target && stageCfg.target !== activeWindow) continue;
+
+    const cronKey = 'wa_fu_' + lead.phone + '_s' + nextStage + '_' + todayKey;
+    try {
+      const chk = await sb('cron_log?key=eq.' + encodeURIComponent(cronKey) + '&select=key&limit=1');
+      if (chk && chk.length > 0) continue;
+    } catch (e) { /* ignore */ }
+
+    let msgText = null;
+    let variantUsed = null;
+    const firstName = (lead.name || '').split(' ')[0] || '';
+
+    if (stageCfg.useAI) {
+      let recentMsgs = [];
+      try {
+        recentMsgs = await sb('wa_conversations?phone=eq.' + encodeURIComponent(lead.phone) +
+          '&order=created_at.desc&limit=6&select=direction,content') || [];
+        recentMsgs.reverse();
+      } catch (e) { /* sin contexto */ }
+      msgText = await waGenerateAIMessage(lead, nextStage, recentMsgs);
+    }
+
+    if (!msgText) {
+      const pick = waPickTemplate(nextStage, firstName, lead.followup_variant);
+      if (pick) { msgText = pick.text; variantUsed = pick.variant; }
+    }
+
+    if (!msgText) msgText = 'Hola ' + (firstName || '') + '! Siguen por aqui? Solo queria saludarte';
+
+    const sendRes = await waSendText(lead.phone, msgText);
+    if (!sendRes.ok) {
+      results.errors.push('wa_fu_v2 send fail s' + nextStage + ': ' + lead.phone.substring(0, 6));
+      continue;
+    }
+
+    const leadPatch = {
+      followup_stage: nextStage,
+      last_followup_sent_at: now.toISOString(),
+      updated_at: now.toISOString()
+    };
+    if (variantUsed) leadPatch.followup_variant = variantUsed;
+    if (nextStage === 8) leadPatch.etapa = 'cerrado_sin_respuesta';
+    else if (nextStage >= 4 && lead.temperatura !== 'frio') leadPatch.temperatura = 'frio_seguimiento';
+
+    try {
+      await sb('wa_leads?phone=eq.' + encodeURIComponent(lead.phone), {
+        method: 'PATCH',
+        body: JSON.stringify(leadPatch)
+      });
+    } catch (e) { /* ignore */ }
+
+    try {
+      await sb('wa_conversations', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone: lead.phone, direction: 'out', message_type: 'text',
+          content: msgText, bot_username: lead.bot_username || 'dradmin',
+          metadata: { type: 'followup', stage: nextStage, window: activeWindow, ai: stageCfg.useAI && !variantUsed }
+        })
+      });
+    } catch (e) { /* ignore */ }
+
+    try {
+      await sb('cron_log', {
+        method: 'POST',
+        headers: { ...SB_HEADERS, Prefer: 'return=minimal' },
+        body: JSON.stringify({ key: cronKey, sent_at: now.toISOString() })
+      });
+    } catch (e) { /* ignore */ }
+
+    results.triggers.push({ type: 'wa_fu_v2_s' + nextStage, phone: lead.phone.substring(0, 6) + '...', window: activeWindow, ai: stageCfg.useAI && !variantUsed });
+    results.sent++;
   }
 }
 
@@ -1438,99 +1605,7 @@ export default async function handler(req, res) {
       }
     } catch (e) { results.errors.push('ranking_motivation: ' + e.message); }
 
-    // ✅✅ TRIGGER WA: WhatsApp Bot Follow-ups (2h, 24h, 48h) ✅✅
-    try {
-      const WA_PROVIDER = process.env.WA_PROVIDER || 'twilio';
-      const TW_SID = process.env.TWILIO_ACCOUNT_SID;
-      const TW_TK = process.env.TWILIO_AUTH_TOKEN;
-      const TW_FROM = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
-      const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
-      const WA_TK = process.env.WHATSAPP_TOKEN;
-      if ((WA_PROVIDER === 'twilio' && TW_SID && TW_TK) || (WA_PHONE_ID && WA_TK)) {
-        const twoHoursAgo = new Date(now.getTime() - 2 * 3600000).toISOString();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600000).toISOString();
-        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 3600000).toISOString();
-        const fiveMinAgo = new Date(now.getTime() - 5 * 60000).toISOString();
-
-        // Get leads that need follow-up (not paused, not already followed up to stage 3)
-        const waLeads = await sb(
-          'wa_leads?select=phone,name,followup_stage,last_message_at,context_summary' +
-          '&followup_paused=eq.false&followup_stage=lt.3' +
-          '&etapa=not.in.(agendado,escalado,frio,cerrado)' +
-          '&order=last_message_at.asc&limit=20'
-        );
-
-        if (waLeads && waLeads.length > 0) {
-          const followupMessages = [
-            function(name, etapa) { return etapa === 'esperando_video' ? 'Hola ' + (name || '') + '! Pudiste ver el video de la franquicia digital? 🎬 Te lo dejo aqui por si no lo encuentras: https://skyteam.global/landing?ref=dradmin Cuentame que te parecio!' : 'Hola ' + (name || '') + '! Se me quedo pendiente nuestra conversacion. Tienes algun momento para que te cuente mas? 😊'; },
-            function(name) { return 'Hey ' + (name || '') + ', el Doctor Rojas tiene unos espacios esta semana. Es una reunion corta de 25 min sin compromiso. Te interesa? 🙌'; },
-            function(name) { return (name || 'Hola') + ', solo queria dejarte saber que estamos aqui si en algun momento te interesa. Te deseo mucho exito! ✨'; }
-          ];
-
-          for (const lead of waLeads) {
-            const lastMsg = new Date(lead.last_message_at);
-            const msSince = now.getTime() - lastMsg.getTime();
-            const stage = lead.followup_stage || 0;
-            let shouldSend = false;
-
-            if (stage === 0 && msSince >= 2 * 3600000 && msSince < 24 * 3600000) shouldSend = true;
-            else if (stage === 1 && msSince >= 24 * 3600000 && msSince < 48 * 3600000) shouldSend = true;
-            else if (stage === 2 && msSince >= 48 * 3600000) shouldSend = true;
-
-            if (shouldSend) {
-              // Only send during reasonable hours (8am - 8pm Colombia)
-              if (cHour < 8 || cHour > 20) continue;
-
-              const msgText = followupMessages[stage](lead.name ? lead.name.split(' ')[0] : '', lead.etapa);
-              try {
-                let waR, waData;
-                if (WA_PROVIDER === 'twilio') {
-                  const params = new URLSearchParams();
-                  params.append('To', 'whatsapp:+' + lead.phone);
-                  params.append('From', TW_FROM);
-                  params.append('Body', msgText);
-                  waR = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + TW_SID + '/Messages.json', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + Buffer.from(TW_SID + ':' + TW_TK).toString('base64') },
-                    body: params.toString()
-                  });
-                  waData = await waR.json();
-                } else {
-                  waR = await fetch('https://graph.facebook.com/v21.0/' + WA_PHONE_ID + '/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + WA_TK },
-                    body: JSON.stringify({ messaging_product: 'whatsapp', to: lead.phone, type: 'text', text: { body: msgText } })
-                  });
-                  waData = await waR.json();
-                }
-                if (waR.ok) {
-                  // Update stage
-                  await sb('wa_leads?phone=eq.' + encodeURIComponent(lead.phone), {
-                    method: 'PATCH',
-                    body: JSON.stringify({
-                      followup_stage: stage + 1,
-                      etapa: stage === 2 ? 'frio' : lead.etapa,
-                      updated_at: now.toISOString()
-                    })
-                  });
-                  // Save to conversation
-                  await sb('wa_conversations', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      phone: lead.phone, direction: 'out', message_type: 'text',
-                      content: msgText, bot_username: lead.bot_username || 'yonfer',
-                      metadata: JSON.stringify({ type: 'followup', stage: stage + 1 })
-                    })
-                  });
-                  results.triggers.push({ type: 'wa_followup_' + (stage + 1), phone: lead.phone.substring(0, 6) + '...', sent: 1 });
-                  results.sent++;
-                }
-              } catch (wErr) { results.errors.push('wa_followup: ' + wErr.message); }
-            }
-          }
-        }
-      }
-    } catch (e) { results.errors.push('wa_followup: ' + e.message); }
+    // [wa_followup: bloque duplicado eliminado — la logica correcta corre arriba como runWhatsAppFollowupsV2()]
 
     return res.status(200).json({ ok: true, ...results, checkedAt: now.toISOString() });
   } catch (error) {

@@ -311,12 +311,29 @@ async function getOrCreateLead(phone, name) {
   var leads = await sb('wa_leads?phone=eq.' + encodeURIComponent(phone) + '&select=*');
   if (leads && leads.length > 0) {
     var lead = leads[0];
+    // Follow-up v2: reset TODO lo relacionado a follow-up cuando el lead responde.
+    // Si estaba en etapa terminal (frio / cerrado_sin_respuesta), revivirlo a 'calificando'.
+    var patch = {
+      last_message_at: new Date().toISOString(),
+      followup_stage: 0,
+      last_followup_sent_at: null,
+      followup_variant: null,
+      updated_at: new Date().toISOString()
+    };
+    if (lead.etapa === 'frio' || lead.etapa === 'cerrado_sin_respuesta') {
+      patch.etapa = 'calificando';
+      patch.temperatura = 'tibio';
+    }
     await sb('wa_leads?phone=eq.' + encodeURIComponent(phone), {
       method: 'PATCH',
-      body: JSON.stringify({ last_message_at: new Date().toISOString(), followup_stage: 0, updated_at: new Date().toISOString() })
+      body: JSON.stringify(patch)
     });
-    lead.last_message_at = new Date().toISOString();
+    lead.last_message_at = patch.last_message_at;
     lead.followup_stage = 0;
+    lead.last_followup_sent_at = null;
+    lead.followup_variant = null;
+    if (patch.etapa) lead.etapa = patch.etapa;
+    if (patch.temperatura) lead.temperatura = patch.temperatura;
     return { lead, isNew: false };
   }
 
