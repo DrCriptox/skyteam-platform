@@ -95,11 +95,11 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Auth — temporary hardcoded key (REMOVE IN NEXT COMMIT AFTER MERGE RUN)
-  // Rationale: env var MERGE_USERS_KEY not set in Vercel; exposing SUPABASE_SERVICE_KEY
-  // via request would be worse than a short-lived random hardcoded token.
-  const TEMP_KEY = 'sky_merge_2026_04_17_rojas';
-  const VALID_KEY = process.env.MERGE_USERS_KEY || process.env.ADMIN_PUSH_KEY || TEMP_KEY;
+  // Auth — requires env var (temp hardcoded key removed after one-time merge on 2026-04-17)
+  const VALID_KEY = process.env.MERGE_USERS_KEY || process.env.ADMIN_PUSH_KEY;
+  if (!VALID_KEY) {
+    return res.status(410).json({ ok: false, error: 'Endpoint disabled — set MERGE_USERS_KEY env to re-enable' });
+  }
   const providedKey = req.query.key || (req.body && req.body.key);
   if (providedKey !== VALID_KEY) {
     return res.status(403).json({ ok: false, error: 'Invalid key' });
