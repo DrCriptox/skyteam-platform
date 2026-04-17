@@ -137,6 +137,42 @@ export default async function handler(req, res) {
     }
 
     // ── TRACK: count visits and conversions — Supabase (instant, atomic) ──
+    // ── DEBUG TRACKING: stats en tiempo real de visits/bots (solo dradmin) ──
+    if (action === 'debugTracking') {
+      if (req.body.user !== 'dradmin') return res.status(403).json({ error: 'Forbidden' });
+      const SB_URL_D = process.env.SUPABASE_URL;
+      const SB_KEY_D = process.env.SUPABASE_SERVICE_KEY;
+      const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10);
+      if (!SB_URL_D || !SB_KEY_D) return res.status(500).json({ error: 'No SB keys' });
+      try {
+        const sbH = { apikey: SB_KEY_D, Authorization: 'Bearer ' + SB_KEY_D };
+        // Visits de hoy
+        const visitsR = await fetch(
+          SB_URL_D + '/rest/v1/landing_visits?day=eq.' + today + '&select=ref,ip,type,created_at&order=created_at.desc&limit=100',
+          { headers: sbH }
+        );
+        const visits = await visitsR.json();
+        const byRef = {};
+        const byType = { visit: 0, conversion: 0, other: 0 };
+        (Array.isArray(visits) ? visits : []).forEach(function(v) {
+          if (!byRef[v.ref]) byRef[v.ref] = { visit: 0, conversion: 0 };
+          if (v.type === 'conversion') { byRef[v.ref].conversion++; byType.conversion++; }
+          else if (v.type === 'visit') { byRef[v.ref].visit++; byType.visit++; }
+          else byType.other++;
+        });
+        return res.status(200).json({
+          ok: true,
+          today: today,
+          totals: byType,
+          total_rows_today: Array.isArray(visits) ? visits.length : 0,
+          by_ref: byRef,
+          most_recent_5: Array.isArray(visits) ? visits.slice(0, 5) : []
+        });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     if (action === 'track' || action === 'capi') {
       const trackRef = (req.body.ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const trackType = req.body.type || 'visit';
@@ -146,14 +182,26 @@ export default async function handler(req, res) {
       const deviceId = deviceFP || clientIP;
       if (!trackRef) return res.status(200).json({ ok: true });
 
-      // ── Bot filter: reject known preview/crawler bots WITHOUT blocking real browsers ──
-      // Narrow list — previous regex was over-filtering legitimate WhatsApp/Yandex/DuckDuckGo users.
-      // Only match patterns that clearly identify automated agents (with path-like tokens or known bot suffixes).
-      const ua = (req.headers['user-agent'] || '').toLowerCase();
-      const isBotUA = /facebookexternalhit|facebot|whatsapp\/|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|oai-searchbot|meta-externalagent|facebookbot|pinterestbot|redditbot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright|node-fetch|python-requests|curl\/|wget\/|go-http-client|java\/|okhttp/i.test(ua);
+      // ── Bot filter: reject preview/crawler bots WITHOUT blocking real browsers ──
+      // CRITICO: WhatsApp in-app browser (users clicking links FROM WhatsApp) envia UA
+      // tipo "Mozilla/5.0 ... Chrome/... WhatsApp/2.24.x.x" que antes se bloqueaba
+      // como bot. Ahora diferenciamos:
+      //   - UA que INICIA con "WhatsApp/..." (sin Mozilla) = preview fetcher = bot
+      //   - UA con "Mozilla + WhatsApp/" = usuario real en WhatsApp in-app browser = OK
+      const uaRaw = (req.headers['user-agent'] || '');
+      const ua = uaRaw.toLowerCase();
+      // Preview fetchers solo (UA empieza con "whatsapp/" o "facebookexternalhit/...")
+      const isPurePreviewBot = /^(whatsapp|facebookexternalhit|facebot)\/?/i.test(uaRaw.trim());
+      // Bots con nombre explicito (siempre bloquear)
+      const isNamedBot = /facebookexternalhit|facebot|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|oai-searchbot|meta-externalagent|facebookbot|pinterestbot|redditbot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright|node-fetch|python-requests|curl\/|wget\/|go-http-client|java\/|okhttp/i.test(ua);
+      const isBotUA = isPurePreviewBot || isNamedBot;
       if (isBotUA) {
-        console.log('[Track] SKIP bot:', ua.substring(0, 60), trackType, trackRef);
+        console.log('[Track] SKIP bot:', ua.substring(0, 80), trackType, trackRef);
         return res.status(200).json({ ok: true, tracked: false, bot: true });
+      }
+      // Log humans con WhatsApp in-app browser para verificar que SI se cuentan
+      if (/whatsapp\//i.test(ua) && /mozilla/i.test(ua)) {
+        console.log('[Track] WA-inapp user OK:', ua.substring(0, 80), trackType, trackRef);
       }
 
       const SB_URL_T = process.env.SUPABASE_URL;

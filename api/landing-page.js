@@ -236,9 +236,14 @@ Agendar llamada</a>
     var h=0; for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return 'fp_'+Math.abs(h).toString(36);
   })();
   // Bot detection (shared between visit + conversion tracking)
-  // Narrow list — earlier broader regex was over-filtering real users (Yandex/DuckDuckGo browsers, etc.)
+  // CRITICO: WhatsApp in-app browser (usuarios clickeando desde WhatsApp) envia UA
+  // con 'Mozilla + WhatsApp/X.Y.Z' — son humanos reales, NO bots.
+  // Solo bloquear si la UA INICIA con 'WhatsApp/' (preview fetcher puro sin browser).
   var _ua = navigator.userAgent || '';
-  var _isBot = /facebookexternalhit|facebot|whatsapp\/|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright/i.test(_ua);
+  var _uaTrim = _ua.trim();
+  var _isPurePreview = /^(WhatsApp|facebookexternalhit|facebot)\/?/i.test(_uaTrim);
+  var _isNamedBot = /facebookexternalhit|facebot|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright/i.test(_ua);
+  var _isBot = _isPurePreview || _isNamedBot;
 
   // Track page visit — SKIP bots to prevent inflated ranking numbers
   if (!_isBot) {
