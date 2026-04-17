@@ -420,7 +420,9 @@ export default async function handler(req, res) {
       const top20 = ranking.slice(0, topN);
       const totalParticipants = totalAsesores;
 
-      // Return user's position ONLY if not in top 20
+      // Return user's position ONLY if not in top 20.
+      // Even if user has no visits yet, show their real name/photo/whatsapp from asesores/users
+      // lookup (previous code fell back to ref string which showed "dradmin" instead of "Yonfer Rojas").
       const userRef = (req.body.ref || '').toLowerCase();
       let myPosition = null;
       if (userRef) {
@@ -428,7 +430,19 @@ export default async function handler(req, res) {
         if (idx >= 20) {
           myPosition = { position: idx + 1, data: ranking[idx] };
         } else if (idx === -1) {
-          myPosition = { position: totalParticipants + 1, data: { ref: userRef, nombre: userRef, visitas: 0, duplicadas: 0, conversiones: 0, score: 0, whatsapp: '', foto: '', efectividad: 0 } };
+          const meAsesor = allAsesores[userRef] || {};
+          myPosition = {
+            position: totalParticipants + 1,
+            data: {
+              ref: userRef,
+              nombre: meAsesor.nombre || userRef,
+              visitas: 0, uniqueVisitas: 0, duplicadas: 0, conversiones: 0,
+              score: 0, efectividad: 0,
+              whatsapp: meAsesor.whatsapp || '',
+              foto: (req.body && req.body.noPhoto) ? '' : (meAsesor.foto || ''),
+              newLanding: !!skyAsesores[userRef]
+            }
+          };
         }
       }
 
