@@ -268,6 +268,186 @@ async function getLead(phone) {
 }
 
 // ============================================================
+// FOLLOW-UP v2 STATS & REVIVAL CAMPAIGNS
+// ============================================================
+
+async function getFollowupStats() {
+  const todayISO = isoStartOfTodayBogota();
+  const weekISO = iso7daysAgo();
+  const monthISO = new Date(Date.now() - 30 * 86400000).toISOString();
+
+  // Query todos los mensajes de follow-up enviados (metadata.type='followup')
+  // Supabase REST no permite filtrar metadata JSONB facil, asi que traemos todos outbound 30d y filtramos en memoria
+  const convs = await sb(
+    'wa_conversations?bot_username=eq.' + BOT_USERNAME +
+    '&direction=eq.out&created_at=gte.' + encodeURIComponent(monthISO) +
+    '&select=phone,content,metadata,created_at&order=created_at.desc&limit=1000'
+  );
+  const followups = (convs || []).filter(c => c.metadata && c.metadata.type === 'followup');
+
+  const counts = { today: 0, week: 0, month: 0 };
+  const byStage = {};
+  const byWindow = { morning: 0, lunch: 0, evening: 0 };
+  const aiVsTemplate = { ai: 0, template: 0 };
+
+  const tMonth = new Date(monthISO).getTime();
+  const tWeek = new Date(weekISO).getTime();
+  const tToday = new Date(todayISO).getTime();
+
+  for (const f of followups) {
+    const t = new Date(f.created_at).getTime();
+    if (t >= tToday) counts.today++;
+    if (t >= tWeek) counts.week++;
+    if (t >= tMonth) counts.month++;
+    const stage = (f.metadata && f.metadata.stage) || 0;
+    byStage[stage] = (byStage[stage] || 0) + 1;
+    const win = (f.metadata && f.metadata.window);
+    if (win && byWindow[win] !== undefined) byWindow[win]++;
+    if (f.metadata && f.metadata.ai) aiVsTemplate.ai++;
+    else aiVsTemplate.template++;
+  }
+
+  // Reply rate: para cada follow-up, revisar si el lead respondio despues
+  // Simplificamos: contamos cuantos leads que recibieron follow-up tienen last_message_at > followup_sent_at
+  const uniquePhones = Array.from(new Set(followups.map(f => f.phone)));
+  let repliedAfter = 0;
+  if (uniquePhones.length > 0) {
+    // Batch query leads
+    const chunkSize = 50;
+    for (let i = 0; i < uniquePhones.length; i += chunkSize) {
+      const chunk = uniquePhones.slice(i, i + chunkSize);
+      const inList = chunk.map(p => '"' + p + '"').join(',');
+      const leads = await sb(
+        'wa_leads?phone=in.(' + encodeURIComponent(inList) +
+        ')&select=phone,last_message_at,last_followup_sent_at'
+      );
+      if (leads) {
+        for (const l of leads) {
+          if (!l.last_followup_sent_at) continue;
+          const lastMsg = new Date(l.last_message_at).getTime();
+          const lastFu = new Date(l.last_followup_sent_at).getTime();
+          if (lastMsg > lastFu) repliedAfter++;
+        }
+      }
+    }
+  }
+  const replyRate = uniquePhones.length > 0 ? Math.round((repliedAfter / uniquePhones.length) * 1000) / 10 : 0;
+
+  // Revival stats: leads actualmente en etapa terminal
+  const [frioLeads, cerradoLeads, dormidosLeads] = await Promise.all([
+    sb('wa_leads?bot_username=eq.' + BOT_USERNAME + '&etapa=eq.frio&select=phone'),
+    sb('wa_leads?bot_username=eq.' + BOT_USERNAME + '&etapa=eq.cerrado_sin_respuesta&select=phone'),
+    sb('wa_leads?bot_username=eq.' + BOT_USERNAME + '&followup_stage=gte.4&etapa=not.in.(agendado,cerrado)&select=phone')
+  ]);
+
+  return {
+    followups_today: counts.today,
+    followups_week: counts.week,
+    followups_month: counts.month,
+    total_followups_30d: followups.length,
+    unique_leads_contacted_30d: uniquePhones.length,
+    replied_after_followup: repliedAfter,
+    reply_rate_percent: replyRate,
+    by_stage: byStage,
+    by_window: byWindow,
+    ai_vs_template: aiVsTemplate,
+    revival_pool: {
+      frio: (frioLeads || []).length,
+      cerrado_sin_respuesta: (cerradoLeads || []).length,
+      en_seguimiento_stage_4plus: (dormidosLeads || []).length
+    }
+  };
+}
+
+async function getRevivalCandidates(etapaFilter) {
+  const filter = etapaFilter || 'all';
+  let etapaClause = '&etapa=in.(frio,cerrado_sin_respuesta)';
+  if (filter === 'frio') etapaClause = '&etapa=eq.frio';
+  else if (filter === 'cerrado') etapaClause = '&etapa=eq.cerrado_sin_respuesta';
+  else if (filter === 'seguimiento') etapaClause = '&etapa=eq.calificando&followup_stage=gte.4';
+
+  const leads = await sb(
+    'wa_leads?bot_username=eq.' + BOT_USERNAME +
+    etapaClause +
+    '&followup_paused=eq.false' +
+    '&order=last_message_at.desc&limit=200' +
+    '&select=phone,name,etapa,temperatura,followup_stage,last_message_at,context_summary,objections'
+  );
+  return (leads || []).map(l => ({
+    phone: l.phone,
+    name: l.name || 'Prospecto',
+    etapa: l.etapa,
+    temperatura: l.temperatura,
+    followup_stage: l.followup_stage,
+    last_message_at: l.last_message_at,
+    context_summary: l.context_summary || '',
+    objections: l.objections || []
+  }));
+}
+
+async function sendRevivalCampaign(phones, messageTemplate, campaignName) {
+  if (!Array.isArray(phones) || phones.length === 0) return { ok: false, error: 'No phones' };
+  if (!messageTemplate || messageTemplate.trim().length < 5) return { ok: false, error: 'Mensaje vacio o muy corto' };
+  if (phones.length > 100) return { ok: false, error: 'Max 100 leads por campana (para evitar spam detection)' };
+
+  const campaignId = 'revival_' + Date.now();
+  const name = campaignName || 'Revival ' + new Date().toISOString().slice(0, 10);
+  const sentList = [];
+  const failedList = [];
+
+  for (let i = 0; i < phones.length; i++) {
+    const phone = normalizePhone(phones[i]);
+    // Personalizar {{firstName}} si el template lo tiene
+    const lead = await sb('wa_leads?phone=eq.' + encodeURIComponent(phone) + '&select=name&limit=1');
+    const firstName = lead && lead[0] && lead[0].name ? lead[0].name.split(' ')[0] : '';
+    const msg = messageTemplate.replace(/\{\{firstName\}\}/g, firstName).replace(/\{\{name\}\}/g, firstName);
+
+    const sendResult = await sendWhatsApp(phone, msg);
+    if (sendResult.ok) {
+      // Guardar en wa_conversations con campaign metadata
+      await sb('wa_conversations', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone: phone, direction: 'out', message_type: 'text', content: msg,
+          wa_message_id: sendResult.messageId || null,
+          bot_username: BOT_USERNAME,
+          metadata: { type: 'revival', campaign_id: campaignId, campaign_name: name, sent_by: ADMIN_USERNAME }
+        })
+      });
+      // Revivir lead a 'calificando' + reset follow-up cycle
+      await sb('wa_leads?phone=eq.' + encodeURIComponent(phone), {
+        method: 'PATCH',
+        body: JSON.stringify({
+          etapa: 'calificando',
+          temperatura: 'tibio',
+          followup_stage: 0,
+          last_followup_sent_at: null,
+          followup_variant: null,
+          last_message_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+      });
+      sentList.push(phone);
+    } else {
+      failedList.push({ phone: phone, error: sendResult.error || 'send failed' });
+    }
+    // Rate limit: 2 sec entre mensajes para evitar spam detection
+    if (i < phones.length - 1) {
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  return {
+    ok: true,
+    campaign_id: campaignId,
+    campaign_name: name,
+    sent: sentList.length,
+    failed: failedList.length,
+    failures: failedList.slice(0, 10)
+  };
+}
+
+// ============================================================
 // HANDLER
 // ============================================================
 
@@ -329,6 +509,25 @@ export default async function handler(req, res) {
       case 'getLead': {
         const lead = await getLead(req.body.phone);
         return res.status(200).json({ ok: true, lead: lead });
+      }
+
+      case 'followupStats': {
+        const stats = await getFollowupStats();
+        return res.status(200).json({ ok: true, stats: stats });
+      }
+
+      case 'revivalCandidates': {
+        const candidates = await getRevivalCandidates(req.body.filter || 'all');
+        return res.status(200).json({ ok: true, candidates: candidates });
+      }
+
+      case 'sendRevivalCampaign': {
+        const r = await sendRevivalCampaign(
+          req.body.phones || [],
+          req.body.message || '',
+          req.body.campaignName || ''
+        );
+        return res.status(r.ok ? 200 : 400).json(r);
       }
 
       default:
