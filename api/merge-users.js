@@ -14,7 +14,8 @@ const HEADERS = {
   Prefer: 'return=representation'
 };
 
-// Tables with a `username` column that should be migrated
+// Tables with a `username` column that should be migrated.
+// Note: `solicitudes` uses a different column (approved users go to `users`), skip.
 const USERNAME_TABLES = [
   'bookings',
   'booking_proofs',
@@ -24,8 +25,7 @@ const USERNAME_TABLES = [
   'proof_images',
   'agenda_configs',
   'push_subscriptions',
-  'chat_messages',
-  'solicitudes'
+  'chat_messages'
 ];
 
 // Tables with a `ref` column (landing-related) that should be migrated
@@ -60,6 +60,7 @@ async function countRows(table, column, value) {
 }
 
 // Update all rows in a table where column=fromValue to column=toValue
+// On unique-constraint conflict (23505), delete the source rows instead (target wins).
 async function patchRows(table, column, fromValue, toValue) {
   try {
     const r = await fetch(
@@ -70,11 +71,19 @@ async function patchRows(table, column, fromValue, toValue) {
         body: JSON.stringify({ [column]: toValue })
       }
     );
-    if (!r.ok) {
-      const t = await r.text();
-      return { ok: false, error: r.status + ': ' + t.substring(0, 200) };
+    if (r.ok) return { ok: true };
+    const t = await r.text();
+    // On unique-constraint conflict: delete source rows (target row wins)
+    if (r.status === 409 || t.includes('23505') || t.includes('duplicate key')) {
+      const delR = await fetch(
+        SUPABASE_URL + '/rest/v1/' + table + '?' + column + '=eq.' + encodeURIComponent(fromValue),
+        { method: 'DELETE', headers: { ...HEADERS, Prefer: 'return=minimal' } }
+      );
+      if (delR.ok) return { ok: true, resolved: 'deleted-source-on-conflict' };
+      const dt = await delR.text();
+      return { ok: false, error: 'patch+delete failed: ' + r.status + ' / ' + delR.status + ': ' + dt.substring(0, 150) };
     }
-    return { ok: true };
+    return { ok: false, error: r.status + ': ' + t.substring(0, 200) };
   } catch (e) {
     return { ok: false, error: e.message };
   }
