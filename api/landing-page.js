@@ -236,8 +236,9 @@ Agendar llamada</a>
     var h=0; for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return 'fp_'+Math.abs(h).toString(36);
   })();
   // Bot detection (shared between visit + conversion tracking)
+  // Narrow list — earlier broader regex was over-filtering real users (Yandex/DuckDuckGo browsers, etc.)
   var _ua = navigator.userAgent || '';
-  var _isBot = /bot|crawler|spider|preview|scrape|fetch|monitor|headless|phantom|selenium|facebookexternalhit|facebot|whatsapp\/|slurp/i.test(_ua);
+  var _isBot = /facebookexternalhit|facebot|whatsapp\/|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright/i.test(_ua);
 
   // Track page visit — SKIP bots to prevent inflated ranking numbers
   if (!_isBot) {

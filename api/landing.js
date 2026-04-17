@@ -146,9 +146,11 @@ export default async function handler(req, res) {
       const deviceId = deviceFP || clientIP;
       if (!trackRef) return res.status(200).json({ ok: true });
 
-      // ── Bot filter: reject Facebook/WhatsApp/crawler preview bots from inflating rankings ──
+      // ── Bot filter: reject known preview/crawler bots WITHOUT blocking real browsers ──
+      // Narrow list — previous regex was over-filtering legitimate WhatsApp/Yandex/DuckDuckGo users.
+      // Only match patterns that clearly identify automated agents (with path-like tokens or known bot suffixes).
       const ua = (req.headers['user-agent'] || '').toLowerCase();
-      const isBotUA = /facebookexternalhit|facebot|whatsapp|bot|crawler|spider|preview|scrape|fetch|monitor|headless|phantom|selenium|slurp|bing|yandex|baidu|duckduck|semrush|ahref|mj12|dotbot|petalbot|bytespider|gptbot|claude/i.test(ua);
+      const isBotUA = /facebookexternalhit|facebot|whatsapp\/|slackbot|telegrambot|twitterbot|linkedinbot|discordbot|googlebot|bingbot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|bytespider|gptbot|claude-web|ccbot|perplexitybot|oai-searchbot|meta-externalagent|facebookbot|pinterestbot|redditbot|crawler|spider|headless|phantomjs|selenium|puppeteer|playwright|node-fetch|python-requests|curl\/|wget\/|go-http-client|java\/|okhttp/i.test(ua);
       if (isBotUA) {
         console.log('[Track] SKIP bot:', ua.substring(0, 60), trackType, trackRef);
         return res.status(200).json({ ok: true, tracked: false, bot: true });
