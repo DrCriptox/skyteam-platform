@@ -67,7 +67,10 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const user = req.query?.user || (req.url && new URL('https://x.com' + req.url).searchParams.get('user'));
+      // CRITICAL: normalize to lowercase — DB stores lowercase and PostgREST eq. is case-sensitive.
+      // Without this, a stale session with uppercase username returns empty agenda (data loss scare).
+      const userRaw = req.query?.user || (req.url && new URL('https://x.com' + req.url).searchParams.get('user'));
+      const user = (userRaw || '').toString().trim().toLowerCase();
       if (!user) return res.status(400).json({ error: 'Missing user' });
 
       const configs = await sb('agenda_configs?username=eq.' + encodeURIComponent(user) + '&select=config');
@@ -126,7 +129,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { action, user, config, booking, id } = req.body;
+      const { action, config, booking, id } = req.body;
+      // CRITICAL: normalize username to lowercase (DB is lowercase, PostgREST eq. is case-sensitive).
+      const user = (req.body && req.body.user ? String(req.body.user) : '').trim().toLowerCase();
       if (!user) return res.status(400).json({ error: 'Missing user' });
 
       // ════════════════════════════════════════════════════

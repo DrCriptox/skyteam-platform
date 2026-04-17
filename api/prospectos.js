@@ -43,13 +43,18 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
-    const { action, user } = req.body || {};
+    const { action } = req.body || {};
+    // CRITICAL: normalize username to lowercase — DB stores lowercase and
+    // PostgREST eq. is case-sensitive. A stale session with uppercase username
+    // would return 0 prospectos, making the CRM look "empty" (data loss scare).
+    const user = (req.body && req.body.user ? String(req.body.user) : '').trim().toLowerCase();
 
     if (!action || !user) return res.status(400).json({ error: 'Missing action or user' });
 
     // -- GET ALL --
     if (action === 'getAll') {
-      const prospectos = await sb('prospectos?username=eq.' + encodeURIComponent(user) + '&order=created_at.desc', { headers: { Range: '0-1999', Prefer: 'count=exact' } });
+      // Exclude soft-deleted (etapa='_archived')
+      const prospectos = await sb('prospectos?username=eq.' + encodeURIComponent(user) + '&etapa=neq._archived&order=created_at.desc', { headers: { Range: '0-1999', Prefer: 'count=exact' } });
       const recordatorios = await sb('recordatorios?username=eq.' + encodeURIComponent(user) + '&completado=eq.false&fecha_recordatorio=lte.' + new Date(Date.now() + 86400000 * 2).toISOString() + '&order=fecha_recordatorio.asc');
 
       // Compute metrics
@@ -131,13 +136,68 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // -- DELETE --
+    // -- DELETE (soft-delete) --
+    // Never hard-DELETE rows: user may accidentally tap delete. Instead mark etapa='_archived'
+    // so the row is excluded from getAll but can be restored via `listArchived`+`restore`.
     if (action === 'delete') {
       const { id } = req.body;
       if (!id) return res.status(400).json({ error: 'Missing id' });
-      // SECURITY: only delete if prospect belongs to this user (prevents IDOR)
-      await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), { method: 'DELETE' });
-      return res.status(200).json({ ok: true });
+      // Read current row to preserve original etapa in notas
+      const existing = await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user) + '&select=etapa,notas');
+      if (!existing || !existing[0]) return res.status(404).json({ error: 'Prospecto no encontrado' });
+      const prevEtapa = existing[0].etapa || 'nuevo';
+      const prevNotas = existing[0].notas || '';
+      const archiveMarker = '[ARCHIVED:' + new Date().toISOString() + ':prev=' + prevEtapa + ']';
+      // Only prepend marker if not already archived
+      const newNotas = prevNotas.indexOf('[ARCHIVED:') === 0 ? prevNotas : (archiveMarker + '\n' + prevNotas);
+      await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ etapa: '_archived', notas: newNotas, updated_at: new Date().toISOString() })
+      });
+      // Log interaction for audit trail
+      try {
+        await sb('interacciones', {
+          method: 'POST',
+          headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({ prospecto_id: id, username: user, tipo: 'archivado', contenido: 'Prospecto archivado (estaba en etapa: ' + prevEtapa + ')' })
+        });
+      } catch(e) {}
+      return res.status(200).json({ ok: true, archived: true });
+    }
+
+    // -- LIST ARCHIVED --
+    // Show soft-deleted prospectos so socios can restore them.
+    if (action === 'listArchived') {
+      const archived = await sb('prospectos?username=eq.' + encodeURIComponent(user) + '&etapa=eq._archived&order=updated_at.desc&limit=200');
+      return res.status(200).json({ archived: archived || [] });
+    }
+
+    // -- RESTORE --
+    // Bring an archived prospecto back to its previous etapa (parsed from notas marker) or 'nuevo'.
+    if (action === 'restore') {
+      const { id } = req.body;
+      if (!id) return res.status(400).json({ error: 'Missing id' });
+      const row = await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user) + '&select=notas');
+      if (!row || !row[0]) return res.status(404).json({ error: 'Prospecto no encontrado' });
+      const notas = row[0].notas || '';
+      // Parse previous etapa from marker
+      const match = notas.match(/^\[ARCHIVED:[^:]+:prev=([^\]]+)\]\n?/);
+      const prevEtapa = match ? match[1] : 'nuevo';
+      const cleanNotas = notas.replace(/^\[ARCHIVED:[^\]]+\]\n?/, '');
+      await sb('prospectos?id=eq.' + encodeURIComponent(id) + '&username=eq.' + encodeURIComponent(user), {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ etapa: prevEtapa, notas: cleanNotas, updated_at: new Date().toISOString() })
+      });
+      try {
+        await sb('interacciones', {
+          method: 'POST',
+          headers: { ...HEADERS, Prefer: 'return=minimal' },
+          body: JSON.stringify({ prospecto_id: id, username: user, tipo: 'restaurado', contenido: 'Prospecto restaurado (a etapa: ' + prevEtapa + ')' })
+        });
+      } catch(e) {}
+      return res.status(200).json({ ok: true, restored: true, etapa: prevEtapa });
     }
 
     // -- ADD INTERACCION --
