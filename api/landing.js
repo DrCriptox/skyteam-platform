@@ -137,6 +137,71 @@ export default async function handler(req, res) {
     }
 
     // ── TRACK: count visits and conversions — Supabase (instant, atomic) ──
+    // ── TEST INSERT: simula un track real y devuelve la respuesta Supabase (solo dradmin) ──
+    if (action === 'testInsert') {
+      if (req.body.user !== 'dradmin') return res.status(403).json({ error: 'Forbidden' });
+      const SB_URL_TI = process.env.SUPABASE_URL;
+      const SB_KEY_TI = process.env.SUPABASE_SERVICE_KEY;
+      if (!SB_URL_TI || !SB_KEY_TI) return res.status(500).json({ error: 'NO SB KEYS - critical!' });
+      const today = new Date(Date.now() - 18000000).toISOString().slice(0, 10);
+      const testRow = {
+        ref: 'dradmin',
+        ip: 'test_' + Date.now(),
+        type: 'visit',
+        day: today,
+        created_at: new Date().toISOString()
+      };
+      const insertResponse = {};
+      try {
+        const insertR = await fetch(SB_URL_TI + '/rest/v1/landing_visits', {
+          method: 'POST',
+          headers: {
+            apikey: SB_KEY_TI,
+            Authorization: 'Bearer ' + SB_KEY_TI,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify(testRow)
+        });
+        insertResponse.status = insertR.status;
+        insertResponse.ok = insertR.ok;
+        const text = await insertR.text();
+        insertResponse.body = text.substring(0, 500);
+        try { insertResponse.parsed = JSON.parse(text); } catch(e) {}
+      } catch (e) {
+        insertResponse.error = e.message;
+      }
+      // Verify it's actually there
+      let verification = {};
+      try {
+        const verifyR = await fetch(
+          SB_URL_TI + '/rest/v1/landing_visits?ip=eq.' + encodeURIComponent(testRow.ip) + '&select=*',
+          { headers: { apikey: SB_KEY_TI, Authorization: 'Bearer ' + SB_KEY_TI } }
+        );
+        verification.status = verifyR.status;
+        const vtext = await verifyR.text();
+        verification.rows = vtext ? JSON.parse(vtext) : [];
+      } catch (e) {
+        verification.error = e.message;
+      }
+      // Check env vars presence (sin exponer valores)
+      const envCheck = {
+        SUPABASE_URL: !!process.env.SUPABASE_URL,
+        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+        SUPABASE_URL_starts: (process.env.SUPABASE_URL || '').substring(0, 30) + '...',
+        KEY_length: (process.env.SUPABASE_SERVICE_KEY || '').length
+      };
+      return res.status(200).json({
+        ok: insertResponse.ok === true,
+        testRow: testRow,
+        insertResponse: insertResponse,
+        verification: verification,
+        envCheck: envCheck,
+        todayColombiaISO: today,
+        serverTimeISO: new Date().toISOString()
+      });
+    }
+
     // ── DEBUG TRACKING: stats en tiempo real de visits/bots (solo dradmin) ──
     if (action === 'debugTracking') {
       if (req.body.user !== 'dradmin') return res.status(403).json({ error: 'Forbidden' });

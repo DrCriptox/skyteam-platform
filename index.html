@@ -19129,7 +19129,67 @@ function _sofiDebugTracking() {
     }
     h += '</div>';
 
-    h += '<div class="sofi-warn">💡 Este endpoint solo muestra visits GUARDADAS en DB. Las que pasan el filtro anti-bot. Si el numero se ve bajo, abre tu landing desde WhatsApp y refresca este debug para ver si entra.</div>';
+    h += '<div class="sofi-warn">💡 Este endpoint solo muestra visits GUARDADAS en DB. Si el numero se ve bajo, click el boton abajo para probar INSERT directo y ver el error exacto.</div>';
+
+    h += '<div style="margin-top:12px;text-align:center;">';
+    h += '<button class="sofi-btn" onclick="_sofiTestInsert()" style="background:rgba(255,180,0,0.15);border-color:rgba(255,180,0,0.35);color:#FFB400;">🧪 Probar INSERT directo</button>';
+    h += '</div>';
+
+    body.innerHTML = h;
+  }).catch(function(e) {
+    var body = document.getElementById('sofi-modal-body');
+    if (body) body.innerHTML = '<div class="sofi-empty">❌ Error de conexión: ' + e.message + '</div>';
+  });
+}
+
+// Prueba INSERT directo a landing_visits y muestra la respuesta de Supabase
+function _sofiTestInsert() {
+  _sofiShowModal('🧪 Test INSERT landing_visits', '<div class="sofi-empty">Probando INSERT...</div>', '');
+  fetch('/api/landing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'testInsert', user: (CU && CU.username) || '' })
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    var body = document.getElementById('sofi-modal-body');
+    if (!body) return;
+    var h = '';
+    // Status general
+    var isOk = d && d.ok === true;
+    h += '<div style="padding:12px;border-radius:10px;background:' + (isOk?'rgba(29,158,117,0.10)':'rgba(226,75,74,0.10)') + ';border:1px solid ' + (isOk?'rgba(29,158,117,0.3)':'rgba(226,75,74,0.3)') + ';margin-bottom:12px;text-align:center;">';
+    h += '<div style="font-size:32px;">' + (isOk?'✅':'❌') + '</div>';
+    h += '<div style="font-size:15px;font-weight:800;color:' + (isOk?'#1D9E75':'#E24B4A') + ';margin-top:4px;">' + (isOk?'INSERT funciono':'INSERT FALLO') + '</div>';
+    if (!isOk) h += '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Revisa detalles abajo</div>';
+    h += '</div>';
+
+    h += '<div class="sofi-section"><div class="sofi-section-title">📦 Request</div>';
+    h += '<pre style="font-size:10px;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.25);padding:8px;border-radius:6px;overflow-x:auto;">' + _sofiEscape(JSON.stringify(d.testRow, null, 2)) + '</pre>';
+    h += '</div>';
+
+    h += '<div class="sofi-section"><div class="sofi-section-title">📥 Respuesta Supabase INSERT</div>';
+    h += '<div style="font-size:12px;color:rgba(255,255,255,0.7);">Status: <b style="color:' + (d.insertResponse.ok?'#1D9E75':'#E24B4A') + ';">' + d.insertResponse.status + '</b></div>';
+    if (d.insertResponse.body) {
+      h += '<pre style="font-size:10px;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.25);padding:8px;border-radius:6px;overflow-x:auto;margin-top:6px;">' + _sofiEscape(d.insertResponse.body) + '</pre>';
+    }
+    if (d.insertResponse.error) {
+      h += '<div style="color:#E24B4A;font-size:11px;margin-top:6px;">Error: ' + _sofiEscape(d.insertResponse.error) + '</div>';
+    }
+    h += '</div>';
+
+    h += '<div class="sofi-section"><div class="sofi-section-title">🔍 Verificacion (query despues del INSERT)</div>';
+    h += '<div style="font-size:12px;color:rgba(255,255,255,0.7);">Status: ' + d.verification.status + ' · Rows encontradas: <b>' + ((d.verification.rows && d.verification.rows.length) || 0) + '</b></div>';
+    if (d.verification.rows && d.verification.rows.length > 0) {
+      h += '<pre style="font-size:10px;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.25);padding:8px;border-radius:6px;overflow-x:auto;margin-top:6px;">' + _sofiEscape(JSON.stringify(d.verification.rows[0], null, 2)) + '</pre>';
+    }
+    h += '</div>';
+
+    h += '<div class="sofi-section"><div class="sofi-section-title">🔧 Env & Time</div>';
+    h += '<div style="font-size:11px;color:rgba(255,255,255,0.6);font-family:monospace;line-height:1.6;">';
+    h += 'SUPABASE_URL configurada: ' + (d.envCheck.SUPABASE_URL?'✅':'❌') + '<br>';
+    h += 'SERVICE_KEY configurada: ' + (d.envCheck.SUPABASE_SERVICE_KEY?'✅':'❌') + ' (len: ' + d.envCheck.KEY_length + ')<br>';
+    h += 'URL: ' + _sofiEscape(d.envCheck.SUPABASE_URL_starts) + '<br>';
+    h += 'Dia Colombia (hoy): ' + d.todayColombiaISO + '<br>';
+    h += 'Server time: ' + d.serverTimeISO + '</div>';
+    h += '</div>';
 
     body.innerHTML = h;
   }).catch(function(e) {
@@ -19156,6 +19216,7 @@ window._sofiSendRevival = _sofiSendRevival;
 window._sofiStopPolling = _sofiStopPolling;
 window._sofiCleanPhone = _sofiCleanPhone;
 window._sofiDebugTracking = _sofiDebugTracking;
+window._sofiTestInsert = _sofiTestInsert;
 
 </script>
 <script src="patch-v3.js"></script>
