@@ -253,10 +253,11 @@ Agendar llamada</a>
   if(!wa) return;
   var nombre = a.nombre || '';
 
-  // Pre-built WhatsApp links — short, low-commitment messages that maximize send rate.
-  // The bot handles qualification after they write. Keep these SHORT so people actually press Send.
-  var msgSaber = encodeURIComponent('Hola, vi el video sobre la franquicia de trading con IA. Me gustaria saber mas.');
-  var msgActivar = encodeURIComponent('Hola, me interesa activar la franquicia digital. Quiero info.');
+  // Pre-built WhatsApp links — ULTRA short, zero-commitment messages to maximize send rate.
+  // Previous long messages converted at 1.8% (industry 15-20%). Shorter = less friction = more sends.
+  // The bot handles qualification after they write.
+  var msgSaber = encodeURIComponent('Info franquicia IA');
+  var msgActivar = encodeURIComponent('Info franquicia IA');
   var linkSaber = 'https://wa.me/' + wa + '?text=' + msgSaber;
   var linkActivar = 'https://wa.me/' + wa + '?text=' + msgActivar;
 
