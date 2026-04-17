@@ -18444,6 +18444,7 @@ function renderSofiDashboard() {
   html += '<div class="sofi-actions-bar">';
   html += '<div class="sofi-actions-bar-title">💬 Conversaciones de Sofi</div>';
   html += '<div class="sofi-actions-bar-btns">';
+  html += '<button class="sofi-btn" onclick="_sofiDebugTracking()">🔍 Debug</button>';
   html += '<button class="sofi-btn" onclick="_sofiOpenStats()">📊 Stats</button>';
   html += '<button class="sofi-btn" onclick="_sofiOpenRevival()">🔄 Revival</button>';
   html += '</div></div>';
@@ -19075,6 +19076,68 @@ function _sofiSendRevival() {
   });
 }
 
+// Debug tracking: verifica en vivo cuantas visits entraron hoy
+function _sofiDebugTracking() {
+  _sofiShowModal('🔍 Debug — Tracking de visits HOY', '<div class="sofi-empty">Cargando...</div>', '');
+  fetch('/api/landing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'debugTracking', user: (CU && CU.username) || '' })
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    var body = document.getElementById('sofi-modal-body');
+    if (!body) return;
+    if (!d || !d.ok) {
+      body.innerHTML = '<div class="sofi-empty">❌ Error: ' + ((d && d.error) || 'desconocido') + '</div>';
+      return;
+    }
+    var h = '';
+    // Top numbers
+    h += '<div class="sofi-stat-grid">';
+    h += '<div class="sofi-stat-big"><div class="sofi-stat-big-num">' + (d.totals.visit || 0) + '</div><div class="sofi-stat-big-lbl">Visits hoy</div></div>';
+    h += '<div class="sofi-stat-big"><div class="sofi-stat-big-num" style="color:#1D9E75;">' + (d.totals.conversion || 0) + '</div><div class="sofi-stat-big-lbl">Conv hoy</div></div>';
+    h += '<div class="sofi-stat-big"><div class="sofi-stat-big-num" style="color:#7F77DD;">' + (Object.keys(d.by_ref||{}).length) + '</div><div class="sofi-stat-big-lbl">Socios con visits</div></div>';
+    h += '</div>';
+
+    h += '<div class="sofi-section"><div class="sofi-section-title">📊 Visits por socio (hoy)</div>';
+    var entries = Object.entries(d.by_ref || {}).sort(function(a,b){ return (b[1].visit || 0) - (a[1].visit || 0); });
+    if (entries.length === 0) {
+      h += '<div class="sofi-empty">Sin visits registradas hoy. Si acabas de hacer el fix, prueba abrir tu link desde WhatsApp ahora.</div>';
+    } else {
+      var maxV = Math.max.apply(null, entries.map(function(e){return e[1].visit||0;})) || 1;
+      entries.slice(0, 20).forEach(function(e) {
+        var ref = e[0];
+        var v = e[1].visit || 0;
+        var c = e[1].conversion || 0;
+        var pct = v / maxV * 100;
+        h += '<div class="sofi-bar"><div class="sofi-bar-lbl">' + _sofiEscape(ref) + '</div>';
+        h += '<div class="sofi-bar-track"><div class="sofi-bar-fill" style="width:' + pct + '%;"></div></div>';
+        h += '<div class="sofi-bar-val">' + v + 'v' + (c > 0 ? ' · ' + c + 'c' : '') + '</div></div>';
+      });
+    }
+    h += '</div>';
+
+    h += '<div class="sofi-section"><div class="sofi-section-title">🕐 Últimas 5 visits</div>';
+    if (d.most_recent_5 && d.most_recent_5.length > 0) {
+      h += '<div style="font-size:11px;font-family:monospace;color:rgba(255,255,255,0.6);">';
+      d.most_recent_5.forEach(function(v) {
+        var t = v.created_at ? new Date(v.created_at).toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '';
+        h += '<div style="padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,0.04);">' + t + ' · <b style="color:#C9A84C;">' + _sofiEscape(v.ref) + '</b> · ' + _sofiEscape(v.type) + ' · ' + _sofiEscape((v.ip||'').substring(0,12)) + '...</div>';
+      });
+      h += '</div>';
+    } else {
+      h += '<div class="sofi-empty">Sin eventos recientes</div>';
+    }
+    h += '</div>';
+
+    h += '<div class="sofi-warn">💡 Este endpoint solo muestra visits GUARDADAS en DB. Las que pasan el filtro anti-bot. Si el numero se ve bajo, abre tu landing desde WhatsApp y refresca este debug para ver si entra.</div>';
+
+    body.innerHTML = h;
+  }).catch(function(e) {
+    var body = document.getElementById('sofi-modal-body');
+    if (body) body.innerHTML = '<div class="sofi-empty">❌ Error de conexión: ' + e.message + '</div>';
+  });
+}
+
 // Exponer globalmente para onclicks del HTML inline
 window.renderSofiDashboard = renderSofiDashboard;
 window._sofiSetFilter = _sofiSetFilter;
@@ -19092,6 +19155,7 @@ window._sofiSelectAllRevival = _sofiSelectAllRevival;
 window._sofiSendRevival = _sofiSendRevival;
 window._sofiStopPolling = _sofiStopPolling;
 window._sofiCleanPhone = _sofiCleanPhone;
+window._sofiDebugTracking = _sofiDebugTracking;
 
 </script>
 <script src="patch-v3.js"></script>
