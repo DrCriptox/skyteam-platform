@@ -3975,15 +3975,18 @@ function showApp() {
       document.body.appendChild(m);
       document.getElementById('photo-remind-upload').addEventListener('click', function() {
         m.remove();
-        navigate('journal');
+        // The perfil-photo-input is rendered inside renderPerfil() → go THERE,
+        // not to 'journal'. Old code navigated to Sky Journal + looked for a
+        // 'config' tab that doesn't host the file input, so the chooser never
+        // opened — user experienced it as "no abre la galería".
+        navigate('perfil');
         setTimeout(function() {
-          var tabs = document.querySelectorAll('[data-stab]');
-          tabs.forEach(function(t){ if(t.getAttribute('data-stab')==='config') t.click(); });
-          setTimeout(function() {
+          if(typeof triggerPhotoUpload === 'function') triggerPhotoUpload();
+          else {
             var inp = document.getElementById('perfil-photo-input');
-            if(inp) inp.click();
-          }, 500);
-        }, 300);
+            if(inp) { inp.value = ''; inp.click(); }
+          }
+        }, 350);
       });
       document.getElementById('photo-remind-later').addEventListener('click', function() {
         m.remove();
@@ -5224,7 +5227,7 @@ function renderPlanDiarioUI() {
   html += '<div style="display:flex;gap:8px;align-items:stretch;">';
   html += '<input type="text" id="pd-text-input" placeholder="Ej: Gimnasio 7-8am lunes y miércoles | Borra la agenda de hoy | Cambia gym a 9am" style="flex:1;background:rgba(0,0,0,0.3);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#F0EDE6;font-size:13px;padding:12px 14px;outline:none;font-family:Outfit,Nunito,sans-serif;" onkeydown="if(event.key===\'Enter\')processPlanDiarioInput()">';
   html += '<button id="pd-mic-btn" onclick="togglePlanDiarioVoice()" style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.65);border-radius:10px;padding:0 16px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.3s;" title="Hablar">🎙️</button>';
-  html += '<button onclick="processPlanDiarioInput()" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;">Ejecutar</button>';
+  html += '<button id="pd-run-btn" onclick="processPlanDiarioInput()" style="background:linear-gradient(135deg,#C9A84C,#E8D48B);border:none;color:#0a0a12;border-radius:10px;padding:0 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:Outfit,Nunito,sans-serif;flex-shrink:0;transition:opacity 0.15s;">Ejecutar</button>';
   html += '</div>';
   html += '<p id="pd-voice-status" style="font-size:11px;color:rgba(255,255,255,0.45);margin:8px 0 0;display:none;"></p>';
   html += '<p id="pd-ai-status" style="font-size:11px;color:rgba(255,215,0,0.6);margin:6px 0 0;display:none;">🤖 Procesando con IA...</p>';
@@ -5599,12 +5602,50 @@ function stopPlanDiarioVoice() {
 }
 
 // ── AI interpretation via /api/chat ──
+// _pdBusy = anti-double-submit lock. Protects against:
+//   - double-click on "Ejecutar" button
+//   - voice onend firing AND user clicking submit
+//   - Enter key pressed twice rapidly
+// Paired with the backend dedup in /api/plan-diario, the combo makes
+// duplicate-block creation structurally impossible.
+function _pdSetBusy(busy) {
+  window._pdBusy = !!busy;
+  var runBtn = document.getElementById('pd-run-btn');
+  if(runBtn) {
+    runBtn.disabled = !!busy;
+    runBtn.style.opacity = busy ? '0.5' : '1';
+    runBtn.style.cursor = busy ? 'wait' : 'pointer';
+    runBtn.textContent = busy ? 'Procesando…' : 'Ejecutar';
+  }
+  // Safety timer: if something in the async chain forgets to release the
+  // lock (network timeout, uncaught error, user navigates away) we auto-
+  // release after 20s. The AI call has a 10s p95; 20s is a generous cap.
+  if(window._pdBusyTimer) { clearTimeout(window._pdBusyTimer); window._pdBusyTimer = null; }
+  if(busy) {
+    window._pdBusyTimer = setTimeout(function(){
+      if(window._pdBusy) { console.warn('[PD] safety timer released lock'); _pdSetBusy(false); }
+    }, 20000);
+  }
+}
 function processPlanDiarioInput() {
+  // ── ANTI-DOUBLE-SUBMIT LOCK ─────────────────────────────────
+  // If a previous submit is still in flight, ignore this one. The
+  // backend also dedups on (user,fecha,hora_inicio,hora_fin) as a
+  // second layer of defense — this lock is the first line.
+  if(window._pdBusy) {
+    console.log('[PD] submit ignored (already processing)');
+    return;
+  }
   // Stop recording if active
   if(planDiarioRecording) { planDiarioRecording = false; if(planDiarioRecognition) try{planDiarioRecognition.stop();}catch(e){} var _btn=document.getElementById('pd-mic-btn'); if(_btn){_btn.style.background='rgba(255,255,255,0.04)';_btn.style.borderColor='rgba(255,255,255,0.10)';_btn.innerHTML='\uD83C\uDF99\uFE0F';} var _st=document.getElementById('pd-voice-status'); if(_st)_st.style.display='none'; }
   var input = document.getElementById('pd-text-input');
   if(!input || !input.value.trim()) { showToast('Escribe o dicta una actividad'); return; }
   var text = input.value.trim();
+  // CRITICAL: clear the input IMMEDIATELY. The voice onend handler re-reads
+  // input.value — if we leave the old text there, a re-trigger would
+  // re-submit the same command. Combined with _pdBusy, this is belt+braces.
+  input.value = '';
+  _pdSetBusy(true);
   var aiStatus = document.getElementById('pd-ai-status');
   if(aiStatus){aiStatus.style.display='block';aiStatus.textContent='🤖 Procesando: "'+text+'"...';}
 
@@ -5623,6 +5664,7 @@ function processPlanDiarioInput() {
     if(_allUserBlocks.length === 0) {
       showToast('No hay bloques personales para borrar (solo cierres)');
       if(aiStatus) aiStatus.style.display='none';
+      _pdSetBusy(false);
       return;
     }
     var _exceptCierre = _lowerText.match(/excepto|acepto|menos|salvo|sin\s*tocar|no\s*borr|no\s*las\s*de/) && _lowerText.match(/cierre|cierres|reunion|reuniones|cita|citas|agenda\s*de\s*cierre/);
@@ -5642,11 +5684,13 @@ function processPlanDiarioInput() {
           if(d.ok){ showToast('✅ '+_toDelete.length+' bloques borrados'+(_exceptCierre?' (cierres conservados)':'')); input.value=''; loadPlanDiario(); }
           else showToast('❌ Error borrando');
           if(aiStatus) aiStatus.style.display='none';
-        }).catch(function(){showToast('❌ Error de conexión');if(aiStatus)aiStatus.style.display='none';});
+          _pdSetBusy(false);
+        }).catch(function(){showToast('❌ Error de conexión');if(aiStatus)aiStatus.style.display='none';_pdSetBusy(false);});
       return;
     } else {
       showToast('No hay bloques para borrar'+((_exceptCierre)?' (solo quedan cierres)':''));
       if(aiStatus) aiStatus.style.display='none';
+      _pdSetBusy(false);
       return;
     }
   }
@@ -5772,9 +5816,18 @@ function processPlanDiarioInput() {
       fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:_blocks})})
         .then(function(r2){return r2.json();})
         .then(function(d2){
-          if(d2.ok){ showToast('\u2705 '+_blocks.length+' bloques de "'+_title+'" agregados' + (_skipped ? ' ('+_skipped+' omitidos por cita de cierre)' : '')); input.value=''; setTimeout(function(){if(aiStatus)aiStatus.style.display='none';},2000); loadPlanDiario(); }
+          if(d2.ok){
+            // Report how many actually got inserted vs deduplicated by backend
+            var ins = (typeof d2.inserted === 'number') ? d2.inserted : _blocks.length;
+            var dup = (typeof d2.skipped === 'number') ? d2.skipped : 0;
+            var msg = '\u2705 '+ins+' bloques de "'+_title+'" agregados';
+            if(_skipped) msg += ' ('+_skipped+' omitidos por cita de cierre)';
+            if(dup) msg += ' ('+dup+' ya exist\u00edan)';
+            showToast(msg); input.value=''; setTimeout(function(){if(aiStatus)aiStatus.style.display='none';},2000); loadPlanDiario();
+          }
           else showToast('\u274C Error guardando');
-        }).catch(function(){showToast('\u274C Error de conexi\u00f3n');});
+          _pdSetBusy(false);
+        }).catch(function(){showToast('\u274C Error de conexi\u00f3n');_pdSetBusy(false);});
       return; // Skip AI entirely
     }
   }
@@ -5825,33 +5878,40 @@ function processPlanDiarioInput() {
             fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:blocks})})
               .then(function(r2){return r2.json();})
               .then(function(d2){
-                if(d2.ok){ showToast('✅ '+blocks.length+' actividad'+(blocks.length>1?'es':'')+' agregada'+(blocks.length>1?'s':'')); input.value=''; loadPlanDiario(); }
+                if(d2.ok){
+                  var ins = (typeof d2.inserted === 'number') ? d2.inserted : blocks.length;
+                  var dup = (typeof d2.skipped === 'number') ? d2.skipped : 0;
+                  var msg = '✅ '+ins+' actividad'+(ins!==1?'es':'')+' agregada'+(ins!==1?'s':'');
+                  if(dup) msg += ' ('+dup+' ya existían)';
+                  showToast(msg); input.value=''; loadPlanDiario();
+                }
                 else showToast('❌ Error guardando');
-              }).catch(function(){showToast('❌ Error de conexión');});
+                _pdSetBusy(false);
+              }).catch(function(){showToast('❌ Error de conexión');_pdSetBusy(false);});
 
           } else if(act === 'delete' && blocks.length > 0) {
             var deleteIds = blocks.map(function(b){return b.id;}).filter(Boolean);
             var deleted = 0;
             var pending = deleteIds.length;
-            if(pending === 0) { showToast('No se encontraron bloques para borrar'); return; }
+            if(pending === 0) { showToast('No se encontraron bloques para borrar'); _pdSetBusy(false); return; }
             deleteIds.forEach(function(bid){
               fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',user:userRef,id:bid})})
                 .then(function(r2){return r2.json();})
-                .then(function(d2){ if(d2.ok) deleted++; pending--; if(pending<=0){ showToast('🗑️ '+deleted+' bloque'+(deleted>1?'s':'')+' eliminado'+(deleted>1?'s':'')); input.value=''; loadPlanDiario(); } })
-                .catch(function(){ pending--; if(pending<=0){ showToast('🗑️ '+deleted+' eliminado'+(deleted>1?'s':'')); input.value=''; loadPlanDiario(); } });
+                .then(function(d2){ if(d2.ok) deleted++; pending--; if(pending<=0){ showToast('🗑️ '+deleted+' bloque'+(deleted>1?'s':'')+' eliminado'+(deleted>1?'s':'')); input.value=''; loadPlanDiario(); _pdSetBusy(false); } })
+                .catch(function(){ pending--; if(pending<=0){ showToast('🗑️ '+deleted+' eliminado'+(deleted>1?'s':'')); input.value=''; loadPlanDiario(); _pdSetBusy(false); } });
             });
 
           } else if(act === 'delete_all' && blocks.length > 0) {
             var fechas = blocks.map(function(b){return b.fecha;}).filter(Boolean);
             // Find all block IDs matching those dates
             var idsToDelete = planDiarioBlocks.filter(function(b){ return fechas.indexOf(b.fecha)>-1 && !b._isBooking; }).map(function(b){return b.id;}).filter(Boolean);
-            if(idsToDelete.length === 0) { showToast('No hay bloques para borrar en esa fecha'); return; }
+            if(idsToDelete.length === 0) { showToast('No hay bloques para borrar en esa fecha'); _pdSetBusy(false); return; }
             var delCount = 0; var delPending = idsToDelete.length;
             idsToDelete.forEach(function(bid){
               fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',user:userRef,id:bid})})
                 .then(function(r2){return r2.json();})
-                .then(function(d2){ if(d2.ok) delCount++; delPending--; if(delPending<=0){ showToast('🗑️ '+delCount+' bloque'+(delCount>1?'s':'')+' borrado'+(delCount>1?'s':'')+' del día'); input.value=''; loadPlanDiario(); } })
-                .catch(function(){ delPending--; if(delPending<=0){ input.value=''; loadPlanDiario(); } });
+                .then(function(d2){ if(d2.ok) delCount++; delPending--; if(delPending<=0){ showToast('🗑️ '+delCount+' bloque'+(delCount>1?'s':'')+' borrado'+(delCount>1?'s':'')+' del día'); input.value=''; loadPlanDiario(); _pdSetBusy(false); } })
+                .catch(function(){ delPending--; if(delPending<=0){ input.value=''; loadPlanDiario(); _pdSetBusy(false); } });
             });
 
           } else if(act === 'modify' && blocks.length > 0) {
@@ -5862,8 +5922,8 @@ function processPlanDiarioInput() {
             var modDone = function(){
               fetch('/api/plan-diario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',user:userRef,blocks:modBlocks})})
                 .then(function(r2){return r2.json();})
-                .then(function(d2){ if(d2.ok){ showToast('✏️ '+modBlocks.length+' bloque'+(modBlocks.length>1?'s':'')+' modificado'+(modBlocks.length>1?'s':'')); input.value=''; loadPlanDiario(); } })
-                .catch(function(){showToast('❌ Error guardando modificación');});
+                .then(function(d2){ if(d2.ok){ showToast('✏️ '+modBlocks.length+' bloque'+(modBlocks.length>1?'s':'')+' modificado'+(modBlocks.length>1?'s':'')); input.value=''; loadPlanDiario(); } _pdSetBusy(false); })
+                .catch(function(){showToast('❌ Error guardando modificación');_pdSetBusy(false);});
             };
             if(modIds.length > 0) {
               modIds.forEach(function(bid){
@@ -5873,12 +5933,12 @@ function processPlanDiarioInput() {
               });
             } else { modDone(); }
 
-          } else { showToast('No se pudo interpretar. Intenta de nuevo.'); }
-        } catch(e) { showToast('❌ Error interpretando respuesta de IA'); console.error(e); }
-      } else { showToast('❌ No se pudo interpretar. Intenta ser más específico.'); }
-    } else { showToast('❌ Error de IA: '+(d.error&&d.error.message||'sin respuesta')); }
+          } else { showToast('No se pudo interpretar. Intenta de nuevo.'); _pdSetBusy(false); }
+        } catch(e) { showToast('❌ Error interpretando respuesta de IA'); console.error(e); _pdSetBusy(false); }
+      } else { showToast('❌ No se pudo interpretar. Intenta ser más específico.'); _pdSetBusy(false); }
+    } else { showToast('❌ Error de IA: '+(d.error&&d.error.message||'sin respuesta')); _pdSetBusy(false); }
   })
-  .catch(function(e){ if(aiStatus) aiStatus.style.display='none'; showToast('❌ Error conectando con IA'); });
+  .catch(function(e){ if(aiStatus) aiStatus.style.display='none'; showToast('❌ Error conectando con IA'); _pdSetBusy(false); });
 }
 
 // ── Day Detail View (Google Calendar style list) ──
@@ -13934,15 +13994,56 @@ function guardarWhatsAppPerfil() {
 }
 
 function triggerPhotoUpload() {
-  document.getElementById('perfil-photo-input').click();
+  var inp = document.getElementById('perfil-photo-input');
+  if(!inp) { showToast('No se encontró el selector de archivo ⚠️'); return; }
+  // CRITICAL: reset value BEFORE click. Without this, re-selecting the SAME
+  // image (user cancels crop then tries again, or picks same pic twice) does
+  // NOT fire 'change' — browsers suppress the event when value hasn't changed.
+  // Symptom the user sees: "abrí la galería pero no cargó nada".
+  inp.value = '';
+  // Some Androids need the click() inside a user gesture microtask
+  try { inp.click(); }
+  catch(e) { console.error('[PHOTO] click failed:', e); showToast('No se pudo abrir la galería ⚠️'); }
 }
 
 function handlePhotoUpload(e) {
-  var file = e.target.files[0];
+  var file = e.target.files && e.target.files[0];
   if(!file) return;
+
+  // Validate type — accept image/* only (HEIC/HEIF from iPhone won't render
+  // in <img>; warn user so they know what's happening)
+  var type = (file.type || '').toLowerCase();
+  var name = (file.name || '').toLowerCase();
+  if(type && type.indexOf('image/') !== 0) {
+    showToast('El archivo no es una imagen válida ⚠️');
+    return;
+  }
+  var isHeic = /heic|heif/.test(type) || /\.heic$|\.heif$/.test(name);
+  if(isHeic) {
+    showToast('⚠️ Las fotos HEIC del iPhone no son compatibles. Cambia el formato en Ajustes → Cámara → Formatos → "Más compatible" y vuelve a intentarlo.');
+    return;
+  }
+
+  // Size limit — 10 MB. Above this, the base64 conversion can OOM on low-end
+  // devices and silently "freeze". Warn the user explicitly.
+  var MAX = 10 * 1024 * 1024;
+  if(file.size > MAX) {
+    showToast('La imagen es muy grande (' + Math.round(file.size/1024/1024) + ' MB). Máximo 10 MB ⚠️');
+    return;
+  }
+
+  // Progress feedback — on slow phones the FileReader can take a second or
+  // two for large images; without a toast the user thinks nothing happened.
+  showToast('📷 Cargando imagen...');
+
   var reader = new FileReader();
   reader.onload = function(ev) {
-    openCropModal(ev.target.result);
+    try { openCropModal(ev.target.result); }
+    catch(err) { console.error('[PHOTO] openCropModal failed:', err); showToast('No se pudo procesar la imagen ⚠️'); }
+  };
+  reader.onerror = function(err) {
+    console.error('[PHOTO] FileReader error:', err);
+    showToast('Error leyendo el archivo. Intenta con otra imagen ⚠️');
   };
   reader.readAsDataURL(file);
 }
@@ -13977,6 +14078,14 @@ function openCropModal(dataUrl) {
 
   var img = new window.Image();
   img.onload = function() {
+    // Guard against zero-dimension images (corrupt uploads) — was silently
+    // producing NaN scale values that left the canvas blank with no feedback.
+    if(!img.naturalWidth || !img.naturalHeight) {
+      console.error('[PHOTO] image loaded with 0 dimensions');
+      var mm = document.getElementById('crop-modal'); if(mm) mm.remove();
+      showToast('La imagen parece estar dañada. Prueba con otra ⚠️');
+      return;
+    }
     var vp = 280;
     _cropState.img = img;
     _cropState.scale = Math.max(vp/img.naturalWidth, vp/img.naturalHeight);
@@ -13990,6 +14099,14 @@ function openCropModal(dataUrl) {
     canvas.width = vp; canvas.height = vp;
     _cropDraw();
     _cropEvents(canvas);
+  };
+  // CRITICAL: without onerror, a failed image load (bad format, corrupt
+  // data URL, CSP block) left the modal open with a black canvas. User saw
+  // "el modal abrió pero no cargó nada" with no way to know why.
+  img.onerror = function(err) {
+    console.error('[PHOTO] img.onerror:', err);
+    var mm = document.getElementById('crop-modal'); if(mm) mm.remove();
+    showToast('No se pudo cargar la imagen. Prueba con otro formato (JPG o PNG) ⚠️');
   };
   img.src = dataUrl;
 }

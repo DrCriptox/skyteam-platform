@@ -43,29 +43,78 @@ export default async function handler(req, res) {
         const { blocks } = body; // array of {fecha, hora_inicio, hora_fin, titulo, categoria, recurrente, dias_recurrencia}
         if (!blocks || !blocks.length) return res.status(400).json({ error: 'No blocks provided' });
 
-        const rows = blocks.map(b => ({
-          id: b.id || crypto.randomUUID(),
-          username: user,
-          fecha: b.fecha,
-          hora_inicio: b.hora_inicio,
-          hora_fin: b.hora_fin,
-          titulo: b.titulo || 'Personal',
-          categoria: b.categoria || 'personal',
-          recurrente: b.recurrente || false,
-          dias_recurrencia: b.dias_recurrencia || null,
-          created_at: new Date().toISOString()
-        }));
+        // ════════════════════════════════════════════════════════════
+        // DEDUP: skip blocks that already exist with identical
+        //        user + fecha + hora_inicio + hora_fin. Protects against:
+        //        - double-click on submit button
+        //        - voice recognition + manual submit firing together
+        //        - IA non-determinism (same command → 2 different categorias)
+        //        - any future caller that retries on a slow network
+        // ════════════════════════════════════════════════════════════
+        // Fetch all existing blocks for the dates touched by this request
+        // in one query (batched), so we don't hit the DB once per block.
+        const touchedFechas = [...new Set(blocks.map(b => b.fecha).filter(Boolean))];
+        let existing = [];
+        if (touchedFechas.length > 0) {
+          // Build a single query: username + fecha IN (list)
+          const fechaList = touchedFechas.map(f => encodeURIComponent(f)).join(',');
+          existing = await sb(
+            'plan_diario?username=eq.' + encodeURIComponent(user) +
+            '&fecha=in.(' + fechaList + ')' +
+            '&select=id,fecha,hora_inicio,hora_fin'
+          ) || [];
+        }
+        // Build a quick lookup set keyed by "fecha|hora_inicio|hora_fin"
+        // Postgres returns hora_inicio/hora_fin as "HH:MM:SS" but clients
+        // send "HH:MM" — normalize both sides to HH:MM for comparison.
+        const normHM = (t) => (t || '').toString().slice(0, 5);
+        const existingKeys = new Set(
+          existing.map(e => e.fecha + '|' + normHM(e.hora_inicio) + '|' + normHM(e.hora_fin))
+        );
 
-        const inserted = await sb('plan_diario', {
-          method: 'POST',
-          body: JSON.stringify(rows)
-        });
+        const rowsToInsert = [];
+        const skipped = [];
+        for (const b of blocks) {
+          const key = b.fecha + '|' + normHM(b.hora_inicio) + '|' + normHM(b.hora_fin);
+          if (existingKeys.has(key)) {
+            skipped.push({ fecha: b.fecha, hora_inicio: b.hora_inicio, hora_fin: b.hora_fin, reason: 'duplicate' });
+            continue;
+          }
+          // Also dedup within this batch (e.g. IA returned two copies in the same array)
+          existingKeys.add(key);
+          rowsToInsert.push({
+            id: b.id || crypto.randomUUID(),
+            username: user,
+            fecha: b.fecha,
+            hora_inicio: b.hora_inicio,
+            hora_fin: b.hora_fin,
+            titulo: b.titulo || 'Personal',
+            categoria: b.categoria || 'personal',
+            recurrente: b.recurrente || false,
+            dias_recurrencia: b.dias_recurrencia || null,
+            created_at: new Date().toISOString()
+          });
+        }
 
-        // Now block these time slots in the agenda de cierres
-        // We update the agenda_configs schedule to mark these slots as unavailable
+        let inserted = [];
+        if (rowsToInsert.length > 0) {
+          inserted = await sb('plan_diario', {
+            method: 'POST',
+            body: JSON.stringify(rowsToInsert)
+          });
+        }
+
+        // Sync even if nothing new was inserted — dedup still implies the
+        // state is consistent; syncAgendaBlocks is idempotent.
         await syncAgendaBlocks(user);
 
-        return res.status(200).json({ ok: true, blocks: inserted });
+        return res.status(200).json({
+          ok: true,
+          blocks: inserted,
+          inserted: inserted.length || 0,
+          skipped: skipped.length,
+          skippedDetails: skipped
+        });
       }
 
       if (action === 'update') {

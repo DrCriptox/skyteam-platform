@@ -5,3 +5,4 @@ node_modules/
 ranking_tmp.json
 landing_check.html
 .claude/
+backups-claude-sessions/
