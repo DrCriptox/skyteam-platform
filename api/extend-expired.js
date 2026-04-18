@@ -115,20 +115,27 @@ export default async function handler(req, res) {
   const newExpiry = now + days * 86400000;
 
   try {
-    // 1. Find expired users (expiry < now). Use pagination to be safe.
-    // Supabase returns up to 1000 rows per query by default — we're unlikely
-    // to ever have >1000 expired users at once, but guard with limit=5000.
-    const expiredRows = await sb(
-      'users?expiry=lt.' + now +
-      '&select=username,name,email,rank,expiry,whatsapp,sponsor' +
-      '&order=expiry.asc' +
-      '&limit=5000'
-    ) || [];
-
-    // Optionally filter by onlyList
-    const targets = onlyList
-      ? expiredRows.filter(u => onlyList.includes(String(u.username).toLowerCase()))
-      : expiredRows;
+    // 1. Find users to target.
+    // - If onlyList provided → fetch THOSE specific users regardless of their
+    //   current expiry (useful for retries after email rate-limit failures).
+    // - Otherwise → fetch all users with expiry < now (the normal flow).
+    let targets = [];
+    if (onlyList && onlyList.length > 0) {
+      const unameList = onlyList.map(u => encodeURIComponent(u)).join(',');
+      targets = await sb(
+        'users?username=in.(' + unameList + ')' +
+        '&select=username,name,email,rank,expiry,whatsapp,sponsor' +
+        '&limit=5000'
+      ) || [];
+    } else {
+      targets = await sb(
+        'users?expiry=lt.' + now +
+        '&select=username,name,email,rank,expiry,whatsapp,sponsor' +
+        '&order=expiry.asc' +
+        '&limit=5000'
+      ) || [];
+    }
+    const expiredRows = targets; // alias kept so the dryRun summary counts make sense
 
     if (dryRun) {
       return res.status(200).json({
