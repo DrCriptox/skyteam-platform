@@ -97,11 +97,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' });
 
-  // Auth — prefer env var; temporary hardcoded TEMP_KEY fallback because
-  // ADMIN_PUSH_KEY is not yet set in Vercel production. REMOVE TEMP_KEY
-  // in a follow-up commit after the one-time grace extension is done.
-  const TEMP_KEY = 'sky_extend_2026_04_18_grace7d';
-  const VALID_KEY = process.env.EXTEND_EXPIRED_KEY || process.env.ADMIN_PUSH_KEY || TEMP_KEY;
+  // Auth — requires EXTEND_EXPIRED_KEY or ADMIN_PUSH_KEY env var.
+  // The one-time TEMP_KEY was removed after the 2026-04-18 grace extension.
+  // To re-enable (e.g., for next month's grace run), set EXTEND_EXPIRED_KEY
+  // in Vercel environment variables.
+  const VALID_KEY = process.env.EXTEND_EXPIRED_KEY || process.env.ADMIN_PUSH_KEY;
+  if (!VALID_KEY) return res.status(410).json({ ok: false, error: 'Endpoint disabled — set EXTEND_EXPIRED_KEY env to re-enable' });
   const providedKey = req.query.key || (req.body && req.body.key);
   if (providedKey !== VALID_KEY) return res.status(403).json({ ok: false, error: 'Invalid key' });
 
