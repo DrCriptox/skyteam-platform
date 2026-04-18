@@ -136,12 +136,19 @@ export default async function handler(req, res) {
 
       // ════════════════════════════════════════════════════
       // ENDORSEMENT SYSTEM: socio junior (INN200/INN500) solicita
-      // a su patrocinador (rango NOVA1500+) ser su cerrador.
+      // a patrocinadores NOVA1500+ en su upline (hasta 3 niveles)
+      // que cierren llamadas por él. Un socio puede tener HASTA 3
+      // endosos activos simultáneos (uno por cada nivel de upline).
       // ════════════════════════════════════════════════════
       // Stored inside agenda_configs.config as:
-      //   endorsed_by: 'username'     (cerrador que endosa al socio)
-      //   endorsement_status: 'pending' | 'active'
-      //   endorsed_at: ISO timestamp
+      //   endorsements: [
+      //     { endorsed_by, status: 'pending'|'active', endorsed_at, level? },
+      //     ... max 3
+      //   ]
+      // Legacy single-endorsement compatibility (sync'd to endorsements[0]):
+      //   endorsed_by, endorsement_status, endorsed_at
+      // All reads go through _getEndorsementsList which transparently
+      // upgrades legacy rows, so existing data keeps working.
 
       // Helper: get user's rank + sponsor (case-insensitive — sponsor field stores UPPERCASE)
       var _getUserRank = async function(uname) {
@@ -163,7 +170,40 @@ export default async function handler(req, res) {
         });
       };
 
-      // Solicita endoso a un cerrador específico (patrocinador directo o hasta 3 niveles arriba)
+      // Endorsements helpers — single source of truth for multi-endorsement data.
+      var MAX_ENDORSEMENTS = 3;
+      function _getEndorsementsList(cfg) {
+        if (Array.isArray(cfg.endorsements)) return cfg.endorsements.slice();
+        // Legacy fallback: one single endorsement → treat as array of 1
+        if (cfg.endorsed_by) {
+          return [{
+            endorsed_by: cfg.endorsed_by,
+            status: cfg.endorsement_status || 'pending',
+            endorsed_at: cfg.endorsed_at || null
+          }];
+        }
+        return [];
+      }
+      function _saveEndorsementsList(cfg, list) {
+        cfg.endorsements = list;
+        // Keep legacy fields in sync with first entry so existing PostgREST
+        // queries (config->>endorsed_by=eq.X) still work for any code path
+        // not yet upgraded.
+        if (list.length > 0) {
+          cfg.endorsed_by = list[0].endorsed_by;
+          cfg.endorsement_status = list[0].status;
+          cfg.endorsed_at = list[0].endorsed_at;
+        } else {
+          cfg.endorsed_by = null;
+          cfg.endorsement_status = null;
+          cfg.endorsed_at = null;
+        }
+        return cfg;
+      }
+
+      // Solicita endoso a un cerrador específico (patrocinador directo o hasta 3 niveles arriba).
+      // Un socio puede tener hasta MAX_ENDORSEMENTS (3) endosos simultáneos — uno por cada
+      // cerrador elegible en su upline.
       if (action === 'requestEndorsement') {
         try {
           var me = await _getUserRank(user);
@@ -174,21 +214,25 @@ export default async function handler(req, res) {
           var lvl1 = await _getUserRank(me.sponsor);
           var isValidTarget = false;
           var targetData = null;
+          var targetLevel = 0;
           if (targetCloser === (lvl1.username || me.sponsor.toLowerCase())) {
             isValidTarget = true;
             targetData = lvl1;
+            targetLevel = 1;
           }
           if (!isValidTarget && lvl1.sponsor) {
             var lvl2 = await _getUserRank(lvl1.sponsor);
             if (targetCloser === (lvl2.username || lvl1.sponsor.toLowerCase())) {
               isValidTarget = true;
               targetData = lvl2;
+              targetLevel = 2;
             }
             if (!isValidTarget && lvl2.sponsor) {
               var lvl3 = await _getUserRank(lvl2.sponsor);
               if (targetCloser === (lvl3.username || lvl2.sponsor.toLowerCase())) {
                 isValidTarget = true;
                 targetData = lvl3;
+                targetLevel = 3;
               }
             }
           }
@@ -199,14 +243,38 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'El cerrador elegido (' + (targetData.name || targetCloser) + ') debe ser NOVA 1500 o superior. Rango actual: ' + targetData.rank });
           }
           var cfg = await _getConfig(user);
-          if (cfg.endorsement_status === 'active' && cfg.endorsed_by === targetCloser) {
-            return res.status(200).json({ ok: true, alreadyActive: true, endorsed_by: targetCloser });
+          var list = _getEndorsementsList(cfg);
+          // Already in list? return idempotent
+          var existing = list.find(function(e) { return e.endorsed_by === targetCloser; });
+          if (existing) {
+            return res.status(200).json({
+              ok: true,
+              alreadyExists: true,
+              status: existing.status,
+              endorsed_by: targetCloser,
+              closer_name: targetData.name
+            });
           }
-          cfg.endorsed_by = targetCloser;
-          cfg.endorsement_status = 'pending';
-          cfg.endorsed_at = new Date().toISOString();
+          // Cap at MAX
+          if (list.length >= MAX_ENDORSEMENTS) {
+            return res.status(400).json({ error: 'Ya tienes ' + MAX_ENDORSEMENTS + ' endosos activos (el máximo). Revoca uno antes de agregar otro.' });
+          }
+          // Append new pending endorsement
+          list.push({
+            endorsed_by: targetCloser,
+            status: 'pending',
+            endorsed_at: new Date().toISOString(),
+            level: targetLevel
+          });
+          _saveEndorsementsList(cfg, list);
           await _saveConfig(user, cfg);
-          return res.status(200).json({ ok: true, status: 'pending', endorsed_by: targetCloser, closer_name: targetData.name });
+          return res.status(200).json({
+            ok: true,
+            status: 'pending',
+            endorsed_by: targetCloser,
+            closer_name: targetData.name,
+            totalEndorsements: list.length
+          });
         } catch(e) { return res.status(500).json({ error: e.message }); }
       }
 
@@ -221,51 +289,71 @@ export default async function handler(req, res) {
           if (me.sponsor) {
             var lvl1 = await _getUserRank(me.sponsor);
             if (lvl1.rank >= 3) eligibleClosers.push({ username: lvl1.username || me.sponsor.toLowerCase(), name: lvl1.name, rank: lvl1.rank, level: 1 });
-            // Nivel 2 (patrocinador del patrocinador)
             if (lvl1.sponsor) {
               var lvl2 = await _getUserRank(lvl1.sponsor);
               if (lvl2.rank >= 3) eligibleClosers.push({ username: lvl2.username || lvl1.sponsor.toLowerCase(), name: lvl2.name, rank: lvl2.rank, level: 2 });
-              // Nivel 3 (bisabuelo)
               if (lvl2.sponsor) {
                 var lvl3 = await _getUserRank(lvl2.sponsor);
                 if (lvl3.rank >= 3) eligibleClosers.push({ username: lvl3.username || lvl2.sponsor.toLowerCase(), name: lvl3.name, rank: lvl3.rank, level: 3 });
               }
             }
           }
-          // Mi endoso como socio (si solicité alguno)
-          var myEndorsement = null;
-          if (myCfg.endorsed_by) {
-            var cerrador = await _getUserRank(myCfg.endorsed_by);
-            myEndorsement = {
-              endorsed_by: myCfg.endorsed_by,
+
+          // Mis endosos como socio (multi). Hydrate each with closer name/rank.
+          var myList = _getEndorsementsList(myCfg);
+          var myEndorsements = [];
+          for (var ei = 0; ei < myList.length; ei++) {
+            var ent = myList[ei];
+            var cerrador = await _getUserRank(ent.endorsed_by);
+            myEndorsements.push({
+              endorsed_by: ent.endorsed_by,
               name: cerrador.name,
               rank: cerrador.rank,
-              status: myCfg.endorsement_status || 'pending',
-              since: myCfg.endorsed_at || null
-            };
+              status: ent.status || 'pending',
+              since: ent.endorsed_at || null,
+              level: ent.level || null
+            });
           }
+          // Legacy: first active/pending entry
+          var myEndorsement = myEndorsements[0] || null;
+
+          // Filter eligibleClosers: exclude those already in myEndorsements
+          var alreadyEndorsed = {};
+          myEndorsements.forEach(function(e) { alreadyEndorsed[e.endorsed_by] = true; });
+          eligibleClosers = eligibleClosers.filter(function(c) { return !alreadyEndorsed[c.username]; });
+
           // Solicitudes PENDIENTES si soy cerrador (rank NOVA1500+)
+          // NEW: must scan ALL configs because endorsements are now in an array.
+          // The old PostgREST filter (config->>endorsed_by=eq.user) only matched
+          // legacy single-endorsement rows; it missed 2nd/3rd array entries.
+          // For ~300 rows this is fine; if the table grows we can add a computed
+          // column or a view later.
           var incomingRequests = [];
           var activeEndorsed = [];
           if (me.rank >= 3) {
-            // Find all agenda_configs where config->>endorsed_by = my username
-            // Supabase REST JSON filters: use contenido: we need to fetch all and filter
-            // More efficient: use PostgREST JSON filter. cfg ->> 'endorsed_by' = my username
-            var allR = await fetch(SUPABASE_URL + "/rest/v1/agenda_configs?config->>endorsed_by=eq." + encodeURIComponent(user) + "&select=username,config", { headers: { ...HEADERS, Range: '0-499' } });
+            var allR = await fetch(SUPABASE_URL + '/rest/v1/agenda_configs?select=username,config&limit=2000', { headers: HEADERS });
             var allD = await allR.json();
             if (Array.isArray(allD)) {
               for (const item of allD) {
-                var ic = item.config || {};
+                if (!item.config) continue;
+                if (item.username === user) continue; // skip self
+                var itemList = _getEndorsementsList(item.config);
+                // Find entries targeting THIS user
+                var matching = itemList.filter(function(e) { return e.endorsed_by === user; });
+                if (!matching.length) continue;
                 var uRank = await _getUserRank(item.username);
-                var obj = {
-                  socio: item.username,
-                  socio_name: uRank.name,
-                  socio_rank: uRank.rank,
-                  status: ic.endorsement_status || 'pending',
-                  since: ic.endorsed_at || null
-                };
-                if (ic.endorsement_status === 'pending') incomingRequests.push(obj);
-                else if (ic.endorsement_status === 'active') activeEndorsed.push(obj);
+                // An endorsement from the same socio to me is at most one; but handle gracefully.
+                matching.forEach(function(m) {
+                  var obj = {
+                    socio: item.username,
+                    socio_name: uRank.name,
+                    socio_rank: uRank.rank,
+                    status: m.status || 'pending',
+                    since: m.endorsed_at || null
+                  };
+                  if (obj.status === 'pending') incomingRequests.push(obj);
+                  else if (obj.status === 'active') activeEndorsed.push(obj);
+                });
               }
             }
           }
@@ -273,7 +361,9 @@ export default async function handler(req, res) {
             ok: true,
             myRank: me.rank,
             mySponsor: me.sponsor || null,
-            myEndorsement: myEndorsement,
+            myEndorsement: myEndorsement,       // legacy: first endorsement
+            myEndorsements: myEndorsements,     // NEW: full array
+            maxEndorsements: MAX_ENDORSEMENTS,
             canBeCloser: me.rank >= 3,
             incomingRequests: incomingRequests,
             activeEndorsed: activeEndorsed,
@@ -282,7 +372,9 @@ export default async function handler(req, res) {
         } catch(e) { return res.status(500).json({ error: e.message }); }
       }
 
-      // Aprobar endoso (el cerrador acepta ser cerrador del socio)
+      // Aprobar endoso (el cerrador acepta ser cerrador del socio).
+      // Multi-endorsement: busca la entrada específica en el array del socio
+      // donde endorsed_by === me, y la marca como active.
       if (action === 'approveEndorsement') {
         try {
           var me = await _getUserRank(user);
@@ -290,45 +382,77 @@ export default async function handler(req, res) {
           var targetSocio = (req.body || {}).socio;
           if (!targetSocio) return res.status(400).json({ error: 'Missing socio' });
           var sCfg = await _getConfig(targetSocio);
-          if (sCfg.endorsed_by !== user || sCfg.endorsement_status !== 'pending') {
+          var sList = _getEndorsementsList(sCfg);
+          var idx = sList.findIndex(function(e) { return e.endorsed_by === user && (e.status === 'pending' || !e.status); });
+          if (idx === -1) {
             return res.status(400).json({ error: 'No hay solicitud pendiente de este socio hacia ti' });
           }
-          sCfg.endorsement_status = 'active';
-          sCfg.endorsed_at = new Date().toISOString();
+          sList[idx].status = 'active';
+          sList[idx].endorsed_at = new Date().toISOString();
+          _saveEndorsementsList(sCfg, sList);
           await _saveConfig(targetSocio, sCfg);
           return res.status(200).json({ ok: true, socio: targetSocio });
         } catch(e) { return res.status(500).json({ error: e.message }); }
       }
 
-      // Rechazar endoso
+      // Rechazar endoso — el cerrador remueve la entrada donde él aparece
+      // en el array de endosos del socio.
       if (action === 'rejectEndorsement') {
         try {
           var targetSocio = (req.body || {}).socio;
           if (!targetSocio) return res.status(400).json({ error: 'Missing socio' });
           var sCfg = await _getConfig(targetSocio);
-          if (sCfg.endorsed_by !== user) return res.status(403).json({ error: 'No eres el endosador de este socio' });
-          sCfg.endorsed_by = null;
-          sCfg.endorsement_status = null;
-          sCfg.endorsed_at = null;
+          var sList = _getEndorsementsList(sCfg);
+          var idx = sList.findIndex(function(e) { return e.endorsed_by === user; });
+          if (idx === -1) return res.status(403).json({ error: 'No eres el endosador de este socio' });
+          sList.splice(idx, 1);
+          _saveEndorsementsList(sCfg, sList);
           await _saveConfig(targetSocio, sCfg);
-          return res.status(200).json({ ok: true, socio: targetSocio });
+          return res.status(200).json({ ok: true, socio: targetSocio, remaining: sList.length });
         } catch(e) { return res.status(500).json({ error: e.message }); }
       }
 
-      // Revocar endoso (cualquiera de las 2 partes lo puede cancelar)
+      // Revocar endoso — cualquiera de las 2 partes lo puede cancelar.
+      //   - Si soy SOCIO: puedo pasar targetCloser para remover SOLO ese endoso,
+      //     o nada para remover todos.
+      //   - Si soy CERRADOR: debo pasar socio=X para remover mi endoso del socio X.
       if (action === 'revokeEndorsement') {
         try {
-          var targetSocio = (req.body || {}).socio || user; // si soy socio, me revoco yo mismo
+          var b = req.body || {};
+          var targetSocio = b.socio || user; // si soy socio, me revoco yo mismo
+          var targetCloserToRemove = (b.targetCloser || '').trim().toLowerCase() || null;
           var sCfg = await _getConfig(targetSocio);
-          // Validación: o soy el socio o soy el cerrador
-          if (targetSocio !== user && sCfg.endorsed_by !== user) {
+          var sList = _getEndorsementsList(sCfg);
+
+          // Validation:
+          //   - if I am the socio → OK
+          //   - if I am a cerrador in the list → OK (only remove my own entry)
+          //   - else → forbidden
+          var iAmSocio = (targetSocio === user);
+          var iAmCerrador = sList.some(function(e) { return e.endorsed_by === user; });
+          if (!iAmSocio && !iAmCerrador) {
             return res.status(403).json({ error: 'No puedes revocar este endoso' });
           }
-          sCfg.endorsed_by = null;
-          sCfg.endorsement_status = null;
-          sCfg.endorsed_at = null;
+
+          var before = sList.length;
+          if (!iAmSocio) {
+            // Cerrador revokes only his own entry
+            sList = sList.filter(function(e) { return e.endorsed_by !== user; });
+          } else if (targetCloserToRemove) {
+            // Socio revokes a specific cerrador
+            sList = sList.filter(function(e) { return e.endorsed_by !== targetCloserToRemove; });
+          } else {
+            // Socio revokes all (legacy behavior)
+            sList = [];
+          }
+
+          _saveEndorsementsList(sCfg, sList);
           await _saveConfig(targetSocio, sCfg);
-          return res.status(200).json({ ok: true, socio: targetSocio });
+          return res.status(200).json({
+            ok: true, socio: targetSocio,
+            removed: before - sList.length,
+            remaining: sList.length
+          });
         } catch(e) { return res.status(500).json({ error: e.message }); }
       }
 

@@ -4581,58 +4581,86 @@ async function _loadEndorsementUI() {
     if (!d || !d.ok) { el.innerHTML = '<div style="color:rgba(255,255,255,0.3);">Error: ' + (d && d.error || 'desconocido') + '</div>'; return; }
     var h = '';
 
-    // ── SECCIÓN 1: Mi endoso como socio ──
-    if (d.myEndorsement) {
-      var e = d.myEndorsement;
-      var statusColor = e.status === 'active' ? '#25D366' : '#FFA500';
-      var statusLabel = e.status === 'active' ? '✅ ACTIVO' : '⏳ PENDIENTE';
+    // ── SECCIÓN 1: Mis endosos como socio (hasta 3 simultáneos) ──
+    var myList = d.myEndorsements || (d.myEndorsement ? [d.myEndorsement] : []);
+    var maxEnd = d.maxEndorsements || 3;
+    // URL helper — uses the working query-string pattern (?agenda=X&ref=Y).
+    // The old path pattern (/agenda/X?ref=Y) was NEVER routed: the public
+    // booking flow only triggers on URLSearchParams.get('agenda'), so the
+    // generated links 404'd silently. That was the user-reported bug.
+    var _buildRefLink = function(cerrador) {
+      var base = (typeof location !== 'undefined' && location.origin) ? location.origin : 'https://skyteam.global';
+      var myRef = (CU && (CU.ref || CU.username)) ? String(CU.ref || CU.username).toLowerCase() : '';
+      return base + '/?agenda=' + encodeURIComponent(cerrador) + (myRef ? '&ref=' + encodeURIComponent(myRef) : '');
+    };
+
+    if (myList.length > 0) {
       h += '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:10px;">';
-      h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">';
-      h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:1px;font-weight:700;">MI CERRADOR</div>';
-      h += '<div style="font-size:10px;font-weight:900;color:' + statusColor + ';">' + statusLabel + '</div>';
+      h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">';
+      h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:1px;font-weight:700;">MIS CERRADORES (' + myList.length + '/' + maxEnd + ')</div>';
+      h += '<div style="font-size:10px;color:rgba(255,255,255,0.35);">Cada uno tiene su propio link</div>';
       h += '</div>';
-      h += '<div style="display:flex;align-items:center;gap:10px;">';
-      h += '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:18px;">🎯</div>';
-      h += '<div style="flex:1;"><div style="font-size:14px;font-weight:800;color:#fff;">' + crmEsc(e.name) + '</div>';
-      h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);">Rango ' + (e.rank >= 4 ? 'NOVA 5K+' : 'NOVA 1500') + ' · Cierra llamadas por ti</div></div>';
-      h += '</div>';
-      if (e.status === 'active') {
-        var linkRef = 'https://skyteam.global/agenda/' + e.endorsed_by + '?ref=' + ((CU && CU.username) || '');
-        h += '<div style="background:rgba(37,211,102,0.06);border:0.5px solid rgba(37,211,102,0.15);border-radius:8px;padding:10px;margin-top:10px;font-size:11px;color:rgba(255,255,255,0.7);">';
-        h += '<div style="font-weight:700;color:#25D366;margin-bottom:4px;">🔗 Tu link de referido:</div>';
-        h += '<div style="font-family:monospace;font-size:10px;color:#F0EDE6;word-break:break-all;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;">' + linkRef + '</div>';
-        h += '<div style="margin-top:4px;font-size:10px;color:rgba(255,255,255,0.4);">Cuando un prospecto agende con este link, tú recibes la notificación y la venta queda a tu nombre.</div>';
+
+      myList.forEach(function(e, idx) {
+        var statusColor = e.status === 'active' ? '#25D366' : '#FFA500';
+        var statusLabel = e.status === 'active' ? '✅ ACTIVO' : '⏳ PENDIENTE';
+        var levelBadge = e.level === 1 ? '1°' : e.level === 2 ? '2°' : e.level === 3 ? '3°' : (idx + 1) + '°';
+        h += '<div style="background:rgba(0,0,0,0.25);border:0.5px solid rgba(127,119,221,0.18);border-radius:10px;padding:10px 12px;margin-bottom:8px;">';
+        h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+        h += '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#0a0a12;">' + levelBadge + '</div>';
+        h += '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;">' + crmEsc(e.name) + '</div>';
+        h += '<div style="font-size:9px;color:rgba(255,255,255,0.45);">@' + crmEsc(e.endorsed_by) + ' · ' + (e.rank >= 4 ? 'NOVA 5K+' : 'NOVA 1500') + '</div></div>';
+        h += '<div style="font-size:9px;font-weight:900;color:' + statusColor + ';white-space:nowrap;">' + statusLabel + '</div>';
         h += '</div>';
-      } else {
-        h += '<div style="font-size:11px;color:rgba(255,165,0,0.8);margin-top:8px;">⏳ Esperando que ' + crmEsc(e.name) + ' acepte ser tu cerrador.</div>';
-      }
-      h += '<button onclick="_revokeEndorsement()" style="margin-top:10px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);color:#E24B4A;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Cancelar endoso</button>';
-      h += '</div>';
-    } else {
-      // No endoso: mostrar candidatos elegibles (hasta 2 niveles arriba)
-      if (d.eligibleClosers && d.eligibleClosers.length > 0) {
-        h += '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:10px;">';
-        h += '<div style="font-size:12px;color:#F0EDE6;margin-bottom:10px;">¿Eres nuevo cerrando llamadas? Solicita a un cerrador de tu upline que cierre por ti. <strong>La venta queda a tu nombre.</strong></div>';
-        h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-bottom:6px;">CERRADORES ELEGIBLES</div>';
-        d.eligibleClosers.forEach(function(c) {
-          var rankLabel = c.rank >= 7 ? 'NOVA 50K+' : c.rank >= 6 ? 'NOVA DIAMOND' : c.rank >= 5 ? 'NOVA 10K' : c.rank >= 4 ? 'NOVA 5K' : 'NOVA 1500';
-          var levelBadge = c.level === 1 ? 'Patrocinador' : 'Patrocinador de tu patrocinador';
-          h += '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(127,119,221,0.15);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
-          h += '<div style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;">';
-          h += '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#0a0a12;">' + (c.level === 1 ? '1°' : '2°') + '</div>';
-          h += '<div><div style="font-size:13px;font-weight:700;color:#fff;">' + crmEsc(c.name) + '</div>';
-          h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);">' + levelBadge + ' · ' + rankLabel + '</div></div>';
-          h += '</div>';
-          h += '<button onclick="_requestEndorsement(\'' + c.username + '\')" style="background:linear-gradient(135deg,#7F77DD,#C9A84C);border:none;color:#fff;border-radius:8px;padding:7px 14px;font-weight:800;font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">🎯 Solicitar</button>';
-          h += '</div>';
-        });
-        h += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:8px;line-height:1.5;">Solo puedes elegir cerradores NOVA 1500+ a máximo 2 niveles arriba en tu upline.</div>';
+
+        if (e.status === 'active') {
+          var linkRef = _buildRefLink(e.endorsed_by);
+          h += '<div style="background:rgba(37,211,102,0.06);border:0.5px solid rgba(37,211,102,0.15);border-radius:8px;padding:8px 10px;margin-top:6px;">';
+          h += '<div style="font-weight:700;color:#25D366;margin-bottom:4px;font-size:10px;">🔗 Link para compartir:</div>';
+          h += '<div style="font-family:monospace;font-size:10px;color:#F0EDE6;word-break:break-all;background:rgba(0,0,0,0.35);padding:6px 8px;border-radius:6px;margin-bottom:6px;" id="endoso-link-' + idx + '">' + linkRef + '</div>';
+          h += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+          h += '<button onclick="_copyEndosoLink(' + idx + ')" style="flex:1;min-width:100px;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.85);border-radius:6px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">📋 Copiar</button>';
+          h += '<a href="' + linkRef + '" target="_blank" style="flex:1;min-width:100px;background:rgba(127,119,221,0.12);border:0.5px solid rgba(127,119,221,0.30);color:#B8A8FF;border-radius:6px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;text-align:center;">👁 Probar link</a>';
+          h += '<a href="https://wa.me/?text=' + encodeURIComponent('Hola! Agenda tu llamada conmigo aqui: ' + linkRef) + '" target="_blank" style="background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:6px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;text-decoration:none;">💬 WA</a>';
+          h += '</div></div>';
+        } else {
+          h += '<div style="font-size:10px;color:rgba(255,165,0,0.8);margin-top:4px;">⏳ Esperando que ' + crmEsc(e.name) + ' acepte.</div>';
+        }
+
+        h += '<button onclick="_revokeEndorsement(null,\'' + e.endorsed_by + '\')" style="margin-top:8px;background:rgba(226,75,74,0.08);border:0.5px solid rgba(226,75,74,0.2);color:#E24B4A;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:Outfit,Nunito,sans-serif;">Cancelar este endoso</button>';
         h += '</div>';
-      } else if (d.mySponsor) {
-        h += '<div style="background:rgba(255,165,0,0.06);border:0.5px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,165,0,0.85);">⚠️ Ninguno de tus upline (hasta 2 niveles arriba) tiene rango NOVA 1500+. Sigue creciendo y cuando asciendan podrás solicitarlo.</div>';
+      });
+      h += '</div>';
+    }
+
+    // Candidatos elegibles restantes (si hay room para más endosos)
+    var canAddMore = myList.length < maxEnd;
+    if (canAddMore && d.eligibleClosers && d.eligibleClosers.length > 0) {
+      h += '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:10px;">';
+      if (myList.length === 0) {
+        h += '<div style="font-size:12px;color:#F0EDE6;margin-bottom:10px;">¿Eres nuevo cerrando llamadas? Solicita endoso a tus cerradores del upline. <strong>Puedes tener hasta ' + maxEnd + ' cerradores</strong> y cada uno genera un link distinto para tus prospectos.</div>';
       } else {
-        h += '<div style="color:rgba(255,255,255,0.4);font-size:11px;">No tienes patrocinador asignado.</div>';
+        h += '<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:10px;">➕ Aún puedes solicitar endoso a ' + d.eligibleClosers.length + ' cerrador' + (d.eligibleClosers.length > 1 ? 'es' : '') + ' más de tu upline:</div>';
       }
+      h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-bottom:6px;">' + (myList.length === 0 ? 'CERRADORES ELEGIBLES' : 'DISPONIBLES') + '</div>';
+      d.eligibleClosers.forEach(function(c) {
+        var rankLabel = c.rank >= 7 ? 'NOVA 50K+' : c.rank >= 6 ? 'NOVA DIAMOND' : c.rank >= 5 ? 'NOVA 10K' : c.rank >= 4 ? 'NOVA 5K' : 'NOVA 1500';
+        var levelBadge = c.level === 1 ? 'Patrocinador directo' : c.level === 2 ? 'Nivel 2 (abuelo)' : 'Nivel 3 (bisabuelo)';
+        h += '<div style="background:rgba(255,255,255,0.03);border:0.5px solid rgba(127,119,221,0.15);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
+        h += '<div style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;">';
+        h += '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7F77DD,#C9A84C);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#0a0a12;">' + c.level + '°</div>';
+        h += '<div><div style="font-size:13px;font-weight:700;color:#fff;">' + crmEsc(c.name) + '</div>';
+        h += '<div style="font-size:10px;color:rgba(255,255,255,0.45);">' + levelBadge + ' · ' + rankLabel + '</div></div>';
+        h += '</div>';
+        h += '<button onclick="_requestEndorsement(\'' + c.username + '\')" style="background:linear-gradient(135deg,#7F77DD,#C9A84C);border:none;color:#fff;border-radius:8px;padding:7px 14px;font-weight:800;font-size:11px;cursor:pointer;font-family:Outfit,Nunito,sans-serif;white-space:nowrap;">🎯 Solicitar</button>';
+        h += '</div>';
+      });
+      h += '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:8px;line-height:1.5;">Puedes tener hasta ' + maxEnd + ' cerradores NOVA 1500+ simultáneos en tu upline (máx 3 niveles arriba).</div>';
+      h += '</div>';
+    } else if (myList.length === 0 && d.mySponsor) {
+      h += '<div style="background:rgba(255,165,0,0.06);border:0.5px solid rgba(255,165,0,0.15);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,165,0,0.85);">⚠️ Ninguno de tus upline (hasta 3 niveles arriba) tiene rango NOVA 1500+. Sigue creciendo y cuando asciendan podrás solicitarlo.</div>';
+    } else if (myList.length === 0 && !d.mySponsor) {
+      h += '<div style="color:rgba(255,255,255,0.4);font-size:11px;">No tienes patrocinador asignado.</div>';
     }
 
     // ── SECCIÓN 2: Si soy cerrador (NOVA+), mostrar solicitudes pendientes ──
@@ -4707,17 +4735,46 @@ async function _rejectEndorsement(socio) {
   } catch(e) { console.warn('[endoso]', e.message); crmToast('No se pudo procesar. Intenta de nuevo.', 'error'); }
 }
 
-async function _revokeEndorsement(socio) {
-  var msg = socio ? ('¿Revocar el endoso de ' + socio + '? Ya no cerrarás por él.') : '¿Cancelar tu endoso? Tu patrocinador ya no cerrará llamadas por ti.';
+// Revocar endoso — dos modos:
+//   - _revokeEndorsement('socio_x')        → CERRADOR revoca al socio X
+//   - _revokeEndorsement(null, 'cerrador_y') → SOCIO revoca al cerrador Y
+//   - _revokeEndorsement()                 → SOCIO revoca TODOS sus endosos (legacy)
+async function _revokeEndorsement(socio, targetCloser) {
+  var msg;
+  if (socio) msg = '¿Revocar el endoso de ' + socio + '? Ya no cerrarás por él.';
+  else if (targetCloser) msg = '¿Cancelar tu endoso con ' + targetCloser + '? Ese cerrador ya no cerrará por ti.';
+  else msg = '¿Cancelar TODOS tus endosos? Ningún cerrador cerrará llamadas por ti.';
   if (!confirm(msg)) return;
   try {
     var body = { action:'revokeEndorsement', user:(CU&&CU.username)||'' };
     if (socio) body.socio = socio;
+    if (targetCloser) body.targetCloser = targetCloser;
     var r = await fetch('/api/agenda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     var d = await r.json();
     if (d && d.ok) { crmToast('Endoso cancelado', 'info'); _loadEndorsementUI(); }
     else crmToast((d && d.error) || 'Error', 'error');
   } catch(e) { console.warn('[endoso]', e.message); crmToast('No se pudo procesar. Intenta de nuevo.', 'error'); }
+}
+
+// Copia el link de endoso al clipboard (uno por cerrador endosado)
+function _copyEndosoLink(idx) {
+  var el = document.getElementById('endoso-link-' + idx);
+  if (!el) return;
+  var txt = el.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(
+      function() { crmToast('🔗 Link copiado ✓', 'success'); },
+      function() { _fallbackCopy(txt); }
+    );
+  } else { _fallbackCopy(txt); }
+  function _fallbackCopy(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); crmToast('🔗 Link copiado ✓', 'success'); }
+    catch(e) { crmToast('No se pudo copiar', 'error'); }
+    document.body.removeChild(ta);
+  }
 }
 
 function agFmtTimeStr(val) {
