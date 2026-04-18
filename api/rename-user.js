@@ -103,11 +103,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Auth — prefer env var; fallback to temporary hardcoded key ONLY if env is
-  // unset in this Vercel environment. REMOVE the TEMP_KEY after the one-time
-  // rename is done (follow-up commit).
-  const TEMP_KEY = 'sky_rename_2026_04_18_yennifer';
-  const VALID_KEY = process.env.RENAME_USER_KEY || process.env.ADMIN_PUSH_KEY || TEMP_KEY;
+  // Auth — requires RENAME_USER_KEY or ADMIN_PUSH_KEY env var.
+  // One-time TEMP_KEY was removed after the 2026-04-18 yennifer rename.
+  // To re-enable: set RENAME_USER_KEY in Vercel environment variables.
+  const VALID_KEY = process.env.RENAME_USER_KEY || process.env.ADMIN_PUSH_KEY;
+  if (!VALID_KEY) return res.status(410).json({ ok: false, error: 'Endpoint disabled — set RENAME_USER_KEY env to re-enable' });
   const providedKey = req.query.key || (req.body && req.body.key);
   if (providedKey !== VALID_KEY) return res.status(403).json({ ok: false, error: 'Invalid key' });
 
