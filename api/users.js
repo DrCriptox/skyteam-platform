@@ -15,13 +15,23 @@ export default async function handler(req, res) {
     // These are highly sensitive and leak PII to anyone who hits /api/users.
     // Socios ven whatsapp/instagram de su equipo en /api/team (que tiene cierta auth por ref).
     // Para email/bankcode/birthday, usar endpoint privado con identificación del caller.
-    const r = await fetch(
-      SUPABASE_URL + '/rest/v1/users?select=username,name,ref,sponsor,rank,ventas,equipo,expiry,is_admin,whatsapp,profession,comm_style,instagram,photo,created_at,innova_user&limit=1000',
-      { headers: HEADERS }
-    );
+    // Include grace_granted_at + grace_days so the frontend can render
+    // "N días de obsequio" instead of "N días restantes" while active.
+    // FALLBACK: if the grace columns don't exist in the schema yet (fresh
+    // install / migration not applied), re-fetch WITHOUT them so the whole
+    // /api/users endpoint doesn't 500.
+    const baseSelect = 'username,name,ref,sponsor,rank,ventas,equipo,expiry,is_admin,whatsapp,profession,comm_style,instagram,photo,created_at,innova_user';
+    const fullSelect = baseSelect + ',grace_granted_at,grace_days';
+    let r = await fetch(SUPABASE_URL + '/rest/v1/users?select=' + fullSelect + '&limit=1000', { headers: HEADERS });
     if (!r.ok) {
       const errBody = await r.text();
-      throw new Error('Supabase GET failed: ' + r.status + ' — ' + errBody);
+      // Column missing → retry without grace fields (non-fatal, just lose the feature)
+      if (errBody.includes('grace_granted_at') || errBody.includes('grace_days') || errBody.includes('42703') || errBody.includes('does not exist')) {
+        r = await fetch(SUPABASE_URL + '/rest/v1/users?select=' + baseSelect + '&limit=1000', { headers: HEADERS });
+        if (!r.ok) throw new Error('Supabase GET failed (fallback): ' + r.status + ' — ' + await r.text());
+      } else {
+        throw new Error('Supabase GET failed: ' + r.status + ' — ' + errBody);
+      }
     }
     const rows = await r.json();
 
@@ -42,7 +52,9 @@ export default async function handler(req, res) {
         isAdmin: row.is_admin || false,
         innova_user: row.innova_user || null,
         photo: row.photo || null,
-        instagram: row.instagram || null
+        instagram: row.instagram || null,
+        grace_granted_at: row.grace_granted_at || null,
+        grace_days: row.grace_days || null
       };
     }
 

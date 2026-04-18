@@ -3930,25 +3930,52 @@ function showApp() {
   if(CU && CU.expiry && Number(CU.expiry) > 0) {
     var _msLeft = Number(CU.expiry) - Date.now();
     var _daysLeft = Math.ceil(_msLeft / 86400000);
-    // Show renewal banner when 7 days or less (including grace period)
-    if(_daysLeft <= 7) {
+    // Detect admin-granted "días de obsequio" window: expiry was recently
+    // extended as a gift. When active, show a celebratory banner instead of
+    // the anxiety-inducing "vence pronto" one.
+    var _isObsequio = false;
+    var _obsequioDaysTotal = 0;
+    if(CU.grace_granted_at && _daysLeft > 0) {
+      var _graceAge = (Date.now() - Number(CU.grace_granted_at)) / 86400000;
+      _obsequioDaysTotal = Number(CU.grace_days) || 6;
+      if(_graceAge >= 0 && _graceAge <= _obsequioDaysTotal + 2) _isObsequio = true;
+    }
+    // Show renewal/obsequio banner when 7 days or less (including grace period)
+    if(_daysLeft <= 7 || _isObsequio) {
       var _isGrace = _daysLeft <= 0;
       var _graceDays = _isGrace ? Math.max(0, 3 + _daysLeft) : 0;
-      var _bannerColor = _isGrace ? '#E24B4A' : '#FFD700';
-      var _bannerMsg = _isGrace
-        ? (_graceDays > 0 ? '⚠️ Tu membresía expiró. Tienes ' + _graceDays + ' día' + (_graceDays>1?'s':'') + ' de gracia para renovar.' : '🚫 Tu acceso será bloqueado hoy. ¡Renueva ahora!')
-        : '⏰ Tu membresía vence en ' + _daysLeft + ' día' + (_daysLeft>1?'s':'') + '. Renueva para no perder acceso.';
+      var _bannerColor, _bannerMsg, _bannerNotifIcon, _bannerNotifTitle, _bannerNotifSubtitle;
+      if(_isObsequio) {
+        _bannerColor = 'linear-gradient(135deg,#C9A84C,#E8D48B)';
+        _bannerMsg = '🎁 Tienes ' + _daysLeft + ' día' + (_daysLeft>1?'s':'') + ' de obsequio. ¡Aprovéchalos para cerrar ventas y renovar tu paquete!';
+        _bannerNotifIcon = '🎁';
+        _bannerNotifTitle = '🎁 ' + _daysLeft + ' días de obsequio activos';
+        _bannerNotifSubtitle = 'Aprovéchalos antes que venzan';
+      } else if(_isGrace) {
+        _bannerColor = '#E24B4A';
+        _bannerMsg = _graceDays > 0
+          ? '⚠️ Tu membresía expiró. Tienes ' + _graceDays + ' día' + (_graceDays>1?'s':'') + ' de gracia para renovar.'
+          : '🚫 Tu acceso será bloqueado hoy. ¡Renueva ahora!';
+        _bannerNotifIcon = '🚨';
+        _bannerNotifTitle = '🚨 ¡Renueva tu membresía!';
+        _bannerNotifSubtitle = 'Período de gracia: ' + _graceDays + ' día(s)';
+      } else {
+        _bannerColor = '#FFD700';
+        _bannerMsg = '⏰ Tu membresía vence en ' + _daysLeft + ' día' + (_daysLeft>1?'s':'') + '. Renueva para no perder acceso.';
+        _bannerNotifIcon = '⏰';
+        _bannerNotifTitle = '⏰ Membresía por vencer';
+        _bannerNotifSubtitle = _daysLeft + ' días restantes';
+      }
       var _banner = document.createElement('div');
-      _banner.style.cssText = 'position:fixed;top:0;left:var(--sidebar-w);right:0;z-index:98;padding:10px 20px;background:' + _bannerColor + ';color:#0a0a12;font-size:13px;font-weight:800;text-align:center;font-family:Outfit,Nunito,sans-serif;' + (_isGrace ? 'animation:skytvPulse 2s infinite;' : '');
+      _banner.style.cssText = 'position:fixed;top:0;left:var(--sidebar-w);right:0;z-index:98;padding:10px 20px;background:' + _bannerColor + ';color:#0a0a12;font-size:13px;font-weight:800;text-align:center;font-family:Outfit,Nunito,sans-serif;' + (_isGrace && !_isObsequio ? 'animation:skytvPulse 2s infinite;' : '');
       _banner.innerHTML = _bannerMsg + ' <button onclick="this.parentElement.style.display=\'none\'" style="background:rgba(0,0,0,0.2);border:none;color:#0a0a12;border-radius:6px;padding:3px 10px;margin-left:10px;font-size:11px;font-weight:700;cursor:pointer;">✕</button>';
       document.body.appendChild(_banner);
       // Push notification
       if(typeof pushNotification === 'function') {
         pushNotification({
-          id: 'renewal_' + _daysLeft, type: 'event', icon: _isGrace ? '🚨' : '⏰',
-          title: _isGrace ? '🚨 ¡Renueva tu membresía!' : '⏰ Membresía por vencer',
-          subtitle: _isGrace ? 'Período de gracia: ' + _graceDays + ' día(s)' : _daysLeft + ' días restantes',
-          msg: _bannerMsg
+          id: (_isObsequio ? 'obsequio_' : 'renewal_') + _daysLeft,
+          type: 'event', icon: _bannerNotifIcon,
+          title: _bannerNotifTitle, subtitle: _bannerNotifSubtitle, msg: _bannerMsg
         });
       }
     }
@@ -13825,7 +13852,26 @@ function renderPerfil() {
     + '<div class="perfil-username">@'+CU.username+'</div>'
     + '<div style="margin-top:6px;">'+rankBadge(CU.rank)+'</div>'
     + (CU.bankcode ? '<div style="margin-top:6px;">' + renderBankcodeDetail(CU.bankcode) + '</div>' : '')
-    + (function(){ if(!CU.expiry || !Number(CU.expiry)) return ''; var _pd=Math.ceil((Number(CU.expiry)-Date.now())/86400000); var _pc=getDaysColor(Math.max(0,_pd)); return '<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_pc+';">\u23F1 '+(_pd>0?_pd+' d\u00edas restantes':'\u26A0\uFE0F Expirado')+'</div>'; })()
+    + (function(){
+        if(!CU.expiry || !Number(CU.expiry)) return '';
+        var _pd=Math.ceil((Number(CU.expiry)-Date.now())/86400000);
+        var _pc=getDaysColor(Math.max(0,_pd));
+        // Grace period: if admin granted "N días de obsequio" within the last
+        // (grace_days + 2) days AND the user is still active, label it as
+        // obsequio instead of "restantes". The +2 buffer handles the case
+        // where grace_granted_at is slightly older than expected.
+        var _isGrace = false;
+        if(CU.grace_granted_at && _pd > 0) {
+          var _graceAge = (Date.now() - Number(CU.grace_granted_at)) / 86400000;
+          var _maxAge = (Number(CU.grace_days) || 6) + 2;
+          if(_graceAge >= 0 && _graceAge <= _maxAge) _isGrace = true;
+        }
+        if(_pd > 0) {
+          if(_isGrace) return '<div style="margin-top:6px;font-size:10px;font-weight:700;color:#C9A84C;">\uD83C\uDF81 '+_pd+' d\u00edas de obsequio</div>';
+          return '<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_pc+';">\u23F1 '+_pd+' d\u00edas restantes</div>';
+        }
+        return '<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_pc+';">\u26A0\uFE0F Expirado</div>';
+      })()
     + '</div>'
     + '<div class="perfil-data-card">'
     + '<div style="padding:14px 18px 10px;border-bottom:0.5px solid rgba(255,255,255,0.05);">'

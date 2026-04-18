@@ -120,7 +120,12 @@ export default async function handler(req, res) {
         profession: user.profession || null,
         income_goal: user.income_goal || null,
         comm_style: user.comm_style || null,
-        instagram: user.instagram || null
+        instagram: user.instagram || null,
+        // Grace period fields — set by /api/extend-expired when admin grants
+        // "N días de obsequio". Frontend reads these to render a celebratory
+        // banner and label the countdown as "días de obsequio".
+        grace_granted_at: user.grace_granted_at || null,
+        grace_days: user.grace_days || null
       }
     });
 
