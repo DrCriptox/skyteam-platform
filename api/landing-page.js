@@ -261,11 +261,12 @@ Agendar llamada</a>
   if(!wa) return;
   var nombre = a.nombre || '';
 
-  // Pre-built WhatsApp links — ULTRA short, zero-commitment messages to maximize send rate.
-  // Previous long messages converted at 1.8% (industry 15-20%). Shorter = less friction = more sends.
-  // The bot handles qualification after they write.
-  var msgSaber = encodeURIComponent('Info franquicia IA');
-  var msgActivar = encodeURIComponent('Info franquicia IA');
+  // Pre-built WhatsApp links — mensaje natural, sin precio ni compromiso duro.
+  // 2026-04-18 fix: "Info franquicia IA" convirtió 13 clicks -> 4 WA (69% fuga).
+  // Nuevo mensaje más natural para que el usuario sienta que ya empezó la conversación
+  // y sea menos probable que se arrepienta antes de enviar.
+  var msgSaber = encodeURIComponent('Hola, vi la info y me interesa saber mas de la franquicia con IA');
+  var msgActivar = encodeURIComponent('Hola, quiero saber mas de la franquicia con IA');
   var linkSaber = 'https://wa.me/' + wa + '?text=' + msgSaber;
   var linkActivar = 'https://wa.me/' + wa + '?text=' + msgActivar;
 
@@ -344,17 +345,17 @@ Agendar llamada</a>
   }
   function _fireFBEvent(name) {
     var eid = 'skywa_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    // Pixel signal isolation: ONLY paid traffic (ref=dradmin) fires InitiateCheckout.
-    // Partner traffic (legend, socio slugs) fires generic Lead — does NOT train paid campaign.
-    // This keeps the pixel signal clean for Meta optimization without affecting partners' landing UX.
+    var eidLead = 'skywa_lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    // 2026-04-18: Ahora TODO click dispara Lead (optimizacion mas limpia en Meta Ads).
+    // En tráfico pagado, TAMBIEN dispara InitiateCheckout (senal de intencion de compra).
+    // Esto permite cambiar la optimizacion de Meta Ads de "Pagos iniciados" -> "Lead"
+    // para reducir ruido. 13 Pagos_iniciados -> 4 WA llegados sugiere sobreconteo.
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: name }, { eventID: eidLead });
+    if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('Lead', eidLead, {});
     if (slug === 'dradmin' || slug === 'admin') {
-      // Paid traffic: strong purchase-intent signal that trains the campaign
+      // Paid traffic: ALSO fire InitiateCheckout for purchase-intent tracking
       if (typeof fbq === 'function') fbq('track', 'InitiateCheckout', { content_name: name, currency: 'USD', value: 550 }, { eventID: eid });
       if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('InitiateCheckout', eid, { currency: 'USD', value: 550 });
-    } else {
-      // Organic/partner traffic: generic Lead only (does NOT optimize paid campaign)
-      if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: name }, { eventID: eid });
-      if (typeof window.sendCAPIEvent === 'function') window.sendCAPIEvent('Lead', eid, {});
     }
   }
 
