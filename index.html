@@ -10339,7 +10339,7 @@ async function sendAgentMsg() {
       body: JSON.stringify({
         max_tokens: currentAgent === 'contenido' ? 2200 : 1200,
         user: CU ? CU.username : 'anon',
-        system: cfg.system + '\n\nEl socio que te consulta se llama ' + (CU ? CU.name : 'socio') + ' y su código de referido es ' + (CU ? CU.ref : '') + '. Su link de landing: https://skyteam.global/landing?ref=' + (CU ? CU.ref : '') + '. Link agenda si aplica: https://skyteam.global/agenda/' + (CU ? (CU.username||CU.ref) : '') + '.' + styleLearning,
+        system: cfg.system + '\n\nEl socio que te consulta se llama ' + (CU ? CU.name : 'socio') + ' y su código de referido es ' + (CU ? CU.ref : '') + '. Su link de landing: https://skyteam.global/landing?ref=' + (CU ? CU.ref : '') + '. Link agenda si aplica: https://skyteam.global/?agenda=' + (CU ? (CU.username||CU.ref) : '') + '.' + styleLearning,
         messages: messages
       })
     });
