@@ -363,9 +363,11 @@ module.exports = async function handler(req, res) {
     // ═══════════════════════════════════════════════════
     if (action === 'sendZoomLiveEmail' && req.method === 'POST') {
       // Auth — protected by admin key to prevent abuse (any endpoint that
-      // mails 300+ users must be gated).
-      var TEMP_KEY_ZOOM = 'sky_zoom_live_2026_04_19';
-      var VALID_KEY_ZOOM = process.env.ZOOM_LIVE_KEY || process.env.ADMIN_PUSH_KEY || TEMP_KEY_ZOOM;
+      // mails 300+ users must be gated). TEMP_KEY removed after successful
+      // 2026-04-19 Yonfer Zoom broadcast — set ZOOM_LIVE_KEY in Vercel env
+      // to re-enable for next session.
+      var VALID_KEY_ZOOM = process.env.ZOOM_LIVE_KEY || process.env.ADMIN_PUSH_KEY;
+      if (!VALID_KEY_ZOOM) return res.status(410).json({ ok: false, error: 'Endpoint disabled — set ZOOM_LIVE_KEY env to re-enable' });
       var providedKeyZ = (req.body && req.body.key) || req.query.key;
       if (providedKeyZ !== VALID_KEY_ZOOM) return res.status(403).json({ ok: false, error: 'Invalid key' });
 
