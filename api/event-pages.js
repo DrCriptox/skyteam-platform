@@ -356,6 +356,83 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, sent: sent2 });
     }
 
+    // ═══════════════════════════════════════════════════
+    //  ZOOM LIVE — Send urgent "room open NOW" email to all users
+    //  Used when an admin is hosting a live session and wants the
+    //  whole team to join immediately.
+    // ═══════════════════════════════════════════════════
+    if (action === 'sendZoomLiveEmail' && req.method === 'POST') {
+      // Auth — protected by admin key to prevent abuse (any endpoint that
+      // mails 300+ users must be gated).
+      var TEMP_KEY_ZOOM = 'sky_zoom_live_2026_04_19';
+      var VALID_KEY_ZOOM = process.env.ZOOM_LIVE_KEY || process.env.ADMIN_PUSH_KEY || TEMP_KEY_ZOOM;
+      var providedKeyZ = (req.body && req.body.key) || req.query.key;
+      if (providedKeyZ !== VALID_KEY_ZOOM) return res.status(403).json({ ok: false, error: 'Invalid key' });
+
+      if (!RESEND_KEY) return res.status(500).json({ error: 'RESEND_KEY not configured' });
+
+      var bZ = req.body || {};
+      var zoomLink = (bZ.zoomLink || '').trim();
+      if (!zoomLink || !/^https?:\/\//.test(zoomLink)) {
+        return res.status(400).json({ error: 'zoomLink (valid URL) is required' });
+      }
+      // Optional overrides — sensible defaults crafted for urgency
+      var hostName = (bZ.hostName || 'Yonfer Rojas').trim();
+      var sessionTitle = (bZ.sessionTitle || 'Sesión en vivo con ' + hostName).trim();
+      var subject = bZ.subject || '🔴 EN VIVO AHORA — Conéctate con ' + hostName + ' en Zoom';
+
+      // Fetch all unique user emails (same pattern as sendMixlrEmail)
+      var uRZ = await SB('users?select=email,name&email=neq.null&email=neq.&limit=1000');
+      var usersZ = await uRZ.json();
+      if (!Array.isArray(usersZ)) return res.status(500).json({ error: 'Failed to fetch users' });
+      var rawZ = usersZ.map(function(u) { return { email: (u.email || '').toLowerCase().trim(), name: u.name || '' }; })
+                       .filter(function(u) { return u.email && u.email.indexOf('@') > 0; });
+      // Dedup by email
+      var seenZ = {};
+      var recipientsZ = [];
+      rawZ.forEach(function(u) { if (!seenZ[u.email]) { seenZ[u.email] = true; recipientsZ.push(u); } });
+
+      // Build celebratory "room open" email. Subject uses urgency.
+      var htmlBody = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#0a0a12;color:#F0EDE6;padding:0;border-radius:16px;overflow:hidden;">'
+        + '<div style="background:linear-gradient(135deg,#2D8CFF,#0B5CFF);padding:26px 24px;text-align:center;">'
+        + '<div style="display:inline-block;background:rgba(226,75,74,0.95);padding:5px 14px;border-radius:20px;margin-bottom:10px;"><span style="color:#fff;font-size:11px;font-weight:900;letter-spacing:2px;">🔴 EN VIVO AHORA</span></div>'
+        + '<h1 style="color:#fff;font-size:24px;margin:4px 0 4px;font-weight:900;line-height:1.2;">La sala de Zoom está abierta</h1>'
+        + '<p style="color:rgba(255,255,255,0.88);font-size:14px;margin:4px 0 0;">con <strong>' + hostName + '</strong></p>'
+        + '</div>'
+        + '<div style="padding:28px 26px;">'
+        + '<h2 style="color:#C9A84C;font-size:18px;margin:0 0 10px;font-weight:800;">' + sessionTitle + '</h2>'
+        + '<p style="color:rgba(255,255,255,0.75);font-size:15px;line-height:1.6;margin:0 0 20px;">Conéctate <strong>ahora mismo</strong> — tu equipo te está esperando. Esta sesión es parte de tu formación en SKYTEAM y vas a llevarte aprendizajes que aplican directo a tus ventas.</p>'
+        + '<div style="background:rgba(45,140,255,0.10);border:1px solid rgba(45,140,255,0.30);border-radius:12px;padding:16px;margin-bottom:20px;text-align:center;">'
+        + '<p style="margin:0;font-size:13px;color:#6AB0FF;font-weight:700;">💡 Los socios que asisten a las sesiones en vivo cierran <strong>3x más</strong> ventas.</p>'
+        + '</div>'
+        + '<div style="text-align:center;margin:28px 0 16px;">'
+        + '<a href="' + zoomLink + '" style="display:inline-block;padding:18px 48px;border-radius:14px;background:linear-gradient(135deg,#2D8CFF,#0B5CFF);color:#fff;font-size:17px;font-weight:900;text-decoration:none;box-shadow:0 6px 22px rgba(45,140,255,0.45);letter-spacing:0.5px;">🎥 ENTRAR A ZOOM AHORA</a>'
+        + '</div>'
+        + '<p style="color:rgba(255,255,255,0.35);font-size:11px;text-align:center;margin:14px 0 0;line-height:1.5;">Si el botón no funciona, copia este enlace:<br><a href="' + zoomLink + '" style="color:#6AB0FF;word-break:break-all;">' + zoomLink + '</a></p>'
+        + '</div>'
+        + '<div style="padding:14px;text-align:center;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.3);"><img src="https://skyteam.global/logo-skyteam-white.png" alt="SkyTeam" width="100" style="opacity:0.7;margin-bottom:6px;" /><br><p style="color:rgba(255,255,255,0.3);font-size:10px;margin:0;">SKYTEAM · Recibiste este correo porque eres socio activo.</p></div>'
+        + '</div>';
+
+      // Batch send via Resend batch endpoint (up to 100 per call)
+      var sentZ = 0, failedZ = 0;
+      for (var iZ = 0; iZ < recipientsZ.length; iZ += 100) {
+        var batchZ = recipientsZ.slice(iZ, iZ + 100);
+        var batchBodyZ = batchZ.map(function(r) {
+          return { from: 'SKYTEAM <lideres@skyteam.global>', to: [r.email], subject: subject, html: htmlBody };
+        });
+        try {
+          var erZ = await fetch('https://api.resend.com/emails/batch', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify(batchBodyZ)
+          });
+          if (erZ.ok) sentZ += batchZ.length; else failedZ += batchZ.length;
+        } catch (e) { failedZ += batchZ.length; }
+      }
+      console.log('[ZOOM-LIVE] Sent', sentZ, '/ failed', failedZ, '— link:', zoomLink);
+      return res.status(200).json({ ok: true, sent: sentZ, failed: failedZ, total: recipientsZ.length, zoomLink: zoomLink });
+    }
+
     if (action === 'broadcastPush' && req.method === 'POST') {
       var b = req.body;
       if (!b.title || !b.body) return res.status(400).json({ error: 'title + body required' });
